@@ -20,9 +20,13 @@ wee_alloc = { version = "0.4", optional = true }
 version = "0.3"
 features = [
   'console',
+  'Screen',
+  'CssStyleDeclaration',
   'Document',
+  'Performance',
   'Element',
   'HtmlCanvasElement',
+  'HtmlElement',
   'WebGlBuffer',
   'WebGl2RenderingContext',
   'WebGlProgram',

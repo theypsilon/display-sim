@@ -10,6 +10,7 @@ module.exports = {
     },
     plugins: [
         new HtmlWebpackPlugin({
+            inject: "head",
             template: "index.html"
         })
     ],
