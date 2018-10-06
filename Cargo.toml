@@ -7,7 +7,7 @@ authors = ["José manuel Barroso Galindo <theypsilon@gmail.com>"]
 crate-type = ["cdylib"]
 
 [features]
-default-features = ["console_error_panic_hook", "wee_alloc"]
+default-features = []#["console_error_panic_hook", "wee_alloc"]
 
 [dependencies]
 cfg-if = "0.1"
@@ -20,13 +20,7 @@ wee_alloc = { version = "0.4", optional = true }
 version = "0.3"
 features = [
   'console',
-  'Screen',
-  'CssStyleDeclaration',
-  'Document',
   'Performance',
-  'Element',
-  'HtmlCanvasElement',
-  'HtmlElement',
   'WebGlBuffer',
   'WebGl2RenderingContext',
   'WebGlProgram',
