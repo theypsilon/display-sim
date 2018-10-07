@@ -87,6 +87,7 @@ struct Buttons {
     speed_down: Boolean_Button,
     mouse_click: Boolean_Button,
     toggle_pixels_or_voxels: Boolean_Button,
+    showing_pixels_pulse: Boolean_Button,
 }
 
 impl Buttons {
@@ -95,7 +96,8 @@ impl Buttons {
             speed_up: Boolean_Button::new(),
             speed_down: Boolean_Button::new(),
             mouse_click: Boolean_Button::new(),
-            toggle_pixels_or_voxels: Boolean_Button::new()
+            toggle_pixels_or_voxels: Boolean_Button::new(),
+            showing_pixels_pulse: Boolean_Button::new()
         }
     }
 }
@@ -117,6 +119,8 @@ pub struct Resources {
     cur_pixel_scale_y: f32,
     cur_pixel_gap: f32,
     pixels_or_voxels: Pixels_Or_Voxels,
+    pixels_pulse: f32,
+    showing_pixels_pulse: bool,
     pixel_manipulation_speed: f32,
     camera: Camera,
     camera_zoom: f32,
@@ -155,6 +159,7 @@ pub struct Input {
     increase_pixel_gap: bool,
     decrease_pixel_gap: bool,
     toggle_pixels_or_voxels: bool,
+    showing_pixels_pulse: bool,
 }
 
 impl Input {
@@ -190,6 +195,7 @@ impl Input {
             increase_pixel_gap: false,
             decrease_pixel_gap: false,
             toggle_pixels_or_voxels: false,
+            showing_pixels_pulse: false,
         })
     }
 }
@@ -425,6 +431,7 @@ pub fn program(gl: JsValue) -> Result<()> {
                     "n" => input.increase_pixel_gap = true,
                     "m" => input.decrease_pixel_gap = true,
                     "o" => input.toggle_pixels_or_voxels = true,
+                    "p" => input.showing_pixels_pulse = true,
                     "shift" => input.shift = true,
                     "alt" => input.alt = true,
                     " " => input.space = true,
@@ -462,6 +469,7 @@ pub fn program(gl: JsValue) -> Result<()> {
                     "n" => input.increase_pixel_gap = false,
                     "m" => input.decrease_pixel_gap = false,
                     "o" => input.toggle_pixels_or_voxels = false,
+                    "p" => input.showing_pixels_pulse = false,
                     "shift" => input.shift = false,
                     "alt" => input.alt = false,
                     " " => input.space = false,
@@ -527,6 +535,17 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
         res.frame_count = 0;
     } else {
         res.frame_count += 1;
+    }
+
+    res.buttons.showing_pixels_pulse.track(input.showing_pixels_pulse);
+    if res.buttons.showing_pixels_pulse.just_pressed {
+        res.showing_pixels_pulse = !res.showing_pixels_pulse;
+    }
+
+    if res.showing_pixels_pulse {
+        res.pixels_pulse += dt * 0.1;
+    } else {
+        res.pixels_pulse = 0.0;
     }
 
     res.buttons.toggle_pixels_or_voxels.track(input.toggle_pixels_or_voxels);
@@ -648,12 +667,14 @@ out vec4 ObjectColor;
 uniform mat4 view;
 uniform mat4 projection;
 
-uniform vec2 voxel_gap;
-uniform vec3 voxel_scale;
+uniform vec2 pixel_gap;
+uniform vec3 pixel_scale;
+uniform float pixel_pulse;
 
 void main()
 {
-    FragPos = aPos / voxel_scale + vec3(aOffset * voxel_gap, 0);
+    float radius = length(aOffset);
+    FragPos = aPos / pixel_scale + vec3(aOffset * pixel_gap, 0) + vec3(0, 0, sin(pixel_pulse + sin(pixel_pulse / 10.0) * radius / 4.0) * 2.0);
     Normal = aNormal;  
     ObjectColor = aColor;
     
@@ -775,13 +796,13 @@ pub fn load_resources(gl: &WebGl2RenderingContext) -> Result<Resources> {
         WebGl2RenderingContext::STATIC_DRAW,
     );
 
-    let aPos_position = gl.get_attrib_location(&program, "aPos") as u32;
-    gl.vertex_attrib_pointer_with_i32(aPos_position, 3, WebGl2RenderingContext::FLOAT, false, 6 * size_of::<f32>() as i32, 0);
-    gl.enable_vertex_attrib_array(aPos_position);
+    let a_pos_position = gl.get_attrib_location(&program, "aPos") as u32;
+    gl.vertex_attrib_pointer_with_i32(a_pos_position, 3, WebGl2RenderingContext::FLOAT, false, 6 * size_of::<f32>() as i32, 0);
+    gl.enable_vertex_attrib_array(a_pos_position);
 
-    let aNormal_position = gl.get_attrib_location(&program, "aNormal") as u32;
-    gl.vertex_attrib_pointer_with_i32(aNormal_position, 3, WebGl2RenderingContext::FLOAT, false, 6 * size_of::<f32>() as i32, 3 * size_of::<f32>() as i32);
-    gl.enable_vertex_attrib_array(aNormal_position);
+    let a_normal_position = gl.get_attrib_location(&program, "aNormal") as u32;
+    gl.vertex_attrib_pointer_with_i32(a_normal_position, 3, WebGl2RenderingContext::FLOAT, false, 6 * size_of::<f32>() as i32, 3 * size_of::<f32>() as i32);
+    gl.enable_vertex_attrib_array(a_normal_position);
 
     let colors_vbo = gl.create_buffer().ok_or("cannot create colors_vbo")?;
     gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&colors_vbo));
@@ -791,10 +812,10 @@ pub fn load_resources(gl: &WebGl2RenderingContext) -> Result<Resources> {
         WebGl2RenderingContext::STATIC_DRAW,
     );
 
-    let aColor_position = gl.get_attrib_location(&program, "aColor") as u32;
-    gl.enable_vertex_attrib_array(aColor_position);
-    gl.vertex_attrib_pointer_with_i32(aColor_position, 4, WebGl2RenderingContext::FLOAT, false, size_of::<glm::Vec4>() as i32, 0);
-    gl.vertex_attrib_divisor(aColor_position, 1);
+    let a_color_position = gl.get_attrib_location(&program, "aColor") as u32;
+    gl.enable_vertex_attrib_array(a_color_position);
+    gl.vertex_attrib_pointer_with_i32(a_color_position, 4, WebGl2RenderingContext::FLOAT, false, size_of::<glm::Vec4>() as i32, 0);
+    gl.vertex_attrib_divisor(a_color_position, 1);
 
     let offset_vbo = gl.create_buffer().ok_or("cannot create offset_vbo")?;
     gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&offset_vbo));
@@ -804,10 +825,10 @@ pub fn load_resources(gl: &WebGl2RenderingContext) -> Result<Resources> {
         WebGl2RenderingContext::STATIC_DRAW,
     );
 
-    let aOffset_position = gl.get_attrib_location(&program, "aOffset") as u32;
-    gl.enable_vertex_attrib_array(aOffset_position);
-    gl.vertex_attrib_pointer_with_i32(aOffset_position, 2, WebGl2RenderingContext::FLOAT, false, size_of::<glm::Vec2>() as i32, 0);
-    gl.vertex_attrib_divisor(aOffset_position, 1);
+    let a_offset_position = gl.get_attrib_location(&program, "aOffset") as u32;
+    gl.enable_vertex_attrib_array(a_offset_position);
+    gl.vertex_attrib_pointer_with_i32(a_offset_position, 2, WebGl2RenderingContext::FLOAT, false, size_of::<glm::Vec2>() as i32, 0);
+    gl.vertex_attrib_divisor(a_offset_position, 1);
 
     gl.bind_vertex_array(None);
 
@@ -828,6 +849,8 @@ pub fn load_resources(gl: &WebGl2RenderingContext) -> Result<Resources> {
         cur_pixel_scale_y: 0.0,
         cur_pixel_gap: 0.0,
         pixels_or_voxels: Pixels_Or_Voxels::Pixels,
+        pixels_pulse: 0.0,
+        showing_pixels_pulse: false,
         camera: Camera::new(),
         camera_zoom: 45.0,
         buttons: Buttons::new()
@@ -849,13 +872,13 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
     gl.clear_color(0.05, 0.05, 0.05, 1.0);  // Clear to black, fully opaque
     gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
 
-    let mut voxel_scale : &mut [f32] = &mut [
+    let mut pixel_scale : &mut [f32] = &mut [
         res.cur_pixel_scale_x + 1.0,
         res.cur_pixel_scale_y + 1.0,
         (res.cur_pixel_scale_x + res.cur_pixel_scale_x)/2.0 + 1.0
     ];
 
-    let mut voxel_gap : &mut [f32] = &mut [1.0 + res.cur_pixel_gap, 1.0 + res.cur_pixel_gap];
+    let mut pixel_gap : &mut [f32] = &mut [1.0 + res.cur_pixel_gap, 1.0 + res.cur_pixel_gap];
 
     gl.use_program(Some(&res.pixel_shader));
     gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "view").as_ref(), false, view.as_mut_slice());
@@ -863,8 +886,9 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
     gl.uniform3fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "lightPos").as_ref(), &mut [screen_width / 2.0, screen_height / 2.0, 400.0]);
     gl.uniform3fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "lightColor").as_ref(), &mut [1.0, 1.0, 1.0]);
     gl.uniform1f(gl.get_uniform_location(&res.pixel_shader, "ambientStrength").as_ref(), 0.5);
-    gl.uniform2fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "voxel_gap").as_ref(), &mut voxel_gap);
-    gl.uniform3fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "voxel_scale").as_ref(), &mut voxel_scale);
+    gl.uniform2fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "pixel_gap").as_ref(), &mut pixel_gap);
+    gl.uniform3fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "pixel_scale").as_ref(), &mut pixel_scale);
+    gl.uniform1f(gl.get_uniform_location(&res.pixel_shader, "pixel_pulse").as_ref(), res.pixels_pulse);
 
     gl.bind_vertex_array(res.pixel_vao.as_ref());
     gl.draw_arrays_instanced(
