@@ -14,8 +14,14 @@ use std::cell::RefCell;
 use std::mem::size_of;
 
 pub enum Wasm_Error {
-    Js(wasm_bindgen::JsValue),
+    Js(JsValue),
     Str(String)
+}
+
+impl Wasm_Error {
+    fn to_js(self) -> JsValue {
+        match self { Wasm_Error::Js(o) => o, Wasm_Error::Str(s) => s.into()}
+    }
 }
 
 impl From<std::string::String> for Wasm_Error {
@@ -80,6 +86,7 @@ struct Buttons {
     speed_up: Boolean_Button,
     speed_down: Boolean_Button,
     mouse_click: Boolean_Button,
+    toggle_pixels_or_voxels: Boolean_Button,
 }
 
 impl Buttons {
@@ -88,8 +95,14 @@ impl Buttons {
             speed_up: Boolean_Button::new(),
             speed_down: Boolean_Button::new(),
             mouse_click: Boolean_Button::new(),
+            toggle_pixels_or_voxels: Boolean_Button::new()
         }
     }
+}
+
+enum Pixels_Or_Voxels {
+    Pixels,
+    Voxels
 }
 
 pub struct Resources {
@@ -103,6 +116,7 @@ pub struct Resources {
     cur_pixel_scale_x: f32,
     cur_pixel_scale_y: f32,
     cur_pixel_gap: f32,
+    pixels_or_voxels: Pixels_Or_Voxels,
     pixel_manipulation_speed: f32,
     camera: Camera,
     camera_zoom: f32,
@@ -126,7 +140,8 @@ pub struct Input {
     rotate_right: bool,
     speed_up: bool,
     speed_down: bool,
-    ctrl: bool,
+    reset_speeds: bool,
+    shift: bool,
     alt: bool,
     space: bool,
     mouse_left_click: bool,
@@ -139,6 +154,7 @@ pub struct Input {
     decrease_pixel_scale_x: bool,
     increase_pixel_gap: bool,
     decrease_pixel_gap: bool,
+    toggle_pixels_or_voxels: bool,
 }
 
 impl Input {
@@ -159,7 +175,8 @@ impl Input {
             rotate_right: false,
             speed_up: false,
             speed_down: false,
-            ctrl: false,
+            reset_speeds: false,
+            shift: false,
             alt: false,
             space: false,
             mouse_left_click: false,
@@ -172,6 +189,7 @@ impl Input {
             decrease_pixel_scale_x: false,
             increase_pixel_gap: false,
             decrease_pixel_gap: false,
+            toggle_pixels_or_voxels: false,
         })
     }
 }
@@ -212,8 +230,8 @@ impl Camera {
             pitch: 0.0,
             heading: 0.0,
             rotate: 0.0,
-            movement_speed: 10.0,
-            turning_speed: 1.0
+            movement_speed: movement_base_speed,
+            turning_speed: turning_base_speed
         }
     }
 
@@ -284,23 +302,24 @@ const ratio_256_224: f64 = 256.0 / 224.0;
 const snes_factor_horizontal: f64 = ratio_4_3 / ratio_256_224;
 const pixel_manipulation_base_speed: f32 = 20.0;
 const turning_base_speed: f32 = 1.0;
+const movement_base_speed: f32 = 10.0;
 const movement_speed_factor: f32 = 50.0;
 
 const cube_geometry : [f32; 216] = [
     // cube coordinates       cube normals
-    -0.5, -0.5, -0.5,      0.0,  0.0, -1.0,
-     0.5, -0.5, -0.5,      0.0,  0.0, -1.0,
-     0.5,  0.5, -0.5,      0.0,  0.0, -1.0,
-     0.5,  0.5, -0.5,      0.0,  0.0, -1.0,
-    -0.5,  0.5, -0.5,      0.0,  0.0, -1.0,
-    -0.5, -0.5, -0.5,      0.0,  0.0, -1.0,
-
     -0.5, -0.5,  0.5,      0.0,  0.0,  1.0,
      0.5, -0.5,  0.5,      0.0,  0.0,  1.0,
      0.5,  0.5,  0.5,      0.0,  0.0,  1.0,
      0.5,  0.5,  0.5,      0.0,  0.0,  1.0,
     -0.5,  0.5,  0.5,      0.0,  0.0,  1.0,
     -0.5, -0.5,  0.5,      0.0,  0.0,  1.0,
+
+    -0.5, -0.5, -0.5,      0.0,  0.0, -1.0,
+     0.5, -0.5, -0.5,      0.0,  0.0, -1.0,
+     0.5,  0.5, -0.5,      0.0,  0.0, -1.0,
+     0.5,  0.5, -0.5,      0.0,  0.0, -1.0,
+    -0.5,  0.5, -0.5,      0.0,  0.0, -1.0,
+    -0.5, -0.5, -0.5,      0.0,  0.0, -1.0,
 
     -0.5,  0.5,  0.5,      -1.0,  0.0,  0.0,
     -0.5,  0.5, -0.5,      -1.0,  0.0,  0.0,
@@ -331,15 +350,6 @@ const cube_geometry : [f32; 216] = [
     -0.5,  0.5, -0.5,      0.0,  1.0,  0.0,
 ];
 
-const square_geometry : [f32; 36] = [
-    -0.5, -0.5,  0.5,      0.0,  0.0,  1.0,
-     0.5, -0.5,  0.5,      0.0,  0.0,  1.0,
-     0.5,  0.5,  0.5,      0.0,  0.0,  1.0,
-     0.5,  0.5,  0.5,      0.0,  0.0,  1.0,
-    -0.5,  0.5,  0.5,      0.0,  0.0,  1.0,
-    -0.5, -0.5,  0.5,      0.0,  0.0,  1.0,
-];
-
 pub fn program(gl: JsValue) -> Result<()> {
     let gl = gl.dyn_into::<WebGl2RenderingContext>()?;
     gl.enable(WebGl2RenderingContext::DEPTH_TEST);
@@ -363,13 +373,16 @@ pub fn program(gl: JsValue) -> Result<()> {
                 input.now = now().unwrap_or(render_loop.resources.last_time);
                 let update_status = update(&mut render_loop.resources, &input);
                 if let Err(e) = update_status {
-                    web_sys::console::error_2(&"An unexpected error happened during update.".into(), &match e { Wasm_Error::Js(o) => o, Wasm_Error::Str(s) => s.into()});
+                    web_sys::console::error_2(&"An unexpected error happened during update.".into(), &e.to_js());
                     return;
                 }
 
                 input.mouse_scroll_y = 0.0;
 
-                draw(&gl, &render_loop.resources);
+                if let Err(e) = draw(&gl, &render_loop.resources) {
+                    web_sys::console::error_2(&"An unexpected error happened during draw.".into(), &e.to_js());
+                    return;
+                }
 
                 let mut frame_id = None;
                 if let Some(ref frame_closure) = render_loop.animation_frame_closure {
@@ -404,13 +417,15 @@ pub fn program(gl: JsValue) -> Result<()> {
                     "-" => input.rotate_right = true,
                     "f" => input.speed_up = true,
                     "r" => input.speed_down = true,
+                    "t" => input.reset_speeds = true,
                     "u" => input.increase_pixel_scale_x = true,
                     "i" => input.decrease_pixel_scale_x = true,
                     "j" => input.increase_pixel_scale_y = true,
                     "k" => input.decrease_pixel_scale_y = true,
                     "n" => input.increase_pixel_gap = true,
                     "m" => input.decrease_pixel_gap = true,
-                    "control" => input.ctrl = true,
+                    "o" => input.toggle_pixels_or_voxels = true,
+                    "shift" => input.shift = true,
                     "alt" => input.alt = true,
                     " " => input.space = true,
                     _ => web_sys::console::log_2(&"down".into(), &e.key().into())
@@ -439,13 +454,15 @@ pub fn program(gl: JsValue) -> Result<()> {
                     "-" => input.rotate_right = false,
                     "f" => input.speed_up = false,
                     "r" => input.speed_down = false,
+                    "t" => input.reset_speeds = false,
                     "u" => input.increase_pixel_scale_x = false,
                     "i" => input.decrease_pixel_scale_x = false,
                     "j" => input.increase_pixel_scale_y = false,
                     "k" => input.decrease_pixel_scale_y = false,
                     "n" => input.increase_pixel_gap = false,
                     "m" => input.decrease_pixel_gap = false,
-                    "control" => input.ctrl = false,
+                    "o" => input.toggle_pixels_or_voxels = false,
+                    "shift" => input.shift = false,
                     "alt" => input.alt = false,
                     " " => input.space = false,
                     _ => web_sys::console::log_2(&"up".into(), &e.key().into())
@@ -512,12 +529,20 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
         res.frame_count += 1;
     }
 
+    res.buttons.toggle_pixels_or_voxels.track(input.toggle_pixels_or_voxels);
+    if res.buttons.toggle_pixels_or_voxels.just_released {
+        res.pixels_or_voxels = match res.pixels_or_voxels {
+            Pixels_Or_Voxels::Pixels => Pixels_Or_Voxels::Voxels,
+            Pixels_Or_Voxels::Voxels => Pixels_Or_Voxels::Pixels
+        };
+    }
+
     res.buttons.speed_up.track(input.speed_up);
     res.buttons.speed_down.track(input.speed_down);
     if input.alt {
         if res.buttons.speed_up.just_pressed { res.camera.turning_speed *= 2.0; }
         if res.buttons.speed_down.just_pressed { res.camera.turning_speed /= 2.0; }
-    } else if input.ctrl {
+    } else if input.shift {
         if res.buttons.speed_up.just_pressed { res.pixel_manipulation_speed *= 2.0; }
         if res.buttons.speed_down.just_pressed { res.pixel_manipulation_speed /= 2.0; }
     } else {
@@ -535,6 +560,12 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
     }
     if res.camera.turning_speed < 0.1 {
         res.camera.turning_speed = 0.1;
+    }
+
+    if input.reset_speeds {
+        res.camera.turning_speed = turning_base_speed;
+        res.camera.movement_speed = movement_base_speed;
+        res.pixel_manipulation_speed = pixel_manipulation_base_speed;
     }
 
     if input.walk_left { res.camera.advance(Camera_Direction::Left, dt); }
@@ -736,8 +767,6 @@ pub fn load_resources(gl: &WebGl2RenderingContext) -> Result<Resources> {
     let pixel_vao = gl.create_vertex_array();
     gl.bind_vertex_array(pixel_vao.as_ref());
 
-    check_error(&gl, line!())?;
-
     let pixel_vbo = gl.create_buffer().ok_or("cannot create pixel_vbo")?;
     gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&pixel_vbo));
     gl.buffer_data_with_opt_array_buffer(
@@ -745,8 +774,6 @@ pub fn load_resources(gl: &WebGl2RenderingContext) -> Result<Resources> {
         Some(&js_f32_array(&cube_geometry).buffer()),
         WebGl2RenderingContext::STATIC_DRAW,
     );
-
-    check_error(&gl, line!())?;
 
     let aPos_position = gl.get_attrib_location(&program, "aPos") as u32;
     gl.vertex_attrib_pointer_with_i32(aPos_position, 3, WebGl2RenderingContext::FLOAT, false, 6 * size_of::<f32>() as i32, 0);
@@ -756,8 +783,6 @@ pub fn load_resources(gl: &WebGl2RenderingContext) -> Result<Resources> {
     gl.vertex_attrib_pointer_with_i32(aNormal_position, 3, WebGl2RenderingContext::FLOAT, false, 6 * size_of::<f32>() as i32, 3 * size_of::<f32>() as i32);
     gl.enable_vertex_attrib_array(aNormal_position);
 
-    check_error(&gl, line!())?;
-
     let colors_vbo = gl.create_buffer().ok_or("cannot create colors_vbo")?;
     gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&colors_vbo));
     gl.buffer_data_with_opt_array_buffer(
@@ -766,14 +791,10 @@ pub fn load_resources(gl: &WebGl2RenderingContext) -> Result<Resources> {
         WebGl2RenderingContext::STATIC_DRAW,
     );
 
-    check_error(&gl, line!())?;
-
     let aColor_position = gl.get_attrib_location(&program, "aColor") as u32;
     gl.enable_vertex_attrib_array(aColor_position);
     gl.vertex_attrib_pointer_with_i32(aColor_position, 4, WebGl2RenderingContext::FLOAT, false, size_of::<glm::Vec4>() as i32, 0);
     gl.vertex_attrib_divisor(aColor_position, 1);
-
-    check_error(&gl, line!())?;
 
     let offset_vbo = gl.create_buffer().ok_or("cannot create offset_vbo")?;
     gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&offset_vbo));
@@ -783,8 +804,6 @@ pub fn load_resources(gl: &WebGl2RenderingContext) -> Result<Resources> {
         WebGl2RenderingContext::STATIC_DRAW,
     );
 
-    check_error(&gl, line!())?;
-
     let aOffset_position = gl.get_attrib_location(&program, "aOffset") as u32;
     gl.enable_vertex_attrib_array(aOffset_position);
     gl.vertex_attrib_pointer_with_i32(aOffset_position, 2, WebGl2RenderingContext::FLOAT, false, size_of::<glm::Vec2>() as i32, 0);
@@ -792,9 +811,9 @@ pub fn load_resources(gl: &WebGl2RenderingContext) -> Result<Resources> {
 
     gl.bind_vertex_array(None);
 
-    check_error(&gl, line!())?;
-
     let now = now()?;
+
+    check_error(&gl, line!())?;
 
     Ok(Resources {
         pixel_shader: program,
@@ -808,6 +827,7 @@ pub fn load_resources(gl: &WebGl2RenderingContext) -> Result<Resources> {
         cur_pixel_scale_x: 0.0,
         cur_pixel_scale_y: 0.0,
         cur_pixel_gap: 0.0,
+        pixels_or_voxels: Pixels_Or_Voxels::Pixels,
         camera: Camera::new(),
         camera_zoom: 45.0,
         buttons: Buttons::new()
@@ -829,8 +849,6 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
     gl.clear_color(0.05, 0.05, 0.05, 1.0);  // Clear to black, fully opaque
     gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
 
-    check_error(&gl, line!())?;
-
     let mut voxel_scale : &mut [f32] = &mut [
         res.cur_pixel_scale_x + 1.0,
         res.cur_pixel_scale_y + 1.0,
@@ -848,13 +866,11 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
     gl.uniform2fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "voxel_gap").as_ref(), &mut voxel_gap);
     gl.uniform3fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "voxel_scale").as_ref(), &mut voxel_scale);
 
-    check_error(&gl, line!())?;
-
     gl.bind_vertex_array(res.pixel_vao.as_ref());
     gl.draw_arrays_instanced(
         WebGl2RenderingContext::TRIANGLES,
         0,
-        36,
+        match res.pixels_or_voxels { Pixels_Or_Voxels::Pixels => 6, Pixels_Or_Voxels::Voxels => 36 },
         (WIDTH * HEIGHT) as i32
     );
 
