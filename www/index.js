@@ -25,6 +25,17 @@ function run(module) {
         preserveDrawingBuffer: false, 
         stencil: false 
     });
+
+    window.addEventListener('request_pointer_lock', function() {
+        canvas.requestPointerLock();
+    }, false);
+
+    window.addEventListener('exit_pointer_lock', function() {
+        document.exitPointerLock();
+    }, false);
+
+    canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock;
+    document.exitPointerLock = document.exitPointerLock || document.mozExitPointerLock;
     
     if (!gl) throw new Error("Could not get webgl context.");
 
