@@ -47,14 +47,13 @@ const promise = new Promise((resolve, reject) => {
 });*/
 
 promise.then((rawImg) => {
-    console.log(rawImg);
-    const scale_x = rawImg.width == 256 && rawImg.height == 224 ? 256 / 224 : 1;
-    const animation = new Animation_Source(rawImg.width, rawImg.height, 1 / 60, scale_x, 1);
-    animation.add(rawImg.data);
-
     const dpi = window.devicePixelRatio;
     const width = window.screen.width;
     const height = window.screen.height;
+
+    const scale_x = rawImg.width == 256 && rawImg.height == 224 ? 256 / 224 : 1;
+    const animation = new Animation_Source(rawImg.width, rawImg.height, width, height, 1 / 60, scale_x, 1);
+    animation.add(rawImg.data);
 
     const canvas = document.getElementById("1-canvas");
 

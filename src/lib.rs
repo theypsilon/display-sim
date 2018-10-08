@@ -37,17 +37,21 @@ pub struct Animation_Source {
     height: u32,
     scale_x: f32,
     scale_y: f32,
+    screen_width: u32,
+    screen_height: u32,
     frame_length: f32
 }
 
 #[wasm_bindgen]
 impl Animation_Source {
     #[wasm_bindgen(constructor)]
-    pub fn new(width: u32, height: u32, frame_length: f32, scale_x: f32, scale_y: f32) -> Animation_Source {
+    pub fn new(width: u32, height: u32, screen_width: u32, screen_height: u32, frame_length: f32, scale_x: f32, scale_y: f32) -> Animation_Source {
         Animation_Source {
             steps: Vec::new(),
             width: width,
             height: height,
+            screen_width: screen_width,
+            screen_height: screen_height,
             frame_length: frame_length,
             scale_x: scale_x,
             scale_y: scale_y,
@@ -174,6 +178,8 @@ pub struct Resources {
 struct Animation_Drawable {
     width: u32,
     height: u32,
+    screen_width: u32,
+    screen_height: u32,
     frame_length: f32,
     scale_x: f32,
     scale_y: f32,
@@ -184,6 +190,8 @@ impl Animation_Drawable {
         Animation_Drawable {
             width: source.width,
             height: source.height,
+            screen_width: source.screen_width,
+            screen_height: source.screen_height,
             frame_length: source.frame_length,
             scale_x: source.scale_x,
             scale_y: source.scale_y,
@@ -384,10 +392,6 @@ impl Camera {
     }
 }
 
-const ratio_4_3: f64 = 4.0 / 3.0;
-const ratio_256_224: f64 = 256.0 / 224.0;
-
-const snes_factor_horizontal: f64 = ratio_4_3 / ratio_256_224;
 const pixel_manipulation_base_speed: f32 = 20.0;
 const turning_base_speed: f32 = 1.0;
 const movement_base_speed: f32 = 10.0;
@@ -974,8 +978,8 @@ pub fn radians(grad: f32) -> f32 {
 }
 
 pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
-    let screen_width = 3920.0;
-    let screen_height = 2160.0;
+    let screen_width = res.animation.screen_width as f32;
+    let screen_height = res.animation.screen_height as f32;
 
     let mut projection = glm::perspective::<f32>(screen_width / screen_height, radians(res.camera_zoom), 0.01, 10000.0);
     let mut view = res.camera.get_view();
@@ -1005,7 +1009,7 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
     gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "projection").as_ref(), false, projection.as_mut_slice());
     gl.uniform3fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "lightPos").as_ref(), &mut [screen_width / 2.0, screen_height / 2.0, 10.0]);
     gl.uniform3fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "lightColor").as_ref(), &mut [1.0, 1.0, 1.0]);
-    gl.uniform1f(gl.get_uniform_location(&res.pixel_shader, "ambientStrength").as_ref(), 0.5);
+    gl.uniform1f(gl.get_uniform_location(&res.pixel_shader, "ambientStrength").as_ref(), 0.8);
     gl.uniform2fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "pixel_gap").as_ref(), &mut pixel_gap);
     gl.uniform3fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "pixel_scale").as_ref(), &mut pixel_scale);
     gl.uniform1f(gl.get_uniform_location(&res.pixel_shader, "pixel_pulse").as_ref(), res.pixels_pulse);
