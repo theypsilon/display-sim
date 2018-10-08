@@ -14,7 +14,7 @@ use web_sys::{
     WebGlShader, WebGlVertexArrayObject, 
     KeyboardEvent, MouseEvent, WheelEvent, Event, EventTarget
 };
-use js_sys::{Float32Array, Uint32Array};
+use js_sys::{Float32Array};
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::mem::size_of;
@@ -32,7 +32,7 @@ pub fn main(gl: JsValue, animation: Animation_Source) {
 
 #[wasm_bindgen]
 pub struct Animation_Source {
-    steps: Vec<Uint32Array>,
+    steps: Vec<Float32Array>,
     width: u32,
     height: u32,
     scale_x: f32,
@@ -58,7 +58,7 @@ impl Animation_Source {
         }
     }
 
-    pub fn add(&mut self, frame: Uint32Array) {
+    pub fn add(&mut self, frame: Float32Array) {
         self.steps.push(frame);
     }
 }
@@ -738,12 +738,12 @@ precision lowp float;
 
 in vec3 aPos;
 in vec3 aNormal;
-in uint aColor;
+in float aColor;
 in vec2 aOffset;
 
 out vec3 FragPos;
 out vec3 Normal;
-flat out uint ObjectColor;
+out float ObjectColor;
 
 uniform mat4 view;
 uniform mat4 projection;
@@ -770,26 +770,36 @@ out vec4 FragColor;
 
 in vec3 Normal;  
 in vec3 FragPos;
-flat in uint ObjectColor;
+in float ObjectColor;
 
 uniform vec3 lightColor;
 uniform vec3 lightPos;
 uniform float ambientStrength;
 
-const float COLOR_FACTOR = 1.0/255.0;
-const uint hex_FF = uint(0xFF);
+vec4 unpackColor(float f) {
+    vec4 color;
+    color.a = floor(f / (256.0 * 256.0 * 256.0));
+    color.b = floor((f - color.a * 256.0 * 256.0 * 256.0) / (256.0 * 256.0));
+    color.g = floor((f - color.a * 256.0 * 256.0 * 256.0 - color.g * 256.0 * 256.0) / 256.0);
+    color.r = floor(f - color.a * 256.0 * 256.0 * 256.0 - color.g * 256.0 * 256.0 - color.g * 256.0);
+    // now we have a vec3 with the 3 components in range [0..255]. Let's normalize it!
+    return color / 255.0;
+}
+
+vec4 EncodeFloatRGBA( float v ) {
+vec4 enc = vec4(1.0, 255.0, 65025.0, 160581375.0) * v;
+enc = fract(enc);
+enc -= enc.yzww * vec4(1.0/255.0,1.0/255.0,1.0/255.0,0.0);
+return enc;
+}
 
 void main()
 {
-    float a = float(ObjectColor >> 24 & hex_FF);
-    if (a == 0.0) {
+    vec4 vecColor = EncodeFloatRGBA(ObjectColor);
+    if (vecColor.a == 0.0) {
         discard;
     }
-    float b = float(ObjectColor >> 16 & hex_FF);
-    float g = float(ObjectColor >> 8 & hex_FF);
-    float r = float(ObjectColor >> 0 & hex_FF);
 
-    vec4 vecColor = vec4(r * COLOR_FACTOR, g * COLOR_FACTOR, b * COLOR_FACTOR, a * COLOR_FACTOR);
     // ambient
     vec3 ambient = ambientStrength * lightColor;
 
@@ -890,7 +900,7 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: &Animation_Source)
 
     let a_color_position = gl.get_attrib_location(&program, "aColor") as u32;
     gl.enable_vertex_attrib_array(a_color_position);
-    gl.vertex_attrib_i_pointer_with_i32(a_color_position, 1, WebGl2RenderingContext::UNSIGNED_INT, size_of::<u32>() as i32, 0);
+    gl.vertex_attrib_pointer_with_i32(a_color_position, 1, WebGl2RenderingContext::FLOAT, false, size_of::<f32>() as i32, 0);
     gl.vertex_attrib_divisor(a_color_position, 1);
 
     let offset_vbo = gl.create_buffer().ok_or("cannot create offset_vbo")?;
