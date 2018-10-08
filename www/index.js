@@ -60,7 +60,7 @@ promise.then((rawImg) => {
 
     const scale_x = rawImg.width == 256 && rawImg.height == 224 ? 256 / 224 : 1;
     const animation = new Animation_Source(rawImg.width, rawImg.height, width, height, 1 / 60, scale_x, 1);
-    animation.add(new Uint32Array(rawImg.data.buffer));
+    animation.add(new Float32Array(rawImg.data.buffer));
 
     const canvas = document.createElement("canvas");
 

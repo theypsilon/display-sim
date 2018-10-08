@@ -734,7 +734,7 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
 }
 
 const pixel_vertex_shader: &str = r#"#version 300 es
-precision lowp float;
+precision highp float;
 
 in vec3 aPos;
 in vec3 aNormal;
@@ -743,7 +743,7 @@ in vec2 aOffset;
 
 out vec3 FragPos;
 out vec3 Normal;
-out float ObjectColor;
+out vec4 ObjectColor;
 
 uniform mat4 view;
 uniform mat4 projection;
@@ -752,64 +752,48 @@ uniform vec2 pixel_gap;
 uniform vec3 pixel_scale;
 uniform float pixel_pulse;
 
+const float COLOR_FACTOR = 1.0/255.0;
+const uint hex_FF = uint(0xFF);
+
 void main()
 {
     float radius = length(aOffset);
     FragPos = aPos / pixel_scale + vec3(aOffset * pixel_gap, 0) + vec3(0, 0, sin(pixel_pulse + sin(pixel_pulse / 10.0) * radius / 4.0) * 2.0);
     Normal = aNormal;  
-    ObjectColor = aColor;
+    uint color = floatBitsToUint(aColor);
+    float r = float((color >>  0) & hex_FF);
+    float g = float((color >>  8) & hex_FF);
+    float b = float((color >> 16) & hex_FF);
+    float a = float((color >> 24) & hex_FF);
+    ObjectColor = vec4(r * COLOR_FACTOR, g * COLOR_FACTOR, b * COLOR_FACTOR, a * COLOR_FACTOR);
     
     gl_Position = projection * view * vec4(FragPos, 1.0);
 }
 "#;
 
 const pixel_fragment_shader: &str = r#"#version 300 es
-precision lowp float;
+precision highp float;
 
 out vec4 FragColor;
 
 in vec3 Normal;  
 in vec3 FragPos;
-in float ObjectColor;
+in vec4 ObjectColor;
 
 uniform vec3 lightColor;
 uniform vec3 lightPos;
 uniform float ambientStrength;
 
-vec4 unpackColor(float f) {
-    vec4 color;
-    color.a = floor(f / (256.0 * 256.0 * 256.0));
-    color.b = floor((f - color.a * 256.0 * 256.0 * 256.0) / (256.0 * 256.0));
-    color.g = floor((f - color.a * 256.0 * 256.0 * 256.0 - color.g * 256.0 * 256.0) / 256.0);
-    color.r = floor(f - color.a * 256.0 * 256.0 * 256.0 - color.g * 256.0 * 256.0 - color.g * 256.0);
-    // now we have a vec3 with the 3 components in range [0..255]. Let's normalize it!
-    return color / 255.0;
-}
-
-vec4 EncodeFloatRGBA( float v ) {
-vec4 enc = vec4(1.0, 255.0, 65025.0, 160581375.0) * v;
-enc = fract(enc);
-enc -= enc.yzww * vec4(1.0/255.0,1.0/255.0,1.0/255.0,0.0);
-return enc;
-}
-
 void main()
 {
-    vec4 vecColor = EncodeFloatRGBA(ObjectColor);
-    if (vecColor.a == 0.0) {
-        discard;
-    }
-
-    // ambient
     vec3 ambient = ambientStrength * lightColor;
 
-    // diffuse 
     vec3 norm = normalize(Normal);
     vec3 lightDir = normalize(lightPos - FragPos);
     float diff = max(dot(norm, lightDir), 0.0);
     vec3 diffuse = diff * lightColor;
       
-    FragColor = vecColor * vec4(ambient + diffuse * (1.0 - ambientStrength), 1.0);
+    FragColor = ObjectColor * vec4(ambient + diffuse * (1.0 - ambientStrength), 1.0);
 } 
 "#;
 
