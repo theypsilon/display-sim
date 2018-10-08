@@ -14,7 +14,7 @@ use web_sys::{
     WebGlShader, WebGlVertexArrayObject, 
     KeyboardEvent, MouseEvent, WheelEvent, Event, EventTarget
 };
-use js_sys::{Float32Array, DataView, Uint32Array};
+use js_sys::{Float32Array, DataView};
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::mem::size_of;
@@ -738,12 +738,12 @@ precision lowp float;
 
 in vec3 aPos;
 in vec3 aNormal;
-in uint aColor;
+in vec4 aColor;
 in vec2 aOffset;
 
 out vec3 FragPos;
 out vec3 Normal;
-flat out uint ObjectColor;
+out vec4 ObjectColor;
 
 uniform mat4 view;
 uniform mat4 projection;
@@ -770,26 +770,17 @@ out vec4 FragColor;
 
 in vec3 Normal;  
 in vec3 FragPos;
-flat in uint ObjectColor;
+in vec4 ObjectColor;
 
 uniform vec3 lightColor;
 uniform vec3 lightPos;
 uniform float ambientStrength;
 
-const float COLOR_FACTOR = 1.0/255.0;
-const uint hex_FF = uint(0xFF);
-
 void main()
 {
-    float a = float(ObjectColor & hex_FF);
-    if (a == 0.0) {
+    if (ObjectColor.a == 0.0) {
         discard;
     }
-    float b = float(ObjectColor >> 8 & hex_FF);
-    float g = float(ObjectColor >> 16 & hex_FF);
-    float r = float(ObjectColor >> 24 & hex_FF);
-
-    vec4 vecColor = vec4(r * COLOR_FACTOR, g * COLOR_FACTOR, b * COLOR_FACTOR, a * COLOR_FACTOR);
     // ambient
     vec3 ambient = ambientStrength * lightColor;
 
@@ -799,7 +790,7 @@ void main()
     float diff = max(dot(norm, lightDir), 0.0);
     vec3 diffuse = diff * lightColor;
       
-    FragColor = vecColor * vec4(ambient + diffuse * (1.0 - ambientStrength), 1.0);
+    FragColor = vec4(ambient + diffuse * (1.0 - ambientStrength), 1.0) * ObjectColor;
 } 
 "#;
 
@@ -825,6 +816,7 @@ pub fn js_f32_array(data: &[f32]) -> Float32Array {
     array
 }
 
+
 const WIDTH: usize = 256;
 const HEIGHT: usize = 224;
 
@@ -846,21 +838,19 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: &Animation_Source)
     let channels = 4;
     let data = &animation.steps[0];
     let offsets = Float32Array::new(&wasm_bindgen::JsValue::from(pixels_total as u32 * 2)); // js_vec2_array
-    let colors = Uint32Array::new(&wasm_bindgen::JsValue::from(pixels_total as u32)); // js_vec4_array
+    let colors = Float32Array::new(&wasm_bindgen::JsValue::from(pixels_total as u32 * 4)); // js_vec4_array
     console::log_2(&now()?.into(), &"for loop begin".into());
     for i in 0..width {
         for j in 0..height {
-            let index_natural = (j * width + i) as u32;
-            let index_colors = (pixels_total - width - (j * width) + i) as u32;
+            let index_natural = j * width + i;
+            let index_colors = pixels_total - width - (j * width) + i;
 
             let x = i as f32 - half_width;
             let y = j as f32 - half_height;
-            offsets.fill(x, index_natural * 2 + 0, index_natural * 2 + 1);
-            offsets.fill(y, index_natural * 2 + 1, index_natural * 2 + 2);
+            offsets.fill(x, (index_natural * 2 + 0) as u32, (index_natural * 2 + 1) as u32);
+            offsets.fill(y, (index_natural * 2 + 1) as u32, (index_natural * 2 + 2) as u32);
 
-            let data_u32 = data.get_uint32(index_natural as usize * 4);
-            colors.fill(data_u32, index_colors, index_colors + 1);
-            /*
+            let data_u32 = data.get_uint32(index_natural * 4);
             let r = (data_u32 >> 24 & 0xFF) as f32 / 255.0;
             let g = (data_u32 >> 16 & 0xFF) as f32 / 255.0;
             let b = (data_u32 >>  8 & 0xFF) as f32 / 255.0;
@@ -868,7 +858,7 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: &Animation_Source)
             colors.fill(r, (index_colors * 4 + 0) as u32, (index_colors * 4 + 1) as u32);
             colors.fill(g, (index_colors * 4 + 1) as u32, (index_colors * 4 + 2) as u32);
             colors.fill(b, (index_colors * 4 + 2) as u32, (index_colors * 4 + 3) as u32);
-            colors.fill(a, (index_colors * 4 + 3) as u32, (index_colors * 4 + 4) as u32);*/
+            colors.fill(a, (index_colors * 4 + 3) as u32, (index_colors * 4 + 4) as u32);
         }
     }
     console::log_2(&now()?.into(), &"for loop end".into());
@@ -905,7 +895,7 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: &Animation_Source)
 
     let a_color_position = gl.get_attrib_location(&program, "aColor") as u32;
     gl.enable_vertex_attrib_array(a_color_position);
-    gl.vertex_attrib_i_pointer_with_i32(a_color_position, 1, WebGl2RenderingContext::UNSIGNED_INT, size_of::<u32>() as i32, 0);
+    gl.vertex_attrib_pointer_with_i32(a_color_position, 4, WebGl2RenderingContext::FLOAT, false, size_of::<glm::Vec4>() as i32, 0);
     gl.vertex_attrib_divisor(a_color_position, 1);
 
     let offset_vbo = gl.create_buffer().ok_or("cannot create offset_vbo")?;
