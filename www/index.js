@@ -1,20 +1,26 @@
 import {Animation_Source, main} from 'wasm-game-of-life'
 
-const options = document.getElementById('1-options');
-const input = document.getElementById('1-file');
+const options = document.getElementById('options');
+const loading = document.getElementById('loading');
+const input = document.getElementById('file');
 input.onchange = () => {
     const file = input.files[0];
     const url = (window.URL || window.webkitURL).createObjectURL(file);
     worker.postMessage({url: url});
+    options.style.display = "none";
+    loading.style.display = "initial";
+    console.log(new Date().toISOString(), "message sent to worker");
 };
 options.style.display = "initial";
 
 const worker = new Worker("worker.js");
 const promise = new Promise((resolve, reject) => {
     worker.onmessage = (event) => {
+        console.log(new Date().toISOString(), "worker replied");
         const img = document.createElement('img');
         img.src = "data:image/png;base64," + encode(event.data.buffer);
         img.onload = () => {
+            console.log(new Date().toISOString(), "image loaded");
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             canvas.width = img.width;
@@ -22,7 +28,6 @@ const promise = new Promise((resolve, reject) => {
             ctx.drawImage(img, 0, 0);
             var rawImg = ctx.getImageData(0, 0, img.width, img.height);
             resolve(rawImg);
-            options.style.display = "none";
         }
     }
     worker.onerror = (e) => reject(e);
@@ -47,13 +52,14 @@ const promise = new Promise((resolve, reject) => {
 });*/
 
 promise.then((rawImg) => {
+    console.log(new Date().toISOString(), "image readed");
     const dpi = window.devicePixelRatio;
     const width = window.screen.width;
     const height = window.screen.height;
 
     const scale_x = rawImg.width == 256 && rawImg.height == 224 ? 256 / 224 : 1;
     const animation = new Animation_Source(rawImg.width, rawImg.height, width, height, 1 / 60, scale_x, 1);
-    animation.add(rawImg.data);
+    animation.add(new DataView(rawImg.data.buffer));
 
     const canvas = document.createElement("canvas");
 
@@ -99,7 +105,11 @@ promise.then((rawImg) => {
 
     if (!gl) throw new Error("Could not get webgl context.");
 
+    console.log(new Date().toISOString(), "calling wasm main");
     main(gl, animation);
+    console.log(new Date().toISOString(), "wasm main done");
+
+    loading.style.display = "none";
 });
 
 function encode( buffer ) {
