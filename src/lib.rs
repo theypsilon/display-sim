@@ -264,16 +264,17 @@ impl Input {
     }
 }
 
-struct Render_Loop {
+struct State_Owner {
     animation_frame_id: Option<i32>,
-    pub closures: Vec<Option<Closure<FnMut()>>>,
+    owned_closures: Vec<Option<Closure<FnMut(JsValue)>>>,
     resources: Resources,
 }
 
-impl Render_Loop {
-    fn new(resources: Resources) -> Render_Loop {
-        Render_Loop {
-            closures: Vec::new(),
+impl State_Owner {
+    fn new(resources: Resources) -> State_Owner {
+        State_Owner {
+            animation_frame_id: None,
+            owned_closures: Vec::new(),
             resources: resources,
         }
     }
@@ -424,13 +425,13 @@ const cube_geometry : [f32; 216] = [
 pub fn program(gl: JsValue, animation: &Animation_Source) -> Result<()> {
     let gl = gl.dyn_into::<WebGl2RenderingContext>()?;
     gl.enable(WebGl2RenderingContext::DEPTH_TEST);
-    let render_loop = Rc::new(RefCell::new(Render_Loop::new(load_resources(&gl, &animation)?)));
+    let render_loop = Rc::new(RefCell::new(State_Owner::new(load_resources(&gl, &animation)?)));
     let input = Rc::new(RefCell::new( Input::new().ok().expect("cannot create input")));
-    let frame_closure: Closure<FnMut()> = {
+    let frame_closure: Closure<FnMut(JsValue)> = {
         let render_loop = render_loop.clone();
         let mut input = Rc::clone(&input);
         let window = window()?;
-        Closure::wrap(Box::new(move || {
+        Closure::wrap(Box::new(move |_| {
             let mut render_loop = render_loop.borrow_mut();
                 let mut input = input.borrow_mut();
                 input.now = now().unwrap_or(render_loop.resources.last_time);
@@ -451,7 +452,7 @@ pub fn program(gl: JsValue, animation: &Animation_Source) -> Result<()> {
                 }
 
                 let mut frame_id = None;
-                if let Some(ref frame_closure) = render_loop.closures[0] {
+                if let Some(ref frame_closure) = render_loop.owned_closures[0] {
                     if let Ok(id) = window.request_animation_frame(frame_closure.as_ref().unchecked_ref()) {
                         frame_id = Some(id);
                     }
@@ -461,7 +462,7 @@ pub fn program(gl: JsValue, animation: &Animation_Source) -> Result<()> {
     };
     let mut render_loop = render_loop.borrow_mut();
     render_loop.animation_frame_id = Some(window()?.request_animation_frame(frame_closure.as_ref().unchecked_ref())?);
-    render_loop.closures.push(Some(frame_closure));
+    render_loop.owned_closures.push(Some(frame_closure));
 
     let onkeydown: Closure<FnMut(JsValue)> = {
         let mut input = Rc::clone(&input);
@@ -588,12 +589,12 @@ pub fn program(gl: JsValue, animation: &Animation_Source) -> Result<()> {
     document.set_onmousemove(Some(onmousemove.as_ref().unchecked_ref()));
     document.set_onwheel(Some(onmousewheel.as_ref().unchecked_ref()));
 
-    render_loop.push(Some(onkeydown));
-    render_loop.push(Some(onkeyup));
-    render_loop.push(Some(onmousedown));
-    render_loop.push(Some(onmouseup));
-    render_loop.push(Some(onmousemove));
-    render_loop.push(Some(onmousewheel));
+    render_loop.owned_closures.push(Some(onkeydown));
+    render_loop.owned_closures.push(Some(onkeyup));
+    render_loop.owned_closures.push(Some(onmousedown));
+    render_loop.owned_closures.push(Some(onmouseup));
+    render_loop.owned_closures.push(Some(onmousemove));
+    render_loop.owned_closures.push(Some(onmousewheel));
 
     Ok(())
 }
