@@ -8,10 +8,64 @@ mod utils;
 
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use web_sys::{WebGlProgram, WebGl2RenderingContext, WebGlShader, WebGlVertexArrayObject, KeyboardEvent, MouseEvent, WheelEvent, Event, EventTarget};
+use web_sys::{
+    Window, console,
+    WebGlProgram, WebGl2RenderingContext, 
+    WebGlShader, WebGlVertexArrayObject, 
+    KeyboardEvent, MouseEvent, WheelEvent, Event, EventTarget
+};
+use js_sys::{Float32Array, Uint8Array};
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::mem::size_of;
+
+#[wasm_bindgen]
+pub fn main(gl: JsValue, animation: Animation_Source) {
+    match program(gl, &animation) {
+        Err(e) => match e {
+            Wasm_Error::Js(o) => console::error_2(&"An unexpected error ocurred.".into(), &o),
+            Wasm_Error::Str(s) => console::error_2(&"An unexpected error ocurred.".into(), &s.into()),
+        },
+        Ok(_) => {}
+    };
+}
+
+#[wasm_bindgen]
+pub struct Animation_Source {
+    steps: Vec<Uint8Array>,
+    width: u32,
+    height: u32,
+    scale_x: f32,
+    scale_y: f32,
+    frame_length: f32
+}
+
+#[wasm_bindgen]
+impl Animation_Source {
+    #[wasm_bindgen(constructor)]
+    pub fn new(width: u32, height: u32, frame_length: f32, scale_x: f32, scale_y: f32) -> Animation_Source {
+        Animation_Source {
+            steps: Vec::new(),
+            width: width,
+            height: height,
+            frame_length: frame_length,
+            scale_x: scale_x,
+            scale_y: scale_y,
+        }
+    }
+
+    pub fn add(&mut self, frame: Uint8Array) {
+        self.steps.push(frame);
+    }
+
+    fn print_console(&self) {
+        let mut i = 0;
+        for step in &self.steps {
+            i += 1;
+        }
+        console::log_1(&i.into());
+    }
+}
 
 pub enum Wasm_Error {
     Js(JsValue),
@@ -43,17 +97,6 @@ impl From<wasm_bindgen::JsValue> for Wasm_Error {
 }
 
 type Result<T> = std::result::Result<T, Wasm_Error>;
-
-#[wasm_bindgen]
-pub fn main(gl: JsValue) {
-    match program(gl) {
-        Err(e) => match e {
-            Wasm_Error::Js(o) => web_sys::console::error_2(&"An unexpected error ocurred.".into(), &o),
-            Wasm_Error::Str(s) => web_sys::console::error_2(&"An unexpected error ocurred.".into(), &s.into()),
-        },
-        Ok(_) => {}
-    };
-}
 
 struct Boolean_Button {
     activated: bool,
@@ -124,7 +167,28 @@ pub struct Resources {
     pixel_manipulation_speed: f32,
     camera: Camera,
     camera_zoom: f32,
+    animation: Animation_Drawable,
     buttons: Buttons,
+}
+
+struct Animation_Drawable {
+    width: u32,
+    height: u32,
+    frame_length: f32,
+    scale_x: f32,
+    scale_y: f32,
+}
+
+impl Animation_Drawable {
+    fn new(source: &Animation_Source) -> Animation_Drawable {
+        Animation_Drawable {
+            width: source.width,
+            height: source.height,
+            frame_length: source.frame_length,
+            scale_x: source.scale_x,
+            scale_y: source.scale_y,
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -205,9 +269,27 @@ struct Render_Loop {
     pub animation_frame_closure: Option<Closure<FnMut()>>,
     pub keyboard_down_closure: Option<Closure<FnMut(JsValue)>>,
     pub keyboard_up_closure: Option<Closure<FnMut(JsValue)>>,
+    pub mouse_down_closure: Option<Closure<FnMut(JsValue)>>,
+    pub mouse_up_closure: Option<Closure<FnMut(JsValue)>>,
     pub mouse_position_closure: Option<Closure<FnMut(JsValue)>>,
     pub mouse_wheel_closure: Option<Closure<FnMut(JsValue)>>,
     resources: Resources,
+}
+
+impl Render_Loop {
+    fn new(resources: Resources) -> Render_Loop {
+        Render_Loop {
+            animation_frame_id: None,
+            animation_frame_closure: None,
+            keyboard_down_closure: None,
+            keyboard_up_closure: None,
+            mouse_down_closure: None,
+            mouse_up_closure: None,
+            mouse_position_closure: None,
+            mouse_wheel_closure: None,
+            resources: resources,
+        }
+    }
 }
 
 enum Camera_Direction{Down, Up, Left, Right, Forward, Backward}
@@ -356,19 +438,11 @@ const cube_geometry : [f32; 216] = [
     -0.5,  0.5, -0.5,      0.0,  1.0,  0.0,
 ];
 
-pub fn program(gl: JsValue) -> Result<()> {
+pub fn program(gl: JsValue, animation: &Animation_Source) -> Result<()> {
     let gl = gl.dyn_into::<WebGl2RenderingContext>()?;
     gl.enable(WebGl2RenderingContext::DEPTH_TEST);
-    let render_loop = Rc::new(RefCell::new(Render_Loop {
-        animation_frame_id: None,
-        animation_frame_closure : None,
-        keyboard_down_closure: None,
-        keyboard_up_closure: None,
-        mouse_position_closure: None,
-        mouse_wheel_closure: None,
-        resources: load_resources(&gl)?
-    }));
-    let mut input = Rc::new(RefCell::new( Input::new().ok().expect("cannot create input")));
+    let render_loop = Rc::new(RefCell::new(Render_Loop::new(load_resources(&gl, &animation)?)));
+    let input = Rc::new(RefCell::new( Input::new().ok().expect("cannot create input")));
     let frame_closure: Closure<FnMut()> = {
         let render_loop = render_loop.clone();
         let mut input = Rc::clone(&input);
@@ -378,15 +452,18 @@ pub fn program(gl: JsValue) -> Result<()> {
                 let mut input = input.borrow_mut();
                 input.now = now().unwrap_or(render_loop.resources.last_time);
                 let update_status = update(&mut render_loop.resources, &input);
+
+                input.mouse_scroll_y = 0.0;
+                input.mouse_position_x = 0;
+                input.mouse_position_y = 0;
+
                 if let Err(e) = update_status {
-                    web_sys::console::error_2(&"An unexpected error happened during update.".into(), &e.to_js());
+                    console::error_2(&"An unexpected error happened during update.".into(), &e.to_js());
                     return;
                 }
 
-                input.mouse_scroll_y = 0.0;
-
                 if let Err(e) = draw(&gl, &render_loop.resources) {
-                    web_sys::console::error_2(&"An unexpected error happened during draw.".into(), &e.to_js());
+                    console::error_2(&"An unexpected error happened during draw.".into(), &e.to_js());
                     return;
                 }
 
@@ -435,7 +512,7 @@ pub fn program(gl: JsValue) -> Result<()> {
                     "shift" => input.shift = true,
                     "alt" => input.alt = true,
                     " " => input.space = true,
-                    _ => web_sys::console::log_2(&"down".into(), &e.key().into())
+                    _ => console::log_2(&"down".into(), &e.key().into())
                 }
             }
         }))
@@ -473,8 +550,28 @@ pub fn program(gl: JsValue) -> Result<()> {
                     "shift" => input.shift = false,
                     "alt" => input.alt = false,
                     " " => input.space = false,
-                    _ => web_sys::console::log_2(&"up".into(), &e.key().into())
+                    _ => console::log_2(&"up".into(), &e.key().into())
                 }
+            }
+        }))
+    };
+
+    let onmousedown: Closure<FnMut(JsValue)> = {
+        let mut input = Rc::clone(&input);
+        Closure::wrap(Box::new(move |event: JsValue| {
+            if let Ok(e) = event.dyn_into::<MouseEvent>() {
+                let mut input = input.borrow_mut();
+                input.mouse_left_click = e.buttons() == 1;
+            }
+        }))
+    };
+
+    let onmouseup: Closure<FnMut(JsValue)> = {
+        let mut input = Rc::clone(&input);
+        Closure::wrap(Box::new(move |event: JsValue| {
+            if let Ok(e) = event.dyn_into::<MouseEvent>() {
+                let mut input = input.borrow_mut();
+                input.mouse_left_click = false;
             }
         }))
     };
@@ -484,7 +581,6 @@ pub fn program(gl: JsValue) -> Result<()> {
         Closure::wrap(Box::new(move |event: JsValue| {
             if let Ok(e) = event.dyn_into::<MouseEvent>() {
                 let mut input = input.borrow_mut();
-                input.mouse_left_click = e.buttons() == 1;
                 input.mouse_position_x = e.movement_x();
                 input.mouse_position_y = e.movement_y();
             }
@@ -504,18 +600,22 @@ pub fn program(gl: JsValue) -> Result<()> {
     let document = window()?.document().ok_or("cannot access document")?;
     document.set_onkeydown(Some(onkeydown.as_ref().unchecked_ref()));
     document.set_onkeyup(Some(onkeyup.as_ref().unchecked_ref()));
+    document.set_onmousedown(Some(onmousedown.as_ref().unchecked_ref()));
+    document.set_onmouseup(Some(onmouseup.as_ref().unchecked_ref()));
     document.set_onmousemove(Some(onmousemove.as_ref().unchecked_ref()));
     document.set_onwheel(Some(onmousewheel.as_ref().unchecked_ref()));
 
     render_loop.keyboard_down_closure = Some(onkeydown);
     render_loop.keyboard_up_closure = Some(onkeyup);
+    render_loop.mouse_down_closure = Some(onmousedown);
+    render_loop.mouse_up_closure = Some(onmouseup);
     render_loop.mouse_position_closure = Some(onmousemove);
     render_loop.mouse_wheel_closure = Some(onmousewheel);
 
     Ok(())
 }
 
-pub fn window() -> Result<web_sys::Window> {
+pub fn window() -> Result<Window> {
     Ok(web_sys::window().ok_or("cannot access window")?)
 }
 
@@ -530,7 +630,7 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
 
     if ellapsed >= 5_000.0 {
         let fps = res.frame_count as f32 * 0.2;
-        web_sys::console::log_2(&fps.into(), &"FPS".into());
+        console::log_2(&fps.into(), &"FPS".into());
         res.last_second = input.now;
         res.frame_count = 0;
     } else {
@@ -543,7 +643,7 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
     }
 
     if res.showing_pixels_pulse {
-        res.pixels_pulse += dt * 0.1;
+        res.pixels_pulse += dt;
     } else {
         res.pixels_pulse = 0.0;
     }
@@ -602,11 +702,8 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
     if input.rotate_left { res.camera.rotate(Camera_Direction::Left, dt); }
     if input.rotate_right { res.camera.rotate(Camera_Direction::Right, dt); }
 
-    res.buttons.mouse_click.track(input.mouse_left_click || input.space);
+    res.buttons.mouse_click.track(input.mouse_left_click);
     if res.buttons.mouse_click.just_pressed {
-        res.last_mouse_x = input.mouse_position_x;
-        res.last_mouse_y = input.mouse_position_y;
-
         window()?.dyn_into::<EventTarget>().ok().ok_or("cannot have even target")?.dispatch_event(&Event::new("request_pointer_lock")?);
     } else if res.buttons.mouse_click.activated {
         res.camera.drag(input.mouse_position_x, input.mouse_position_y);
@@ -697,6 +794,9 @@ uniform float ambientStrength;
 
 void main()
 {
+    if (ObjectColor.a == 0.0) {
+        discard;
+    }
     // ambient
     vec3 ambient = ambientStrength * lightColor;
 
@@ -724,16 +824,16 @@ pub fn make_shader(gl: &WebGl2RenderingContext, vertex_shader: &str, fragment_sh
     link_shader(&gl, [vert_shader, frag_shader].iter())
 }
 
-pub fn js_f32_array(data: &[f32]) -> js_sys::Float32Array {
-    let array = js_sys::Float32Array::new(&wasm_bindgen::JsValue::from(data.len() as u32));
+pub fn js_f32_array(data: &[f32]) -> Float32Array {
+    let array = Float32Array::new(&wasm_bindgen::JsValue::from(data.len() as u32));
     for (i, f) in data.iter().enumerate() {
         array.fill(*f, i as u32, (i + 1) as u32);
     }
     array
 }
 
-pub fn js_vec2_array(data: &[glm::Vec2]) -> js_sys::Float32Array {
-    let array = js_sys::Float32Array::new(&wasm_bindgen::JsValue::from(data.len() as u32 * 2));
+pub fn js_vec2_array(data: &[glm::Vec2]) -> Float32Array {
+    let array = Float32Array::new(&wasm_bindgen::JsValue::from(data.len() as u32 * 2));
     for (i, f) in data.iter().enumerate() {
         array.fill(f[0], (i * 2 + 0) as u32, (i * 2 + 1) as u32);
         array.fill(f[1], (i * 2 + 1) as u32, (i * 2 + 2) as u32);
@@ -742,8 +842,8 @@ pub fn js_vec2_array(data: &[glm::Vec2]) -> js_sys::Float32Array {
 }
 
 
-pub fn js_vec4_array(data: &[glm::Vec4]) -> js_sys::Float32Array {
-    let array = js_sys::Float32Array::new(&wasm_bindgen::JsValue::from(data.len() as u32 * 4));
+pub fn js_vec4_array(data: &[glm::Vec4]) -> Float32Array {
+    let array = Float32Array::new(&wasm_bindgen::JsValue::from(data.len() as u32 * 4));
     for (i, f) in data.iter().enumerate() {
         array.fill(f[0], (i * 4 + 0) as u32, (i * 4 + 1) as u32);
         array.fill(f[1], (i * 4 + 1) as u32, (i * 4 + 2) as u32);
@@ -764,21 +864,31 @@ pub fn check_error(gl: &WebGl2RenderingContext, line: u32) -> Result<()> {
     Ok(())
 }
 
-pub fn load_resources(gl: &WebGl2RenderingContext) -> Result<Resources> {
-    const HALF_WIDTH: f32 = WIDTH as f32 / 2.0;
-    const HALF_HEIGHT: f32 = HEIGHT as f32 / 2.0;
-    let mut offsets = vec![glm::vec2(0.0, 0.0); WIDTH*HEIGHT];
-    let mut colors = vec![glm::vec4(0.0, 0.0, 0.0, 0.0); WIDTH*HEIGHT];
-    for i in 0..WIDTH {
-        for j in 0..HEIGHT {
-            let x = i as f32 - HALF_WIDTH;
-            let y = j as f32 - HALF_HEIGHT;
-            offsets[j * WIDTH + i] = glm::vec2(x as f32, y as f32);
-            colors[j * WIDTH + i] = glm::vec4(
-                if j % 2 == 0 {0.8} else {0.2}, 
-                if i % 2 == 0 {0.8} else {0.2}, 
-                if (j + i) % 2 == 0 {0.8} else {0.2}, 
-                1.0
+pub fn load_resources(gl: &WebGl2RenderingContext, animation: &Animation_Source) -> Result<Resources> {
+    let width = animation.width as usize;
+    let height = animation.height as usize;
+    let half_width: f32 = width as f32 / 2.0;
+    let half_height: f32 = height as f32 / 2.0;
+    let pixels_total = width * height;
+    let channels = 4;
+    let mut data: Vec<u8> = vec![0; pixels_total * channels];
+    animation.steps[0].for_each(&mut |v, i, _c| {
+        data[i as usize] = v;
+    });
+    let mut offsets = vec![glm::vec2(0.0, 0.0); pixels_total];
+    let mut colors = vec![glm::vec4(0.0, 0.0, 0.0, 0.0); pixels_total];
+    for i in 0..width {
+        for j in 0..height {
+            let x = i as f32 - half_width;
+            let y = j as f32 - half_height;
+            offsets[j * width + i] = glm::vec2(x as f32, y as f32);
+            let index_colors = pixels_total - 1 - (j * width + width - 1 - i);
+            let index_data = j * 4 * width + i * 4;
+            colors[index_colors] = glm::vec4(
+                data[index_data + 0] as f32 / 255.0,
+                data[index_data + 1] as f32 / 255.0, 
+                data[index_data + 2] as f32 / 255.0, 
+                if channels >= 4 {data[index_data + 3] as f32 / 255.0} else {1.0}, 
             );
         }
     }
@@ -851,6 +961,7 @@ pub fn load_resources(gl: &WebGl2RenderingContext) -> Result<Resources> {
         pixels_or_voxels: Pixels_Or_Voxels::Pixels,
         pixels_pulse: 0.0,
         showing_pixels_pulse: false,
+        animation: Animation_Drawable::new(animation),
         camera: Camera::new(),
         camera_zoom: 45.0,
         buttons: Buttons::new()
@@ -880,6 +991,15 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
 
     let mut pixel_gap : &mut [f32] = &mut [1.0 + res.cur_pixel_gap, 1.0 + res.cur_pixel_gap];
 
+    if res.animation.scale_x != 1.0 {
+        pixel_scale[0] /= res.animation.scale_x;
+        pixel_gap[0] *= res.animation.scale_x;
+    }
+    if res.animation.scale_y != 1.0 {
+        pixel_scale[1] /= res.animation.scale_y;
+        pixel_gap[1] *= res.animation.scale_y;
+    }
+
     gl.use_program(Some(&res.pixel_shader));
     gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "view").as_ref(), false, view.as_mut_slice());
     gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "projection").as_ref(), false, projection.as_mut_slice());
@@ -895,7 +1015,7 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
         WebGl2RenderingContext::TRIANGLES,
         0,
         match res.pixels_or_voxels { Pixels_Or_Voxels::Pixels => 6, Pixels_Or_Voxels::Voxels => 36 },
-        (WIDTH * HEIGHT) as i32
+        (res.animation.width * res.animation.height) as i32
     );
 
     check_error(&gl, line!())?;
