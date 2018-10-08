@@ -61,14 +61,6 @@ impl Animation_Source {
     pub fn add(&mut self, frame: Uint8Array) {
         self.steps.push(frame);
     }
-
-    fn print_console(&self) {
-        let mut i = 0;
-        for step in &self.steps {
-            i += 1;
-        }
-        console::log_1(&i.into());
-    }
 }
 
 pub enum Wasm_Error {
@@ -573,7 +565,7 @@ pub fn program(gl: JsValue, animation: &Animation_Source) -> Result<()> {
     let onmouseup: Closure<FnMut(JsValue)> = {
         let mut input = Rc::clone(&input);
         Closure::wrap(Box::new(move |event: JsValue| {
-            if let Ok(e) = event.dyn_into::<MouseEvent>() {
+            if let Ok(_) = event.dyn_into::<MouseEvent>() {
                 let mut input = input.borrow_mut();
                 input.mouse_left_click = false;
             }
@@ -944,9 +936,16 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: &Animation_Source)
     gl.vertex_attrib_pointer_with_i32(a_offset_position, 2, WebGl2RenderingContext::FLOAT, false, size_of::<glm::Vec2>() as i32, 0);
     gl.vertex_attrib_divisor(a_offset_position, 1);
 
-    gl.bind_vertex_array(None);
-
     let now = now()?;
+
+    let far_away_position = {
+        let far_factor: f64 = 112.0 / 270.0;
+        animation.height as f64 / 2.0 / far_factor 
+    } as f32;
+
+    let mut camera = Camera::new();
+    camera.position = glm::vec3(0.0, 0.0, far_away_position);
+    camera.movement_speed *= far_away_position / movement_speed_factor;
 
     check_error(&gl, line!())?;
 
@@ -966,7 +965,7 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: &Animation_Source)
         pixels_pulse: 0.0,
         showing_pixels_pulse: false,
         animation: Animation_Drawable::new(animation),
-        camera: Camera::new(),
+        camera: camera,
         camera_zoom: 45.0,
         buttons: Buttons::new()
     })
@@ -1009,7 +1008,7 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
     gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "projection").as_ref(), false, projection.as_mut_slice());
     gl.uniform3fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "lightPos").as_ref(), &mut [screen_width / 2.0, screen_height / 2.0, 10.0]);
     gl.uniform3fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "lightColor").as_ref(), &mut [1.0, 1.0, 1.0]);
-    gl.uniform1f(gl.get_uniform_location(&res.pixel_shader, "ambientStrength").as_ref(), 0.8);
+    gl.uniform1f(gl.get_uniform_location(&res.pixel_shader, "ambientStrength").as_ref(), 0.75);
     gl.uniform2fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "pixel_gap").as_ref(), &mut pixel_gap);
     gl.uniform3fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "pixel_scale").as_ref(), &mut pixel_scale);
     gl.uniform1f(gl.get_uniform_location(&res.pixel_shader, "pixel_pulse").as_ref(), res.pixels_pulse);
