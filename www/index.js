@@ -1,13 +1,13 @@
 import {Animation_Source, main} from 'wasm-game-of-life'
 
-const input = document.createElement('input');
-input.type = "file";
+const options = document.getElementById('1-options');
+const input = document.getElementById('1-file');
 input.onchange = () => {
     const file = input.files[0];
     const url = (window.URL || window.webkitURL).createObjectURL(file);
     worker.postMessage({url: url});
 };
-document.body.appendChild(input);
+options.style.display = "initial";
 
 const worker = new Worker("worker.js");
 const promise = new Promise((resolve, reject) => {
@@ -22,7 +22,7 @@ const promise = new Promise((resolve, reject) => {
             ctx.drawImage(img, 0, 0);
             var rawImg = ctx.getImageData(0, 0, img.width, img.height);
             resolve(rawImg);
-            input.remove();
+            options.style.display = "none";
         }
     }
     worker.onerror = (e) => reject(e);
@@ -55,13 +55,15 @@ promise.then((rawImg) => {
     const animation = new Animation_Source(rawImg.width, rawImg.height, width, height, 1 / 60, scale_x, 1);
     animation.add(rawImg.data);
 
-    const canvas = document.getElementById("1-canvas");
+    const canvas = document.createElement("canvas");
 
     canvas.width = width * dpi;
     canvas.height = height * dpi;
 
     canvas.style.width = width;
     canvas.style.height = height;
+
+    document.body.appendChild(canvas);
 
     const gl = canvas.getContext('webgl2', { 
         alpha: true, 

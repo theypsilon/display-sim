@@ -266,27 +266,14 @@ impl Input {
 
 struct Render_Loop {
     animation_frame_id: Option<i32>,
-    pub animation_frame_closure: Option<Closure<FnMut()>>,
-    pub keyboard_down_closure: Option<Closure<FnMut(JsValue)>>,
-    pub keyboard_up_closure: Option<Closure<FnMut(JsValue)>>,
-    pub mouse_down_closure: Option<Closure<FnMut(JsValue)>>,
-    pub mouse_up_closure: Option<Closure<FnMut(JsValue)>>,
-    pub mouse_position_closure: Option<Closure<FnMut(JsValue)>>,
-    pub mouse_wheel_closure: Option<Closure<FnMut(JsValue)>>,
+    pub closures: Vec<Option<Closure<FnMut()>>>,
     resources: Resources,
 }
 
 impl Render_Loop {
     fn new(resources: Resources) -> Render_Loop {
         Render_Loop {
-            animation_frame_id: None,
-            animation_frame_closure: None,
-            keyboard_down_closure: None,
-            keyboard_up_closure: None,
-            mouse_down_closure: None,
-            mouse_up_closure: None,
-            mouse_position_closure: None,
-            mouse_wheel_closure: None,
+            closures: Vec::new(),
             resources: resources,
         }
     }
@@ -464,7 +451,7 @@ pub fn program(gl: JsValue, animation: &Animation_Source) -> Result<()> {
                 }
 
                 let mut frame_id = None;
-                if let Some(ref frame_closure) = render_loop.animation_frame_closure {
+                if let Some(ref frame_closure) = render_loop.closures[0] {
                     if let Ok(id) = window.request_animation_frame(frame_closure.as_ref().unchecked_ref()) {
                         frame_id = Some(id);
                     }
@@ -474,7 +461,7 @@ pub fn program(gl: JsValue, animation: &Animation_Source) -> Result<()> {
     };
     let mut render_loop = render_loop.borrow_mut();
     render_loop.animation_frame_id = Some(window()?.request_animation_frame(frame_closure.as_ref().unchecked_ref())?);
-    render_loop.animation_frame_closure = Some(frame_closure);
+    render_loop.closures.push(Some(frame_closure));
 
     let onkeydown: Closure<FnMut(JsValue)> = {
         let mut input = Rc::clone(&input);
@@ -601,12 +588,12 @@ pub fn program(gl: JsValue, animation: &Animation_Source) -> Result<()> {
     document.set_onmousemove(Some(onmousemove.as_ref().unchecked_ref()));
     document.set_onwheel(Some(onmousewheel.as_ref().unchecked_ref()));
 
-    render_loop.keyboard_down_closure = Some(onkeydown);
-    render_loop.keyboard_up_closure = Some(onkeyup);
-    render_loop.mouse_down_closure = Some(onmousedown);
-    render_loop.mouse_up_closure = Some(onmouseup);
-    render_loop.mouse_position_closure = Some(onmousemove);
-    render_loop.mouse_wheel_closure = Some(onmousewheel);
+    render_loop.push(Some(onkeydown));
+    render_loop.push(Some(onkeyup));
+    render_loop.push(Some(onmousedown));
+    render_loop.push(Some(onmouseup));
+    render_loop.push(Some(onmousemove));
+    render_loop.push(Some(onmousewheel));
 
     Ok(())
 }
