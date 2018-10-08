@@ -14,7 +14,7 @@ use web_sys::{
     WebGlShader, WebGlVertexArrayObject, 
     KeyboardEvent, MouseEvent, WheelEvent, Event, EventTarget
 };
-use js_sys::{Float32Array};
+use js_sys::{Float32Array, ArrayBuffer};
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::mem::size_of;
@@ -32,7 +32,7 @@ pub fn main(gl: JsValue, animation: Animation_Source) {
 
 #[wasm_bindgen]
 pub struct Animation_Source {
-    steps: Vec<Float32Array>,
+    steps: Vec<ArrayBuffer>,
     width: u32,
     height: u32,
     scale_x: f32,
@@ -58,7 +58,7 @@ impl Animation_Source {
         }
     }
 
-    pub fn add(&mut self, frame: Float32Array) {
+    pub fn add(&mut self, frame: ArrayBuffer) {
         self.steps.push(frame);
     }
 }
@@ -734,7 +734,7 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
 }
 
 const pixel_vertex_shader: &str = r#"#version 300 es
-precision highp float;
+precision lowp float;
 
 in vec3 aPos;
 in vec3 aNormal;
@@ -772,7 +772,7 @@ void main()
 "#;
 
 const pixel_fragment_shader: &str = r#"#version 300 es
-precision highp float;
+precision lowp float;
 
 out vec4 FragColor;
 
@@ -786,6 +786,10 @@ uniform float ambientStrength;
 
 void main()
 {
+    if (ObjectColor.a == 0.0) {
+        discard;
+    }
+    
     vec3 ambient = ambientStrength * lightColor;
 
     vec3 norm = normalize(Normal);
@@ -838,7 +842,6 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: &Animation_Source)
     let half_height: f32 = height as f32 / 2.0;
     let pixels_total = width * height;
     let channels = 4;
-    let colors = &animation.steps[0];
     let offsets = Float32Array::new(&wasm_bindgen::JsValue::from(pixels_total as u32 * 2)); // js_vec2_array
     console::log_2(&now()?.into(), &"for loop begin".into());
     for i in 0..width {
@@ -878,7 +881,7 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: &Animation_Source)
     console::log_2(&now()?.into(), &"buffer colors".into());
     gl.buffer_data_with_opt_array_buffer(
         WebGl2RenderingContext::ARRAY_BUFFER,
-        Some(&colors.buffer()),
+        Some(&animation.steps[0]),
         WebGl2RenderingContext::STATIC_DRAW,
     );
 

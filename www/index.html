@@ -21,7 +21,15 @@
   <body>
     <img id="loading" src="assets/Loading_icon.gif" style="display:none">
     <div id="options">
+      <label for="file">Image:</label>
       <input type="file" id="file">
+      <label for="antialias">antialias:</label>
+      <input type="checkbox" id="antialias" value="antialias">
+      <label for="powerPreference">powerPreference:</label>
+      <input type="radio" id="powerPreference-1" name="powerPreference" value="default" />default
+      <input type="radio" id="powerPreference-2" name="powerPreference" value="high-performance" />high-performance
+      <input type="radio" id="powerPreference-3" name="powerPreference" value="low-power" />low-power
+      <input id="start" type="button" value="Start" disabled>
     </div>
   </body>
 </html>
