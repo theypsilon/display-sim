@@ -19,6 +19,7 @@ const promise = new Promise((resolve, reject) => {
         console.log(new Date().toISOString(), "worker replied");
         const img = document.createElement('img');
         img.src = "data:image/png;base64," + encode(event.data.buffer);
+        console.log(new Date().toISOString(), "encoded");
         img.onload = () => {
             console.log(new Date().toISOString(), "image loaded");
             const canvas = document.createElement('canvas');
@@ -59,7 +60,7 @@ promise.then((rawImg) => {
 
     const scale_x = rawImg.width == 256 && rawImg.height == 224 ? 256 / 224 : 1;
     const animation = new Animation_Source(rawImg.width, rawImg.height, width, height, 1 / 60, scale_x, 1);
-    animation.add(new DataView(rawImg.data.buffer));
+    animation.add(new Uint32Array(rawImg.data.buffer));
 
     const canvas = document.createElement("canvas");
 
