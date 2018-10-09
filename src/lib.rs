@@ -127,6 +127,7 @@ struct Buttons {
     mouse_click: Boolean_Button,
     toggle_pixels_or_voxels: Boolean_Button,
     showing_pixels_pulse: Boolean_Button,
+    esc: Boolean_Button
 }
 
 impl Buttons {
@@ -136,7 +137,8 @@ impl Buttons {
             speed_down: Boolean_Button::new(),
             mouse_click: Boolean_Button::new(),
             toggle_pixels_or_voxels: Boolean_Button::new(),
-            showing_pixels_pulse: Boolean_Button::new()
+            showing_pixels_pulse: Boolean_Button::new(),
+            esc: Boolean_Button::new()
         }
     }
 }
@@ -212,6 +214,7 @@ pub struct Input {
     shift: bool,
     alt: bool,
     space: bool,
+    esc: bool,
     mouse_left_click: bool,
     mouse_position_x: i32,
     mouse_position_y: i32,
@@ -248,6 +251,7 @@ impl Input {
             shift: false,
             alt: false,
             space: false,
+            esc: false,
             mouse_left_click: false,
             mouse_position_x: -1,
             mouse_position_y: -1,
@@ -441,23 +445,25 @@ pub fn program(gl: JsValue, animation: &Animation_Source) -> Result<()> {
                 input.mouse_position_x = 0;
                 input.mouse_position_y = 0;
 
-                if let Err(e) = update_status {
-                    console::error_2(&"An unexpected error happened during update.".into(), &e.to_js());
-                    return;
+                match update_status {
+                    Ok(next_update_needed) => {
+                        if next_update_needed == false {
+                            return;
+                        }
+                        if let Err(e) = draw(&gl, &render_loop.resources) {
+                            console::error_2(&"An unexpected error happened during draw.".into(), &e.to_js());
+                            return;
+                        }
+                        let mut frame_id = None;
+                        if let Some(ref frame_closure) = render_loop.owned_closures[0] {
+                            if let Ok(id) = window.request_animation_frame(frame_closure.as_ref().unchecked_ref()) {
+                                frame_id = Some(id);
+                            }
+                        }
+                        render_loop.animation_frame_id = frame_id;
+                    },
+                    Err(e) => console::error_2(&"An unexpected error happened during update.".into(), &e.to_js())
                 }
-
-                if let Err(e) = draw(&gl, &render_loop.resources) {
-                    console::error_2(&"An unexpected error happened during draw.".into(), &e.to_js());
-                    return;
-                }
-
-                let mut frame_id = None;
-                if let Some(ref frame_closure) = render_loop.owned_closures[0] {
-                    if let Ok(id) = window.request_animation_frame(frame_closure.as_ref().unchecked_ref()) {
-                        frame_id = Some(id);
-                    }
-                }
-                render_loop.animation_frame_id = frame_id
         }))
     };
     let mut render_loop = render_loop.borrow_mut();
@@ -496,6 +502,7 @@ pub fn program(gl: JsValue, animation: &Animation_Source) -> Result<()> {
                     "shift" => input.shift = true,
                     "alt" => input.alt = true,
                     " " => input.space = true,
+                    "escape" => input.esc = true,
                     _ => console::log_2(&"down".into(), &e.key().into())
                 }
             }
@@ -534,6 +541,7 @@ pub fn program(gl: JsValue, animation: &Animation_Source) -> Result<()> {
                     "shift" => input.shift = false,
                     "alt" => input.alt = false,
                     " " => input.space = false,
+                    "escape" => input.esc = false,
                     _ => console::log_2(&"up".into(), &e.key().into())
                 }
             }
@@ -619,6 +627,12 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
         res.frame_count = 0;
     } else {
         res.frame_count += 1;
+    }
+
+    res.buttons.esc.track(input.esc);
+    if res.buttons.esc.just_pressed {
+        window()?.dyn_into::<EventTarget>().ok().ok_or("cannot have even target")?.dispatch_event(&Event::new("exiting_session")?);
+        return Ok(false);
     }
 
     res.buttons.showing_pixels_pulse.track(input.showing_pixels_pulse);

@@ -5,6 +5,7 @@ const options = document.getElementById('options');
 const loading = document.getElementById('loading');
 const input = document.getElementById('file');
 const startCustom = document.getElementById('start-custom');
+const startAnimation = document.getElementById('start-animation');
 const antialias = document.getElementById('antialias');
 const scaleX = document.getElementById('scale-x');
 const scaleY = document.getElementById('scale-y');
@@ -56,24 +57,44 @@ scaleY.value = localStorage.getItem('scale-y') || 1;
 antialias.checked = localStorage.getItem('antialias') === "true";
 document.getElementById(localStorage.getItem('powerPreference') || 'powerPreference-1').checked = true;
 
+if (document.getElementById('preview')) {
+    startCustom.style.display = "initial";
+}
+
+const worker = new Worker("worker.js");
 input.onchange = () => {
     const file = input.files[0];
     const url = (window.URL || window.webkitURL).createObjectURL(file);
     worker.postMessage({url: url});
     console.log(new Date().toISOString(), "message sent to worker");
 };
+worker.onmessage = (event) => {
+    console.log(new Date().toISOString(), "worker replied");
+    const previewUrl = URL.createObjectURL(event.data.blob);
+    const img = new Image();
+    img.src = previewUrl;
+    console.log(new Date().toISOString(), "encoded");
+    img.onload = () => {
+        const preview = document.getElementById('preview');
+        if (preview) {
+            preview.remove();
+        }
+        img.id = 'preview';
+        if (img.width > img.height) {
+            img.style.width = "100px";
+        } else {
+            img.style.height = "100px";
+        }
+        dropZone.innerHTML = "";
+        dropZone.appendChild(img);
+        console.log(new Date().toISOString(), "image loaded");
+        startCustom.disabled = false;
+    }
+}
+
 ui.style.display = "block";
 
-const worker = new Worker("worker.js");
-const promise = new Promise((resolve, reject) => {
-    worker.onmessage = (event) => {
-        console.log(new Date().toISOString(), "worker replied");
-        const previewUrl = URL.createObjectURL(event.data.blob);
-        loadImage(previewUrl);
-    }
-    worker.onerror = (e) => {
-        reject(e);
-    }
+const startPromise = new Promise((startResolve, startReject) => {
     startCustom.onclick = () => {
         ui.style.display = "none";
         loading.style.display = "initial";
@@ -86,52 +107,36 @@ const promise = new Promise((resolve, reject) => {
             ctx.drawImage(img, 0, 0);
             var rawImg = ctx.getImageData(0, 0, img.width, img.height);
 
-            resolve(rawImg)
+            startResolve([rawImg])
         }, 0);
     }
-
-    function loadImage(url) {
-        const img = new Image();
-        img.src = url;
-        console.log(new Date().toISOString(), "encoded");
-        img.onload = () => {
-            const preview = document.getElementById('preview');
-            if (preview) {
-                preview.remove();
-            }
-            img.id = 'preview';
-            if (img.width > img.height) {
-                img.style.width = "100px";
-            } else {
-                img.style.height = "100px";
-            }
-            dropZone.innerHTML = "";
-            dropZone.appendChild(img);
-            console.log(new Date().toISOString(), "image loaded");
-            startCustom.disabled = false;
+    startAnimation.onclick = () => {
+        ui.style.display = "none";
+        loading.style.display = "initial";
+        var animationPromises = [];
+        for (let i = 0; i <= 45; i++) {
+            animationPromises.push(new Promise((imgResolve, imgReject) => {
+                const img = new Image();
+                const zero = i < 10 ? "0" : "";
+                img.src = "assets/wwix_" + zero + i + ".png";
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    var rawImg = ctx.getImageData(0, 0, img.width, img.height);
+                    imgResolve(rawImg);
+                    console.log(i + " done.");
+                }
+                img.onerror = (e) => imgReject(e);
+            }));
         }
+        Promise.all(animationPromises).then(startResolve);
     }
 });
 
-/*const promise = new Promise((resolve, reject) => {
-    var img = document.createElement('img');
-    const timeout = setTimeout(() => {
-        reject(new Error('Image took too much to load.'));
-    }, 10000);
-    img.onload = () => {
-        clearTimeout(timeout);
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0);
-        var rawImg = ctx.getImageData(0, 0, img.width, img.height);
-        resolve(rawImg);
-    };
-    img.src = "assets/wwix_00.png";
-});*/
-
-promise.then((rawImg) => {
+startPromise.then((rawImgs) => {
     console.log(new Date().toISOString(), "image readed");
     const dpi = window.devicePixelRatio;
     const width = window.screen.width;
@@ -150,8 +155,11 @@ promise.then((rawImg) => {
         scaleX = scale.value;
     }
 
-    const animation = new Animation_Source(rawImg.width, rawImg.height, width, height, 1 / 60, +scaleX, +scaleY);
-    animation.add(rawImg.data.buffer);
+    const animation = new Animation_Source(rawImgs[0].width, rawImgs[0].height, width, height, 1 / 60, +scaleX, +scaleY);
+    for (let i = 0; i < rawImgs.length; i++) {
+        const rawImg = rawImgs[i];
+        animation.add(rawImg.data.buffer);
+    }
 
     const canvas = document.createElement("canvas");
 
@@ -183,7 +191,7 @@ promise.then((rawImg) => {
     var documentElement = document.documentElement;
     documentElement.requestFullscreen = documentElement.requestFullscreen
         || documentElement.webkitRequestFullScreen 
-        || documentElement.mozRequestFullscreen 
+        || documentElement['mozRequestFullScreen'] 
         || documentElement.msRequestFullscreen;
 
     canvas.onmousedown = (e) => {
@@ -196,6 +204,11 @@ promise.then((rawImg) => {
 
     window.addEventListener('exit_pointer_lock', () => {
         document.exitPointerLock();
+    }, false);
+
+    window.addEventListener('exiting_session', () => {
+        ui.style.display = "initial";
+        canvas.remove();
     }, false);
 
     canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock;
