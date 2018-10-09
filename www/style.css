@@ -2,3 +2,43 @@ body {
     margin: 0;
     padding: 0;
 }
+#loading {
+  position: fixed;
+  margin-left: -220px;
+  margin-top: -145px;
+  left: 50%;
+  top: 50%;
+  width: 441px;
+  height: 291px;
+}
+
+.render-options {
+    text-align: center;
+}
+
+.render-panel-dad {
+    display: block;
+}
+
+.option-inputs {
+    margin: 10px;
+    min-width: 150px;
+}
+
+.option-inputs input {
+    margin-right: 5px;
+}
+
+.option-text {
+    margin-bottom: 20px;
+    margin-right: 20px;
+}
+
+#drop-zone {
+    border: 2px dashed rgb(187, 187, 187);
+    border-radius: 5px 5px 5px 5px;
+    padding: 50px;
+    text-align: center;
+    color: rgb(87, 87, 87);
+    height: 200px;
+}
