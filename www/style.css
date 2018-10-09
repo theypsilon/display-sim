@@ -34,6 +34,27 @@ body {
     margin-right: 20px;
 }
 
+.start {
+    font-size: 150%;
+}
+
+#start-custom {
+    margin-top: 20px;
+}
+
+.gif {
+    margin-left: auto;
+    margin-right: auto;
+    border: 2px dashed rgb(187, 187, 187);
+    height: 101px;
+    width: 114px;
+    border-radius: 5px 5px 5px 5px;
+}
+
+.gif img {
+    margin-top: 5px;
+}
+
 #drop-zone {
     border: 2px dashed rgb(187, 187, 187);
     border-radius: 5px 5px 5px 5px;
@@ -41,4 +62,9 @@ body {
     text-align: center;
     color: rgb(87, 87, 87);
     height: 200px;
+}
+
+#drop-zone:hover {
+    border: 2px solid rgb(187, 187, 187);
+    cursor: pointer;
 }
