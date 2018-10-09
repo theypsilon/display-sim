@@ -26,7 +26,6 @@ worker.onmessage = (event) => {
     const previewUrl = URL.createObjectURL(event.data.blob);
     const img = new Image();
     img.src = previewUrl;
-    console.log(new Date().toISOString(), "encoded");
     img.onload = () => {
         const preview = document.getElementById('preview');
         if (preview) {
@@ -115,7 +114,7 @@ function prepareUi() {
                 var rawImg = ctx.getImageData(0, 0, img.width, img.height);
     
                 startResolve([rawImg])
-            }, 0);
+            }, 50);
         }
         startAnimation.onclick = () => {
             ui.style.display = "none";
@@ -134,7 +133,6 @@ function prepareUi() {
                         ctx.drawImage(img, 0, 0);
                         var rawImg = ctx.getImageData(0, 0, img.width, img.height);
                         imgResolve(rawImg);
-                        console.log(i + " done.");
                     }
                     img.onerror = (e) => imgReject(e);
                 }));
@@ -192,7 +190,7 @@ function prepareUi() {
         };
         localStorage.setItem('antialias', ctxOptions.antialias ? "true" : "false");
         localStorage.setItem('powerPreference', powerPreference.id);
-        console.log(ctxOptions);
+        console.log("gl context options", ctxOptions);
         const gl = canvas.getContext('webgl2', ctxOptions);
     
         var documentElement = document.documentElement;

@@ -11,7 +11,7 @@ use wasm_bindgen::JsCast;
 use web_sys::{
     Window, console,
     WebGlProgram, WebGl2RenderingContext, 
-    WebGlShader, WebGlVertexArrayObject, 
+    WebGlShader, WebGlVertexArrayObject, WebGlBuffer,
     KeyboardEvent, MouseEvent, WheelEvent, Event, EventTarget
 };
 use js_sys::{Float32Array, ArrayBuffer};
@@ -21,7 +21,7 @@ use std::mem::size_of;
 
 #[wasm_bindgen]
 pub fn main(gl: JsValue, animation: Animation_Source) {
-    match program(gl, &animation) {
+    match program(gl, animation) {
         Err(e) => match e {
             Wasm_Error::Js(o) => console::error_2(&"An unexpected error ocurred.".into(), &o),
             Wasm_Error::Str(s) => console::error_2(&"An unexpected error ocurred.".into(), &s.into()),
@@ -39,7 +39,10 @@ pub struct Animation_Source {
     scale_y: f32,
     screen_width: u32,
     screen_height: u32,
-    frame_length: f32
+    frame_length: f32,
+    current_frame: usize,
+    last_frame_change: f64,
+    needs_update: bool,
 }
 
 #[wasm_bindgen]
@@ -55,11 +58,15 @@ impl Animation_Source {
             frame_length: frame_length,
             scale_x: scale_x,
             scale_y: scale_y,
+            current_frame: 1,
+            last_frame_change: -100.0,
+            needs_update: true,
         }
     }
 
     pub fn add(&mut self, frame: ArrayBuffer) {
         self.steps.push(frame);
+        self.current_frame = self.steps.len() + 1;
     }
 }
 
@@ -151,6 +158,7 @@ enum Pixels_Or_Voxels {
 pub struct Resources {
     pixel_shader: WebGlProgram,
     pixel_vao: Option<WebGlVertexArrayObject>,
+    colors_vbo: WebGlBuffer,
     frame_count: u32,
     last_time: f64,
     last_second: f64,
@@ -165,32 +173,8 @@ pub struct Resources {
     pixel_manipulation_speed: f32,
     camera: Camera,
     camera_zoom: f32,
-    animation: Animation_Drawable,
+    animation: Animation_Source,
     buttons: Buttons,
-}
-
-struct Animation_Drawable {
-    width: u32,
-    height: u32,
-    screen_width: u32,
-    screen_height: u32,
-    frame_length: f32,
-    scale_x: f32,
-    scale_y: f32,
-}
-
-impl Animation_Drawable {
-    fn new(source: &Animation_Source) -> Animation_Drawable {
-        Animation_Drawable {
-            width: source.width,
-            height: source.height,
-            screen_width: source.screen_width,
-            screen_height: source.screen_height,
-            frame_length: source.frame_length,
-            scale_x: source.scale_x,
-            scale_y: source.scale_y,
-        }
-    }
 }
 
 #[derive(Clone)]
@@ -377,7 +361,7 @@ impl Camera {
 }
 
 const pixel_manipulation_base_speed: f32 = 20.0;
-const turning_base_speed: f32 = 1.0;
+const turning_base_speed: f32 = 3.0;
 const movement_base_speed: f32 = 10.0;
 const movement_speed_factor: f32 = 50.0;
 
@@ -426,10 +410,10 @@ const cube_geometry : [f32; 216] = [
     -0.5,  0.5, -0.5,      0.0,  1.0,  0.0,
 ];
 
-pub fn program(gl: JsValue, animation: &Animation_Source) -> Result<()> {
+pub fn program(gl: JsValue, animation: Animation_Source) -> Result<()> {
     let gl = gl.dyn_into::<WebGl2RenderingContext>()?;
     gl.enable(WebGl2RenderingContext::DEPTH_TEST);
-    let render_loop = Rc::new(RefCell::new(State_Owner::new(load_resources(&gl, &animation)?)));
+    let render_loop = Rc::new(RefCell::new(State_Owner::new(load_resources(&gl, animation)?)));
     let input = Rc::new(RefCell::new( Input::new().ok().expect("cannot create input")));
     let frame_closure: Closure<FnMut(JsValue)> = {
         let render_loop = render_loop.clone();
@@ -627,6 +611,20 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
         res.frame_count = 0;
     } else {
         res.frame_count += 1;
+    }
+
+    res.animation.needs_update = false;
+    let next_frame_update = res.animation.last_frame_change + res.animation.frame_length as f64;
+    if input.now >= next_frame_update {
+        res.animation.last_frame_change = next_frame_update;
+        let last_frame = res.animation.current_frame;
+        res.animation.current_frame += 1;
+        if res.animation.current_frame >= res.animation.steps.len() {
+            res.animation.current_frame = 0;
+        }
+        if last_frame != res.animation.current_frame {
+            res.animation.needs_update = true;
+        }
     }
 
     res.buttons.esc.track(input.esc);
@@ -848,16 +846,14 @@ pub fn check_error(gl: &WebGl2RenderingContext, line: u32) -> Result<()> {
     Ok(())
 }
 
-pub fn load_resources(gl: &WebGl2RenderingContext, animation: &Animation_Source) -> Result<Resources> {
-    console::log_2(&now()?.into(), &"load_resources".into());
+pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) -> Result<Resources> {
     let width = animation.width as usize;
     let height = animation.height as usize;
     let half_width: f32 = width as f32 / 2.0;
     let half_height: f32 = height as f32 / 2.0;
     let pixels_total = width * height;
     let channels = 4;
-    let offsets = Float32Array::new(&wasm_bindgen::JsValue::from(pixels_total as u32 * 2)); // js_vec2_array
-    console::log_2(&now()?.into(), &"for loop begin".into());
+    let offsets = Float32Array::new(&wasm_bindgen::JsValue::from(pixels_total as u32 * 2));
     for i in 0..width {
         for j in 0..height {
             let index = (pixels_total - width - j * width + i) as u32;
@@ -867,7 +863,6 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: &Animation_Source)
             offsets.fill(y, index * 2 + 1, index * 2 + 2);
         }
     }
-    console::log_2(&now()?.into(), &"for loop end".into());
 
     let program = make_shader(&gl, pixel_vertex_shader, pixel_fragment_shader)?;
 
@@ -892,12 +887,6 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: &Animation_Source)
 
     let colors_vbo = gl.create_buffer().ok_or("cannot create colors_vbo")?;
     gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&colors_vbo));
-    console::log_2(&now()?.into(), &"buffer colors".into());
-    gl.buffer_data_with_opt_array_buffer(
-        WebGl2RenderingContext::ARRAY_BUFFER,
-        Some(&animation.steps[0]),
-        WebGl2RenderingContext::STATIC_DRAW,
-    );
 
     let a_color_position = gl.get_attrib_location(&program, "aColor") as u32;
     gl.enable_vertex_attrib_array(a_color_position);
@@ -906,7 +895,6 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: &Animation_Source)
 
     let offset_vbo = gl.create_buffer().ok_or("cannot create offset_vbo")?;
     gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&offset_vbo));
-    console::log_2(&now()?.into(), &"buffer offsets".into());
     gl.buffer_data_with_opt_array_buffer(
         WebGl2RenderingContext::ARRAY_BUFFER,
         Some(&offsets.buffer()),
@@ -930,10 +918,10 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: &Animation_Source)
     camera.movement_speed *= far_away_position / movement_speed_factor;
 
     check_error(&gl, line!())?;
-    console::log_2(&now.into(), &"load_resources end".into());
     Ok(Resources {
         pixel_shader: program,
         pixel_vao: pixel_vao,
+        colors_vbo: colors_vbo,
         frame_count: 0,
         last_time: now,
         last_second: now,
@@ -946,7 +934,7 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: &Animation_Source)
         pixels_or_voxels: Pixels_Or_Voxels::Pixels,
         pixels_pulse: 0.0,
         showing_pixels_pulse: false,
-        animation: Animation_Drawable::new(animation),
+        animation: animation,
         camera: camera,
         camera_zoom: 45.0,
         buttons: Buttons::new()
@@ -959,6 +947,16 @@ pub fn radians(grad: f32) -> f32 {
 }
 
 pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
+
+    if res.animation.needs_update {
+        gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&res.colors_vbo));
+        gl.buffer_data_with_opt_array_buffer(
+            WebGl2RenderingContext::ARRAY_BUFFER,
+            Some(&res.animation.steps[res.animation.current_frame]),
+            WebGl2RenderingContext::STATIC_DRAW,
+        );
+    }
+
     let screen_width = res.animation.screen_width as f32;
     let screen_height = res.animation.screen_height as f32;
 
