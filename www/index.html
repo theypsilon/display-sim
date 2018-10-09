@@ -1,35 +1,74 @@
 <html>
   <head>
-    <title>WebRDS</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-        }
-        #loading {
-          position: fixed;
-          margin-left: -220px;
-          margin-top: -145px;
-          left: 50%;
-          top: 50%;
-          width: 441px;
-          height: 291px;
-        }
-    </style>
+    <title>Lo-Res Display Simulator</title>
+    <link rel="stylesheet" href="style.css">
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type"/>
   </head>
   <body>
     <img id="loading" src="assets/Loading_icon.gif" style="display:none">
-    <div id="options">
-      <label for="file">Image:</label>
-      <input type="file" id="file">
-      <label for="antialias">antialias:</label>
-      <input type="checkbox" id="antialias" value="antialias">
-      <label for="powerPreference">powerPreference:</label>
-      <input type="radio" id="powerPreference-1" name="powerPreference" value="default" />default
-      <input type="radio" id="powerPreference-2" name="powerPreference" value="high-performance" />high-performance
-      <input type="radio" id="powerPreference-3" name="powerPreference" value="low-power" />low-power
-      <input id="start" type="button" value="Start" disabled>
+    <div id="ui" class="container" style="display:none">
+      <div class="page-header">
+        <h1>Lo-Res Display Simulator</h1>
+      </div>
+      <p>This tool is a proof of concept of a sandbox to create filters that mitigate the unrealistic experience of watching content designed for old CRTs in modern LCD screens.</p>
+      <p>Old systems, like the NES, SNES, or Mega Drive, did usually work with resolutions such as 256x224 or 320x224 that would be deformed to fit a 4:3 screen. Graphics were designed with this aspect ratio transformation in mind. Therefore, when scaling them up by multiplying the original resolution by a given factor, those graphics are distorted if not using some sort of filtering for that matter. Stretching the images to fit a 4:3 aspect ratio within the current resolution also gives distortion as result, because of pixel interpolation, but is usually a preferred solution.</p>
+      <p>Another issue is that the CRTs didn't render perfectly adyacent and squared pixels. This also alters heavily the perception of old graphics, which in today screens are looking too sharp, and in some cases just plain bad. Pre-rendered sprites are specially affected by this, but in general, charm is lost all over the board.</p>
+      <p>In order to preserve the CRT-era content, lots of work have been done in filters. They work usually by blending pixels and introducing gaps and effects. And they can be quite good, but there is still a significant amount of progress to be done in order to get closer to the original look.</p>
+      <p>This project tries to experiment in a 3D space where every pixel is a 3D object. This is an approach that I haven't seen so far, so I had to give it a try. Right now, pixels can be cubes and squares, but it's the focus of this tool to explore new shapes and lighting properties.</p>
+      <p>With the given controls, it's easy to recreate a simple scanlines filter. But the current resolutions seem to be a limitating factor as of now. The results are noticeably better in higher resolutions, such as 4k, which is the one I use most during testing.</p>
+      <p>The tool renders automatically in your current screen resolution. Computing cost is heavy, so a good GPU is needed to work with high screen resolutions and high resolution images. I recommend you to upload 256x224 pictures, which is the original use case I intended to cover. Keep in mind the scaling options you can select below, to fix tthe aspect ratio missmatches when working with retro images.</p>
+      <p></p>
+      <form id="options" name="options">
+        <div class="render-options">
+          <div class="render-panel-dad left">
+            <h3>Render test animation</h3>
+            <div class="well render-panel">
+                <input class="start" type="button" value="Launch">
+            </div>
+          </div>
+          <div class="render-panel-dad right" style="float:right">
+            <h3>Render image from your disk</h3>
+          <div class="well render-panel">
+            <input type="button" id="file-button" value="Upload Image">
+            <input type="file" id="file" style="display: none">
+            <div id="drop-zone">or drop an image file here</div>
+            <input id="start-custom" class="start" type="button" value="Launch" disabled>
+          </div>
+          </div>
+        </div>
+        <div class="clear">
+        <div class="page-header">
+            <h3>Options</h3>
+          </div>
+        <div class="well left">
+          <label for="antialias">antialias:</label>
+          <input type="checkbox" id="antialias" value="antialias">
+        </div>
+        <div class="well left">
+          <label for="powerPreference">powerPreference:</label>
+          <input type="radio" id="powerPreference-1" name="powerPreference" value="default" />default
+          <input type="radio" id="powerPreference-2" name="powerPreference" value="high-performance" />high-performance
+          <input type="radio" id="powerPreference-3" name="powerPreference" value="low-power" />low-power
+        </div>
+        <div class="well left">
+          <label for="scale">scale:</label>
+          <input type="radio" id="scale-1" name="scale" value="1" />same as source image
+          <input type="radio" id="scale-2" name="scale" value="1.1428571428571428571428571428571" /> 256x224 on 4:3 (NES, SNES)
+          <input type="radio" id="scale-custom" name="scale" />custom
+        </div>
+        <div class="well left" id="scale-custom-inputs" style="display: none">
+            <label for="scale-x">horizontal scaling:</label>
+            <input type="number" id="scale-x" value="1" min="0.25" max="4">
+            <label for="scale-y">vertical scaling:</label>
+            <input type="number" id="scale-y" value="1" min="0.25" max="4">
+        </div>
+      </div>
+      </form>
+      <footer class="clear">
+        <h3 class="page-header">Credits:</h3>
+        <label>Concept + Coding:</label><p>José Manuel Barroso Galindo &lt;theypsilon@gmail.com&gt;</p>
+        <label>Animation Images:</label><p>Ryoga &lt;pig_saint@gmail.com&gt;</p>
+      </footer>
     </div>
   </body>
 </html>

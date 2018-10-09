@@ -1,12 +1,59 @@
 import {Animation_Source, main} from 'wasm-game-of-life'
 
+const ui = document.getElementById('ui');
 const options = document.getElementById('options');
 const loading = document.getElementById('loading');
 const input = document.getElementById('file');
-const start = document.getElementById('start');
-
+const startCustom = document.getElementById('start-custom');
 const antialias = document.getElementById('antialias');
-antialias.checked = localStorage.getItem('antialias') || false;
+const scaleX = document.getElementById('scale-x');
+const scaleY = document.getElementById('scale-y');
+const scaleCustomInputs = document.getElementById('scale-custom-inputs');
+const dropZone = document.getElementById('drop-zone');
+window.ondrop = event => {
+    event.preventDefault();
+};
+window.ondragover = event => {
+    event.preventDefault();
+};
+document.getElementById('file-button').onclick = () => {
+    document.getElementById('file').click();
+}
+dropZone.ondragover = event => {
+    console.log(event);
+    event.stopPropagation();
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+};
+dropZone.ondrop = event => {
+    event.stopPropagation();
+    event.preventDefault();
+    var file = event.dataTransfer.files[0];
+    const url = (window.URL || window.webkitURL).createObjectURL(file);
+    worker.postMessage({url: url});
+    console.log(new Date().toISOString(), "message sent to worker from drop");
+};
+document.options.scale.forEach(s => {
+    s.onclick = function() {
+        if (this.id === "scale-custom") {
+            if (scaleCustomInputs.style.display === "none") {
+                scaleCustomInputs.style.display = "initial";
+            }
+        } else {
+            scaleCustomInputs.style.display = "none";
+        }
+    }
+});
+
+const scaleId = localStorage.getItem('scale') || "scale-1";
+document.getElementById(scaleId).checked = true;
+if (scaleId === 'scale-custom') {
+    scaleCustomInputs.style.display = "initial";
+}
+scaleX.value = localStorage.getItem('scale-x') || 1;
+scaleY.value = localStorage.getItem('scale-y') || 1;
+
+antialias.checked = localStorage.getItem('antialias') === "true";
 document.getElementById(localStorage.getItem('powerPreference') || 'powerPreference-1').checked = true;
 
 input.onchange = () => {
@@ -15,7 +62,7 @@ input.onchange = () => {
     worker.postMessage({url: url});
     console.log(new Date().toISOString(), "message sent to worker");
 };
-options.style.display = "initial";
+ui.style.display = "block";
 
 const worker = new Worker("worker.js");
 const promise = new Promise((resolve, reject) => {
@@ -27,8 +74,8 @@ const promise = new Promise((resolve, reject) => {
     worker.onerror = (e) => {
         reject(e);
     }
-    start.onclick = () => {
-        options.style.display = "none";
+    startCustom.onclick = () => {
+        ui.style.display = "none";
         loading.style.display = "initial";
         setTimeout(() => {
             const img = document.getElementById('preview');
@@ -58,9 +105,10 @@ const promise = new Promise((resolve, reject) => {
             } else {
                 img.style.height = "100px";
             }
-            options.appendChild(img);
+            dropZone.innerHTML = "";
+            dropZone.appendChild(img);
             console.log(new Date().toISOString(), "image loaded");
-            start.disabled = false;
+            startCustom.disabled = false;
         }
     }
 });
@@ -89,8 +137,20 @@ promise.then((rawImg) => {
     const width = window.screen.width;
     const height = window.screen.height;
 
-    const scale_x = rawImg.width == 256 && rawImg.height == 224 ? 256 / 224 : 1;
-    const animation = new Animation_Source(rawImg.width, rawImg.height, width, height, 1 / 60, scale_x, 1);
+    const scale = options.querySelector('input[name="scale"]:checked');
+    let scaleX = 1;
+    let scaleY = 1;
+    localStorage.setItem("scale", scale.id);
+    if (scale.id == "scale-custom") {
+        scaleX = document.getElementById('scale-x').value;
+        scaleY = document.getElementById('scale-y').value;
+        localStorage.setItem("scale-x", scaleX);
+        localStorage.setItem("scale-y", scaleY);
+    } else {
+        scaleX = scale.value;
+    }
+
+    const animation = new Animation_Source(rawImg.width, rawImg.height, width, height, 1 / 60, +scaleX, +scaleY);
     animation.add(rawImg.data.buffer);
 
     const canvas = document.createElement("canvas");
@@ -107,15 +167,15 @@ promise.then((rawImg) => {
 
     const ctxOptions = { 
         alpha: true, 
-        antialias: antialias.value, 
+        antialias: antialias.checked, 
         depth: true, 
         failIfMajorPerformanceCaveat: false, 
         powerPreference: powerPreference.value,
-        premultipliedAlpha: true, 
+        premultipliedAlpha: false, 
         preserveDrawingBuffer: false, 
         stencil: false 
     };
-    localStorage.setItem('antialias', ctxOptions.antialias);
+    localStorage.setItem('antialias', ctxOptions.antialias ? "true" : "false");
     localStorage.setItem('powerPreference', powerPreference.id);
     console.log(ctxOptions);
     const gl = canvas.getContext('webgl2', ctxOptions);

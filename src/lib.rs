@@ -974,7 +974,7 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
     gl.use_program(Some(&res.pixel_shader));
     gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "view").as_ref(), false, view.as_mut_slice());
     gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "projection").as_ref(), false, projection.as_mut_slice());
-    gl.uniform3fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "lightPos").as_ref(), &mut [screen_width / 2.0, screen_height / 2.0, 10.0]);
+    gl.uniform3fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "lightPos").as_ref(), &mut [res.camera.position.x, res.camera.position.y, res.camera.position.z]);
     gl.uniform3fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "lightColor").as_ref(), &mut [1.0, 1.0, 1.0]);
     gl.uniform1f(gl.get_uniform_location(&res.pixel_shader, "ambientStrength").as_ref(), 0.75);
     gl.uniform2fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "pixel_gap").as_ref(), &mut pixel_gap);
