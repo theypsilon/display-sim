@@ -18,8 +18,8 @@
     <p>This tool is a proof of concept of a sandbox to create filters that mitigate the unrealistic experience of watching content designed for old CRTs in modern LCD screens.</p>
     <p>Don't get why this is a thing? <a href="#explanation">Read some explanation below.</a></p>
     <p>You need at least a mid tier graphic card with updated drivers and a modern browser (but not Edge) in order to run this without problems.</p>
-    <form id="options" name="options">
-      <div class="render-options row">
+    <form id="form" name="form">
+      <div class="render-tests row">
         <div class="render-panel-dad col-sm-6">
           <h3 class="page-header">Render test animation</h3>
           <div class="well render-panel">
@@ -38,24 +38,24 @@
       </div>
       <div>
         <h3 class="page-header">Options</h3>
-        <div class="well row">
-          <div class="well col-sm-1 option-inputs">
+        <div class="well options">
+          <div class="option-inputs">
             <label for="antialias">antialias:</label>
             <input type="checkbox" id="antialias" value="antialias">
           </div>
-          <div class="well col-sm-1 option-inputs">
+          <div class="option-inputs">
             <label for="powerPreference">powerPreference:</label>
             <input type="radio" id="powerPreference-1" name="powerPreference" value="default" /><div class="option-text">default</div>
             <input type="radio" id="powerPreference-2" name="powerPreference" value="high-performance" /><div class="option-text">high-performance</div>
             <input type="radio" id="powerPreference-3" name="powerPreference" value="low-power" /><div class="option-text">low-power</div>
           </div>
-          <div class="well col-sm-1 option-inputs">
+          <div class="option-inputs">
             <label for="scale">scale transform:</label>
             <input type="radio" id="scale-1" name="scale" value="1" /><div class="option-text">none</div>
             <input type="radio" id="scale-2" name="scale" value="1.1428571428571428571428571428571" /><div class="option-text">256x224 on 4:3 (NES, SNES)</div>
             <input type="radio" id="scale-custom" name="scale" /><div class="option-text">custom</div>
           </div>
-          <div class="well col-sm-1 option-inputs" id="scale-custom-inputs" style="display: none">
+          <div class="option-inputs" id="scale-custom-inputs" style="display: none">
             <label for="scale-x">horizontal scaling:</label>
             <input type="number" id="scale-x" value="1" min="0.25" max="4">
             <label for="scale-y">vertical scaling:</label>

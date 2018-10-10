@@ -12,7 +12,7 @@ body {
   height: 291px;
 }
 
-.render-options {
+.render-tests {
     text-align: center;
 }
 
@@ -20,18 +20,35 @@ body {
     display: block;
 }
 
+.options {
+    text-align: left;
+}
+
 .option-inputs {
-    margin: 10px;
-    min-width: 150px;
+    border: 1px solid rgb(187, 187, 187);
+    border-radius: 5px 5px 5px 5px;
+    padding: 5px;
+    margin: 5px;
+    text-align: left;
+    display: inline-block;
+    height: 2.5em;
+    background-color: rgb(247, 247, 247);
+    white-space: nowrap;
 }
 
 .option-inputs input {
     margin-right: 5px;
+    display: inline-block;
+}
+
+#scale-custom-inputs input {
+    height: 1.5em;
 }
 
 .option-text {
     margin-bottom: 20px;
     margin-right: 20px;
+    display: inline-block;
 }
 
 .start {
@@ -65,6 +82,7 @@ body {
 }
 
 #drop-zone:hover {
-    border: 2px solid rgb(187, 187, 187);
+    border: 2px solid #428bca;
     cursor: pointer;
+    color: #428bca;
 }

@@ -1,7 +1,7 @@
 import {Animation_Source, main} from 'wasm-game-of-life'
 
 const ui = document.getElementById('ui');
-const options = document.getElementById('options');
+const form = document.getElementById('form');
 const loading = document.getElementById('loading');
 const input = document.getElementById('file');
 const startCustom = document.getElementById('start-custom');
@@ -67,11 +67,11 @@ dropZone.ondrop = event => {
     worker.postMessage({url: url});
     console.log(new Date().toISOString(), "message sent to worker from drop");
 };
-document.options.scale.forEach(s => {
+document.form.scale.forEach(s => {
     s.onclick = function() {
         if (this.id === "scale-custom") {
             if (scaleCustomInputs.style.display === "none") {
-                scaleCustomInputs.style.display = "initial";
+                scaleCustomInputs.style.display = "inline-block";
             }
         } else {
             scaleCustomInputs.style.display = "none";
@@ -86,7 +86,7 @@ function prepareUi() {
     const scaleId = localStorage.getItem('scale') || "scale-1";
     document.getElementById(scaleId).checked = true;
     if (scaleId === 'scale-custom') {
-        scaleCustomInputs.style.display = "initial";
+        scaleCustomInputs.style.display = "inline-block";
     }
     scaleX.value = localStorage.getItem('scale-x') || 1;
     scaleY.value = localStorage.getItem('scale-y') || 1;
@@ -147,7 +147,7 @@ function prepareUi() {
         const width = window.screen.width;
         const height = window.screen.height;
     
-        const scale = options.querySelector('input[name="scale"]:checked');
+        const scale = form.querySelector('input[name="scale"]:checked');
         let scaleX = 1;
         let scaleY = 1;
         localStorage.setItem("scale", scale.id);
@@ -176,7 +176,7 @@ function prepareUi() {
     
         document.body.appendChild(canvas);
     
-        const powerPreference = options.querySelector('input[name="powerPreference"]:checked');
+        const powerPreference = form.querySelector('input[name="powerPreference"]:checked');
     
         const ctxOptions = { 
             alpha: true, 
@@ -190,7 +190,7 @@ function prepareUi() {
         };
         localStorage.setItem('antialias', ctxOptions.antialias ? "true" : "false");
         localStorage.setItem('powerPreference', powerPreference.id);
-        console.log("gl context options", ctxOptions);
+        console.log("gl context form", ctxOptions);
         const gl = canvas.getContext('webgl2', ctxOptions);
     
         var documentElement = document.documentElement;
