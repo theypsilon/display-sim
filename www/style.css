@@ -3,15 +3,18 @@ body {
     padding: 0;
 }
 #loading {
-  position: fixed;
-  margin-left: -220px;
-  margin-top: -145px;
-  left: 50%;
-  top: 50%;
-  width: 441px;
-  height: 291px;
+    display: initial;
+    position: fixed;
+    margin-left: -220px;
+    margin-top: -145px;
+    left: 50%;
+    top: 50%;
+    width: 441px;
+    height: 291px;
 }
-
+#ui {
+    display: block;
+}
 .render-tests {
     text-align: center;
 }
@@ -31,9 +34,13 @@ body {
     margin: 5px;
     text-align: left;
     display: inline-block;
-    height: 2.5em;
+    min-height: 2.5em;
     background-color: rgb(247, 247, 247);
-    white-space: nowrap;
+}
+
+.option-inputs .scale-radio {
+    display: inline-block;
+    white-space: wrap;
 }
 
 .option-inputs input {
@@ -47,6 +54,7 @@ body {
 
 #scale-custom-inputs input {
     height: 1.5em;
+    display: inline-block
 }
 
 .option-text {
@@ -89,4 +97,8 @@ body {
     border: 2px solid #428bca;
     cursor: pointer;
     color: #428bca;
+}
+
+.display-none {
+    display: none !important;
 }

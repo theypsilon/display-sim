@@ -70,11 +70,9 @@ dropZone.ondrop = event => {
 document.form.scale.forEach(s => {
     s.onclick = function() {
         if (this.id === "scale-custom") {
-            if (scaleCustomInputs.style.display === "none") {
-                scaleCustomInputs.style.display = "inline-block";
-            }
+            scaleCustomInputs.classList.remove("display-none");
         } else {
-            scaleCustomInputs.style.display = "none";
+            scaleCustomInputs.classList.add("display-none");
         }
     }
 });
@@ -86,7 +84,7 @@ function prepareUi() {
     const scaleId = localStorage.getItem('scale') || "scale-1";
     document.getElementById(scaleId).checked = true;
     if (scaleId === 'scale-custom') {
-        scaleCustomInputs.style.display = "inline-block";
+        scaleCustomInputs.classList.remove("display-none");
     }
     scaleX.value = localStorage.getItem('scale-x') || 1;
     scaleY.value = localStorage.getItem('scale-y') || 1;
@@ -95,15 +93,16 @@ function prepareUi() {
     document.getElementById(localStorage.getItem('powerPreference') || 'powerPreference-1').checked = true;
     
     if (document.getElementById('preview')) {
-        startCustom.style.display = "initial";
+        startCustom.classList.remove('display-none');
     }
     
-    ui.style.display = "block";
+    ui.classList.remove('display-none');
+    loading.classList.add('display-none');
     
     const startPromise = new Promise((startResolve, startReject) => {
         startCustom.onclick = () => {
-            ui.style.display = "none";
-            loading.style.display = "initial";
+            ui.classList.add("display-none");
+            loading.classList.remove("display-none");
             setTimeout(() => {
                 const img = document.getElementById('preview');
                 const canvas = document.createElement('canvas');
@@ -117,8 +116,8 @@ function prepareUi() {
             }, 50);
         }
         startAnimation.onclick = () => {
-            ui.style.display = "none";
-            loading.style.display = "initial";
+            ui.classList.add("display-none");
+            loading.classList.remove("display-none");
             var animationPromises = [];
             for (let i = 0; i <= 45; i++) {
                 animationPromises.push(new Promise((imgResolve, imgReject) => {
@@ -225,7 +224,7 @@ function prepareUi() {
         main(gl, animation);
         console.log(new Date().toISOString(), "wasm main done");
     
-        loading.style.display = "none";
+        loading.classList.add("display-none");
     });
 
 }
