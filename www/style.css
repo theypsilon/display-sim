@@ -21,7 +21,7 @@ body {
 }
 
 .options {
-    text-align: left;
+    text-align: left;   
 }
 
 .option-inputs {
@@ -39,6 +39,10 @@ body {
 .option-inputs input {
     margin-right: 5px;
     display: inline-block;
+}
+
+.option-inputs label {
+    margin-right: 10px;
 }
 
 #scale-custom-inputs input {
