@@ -96,7 +96,7 @@ body {
 #drop-zone:hover {
     border: 2px solid #428bca;
     cursor: pointer;
-    color: #428bca;
+    color: #a3cef5;
 }
 
 #info-panel {
@@ -107,7 +107,8 @@ body {
     top: 25px;
     left: 25px;
     background: white;
-    width: 300px;
+    width: 320px;
+    overflow-y: scroll;
 }
 
 #info-panel h3 {
@@ -199,6 +200,55 @@ body {
     display: inline-block;
 }
 
+#camera-movement-indicator {
+    float: right;
+    margin-top: -20px;
+}
+
+.camera-field-group {
+    text-align: right;
+    font-size: 70%;
+}
+
+.camera-field-name {
+    text-align: left;
+    float: left;
+    margin-top: -3px;
+    margin-left: -20px;
+}
+
+.camera-field {
+    font-size: 60%;
+    margin-top: -5px;
+    display: inline-block;
+    width: 30px;
+    overflow: hidden;
+    text-align: center;
+    padding-top: 3px;
+    padding-bottom: 3px;
+}
+
+.camera-field-left {
+    line-height: 1.1;
+    border-right: 1px solid rgb(187, 187, 187);
+}
+
+.camera-field-right {
+    line-height: 1.1;
+    border-left: 1px solid rgb(187, 187, 187);
+}
+
+.camera-field-center {
+    margin-left: -3px;
+    margin-right: -3px;   
+}
+
+.camera-field-mid {
+    line-height: 1.1;
+    border-top: 1px solid rgb(187, 187, 187);
+    border-bottom: 1px solid rgb(187, 187, 187);
+    margin-bottom: -1px;
+}
 
 .display-none {
     display: none !important;

@@ -283,13 +283,14 @@ struct Camera {
     heading: f32,
     rotate: f32,
     movement_speed: f32,
-    turning_speed: f32
+    turning_speed: f32,
+    sending_camera_update_event: bool,
 }
 
 impl Camera {
     fn new() -> Camera {
         Camera {
-            position: glm::vec3 (0.0, 0.0, 270.0),
+            position: glm::vec3 (0.0, 0.0, 0.0),
             position_delta: glm::vec3 (0.0, 0.0, 0.0),
             direction: glm::vec3 (0.0, 0.0, -1.0),
             axis_up: glm::vec3 (0.0, 1.0, 0.0),
@@ -298,7 +299,8 @@ impl Camera {
             heading: 0.0,
             rotate: 0.0,
             movement_speed: movement_base_speed,
-            turning_speed: turning_base_speed
+            turning_speed: turning_base_speed,
+            sending_camera_update_event: true,
         }
     }
 
@@ -339,7 +341,10 @@ impl Camera {
         self.heading = self.heading - yoffset as f32 * 0.0003;
     }
 
-    fn update_position(&mut self) {
+    fn update_position(&mut self) -> Result<()> {
+        if self.pitch == 0.0 && self.heading == 0.0 && self.rotate == 0.0 && self.position_delta == glm::vec3 (0.0, 0.0, 0.0) {
+            return Ok(());
+        }
         let pitch_quat = glm::quat_angle_axis(self.pitch, &self.axis_up);
         let heading_quat = glm::quat_angle_axis(self.heading, &self.axis_right);
         let rotate_quat = glm::quat_angle_axis(self.rotate, &self.direction);
@@ -356,6 +361,22 @@ impl Camera {
         
         self.position += self.position_delta;
         self.position_delta = glm::vec3 (0.0, 0.0, 0.0);
+
+        if self.sending_camera_update_event == false {
+            return Ok(())
+        }
+
+        let values_array = Float32Array::new(&wasm_bindgen::JsValue::from(9));
+        values_array.fill(self.position.x, 0, 1);
+        values_array.fill(self.position.y, 1, 2);
+        values_array.fill(self.position.z, 2, 3);
+        values_array.fill(self.direction.x, 3, 4);
+        values_array.fill(self.direction.y, 4, 5);
+        values_array.fill(self.direction.z, 5, 6);
+        values_array.fill(self.axis_up.x, 6, 7);
+        values_array.fill(self.axis_up.y, 7, 8);
+        values_array.fill(self.axis_up.z, 8, 9);
+        dispatch_event_with("app-event.camera_update", &values_array.into())
     }
 
     fn get_view(&self) -> glm::TMat4<f32> {
@@ -668,7 +689,6 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
     let half_width: f32 = width as f32 / 2.0;
     let half_height: f32 = height as f32 / 2.0;
     let pixels_total = width * height;
-    let channels = 4;
     let offsets = Float32Array::new(&wasm_bindgen::JsValue::from(pixels_total as u32 * 2));
     for i in 0..width {
         for j in 0..height {
@@ -730,7 +750,7 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
     } as f32;
 
     let mut camera = Camera::new();
-    camera.position = glm::vec3(0.0, 0.0, far_away_position);
+    camera.position_delta = glm::vec3(0.0, 0.0, far_away_position);
     camera.movement_speed *= far_away_position / movement_speed_factor;
 
     check_error(&gl, line!())?;
@@ -922,7 +942,7 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
         }
     }
 
-    res.camera.update_position();
+    res.camera.update_position()?;
 
     if input.increase_pixel_scale_x {
         res.cur_pixel_scale_x += 0.005 * dt * res.pixel_manipulation_speed; }

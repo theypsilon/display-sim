@@ -92,10 +92,30 @@
     <h3>Info Panel</h3>
     <div class="info-category">
       <h5>Camera Movements</h5>
+      <div id="camera-movement-indicator">
+        <div id="camera-pos" class="camera-field-group">
+          <div class="camera-field-name">pos:</div>
+          <div id="camera-pos-x" class="camera-field camera-field-left"></div>
+          <div id="camera-pos-y" class="camera-field camera-field-center"></div>
+          <div id="camera-pos-z" class="camera-field camera-field-right"></div>
+        </div>
+        <div id="camera-dir" class="camera-field-group">
+          <div class="camera-field-name">dir:</div>
+          <div id="camera-dir-x" class="camera-field camera-field-left camera-field-mid"></div>
+          <div id="camera-dir-y" class="camera-field camera-field-center camera-field-mid"></div>
+          <div id="camera-dir-z" class="camera-field camera-field-right camera-field-mid"></div>
+        </div>
+        <div id="camera-axis-up" class="camera-field-group">
+          <div class="camera-field-name">axis:</div>
+          <div id="camera-axis-up-x" class="camera-field camera-field-left"></div>
+          <div id="camera-axis-up-y" class="camera-field camera-field-center"></div>
+          <div id="camera-axis-up-z" class="camera-field camera-field-right"></div>
+        </div>
+      </div>
       <ul>
-        <li><div id="feature-advance" class="feature-hotkeys">W, S</div><div class="feature-explanation">move back and forth.</div></li>
-        <li><div id="feature-strafe" class="feature-hotkeys">A, D</div><div class="feature-explanation">strafe left and right.</div></li>
-        <li><div id="feature-climb" class="feature-hotkeys">Q, E</div><div class="feature-explanation">to go up and down.</div></li>
+        <li><div id="feature-advance" class="feature-hotkeys">W, S</div><div class="feature-explanation">back and forth.</div></li>
+        <li><div id="feature-strafe" class="feature-hotkeys">A, D</div><div class="feature-explanation">left and right.</div></li>
+        <li><div id="feature-climb" class="feature-hotkeys">Q, E</div><div class="feature-explanation"> up and down.</div></li>
         <li><div id="feature-turn" class="feature-hotkeys">Arrow keys</div><div class="feature-explanation">turn camera up, down, left and right.</div></li>
         <li><div id="feature-rotate" class="feature-hotkeys">+, -</div><div class="feature-explanation">rotate camera.</div></li>
         <li><div id="feature-rotate" class="feature-hotkeys">Hold left click mouse button</div><div class="feature-explanation">to control the camera with the mouse.</div></li>

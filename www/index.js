@@ -14,6 +14,16 @@ const infoHide = document.getElementById('info-hide');
 const infoPanel = document.getElementById('info-panel');
 const fpsCounter = document.getElementById('fps-counter');
 
+const cameraPosX = document.getElementById('camera-pos-x');
+const cameraPosY = document.getElementById('camera-pos-y');
+const cameraPosZ = document.getElementById('camera-pos-z');
+const cameraDirX = document.getElementById('camera-dir-x');
+const cameraDirY = document.getElementById('camera-dir-y');
+const cameraDirZ = document.getElementById('camera-dir-z');
+const cameraAxisUpX = document.getElementById('camera-axis-up-x');
+const cameraAxisUpY = document.getElementById('camera-axis-up-y');
+const cameraAxisUpZ = document.getElementById('camera-axis-up-z');
+
 // SETTING UP STATIC EVENT HANDLERS
 
 input.onchange = () => {
@@ -107,6 +117,18 @@ window.addEventListener('app-event.top_message', event => {
         }
         fade();
     }, 1000);
+}, false);
+
+window.addEventListener('app-event.camera_update', event => {
+    cameraPosX.innerHTML = Math.round(event.detail[0] * 100) / 100;
+    cameraPosY.innerHTML = Math.round(event.detail[1] * 100) / 100;
+    cameraPosZ.innerHTML = Math.round(event.detail[2] * 100) / 100;
+    cameraDirX.innerHTML = Math.round(event.detail[3] * 100) / 100;
+    cameraDirY.innerHTML = Math.round(event.detail[4] * 100) / 100;
+    cameraDirZ.innerHTML = Math.round(event.detail[5] * 100) / 100;
+    cameraAxisUpX.innerHTML = Math.round(event.detail[6] * 100) / 100;
+    cameraAxisUpY.innerHTML = Math.round(event.detail[7] * 100) / 100;
+    cameraAxisUpZ.innerHTML = Math.round(event.detail[8] * 100) / 100;
 }, false);
 
 infoHide.onclick = () => {
@@ -238,6 +260,8 @@ function prepareUi() {
     
         canvas.style.width = width;
         canvas.style.height = height;
+
+        infoPanel.style.setProperty("max-height", height - 50);
     
         document.body.appendChild(canvas);
     
