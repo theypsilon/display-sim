@@ -207,7 +207,18 @@ body {
 
 #camera-movement-indicator {
     float: right;
-    margin-top: -20px;
+    margin-top: 10px;
+}
+
+.camera-field-header {
+    text-align: center;
+    font-size: 60%;
+    margin-bottom: 2px;
+}
+
+.camera-coordinate {
+    display: inline-block;
+    width: 30px;
 }
 
 .camera-field-group {

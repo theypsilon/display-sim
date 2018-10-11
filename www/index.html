@@ -28,7 +28,7 @@
         <div class="render-panel-dad col-sm-6">
           <h3 class="page-header">Render image from your disk</h3>
           <div class="well render-panel">
-            <input type="file" id="file" class="display-none">
+            <input type="file" id="file" class="display-none" accept="image/*">
             <div id="drop-zone">drop an image file here or click to upload it</div>
             <input id="start-custom" class="start" type="button" value="Launch" title="You need to have an image first" disabled>
           </div>
@@ -93,6 +93,7 @@
     <div class="info-category">
       <h5>Camera Movements</h5>
       <div id="camera-movement-indicator">
+        <div class="camera-field-header"><div class="camera-coordinate">X</div><div class="camera-coordinate">Y</div><div class="camera-coordinate">Z</div></div>
         <div id="camera-pos" class="camera-field-group">
           <div class="camera-field-name">pos:</div>
           <div id="camera-pos-x" class="camera-field camera-field-left"></div>
@@ -115,7 +116,7 @@
       <ul>
         <li><div id="feature-advance" class="feature-hotkeys">W, S</div><div class="feature-explanation">back and forth.</div></li>
         <li><div id="feature-strafe" class="feature-hotkeys">A, D</div><div class="feature-explanation">left and right.</div></li>
-        <li><div id="feature-climb" class="feature-hotkeys">Q, E</div><div class="feature-explanation"> up and down.</div></li>
+        <li><div id="feature-climb" class="feature-hotkeys">Q, E</div><div class="feature-explanation">up and down.</div></li>
         <li><div id="feature-turn" class="feature-hotkeys">Arrow keys</div><div class="feature-explanation">turn camera up, down, left and right.</div></li>
         <li><div id="feature-rotate" class="feature-hotkeys">+, -</div><div class="feature-explanation">rotate camera.</div></li>
         <li><div id="feature-rotate" class="feature-hotkeys">Hold left click mouse button</div><div class="feature-explanation">to control the camera with the mouse.</div></li>
