@@ -162,7 +162,7 @@ body {
 
 #top-message {
     position: fixed;
-    top: 30px;
+    bottom: 30px;
     width: 100%;
     text-align: center;
 }

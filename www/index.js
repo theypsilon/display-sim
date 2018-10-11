@@ -80,7 +80,7 @@ window.addEventListener('app-event.exiting_session', () => {
 
 window.addEventListener('app-event.fps', event => {
     fpsCounter.innerHTML = Math.round(event.detail);
-});
+}, false);
 
 window.addEventListener('app-event.top_message', event => {
     const existingTopMessage = document.getElementById('top-message');
@@ -107,7 +107,7 @@ window.addEventListener('app-event.top_message', event => {
         }
         fade();
     }, 1000);
-});
+}, false);
 
 infoHide.onclick = () => {
     if (document.getElementById('gl-canvas')) {
@@ -198,8 +198,8 @@ function prepareUi() {
                     const columns = Math.floor(img.width / 256);
                     const rawImgs = [];
                     for (let i = 0; i < 45; i++) {
-                        const y = Math.floor(i / columns);
                         const x = i % columns;
+                        const y = Math.floor(i / columns);
                         rawImgs.push(ctx.getImageData(x * 256, y * 224, 256, 224));
                     }
                     imgResolve(rawImgs);
