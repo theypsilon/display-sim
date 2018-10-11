@@ -1,15 +1,13 @@
 <html>
 <head>
   <title>Lo-Res Display Simulator</title>
-  <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
-  <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap-theme.min.css">
   <link rel="stylesheet" href="style.css">
   <meta content="text/html;charset=utf-8" http-equiv="Content-Type"/>
-  <script src='https://unpkg.com/text-encoding@0.6.4/lib/encoding-indexes.js'></script>
-  <script src='https://unpkg.com/text-encoding@0.6.4/lib/encoding.js'></script>
 </head>
 <body>
   <img id="loading" src="assets/Loading_icon.gif">
+  <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
+  <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap-theme.min.css">
   <div id="ui" class="container display-none">
     <a href="https://github.com/theypsilon"><img style="position: absolute; top: 0; left: 0; border: 0; width: 8%;" src="assets/forkme.png" alt="Fork me on GitHub"></a>
     <div class="page-header">
@@ -17,7 +15,7 @@
     </div>
     <p>This tool is a proof of concept of a sandbox to create filters that mitigate the unrealistic experience of watching content designed for old CRTs in modern LCD screens.</p>
     <p>Don't get why this is a thing? <a href="#explanation">Read some explanation below.</a></p>
-    <p>You need at least a mid tier graphics card with updated drivers and a modern browser (but not Edge) in order to run this without problems.</p>
+    <p>Mobile devices won't work! You need a computer with at least a mid tier graphics card with updated drivers and a modern browser (but not Edge) in order to run this without problems.</p>
     <form id="form" name="form">
       <div class="render-tests row">
         <div class="render-panel-dad col-sm-6">
@@ -30,7 +28,7 @@
         <div class="render-panel-dad col-sm-6">
           <h3 class="page-header">Render image from your disk</h3>
           <div class="well render-panel">
-            <input type="file" id="file">
+            <input type="file" id="file" class="display-none">
             <div id="drop-zone">drop an image file here or click to upload it</div>
             <input id="start-custom" class="start" type="button" value="Launch" title="You need to have an image first" disabled>
           </div>
@@ -88,6 +86,49 @@
       <label>Concept + Implementation:</label><p>José Manuel Barroso Galindo &lt;theypsilon@gmail.com&gt;</p>
       <label>Test animation sprites:</label><p>Ryoga &lt;pig_saint@gmail.com&gt;</p>
     </footer>
+  </div>
+  <div id="info-panel" class="display-none">
+    <div id="fps-counter-holder"><div id="fps-counter"></div><span>FPS</span></div>
+    <h3>Info Panel</h3>
+    <div class="info-category">
+      <h5>Camera Movements</h5>
+      <ul>
+        <li><div id="feature-advance" class="feature-hotkeys">W, S</div><div class="feature-explanation">move back and forth.</div></li>
+        <li><div id="feature-strafe" class="feature-hotkeys">A, D</div><div class="feature-explanation">strafe left and right.</div></li>
+        <li><div id="feature-climb" class="feature-hotkeys">Q, E</div><div class="feature-explanation">to go up and down.</div></li>
+        <li><div id="feature-turn" class="feature-hotkeys">Arrow keys</div><div class="feature-explanation">turn camera up, down, left and right.</div></li>
+        <li><div id="feature-rotate" class="feature-hotkeys">+, -</div><div class="feature-explanation">rotate camera.</div></li>
+        <li><div id="feature-rotate" class="feature-hotkeys">Hold left click mouse button</div><div class="feature-explanation">to control the camera with the mouse.</div></li>
+      </ul>
+    </div>
+    <div class="info-category">
+      <h5>Pixel manipulation</h5>
+      <ul>
+        <li><div id="feature-size-x" class="feature-hotkeys">J, K</div><div class="feature-explanation">to change pixel width.</div><div class="feature-value">0</div></li>
+        <li><div id="feature-size-y" class="feature-hotkeys">U, I</div><div class="feature-explanation">to change pixel height.</div><div class="feature-value">0</div></li>
+        <li><div id="feature-gap" class="feature-hotkeys">N, M</div><div class="feature-explanation">to change distance between pixels.</div><div class="feature-value">0</div></li>
+        <li><div id="feature-pulsation" class="feature-hotkeys">P</div><div class="feature-explanation">to activate a wave on the screen.</div><div class="feature-value">0</div></li>
+        <li><div id="feature-change-pixel-shape" class="feature-hotkeys">O</div><div class="feature-explanation">show pixels as cubes.</div><div class="feature-value">0</div></li>
+      </ul>
+    </div>
+    <div class="info-category">
+      <h5>Velocity</h5>
+      <ul>
+        <li><div id="feature-change-move-speed" class="feature-hotkeys">F, R</div><div class="feature-explanation">increases and decreases the camera translation speed.</div><div class="feature-value">0</div></li>
+        <li><div id="feature-change-turn-speed" class="feature-hotkeys">Alt+F, Alt+R</div><div class="feature-explanation">increases and decreases the camera turn speed.</div><div class="feature-value">0</div></li>
+        <li><div id="feature-change-pixel-speed" class="feature-hotkeys">Shift+F, Shift+R</div><div class="feature-explanation">increases and decreases the pixel manipulation speed.</div><div class="feature-value">0</div></li>
+      </ul>
+    </div>
+    <div class="info-category">
+      <h5>Others</h5>
+      <ul>
+        <li><div id="feature-quit" class="feature-hotkeys">ESC</div><div class="feature-explanation">to quit the application.</div></li>
+        <li><div id="feature-info-panel" class="feature-hotkeys">SPACE</div><div class="feature-explanation">to toggle visibility of this panel.</div></li>
+      </ul>
+    </div>
+    <div class="info-button">
+      <input id="info-hide" type="button" value="Hide this panel">
+    </div>
   </div>
 </body>
 </html>

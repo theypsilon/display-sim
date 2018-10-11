@@ -2,6 +2,8 @@
 /target
 /bin
 /pkg
+/www/dist
+/www/wasm_game_of_life*
 wasm-pack.log
 **/*.rs.bk
 Cargo.lock

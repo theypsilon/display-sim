@@ -1,5 +1,3 @@
-import {Animation_Source, main} from 'wasm-game-of-life'
-
 const ui = document.getElementById('ui');
 const form = document.getElementById('form');
 const loading = document.getElementById('loading');
@@ -12,6 +10,9 @@ const scaleY = document.getElementById('scale-y');
 const scaleCustomInputs = document.getElementById('scale-custom-inputs');
 const dropZone = document.getElementById('drop-zone');
 const worker = new Worker("worker.js");
+const infoHide = document.getElementById('info-hide');
+const infoPanel = document.getElementById('info-panel');
+const fpsCounter = document.getElementById('fps-counter');
 
 // SETTING UP STATIC EVENT HANDLERS
 
@@ -21,6 +22,7 @@ input.onchange = () => {
     worker.postMessage({url: url});
     console.log(new Date().toISOString(), "message sent to worker");
 };
+
 worker.onmessage = (event) => {
     console.log(new Date().toISOString(), "worker replied");
     const previewUrl = URL.createObjectURL(event.data.blob);
@@ -43,13 +45,78 @@ worker.onmessage = (event) => {
         startCustom.disabled = false;
     }
 }
+
 window.ondrop = event => {
     event.preventDefault();
 };
+
 window.ondragover = event => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'none';
 };
+
+window.addEventListener('app-event.toggle_info_panel', () => {
+    if (document.getElementById('gl-canvas')) {
+        if (infoPanel.classList.contains('display-none')) {
+            infoPanel.classList.remove('display-none');
+        } else {
+            infoPanel.classList.add('display-none');
+            window.dispatchEvent(new CustomEvent('app-event.top_message', {
+                detail: "Toggle the Info Panel by pressing SPACE."
+            }));
+        }
+    }
+}, false);
+
+window.addEventListener('app-event.exit_pointer_lock', () => {
+    document.exitPointerLock();
+}, false);
+
+window.addEventListener('app-event.exiting_session', () => {
+    prepareUi();
+    document.getElementById('gl-canvas').remove();
+    infoPanel.classList.add("display-none");
+}, false);
+
+window.addEventListener('app-event.fps', event => {
+    fpsCounter.innerHTML = Math.round(event.detail);
+});
+
+window.addEventListener('app-event.top_message', event => {
+    const existingTopMessage = document.getElementById('top-message');
+    if (existingTopMessage) {
+        existingTopMessage.remove();
+    }
+    const div = document.createElement('div');
+    div.id = 'top-message';
+    const span = document.createElement('span');
+    span.innerHTML = event.detail;
+    div.appendChild(span);
+    document.body.appendChild(div);
+    let opacity = 0.75;
+    div.style.opacity = opacity;
+    setTimeout(() => {
+        function fade() {
+            if (opacity >= 0.01) {
+                opacity -= 0.01;
+                div.style.opacity = opacity;
+                setTimeout(fade, 16);
+            } else {
+                div.remove();
+            }
+        }
+        fade();
+    }, 1000);
+});
+
+infoHide.onclick = () => {
+    if (document.getElementById('gl-canvas')) {
+        infoPanel.classList.add('display-none');
+        window.dispatchEvent(new CustomEvent('app-event.top_message', {
+            detail: "Show the Info Panel again by pressing SPACE."
+        }));
+    }
+}
 dropZone.onclick = () => {
     document.getElementById('file').click();
 }
@@ -118,25 +185,28 @@ function prepareUi() {
         startAnimation.onclick = () => {
             ui.classList.add("display-none");
             loading.classList.remove("display-none");
-            var animationPromises = [];
-            for (let i = 0; i <= 45; i++) {
-                animationPromises.push(new Promise((imgResolve, imgReject) => {
-                    const img = new Image();
-                    const zero = i < 10 ? "0" : "";
-                    img.src = "assets/wwix_" + zero + i + ".png";
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                        ctx.drawImage(img, 0, 0);
-                        var rawImg = ctx.getImageData(0, 0, img.width, img.height);
-                        imgResolve(rawImg);
+
+            const animationPromise = new Promise((imgResolve, imgReject) => {
+                const img = new Image();
+                img.src = "assets/wwix_spritesheet.png";
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    const columns = Math.floor(img.width / 256);
+                    const rawImgs = [];
+                    for (let i = 0; i < 45; i++) {
+                        const y = Math.floor(i / columns);
+                        const x = i % columns;
+                        rawImgs.push(ctx.getImageData(x * 256, y * 224, 256, 224));
                     }
-                    img.onerror = (e) => imgReject(e);
-                }));
-            }
-            Promise.all(animationPromises).then(startResolve);
+                    imgResolve(rawImgs);
+                }
+                img.onerror = (e) => imgReject(e);
+            });
+            animationPromise.then(startResolve);
         }
     });
     
@@ -159,14 +229,10 @@ function prepareUi() {
             scaleX = scale.value;
         }
     
-        const animation = new Animation_Source(rawImgs[0].width, rawImgs[0].height, width, height, 1 / 60, +scaleX, +scaleY);
-        for (let i = 0; i < rawImgs.length; i++) {
-            const rawImg = rawImgs[i];
-            animation.add(rawImg.data.buffer);
-        }
-    
         const canvas = document.createElement("canvas");
     
+        canvas.id = 'gl-canvas';
+
         canvas.width = width * dpi;
         canvas.height = height * dpi;
     
@@ -206,25 +272,25 @@ function prepareUi() {
             }
         };
     
-        window.addEventListener('exit_pointer_lock', () => {
-            document.exitPointerLock();
-        }, false);
-    
-        window.addEventListener('exiting_session', () => {
-            prepareUi();
-            canvas.remove();
-        }, false);
-    
         canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock;
         document.exitPointerLock = document.exitPointerLock || document.mozExitPointerLock;
     
         if (!gl) throw new Error("Could not get webgl context.");
     
-        console.log(new Date().toISOString(), "calling wasm main");
-        main(gl, animation);
-        console.log(new Date().toISOString(), "wasm main done");
+        import('./wasm_game_of_life.js').then(module => {
+            const animation = new module.Animation_Source(rawImgs[0].width, rawImgs[0].height, width, height, 1 / 60, +scaleX, +scaleY);
+            for (let i = 0; i < rawImgs.length; i++) {
+                const rawImg = rawImgs[i];
+                animation.add(rawImg.data.buffer);
+            }
     
-        loading.classList.add("display-none");
+            console.log(new Date().toISOString(), "calling wasm main");
+            module.main(gl, animation);
+            console.log(new Date().toISOString(), "wasm main done");
+        
+            loading.classList.add("display-none");
+            infoPanel.classList.remove("display-none");
+        });
     });
 
 }

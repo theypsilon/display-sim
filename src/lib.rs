@@ -12,7 +12,7 @@ use web_sys::{
     Window, console,
     WebGlProgram, WebGl2RenderingContext, 
     WebGlShader, WebGlVertexArrayObject, WebGlBuffer,
-    KeyboardEvent, MouseEvent, WheelEvent, Event, EventTarget
+    KeyboardEvent, MouseEvent, WheelEvent, Event, EventTarget, CustomEvent, CustomEventInit
 };
 use js_sys::{Float32Array, ArrayBuffer};
 use std::rc::Rc;
@@ -42,7 +42,7 @@ pub struct Animation_Source {
     frame_length: f32,
     current_frame: usize,
     last_frame_change: f64,
-    needs_update: bool,
+    needs_buffer_data_load: bool,
 }
 
 #[wasm_bindgen]
@@ -60,7 +60,7 @@ impl Animation_Source {
             scale_y: scale_y,
             current_frame: 1,
             last_frame_change: -100.0,
-            needs_update: true,
+            needs_buffer_data_load: true,
         }
     }
 
@@ -134,7 +134,8 @@ struct Buttons {
     mouse_click: Boolean_Button,
     toggle_pixels_or_voxels: Boolean_Button,
     showing_pixels_pulse: Boolean_Button,
-    esc: Boolean_Button
+    esc: Boolean_Button,
+    space: Boolean_Button,
 }
 
 impl Buttons {
@@ -145,7 +146,8 @@ impl Buttons {
             mouse_click: Boolean_Button::new(),
             toggle_pixels_or_voxels: Boolean_Button::new(),
             showing_pixels_pulse: Boolean_Button::new(),
-            esc: Boolean_Button::new()
+            esc: Boolean_Button::new(),
+            space: Boolean_Button::new(),
         }
     }
 }
@@ -164,6 +166,7 @@ pub struct Resources {
     last_second: f64,
     last_mouse_x: i32,
     last_mouse_y: i32,
+    translation_base_speed: f32,
     cur_pixel_scale_x: f32,
     cur_pixel_scale_y: f32,
     cur_pixel_gap: f32,
@@ -591,160 +594,6 @@ pub fn program(gl: JsValue, animation: Animation_Source) -> Result<()> {
     Ok(())
 }
 
-pub fn window() -> Result<Window> {
-    Ok(web_sys::window().ok_or("cannot access window")?)
-}
-
-pub fn now() -> Result<f64> {
-    Ok(window()?.performance().ok_or("cannot access performance")?.now())
-}
-
-pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
-    let dt: f32 = ((input.now - res.last_time) / 1000.0) as f32;
-    let ellapsed = input.now - res.last_second;
-    res.last_time = input.now;
-
-    if ellapsed >= 5_000.0 {
-        let fps = res.frame_count as f32 * 0.2;
-        console::log_2(&fps.into(), &"FPS".into());
-        res.last_second = input.now;
-        res.frame_count = 0;
-    } else {
-        res.frame_count += 1;
-    }
-
-    res.animation.needs_update = false;
-    let next_frame_update = res.animation.last_frame_change + res.animation.frame_length as f64;
-    if input.now >= next_frame_update {
-        res.animation.last_frame_change = next_frame_update;
-        let last_frame = res.animation.current_frame;
-        res.animation.current_frame += 1;
-        if res.animation.current_frame >= res.animation.steps.len() {
-            res.animation.current_frame = 0;
-        }
-        if last_frame != res.animation.current_frame {
-            res.animation.needs_update = true;
-        }
-    }
-
-    res.buttons.esc.track(input.esc);
-    if res.buttons.esc.just_pressed {
-        window()?.dyn_into::<EventTarget>().ok().ok_or("cannot have even target")?.dispatch_event(&Event::new("exiting_session")?);
-        return Ok(false);
-    }
-
-    res.buttons.showing_pixels_pulse.track(input.showing_pixels_pulse);
-    if res.buttons.showing_pixels_pulse.just_pressed {
-        res.showing_pixels_pulse = !res.showing_pixels_pulse;
-    }
-
-    if res.showing_pixels_pulse {
-        res.pixels_pulse += dt * 0.3;
-    } else {
-        res.pixels_pulse = 0.0;
-    }
-
-    res.buttons.toggle_pixels_or_voxels.track(input.toggle_pixels_or_voxels);
-    if res.buttons.toggle_pixels_or_voxels.just_released {
-        res.pixels_or_voxels = match res.pixels_or_voxels {
-            Pixels_Or_Voxels::Pixels => Pixels_Or_Voxels::Voxels,
-            Pixels_Or_Voxels::Voxels => Pixels_Or_Voxels::Pixels
-        };
-    }
-
-    res.buttons.speed_up.track(input.speed_up);
-    res.buttons.speed_down.track(input.speed_down);
-    if input.alt {
-        if res.buttons.speed_up.just_pressed { res.camera.turning_speed *= 2.0; }
-        if res.buttons.speed_down.just_pressed { res.camera.turning_speed /= 2.0; }
-    } else if input.shift {
-        if res.buttons.speed_up.just_pressed { res.pixel_manipulation_speed *= 2.0; }
-        if res.buttons.speed_down.just_pressed { res.pixel_manipulation_speed /= 2.0; }
-    } else {
-        if res.buttons.speed_up.just_pressed { res.camera.movement_speed *= 2.0; }
-        if res.buttons.speed_down.just_pressed { res.camera.movement_speed /= 2.0; }
-    }
-
-    if res.camera.movement_speed > 10000.0 {
-        res.camera.movement_speed = 10000.0; }
-    if res.camera.movement_speed < 0.1 {
-        res.camera.movement_speed = 0.1; }
-
-    if res.camera.turning_speed > 10000.0 {
-        res.camera.turning_speed = 10000.0;
-    }
-    if res.camera.turning_speed < 0.1 {
-        res.camera.turning_speed = 0.1;
-    }
-
-    if input.reset_speeds {
-        res.camera.turning_speed = turning_base_speed;
-        res.camera.movement_speed = movement_base_speed;
-        res.pixel_manipulation_speed = pixel_manipulation_base_speed;
-    }
-
-    if input.walk_left { res.camera.advance(Camera_Direction::Left, dt); }
-    if input.walk_right { res.camera.advance(Camera_Direction::Right, dt); }
-    if input.walk_up { res.camera.advance(Camera_Direction::Up, dt); }
-    if input.walk_down { res.camera.advance(Camera_Direction::Down, dt); }
-    if input.walk_forward { res.camera.advance(Camera_Direction::Forward, dt); }
-    if input.walk_backward { res.camera.advance(Camera_Direction::Backward, dt); }
-
-    if input.turn_left { res.camera.turn(Camera_Direction::Left, dt); }
-    if input.turn_right { res.camera.turn(Camera_Direction::Right, dt); }
-    if input.turn_up { res.camera.turn(Camera_Direction::Up, dt); }
-    if input.turn_down { res.camera.turn(Camera_Direction::Down, dt); }
-
-    if input.rotate_left { res.camera.rotate(Camera_Direction::Left, dt); }
-    if input.rotate_right { res.camera.rotate(Camera_Direction::Right, dt); }
-
-    res.buttons.mouse_click.track(input.mouse_left_click);
-    if res.buttons.mouse_click.just_pressed {
-        window()?.dyn_into::<EventTarget>().ok().ok_or("cannot have even target")?.dispatch_event(&Event::new("request_pointer_lock")?);
-    } else if res.buttons.mouse_click.activated {
-        res.camera.drag(input.mouse_position_x, input.mouse_position_y);
-    } else if res.buttons.mouse_click.just_released {
-        window()?.dyn_into::<EventTarget>().ok().ok_or("cannot have even target")?.dispatch_event(&Event::new("exit_pointer_lock")?);
-    }
-
-    if input.mouse_scroll_y != 0.0 {
-        if res.camera_zoom >= 1.0 && res.camera_zoom <= 45.0 {
-            res.camera_zoom -= input.mouse_scroll_y * 0.1;
-        }
-        if res.camera_zoom <= 1.0 {
-            res.camera_zoom = 1.0;
-        }
-        if res.camera_zoom >= 45.0 {
-            res.camera_zoom = 45.0;
-        }
-    }
-
-    res.camera.update_position();
-
-    if input.increase_pixel_scale_x {
-        res.cur_pixel_scale_x += 0.005 * dt * res.pixel_manipulation_speed; }
-    if input.decrease_pixel_scale_x {
-        res.cur_pixel_scale_x -= 0.005 * dt * res.pixel_manipulation_speed; }
-    if res.cur_pixel_scale_x <= 0.0 {
-        res.cur_pixel_scale_x = 0.0; }
-
-    if input.increase_pixel_scale_y {
-        res.cur_pixel_scale_y += 0.005 * dt * res.pixel_manipulation_speed; }
-    if input.decrease_pixel_scale_y {
-        res.cur_pixel_scale_y -= 0.005 * dt * res.pixel_manipulation_speed; }
-    if res.cur_pixel_scale_y <= 0.0 {
-        res.cur_pixel_scale_y = 0.0; }
-
-    if input.increase_pixel_gap {
-        res.cur_pixel_gap += 0.005 * dt * res.pixel_manipulation_speed; }
-    if input.decrease_pixel_gap {
-        res.cur_pixel_gap -= 0.005 * dt * res.pixel_manipulation_speed; }
-    if res.cur_pixel_gap <= 0.0 {
-        res.cur_pixel_gap = 0.0; }
-
-    Ok(true)
-}
-
 const pixel_vertex_shader: &str = r#"#version 300 es
 precision lowp float;
 
@@ -812,39 +661,6 @@ void main()
     FragColor = ObjectColor * vec4(ambient + diffuse * (1.0 - ambientStrength), 1.0);
 } 
 "#;
-
-pub fn make_shader(gl: &WebGl2RenderingContext, vertex_shader: &str, fragment_shader: &str) -> Result<WebGlProgram> {
-    let vert_shader = compile_shader(
-        &gl,
-        WebGl2RenderingContext::VERTEX_SHADER,
-        vertex_shader,
-    )?;
-    let frag_shader = compile_shader(
-        &gl,
-        WebGl2RenderingContext::FRAGMENT_SHADER,
-        fragment_shader,
-    )?;
-    link_shader(&gl, [vert_shader, frag_shader].iter())
-}
-
-pub fn js_f32_array(data: &[f32]) -> Float32Array {
-    let array = Float32Array::new(&wasm_bindgen::JsValue::from(data.len() as u32));
-    for (i, f) in data.iter().enumerate() {
-        array.fill(*f, i as u32, (i + 1) as u32);
-    }
-    array
-}
-
-const WIDTH: usize = 256;
-const HEIGHT: usize = 224;
-
-pub fn check_error(gl: &WebGl2RenderingContext, line: u32) -> Result<()> {
-    let error = gl.get_error();
-    if error != WebGl2RenderingContext::NO_ERROR {
-        return Err(Wasm_Error::Str(error.to_string() + " on line: " + &line.to_string()));
-    }
-    Ok(())
-}
 
 pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) -> Result<Resources> {
     let width = animation.width as usize;
@@ -923,6 +739,7 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
         pixel_vao: pixel_vao,
         colors_vbo: colors_vbo,
         frame_count: 0,
+        translation_base_speed: camera.movement_speed,
         last_time: now,
         last_second: now,
         last_mouse_x: -1,
@@ -941,14 +758,199 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
     })
 }
 
-pub fn radians(grad: f32) -> f32 {
-    let pi: f32 = glm::pi();
-    grad * pi / 180.0
+pub fn js_f32_array(data: &[f32]) -> Float32Array {
+    let array = Float32Array::new(&wasm_bindgen::JsValue::from(data.len() as u32));
+    for (i, f) in data.iter().enumerate() {
+        array.fill(*f, i as u32, (i + 1) as u32);
+    }
+    array
+}
+
+pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
+    let dt: f32 = ((input.now - res.last_time) / 1000.0) as f32;
+    let ellapsed = input.now - res.last_second;
+    res.last_time = input.now;
+
+    if ellapsed >= 1_000.0 {
+        let fps = res.frame_count as f32;
+        dispatch_event_with("app-event.fps", &fps.into())?;
+        res.last_second = input.now;
+        res.frame_count = 0;
+    } else {
+        res.frame_count += 1;
+    }
+
+    res.animation.needs_buffer_data_load = false;
+    let next_frame_update = res.animation.last_frame_change + res.animation.frame_length as f64;
+    if input.now >= next_frame_update {
+        res.animation.last_frame_change = next_frame_update;
+        let last_frame = res.animation.current_frame;
+        res.animation.current_frame += 1;
+        if res.animation.current_frame >= res.animation.steps.len() {
+            res.animation.current_frame = 0;
+        }
+        if last_frame != res.animation.current_frame {
+            res.animation.needs_buffer_data_load = true;
+        }
+    }
+
+    res.buttons.esc.track(input.esc);
+    if res.buttons.esc.just_pressed {
+        dispatch_event("app-event.exiting_session")?;
+        return Ok(false);
+    }
+
+    res.buttons.space.track(input.space);
+    if res.buttons.space.just_pressed {
+        dispatch_event("app-event.toggle_info_panel")?;
+    }
+
+    res.buttons.showing_pixels_pulse.track(input.showing_pixels_pulse);
+    if res.buttons.showing_pixels_pulse.just_pressed {
+        res.showing_pixels_pulse = !res.showing_pixels_pulse;
+        dispatch_event_with("app-event.top_message", &(if res.showing_pixels_pulse {"Screen wave activated."} else {"Screen wave deactivated."}).into())?;
+        dispatch_event_with("app-event.showing_pixels_pulse", &res.showing_pixels_pulse.into())?;
+    }
+
+    if res.showing_pixels_pulse {
+        res.pixels_pulse += dt * 0.3;
+    } else {
+        res.pixels_pulse = 0.0;
+    }
+
+    res.buttons.toggle_pixels_or_voxels.track(input.toggle_pixels_or_voxels);
+    if res.buttons.toggle_pixels_or_voxels.just_released {
+        res.pixels_or_voxels = match res.pixels_or_voxels {
+            Pixels_Or_Voxels::Pixels => Pixels_Or_Voxels::Voxels,
+            Pixels_Or_Voxels::Voxels => Pixels_Or_Voxels::Pixels
+        };
+        let message = match res.pixels_or_voxels {
+            Pixels_Or_Voxels::Pixels => "squares",
+            Pixels_Or_Voxels::Voxels => "cubes"
+        };
+        dispatch_event_with("app-event.top_message", &("Showing pixels as ".to_string() + &message+ &".").into())?;
+        dispatch_event_with("app-event.showing_pixels_as", &message.into())?;
+    }
+
+    res.buttons.speed_up.track(input.speed_up);
+    res.buttons.speed_down.track(input.speed_down);
+    if input.alt {
+        let last_turning_speed = res.camera.turning_speed;
+        if res.buttons.speed_up.just_pressed { res.camera.turning_speed *= 2.0; }
+        if res.buttons.speed_down.just_pressed { res.camera.turning_speed /= 2.0; }
+        if last_turning_speed != res.camera.turning_speed {
+            let turning_speed = res.camera.turning_speed / turning_base_speed;
+            let message = "Turning camera speed: ".to_string() + &turning_speed.to_string() + &"x".to_string();
+            dispatch_event_with("app-event.top_message", &message.into())?;
+            dispatch_event_with("app-event.turning_speed", &turning_speed.into())?;
+        }
+        if res.camera.turning_speed > 10000.0 {
+            res.camera.turning_speed /= 2.0;
+        }
+        if res.camera.turning_speed < 0.1 {
+            res.camera.turning_speed *= 2.0;
+        }
+    } else if input.shift {
+        let last_pixel_manipulation_speed = res.pixel_manipulation_speed;
+        if res.buttons.speed_up.just_pressed { res.pixel_manipulation_speed *= 2.0; }
+        if res.buttons.speed_down.just_pressed { res.pixel_manipulation_speed /= 2.0; }
+        if last_pixel_manipulation_speed != res.pixel_manipulation_speed {
+            let pixel_manipulation_speed = res.pixel_manipulation_speed / pixel_manipulation_base_speed;
+            let message = "Pixel manipulation speed: ".to_string() + &pixel_manipulation_speed.to_string() + &"x".to_string();
+            dispatch_event_with("app-event.top_message", &message.into())?;
+            dispatch_event_with("app-event.pixel_manipulation_speed", &pixel_manipulation_speed.into())?;
+        }
+    } else {
+        let last_movement_speed = res.camera.movement_speed;
+        if res.buttons.speed_up.just_pressed { res.camera.movement_speed *= 2.0; }
+        if res.buttons.speed_down.just_pressed { res.camera.movement_speed /= 2.0; }
+        if res.camera.movement_speed > 10000.0 {
+            res.camera.movement_speed /= 2.0;
+        }
+        if res.camera.movement_speed < 0.1 {
+            res.camera.movement_speed *= 2.0;
+        }
+        if last_movement_speed != res.camera.movement_speed {
+            let translation_speed = res.camera.movement_speed / res.translation_base_speed;
+            let message = "Translation camera speed: ".to_string() + &translation_speed.to_string() + &"x".to_string();
+            dispatch_event_with("app-event.top_message", &message.into())?;
+            dispatch_event_with("app-event.translation_speed", &translation_speed.into())?;
+        }
+    }
+
+    if input.reset_speeds {
+        res.camera.turning_speed = turning_base_speed;
+        res.camera.movement_speed = res.translation_base_speed;
+        res.pixel_manipulation_speed = pixel_manipulation_base_speed;
+        dispatch_event_with("app-event.top_message", &"All speeds have been reset.".into())?;
+        dispatch_event("app-event.speed_reset")?;
+    }
+
+    if input.walk_left { res.camera.advance(Camera_Direction::Left, dt); }
+    if input.walk_right { res.camera.advance(Camera_Direction::Right, dt); }
+    if input.walk_up { res.camera.advance(Camera_Direction::Up, dt); }
+    if input.walk_down { res.camera.advance(Camera_Direction::Down, dt); }
+    if input.walk_forward { res.camera.advance(Camera_Direction::Forward, dt); }
+    if input.walk_backward { res.camera.advance(Camera_Direction::Backward, dt); }
+
+    if input.turn_left { res.camera.turn(Camera_Direction::Left, dt); }
+    if input.turn_right { res.camera.turn(Camera_Direction::Right, dt); }
+    if input.turn_up { res.camera.turn(Camera_Direction::Up, dt); }
+    if input.turn_down { res.camera.turn(Camera_Direction::Down, dt); }
+
+    if input.rotate_left { res.camera.rotate(Camera_Direction::Left, dt); }
+    if input.rotate_right { res.camera.rotate(Camera_Direction::Right, dt); }
+
+    res.buttons.mouse_click.track(input.mouse_left_click);
+    if res.buttons.mouse_click.just_pressed {
+        dispatch_event("app-event.request_pointer_lock")?;
+    } else if res.buttons.mouse_click.activated {
+        res.camera.drag(input.mouse_position_x, input.mouse_position_y);
+    } else if res.buttons.mouse_click.just_released {
+        dispatch_event("app-event.exit_pointer_lock")?;
+    }
+
+    if input.mouse_scroll_y != 0.0 {
+        if res.camera_zoom >= 1.0 && res.camera_zoom <= 45.0 {
+            res.camera_zoom -= input.mouse_scroll_y * 0.1;
+        }
+        if res.camera_zoom <= 1.0 {
+            res.camera_zoom = 1.0;
+        }
+        if res.camera_zoom >= 45.0 {
+            res.camera_zoom = 45.0;
+        }
+    }
+
+    res.camera.update_position();
+
+    if input.increase_pixel_scale_x {
+        res.cur_pixel_scale_x += 0.005 * dt * res.pixel_manipulation_speed; }
+    if input.decrease_pixel_scale_x {
+        res.cur_pixel_scale_x -= 0.005 * dt * res.pixel_manipulation_speed; }
+    if res.cur_pixel_scale_x <= 0.0 {
+        res.cur_pixel_scale_x = 0.0; }
+
+    if input.increase_pixel_scale_y {
+        res.cur_pixel_scale_y += 0.005 * dt * res.pixel_manipulation_speed; }
+    if input.decrease_pixel_scale_y {
+        res.cur_pixel_scale_y -= 0.005 * dt * res.pixel_manipulation_speed; }
+    if res.cur_pixel_scale_y <= 0.0 {
+        res.cur_pixel_scale_y = 0.0; }
+
+    if input.increase_pixel_gap {
+        res.cur_pixel_gap += 0.005 * dt * res.pixel_manipulation_speed; }
+    if input.decrease_pixel_gap {
+        res.cur_pixel_gap -= 0.005 * dt * res.pixel_manipulation_speed; }
+    if res.cur_pixel_gap <= 0.0 {
+        res.cur_pixel_gap = 0.0; }
+
+    Ok(true)
 }
 
 pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
 
-    if res.animation.needs_update {
+    if res.animation.needs_buffer_data_load {
         gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&res.colors_vbo));
         gl.buffer_data_with_opt_array_buffer(
             WebGl2RenderingContext::ARRAY_BUFFER,
@@ -1006,6 +1008,25 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
     Ok(())
 }
 
+pub fn radians(grad: f32) -> f32 {
+    let pi: f32 = glm::pi();
+    grad * pi / 180.0
+}
+
+pub fn make_shader(gl: &WebGl2RenderingContext, vertex_shader: &str, fragment_shader: &str) -> Result<WebGlProgram> {
+    let vert_shader = compile_shader(
+        &gl,
+        WebGl2RenderingContext::VERTEX_SHADER,
+        vertex_shader,
+    )?;
+    let frag_shader = compile_shader(
+        &gl,
+        WebGl2RenderingContext::FRAGMENT_SHADER,
+        fragment_shader,
+    )?;
+    link_shader(&gl, [vert_shader, frag_shader].iter())
+}
+
 pub fn compile_shader(gl: &WebGl2RenderingContext, shader_type: u32, source: &str) -> Result<WebGlShader> {
     let shader = gl
         .create_shader(shader_type)
@@ -1043,4 +1064,50 @@ pub fn link_shader<'a, T: IntoIterator<Item = &'a WebGlShader>>(gl: &WebGl2Rende
     } else {
         Err(Wasm_Error::Str(gl.get_program_info_log(&program).ok_or("cannot get program info log")?))
     }
+}
+
+pub fn check_error(gl: &WebGl2RenderingContext, line: u32) -> Result<()> {
+    let error = gl.get_error();
+    if error != WebGl2RenderingContext::NO_ERROR {
+        return Err(Wasm_Error::Str(error.to_string() + " on line: " + &line.to_string()));
+    }
+    Ok(())
+}
+
+pub fn window() -> Result<Window> {
+    Ok(web_sys::window().ok_or("cannot access window")?)
+}
+
+pub fn now() -> Result<f64> {
+    Ok(window()?.performance().ok_or("cannot access performance")?.now())
+}
+
+pub fn dispatch_event(kind: &str) -> Result<()> {
+    dispatch_event_internal(&Event::new(kind)?)
+}
+
+pub fn dispatch_event_with(kind: &str, value: &JsValue) -> Result<()> {
+    let mut parameters = CustomEventInit::new();
+    parameters.detail(&value);
+    let event = CustomEvent::new_with_event_init_dict(kind, &parameters)?
+    .dyn_into::<Event>()
+    .ok()
+    .ok_or("cannot make a custom event")?;
+    dispatch_event_internal(&event)
+}
+
+fn dispatch_event_internal(event: &Event) -> Result<()> {
+    window()?
+    .dyn_into::<EventTarget>()
+    .ok()
+    .ok_or("cannot have even target")?
+    .dispatch_event(&event)
+    .map_err(|err| Wasm_Error::Js(err))
+    .and_then(|result| 
+        if result {
+            Ok(())
+        } else {
+            Err(Wasm_Error::Str("could not dispatch event".to_string()))
+        }
+    )
 }
