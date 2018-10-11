@@ -24,8 +24,7 @@ if ${release} ; then
     cd www
     npm install --dev
     npm run build
-    cp worker.js dist/
-    cp style.css dist/
+    cp *.css dist/
     cp favicon.ico dist/
     cp -r assets dist/
 else

@@ -1,7 +1,7 @@
 const ui = document.getElementById('ui');
 const form = document.getElementById('form');
 const loading = document.getElementById('loading');
-const input = document.getElementById('file');
+const inputFileUpload = document.getElementById('file');
 const startCustom = document.getElementById('start-custom');
 const startAnimation = document.getElementById('start-animation');
 const antialias = document.getElementById('antialias');
@@ -9,7 +9,7 @@ const scaleX = document.getElementById('scale-x');
 const scaleY = document.getElementById('scale-y');
 const scaleCustomInputs = document.getElementById('scale-custom-inputs');
 const dropZone = document.getElementById('drop-zone');
-const worker = new Worker("worker.js");
+
 const infoHide = document.getElementById('info-hide');
 const infoPanel = document.getElementById('info-panel');
 const fpsCounter = document.getElementById('fps-counter');
@@ -27,38 +27,6 @@ const cameraAxisUpZ = document.getElementById('camera-axis-up-z');
 const pixelScaleX = document.getElementById('pixel-scale-x');
 const pixelScaleY = document.getElementById('pixel-scale-y');
 const pixelGap = document.getElementById('pixel-gap');
-
-// SETTING UP STATIC EVENT HANDLERS
-
-input.onchange = () => {
-    const file = input.files[0];
-    const url = (window.URL || window.webkitURL).createObjectURL(file);
-    worker.postMessage({url: url});
-    console.log(new Date().toISOString(), "message sent to worker");
-};
-
-worker.onmessage = (event) => {
-    console.log(new Date().toISOString(), "worker replied");
-    const previewUrl = URL.createObjectURL(event.data.blob);
-    const img = new Image();
-    img.src = previewUrl;
-    img.onload = () => {
-        const preview = document.getElementById('preview');
-        if (preview) {
-            preview.remove();
-        }
-        img.id = 'preview';
-        if (img.width > img.height) {
-            img.style.width = "100px";
-        } else {
-            img.style.height = "100px";
-        }
-        dropZone.innerHTML = "";
-        dropZone.appendChild(img);
-        console.log(new Date().toISOString(), "image loaded");
-        startCustom.disabled = false;
-    }
-}
 
 window.ondrop = event => {
     event.preventDefault();
@@ -155,11 +123,15 @@ infoHide.onclick = () => {
         }));
     }
 }
+inputFileUpload.onchange = () => {
+  const file = inputFileUpload.files[0];
+  const url = (window.URL || window.webkitURL).createObjectURL(file);
+  processFileToUpload(url);
+};
 dropZone.onclick = () => {
     document.getElementById('file').click();
 }
 dropZone.ondragover = event => {
-    console.log(event);
     event.stopPropagation();
     event.preventDefault();
     event.dataTransfer.dropEffect = 'copy';
@@ -169,8 +141,7 @@ dropZone.ondrop = event => {
     event.preventDefault();
     var file = event.dataTransfer.files[0];
     const url = (window.URL || window.webkitURL).createObjectURL(file);
-    worker.postMessage({url: url});
-    console.log(new Date().toISOString(), "message sent to worker from drop");
+    processFileToUpload(url);
 };
 document.form.scale.forEach(s => {
     s.onclick = function() {
@@ -247,7 +218,7 @@ function prepareUi() {
             animationPromise.then(startResolve);
         }
     });
-    
+
     startPromise.then((rawImgs) => {
         console.log(new Date().toISOString(), "image readed");
         const dpi = window.devicePixelRatio;
@@ -316,21 +287,51 @@ function prepareUi() {
         document.exitPointerLock = document.exitPointerLock || document.mozExitPointerLock;
     
         if (!gl) throw new Error("Could not get webgl context.");
-    
-        import('./crt_3d_sim.js').then(module => {
-            const animation = new module.Animation_Source(rawImgs[0].width, rawImgs[0].height, width, height, 1 / 60, +scaleX, +scaleY);
+
+        import(/* webpackPrefetch: true */"./crt_3d_sim").then(wasm => {
+            const animation = new wasm.Animation_Source(rawImgs[0].width, rawImgs[0].height, width, height, 1 / 60, +scaleX, +scaleY);
             for (let i = 0; i < rawImgs.length; i++) {
                 const rawImg = rawImgs[i];
                 animation.add(rawImg.data.buffer);
             }
     
             console.log(new Date().toISOString(), "calling wasm main");
-            module.main(gl, animation);
+            wasm.main(gl, animation);
             console.log(new Date().toISOString(), "wasm main done");
         
             loading.classList.add("display-none");
             infoPanel.classList.remove("display-none");
         });
     });
+}
 
+
+async function processFileToUpload(url) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.responseType = 'blob';
+    xhr.send(null);
+
+    await new Promise(resolve => xhr.onload = () => resolve());
+
+    const previewUrl = URL.createObjectURL(xhr.response);
+    const img = new Image();
+    img.src = previewUrl;
+
+    await new Promise(resolve => img.onload = () => resolve());
+    
+    const preview = document.getElementById('preview');
+    if (preview) {
+        preview.remove();
+    }
+    img.id = 'preview';
+    if (img.width > img.height) {
+        img.style.width = "100px";
+    } else {
+        img.style.height = "100px";
+    }
+    dropZone.innerHTML = "";
+    dropZone.appendChild(img);
+    console.log(new Date().toISOString(), "image loaded");
+    startCustom.disabled = false;
 }

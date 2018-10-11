@@ -1,18 +1,20 @@
 const path = require('path');
-const CleanWebpackPlugin = require('clean-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const webpack = require('webpack');
 
 module.exports = {
-    entry: './bootstrap.js',
+    entry: './entrypoint.js',
     plugins: [
-//        new CleanWebpackPlugin(['dist']),
         new HtmlWebpackPlugin({
             inject: "body",
             template: "index.html"
-        })
+        }),
+        new webpack.optimize.LimitChunkCountPlugin({
+            maxChunks: 2,
+        }),
     ],
     output: {
         path: path.resolve(__dirname, 'dist'),
-        filename: 'bootstrap.js',
+        filename: 'entrypoint.js',
     }
 };
