@@ -137,17 +137,14 @@ window.addEventListener('app-event.camera_update', event => {
 
 window.addEventListener('app-event.change_pixel_scale_x', event => {
     pixelScaleX.innerHTML = Math.round(event.detail * 1000.0) / 1000.0;
-    console.log('change_pixel_scale_x', event.detail);
 }, false);
 
 window.addEventListener('app-event.change_pixel_scale_y', event => {
     pixelScaleY.innerHTML = Math.round(event.detail * 1000.0) / 1000.0;
-    console.log('change_pixel_scale_y', event.detail);
 }, false);
 
 window.addEventListener('app-event.change_pixel_gap', event => {
     pixelGap.innerHTML = Math.round(event.detail * 1000.0) / 1000.0;
-    console.log('change_pixel_gap', event.detail);
 }, false);
 
 infoHide.onclick = () => {
