@@ -317,7 +317,7 @@ function prepareUi() {
     
         if (!gl) throw new Error("Could not get webgl context.");
     
-        import('./wasm_game_of_life.js').then(module => {
+        import('./crt_3d_sim.js').then(module => {
             const animation = new module.Animation_Source(rawImgs[0].width, rawImgs[0].height, width, height, 1 / 60, +scaleX, +scaleY);
             for (let i = 0; i < rawImgs.length; i++) {
                 const rawImg = rawImgs[i];

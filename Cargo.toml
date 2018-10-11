@@ -1,5 +1,5 @@
 [package]
-name = "wasm-game-of-life"
+name = "crt-3d-sim"
 version = "0.1.0"
 authors = ["José manuel Barroso Galindo <theypsilon@gmail.com>"]
 

@@ -3,7 +3,7 @@
 /bin
 /pkg
 /www/dist
-/www/wasm_game_of_life*
+/www/crt_3d_sim*
 wasm-pack.log
 **/*.rs.bk
 Cargo.lock
