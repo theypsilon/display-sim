@@ -754,6 +754,11 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
     camera.movement_speed *= far_away_position / movement_speed_factor;
 
     check_error(&gl, line!())?;
+
+    dispatch_event_with("app-event.change_pixel_scale_x", &1.0.into());
+    dispatch_event_with("app-event.change_pixel_scale_y", &1.0.into());
+    dispatch_event_with("app-event.change_pixel_gap", &1.0.into());
+
     Ok(Resources {
         pixel_shader: program,
         pixel_vao: pixel_vao,
@@ -859,7 +864,7 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
         if res.buttons.speed_up.just_pressed { res.camera.turning_speed *= 2.0; }
         if res.buttons.speed_down.just_pressed { res.camera.turning_speed /= 2.0; }
         if last_turning_speed != res.camera.turning_speed {
-            let turning_speed = res.camera.turning_speed / turning_base_speed;
+            let turning_speed = (res.camera.turning_speed / turning_base_speed * 1000.0).round() / 1000.0;
             let message = "Turning camera speed: ".to_string() + &turning_speed.to_string() + &"x".to_string();
             dispatch_event_with("app-event.top_message", &message.into())?;
             dispatch_event_with("app-event.turning_speed", &turning_speed.into())?;
@@ -875,7 +880,7 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
         if res.buttons.speed_up.just_pressed { res.pixel_manipulation_speed *= 2.0; }
         if res.buttons.speed_down.just_pressed { res.pixel_manipulation_speed /= 2.0; }
         if last_pixel_manipulation_speed != res.pixel_manipulation_speed {
-            let pixel_manipulation_speed = res.pixel_manipulation_speed / pixel_manipulation_base_speed;
+            let pixel_manipulation_speed = (res.pixel_manipulation_speed / pixel_manipulation_base_speed * 1000.0).round() / 1000.0;
             let message = "Pixel manipulation speed: ".to_string() + &pixel_manipulation_speed.to_string() + &"x".to_string();
             dispatch_event_with("app-event.top_message", &message.into())?;
             dispatch_event_with("app-event.pixel_manipulation_speed", &pixel_manipulation_speed.into())?;
@@ -891,7 +896,7 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
             res.camera.movement_speed *= 2.0;
         }
         if last_movement_speed != res.camera.movement_speed {
-            let translation_speed = res.camera.movement_speed / res.translation_base_speed;
+            let translation_speed = (res.camera.movement_speed / res.translation_base_speed * 1000.0).round() / 1000.0;
             let message = "Translation camera speed: ".to_string() + &translation_speed.to_string() + &"x".to_string();
             dispatch_event_with("app-event.top_message", &message.into())?;
             dispatch_event_with("app-event.translation_speed", &translation_speed.into())?;
@@ -944,26 +949,51 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
 
     res.camera.update_position()?;
 
+    let last_pixel_scale_x = res.cur_pixel_scale_x;
     if input.increase_pixel_scale_x {
-        res.cur_pixel_scale_x += 0.005 * dt * res.pixel_manipulation_speed; }
+        res.cur_pixel_scale_x += 0.005 * dt * res.pixel_manipulation_speed;
+    }
     if input.decrease_pixel_scale_x {
-        res.cur_pixel_scale_x -= 0.005 * dt * res.pixel_manipulation_speed; }
-    if res.cur_pixel_scale_x <= 0.0 {
-        res.cur_pixel_scale_x = 0.0; }
+        res.cur_pixel_scale_x -= 0.005 * dt * res.pixel_manipulation_speed;
+    }
 
+    if last_pixel_scale_x != res.cur_pixel_scale_x {
+        if res.cur_pixel_scale_x <= 0.0 {
+            res.cur_pixel_scale_x = 0.0;
+        }
+        let pixel_scale_x = res.cur_pixel_scale_x + 1.0;
+        dispatch_event_with("app-event.change_pixel_scale_x", &pixel_scale_x.into());
+    }
+
+    let last_pixel_scale_y = res.cur_pixel_scale_y;
     if input.increase_pixel_scale_y {
-        res.cur_pixel_scale_y += 0.005 * dt * res.pixel_manipulation_speed; }
+        res.cur_pixel_scale_y += 0.005 * dt * res.pixel_manipulation_speed; 
+    }
     if input.decrease_pixel_scale_y {
-        res.cur_pixel_scale_y -= 0.005 * dt * res.pixel_manipulation_speed; }
-    if res.cur_pixel_scale_y <= 0.0 {
-        res.cur_pixel_scale_y = 0.0; }
+        res.cur_pixel_scale_y -= 0.005 * dt * res.pixel_manipulation_speed;
+    }
+    if res.cur_pixel_scale_y != last_pixel_scale_y {
+        if res.cur_pixel_scale_y <= 0.0 {
+            res.cur_pixel_scale_y = 0.0;
+        }
+        let pixel_scale_y = res.cur_pixel_scale_y + 1.0;
+        dispatch_event_with("app-event.change_pixel_scale_y", &pixel_scale_y.into());
+    }
 
+    let last_pixel_gap = res.cur_pixel_gap;
     if input.increase_pixel_gap {
-        res.cur_pixel_gap += 0.005 * dt * res.pixel_manipulation_speed; }
+        res.cur_pixel_gap += 0.005 * dt * res.pixel_manipulation_speed;
+    }
     if input.decrease_pixel_gap {
-        res.cur_pixel_gap -= 0.005 * dt * res.pixel_manipulation_speed; }
-    if res.cur_pixel_gap <= 0.0 {
-        res.cur_pixel_gap = 0.0; }
+        res.cur_pixel_gap -= 0.005 * dt * res.pixel_manipulation_speed;
+    }
+    if last_pixel_gap != res.cur_pixel_gap {
+        if res.cur_pixel_gap <= 0.0 {
+            res.cur_pixel_gap = 0.0;
+        }
+        let pixel_gap = res.cur_pixel_gap + 1.0;
+        dispatch_event_with("app-event.change_pixel_gap", &pixel_gap.into());
+    }
 
     Ok(true)
 }

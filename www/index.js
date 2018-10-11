@@ -24,6 +24,10 @@ const cameraAxisUpX = document.getElementById('camera-axis-up-x');
 const cameraAxisUpY = document.getElementById('camera-axis-up-y');
 const cameraAxisUpZ = document.getElementById('camera-axis-up-z');
 
+const pixelScaleX = document.getElementById('pixel-scale-x');
+const pixelScaleY = document.getElementById('pixel-scale-y');
+const pixelGap = document.getElementById('pixel-gap');
+
 // SETTING UP STATIC EVENT HANDLERS
 
 input.onchange = () => {
@@ -129,6 +133,21 @@ window.addEventListener('app-event.camera_update', event => {
     cameraAxisUpX.innerHTML = Math.round(event.detail[6] * 100) / 100;
     cameraAxisUpY.innerHTML = Math.round(event.detail[7] * 100) / 100;
     cameraAxisUpZ.innerHTML = Math.round(event.detail[8] * 100) / 100;
+}, false);
+
+window.addEventListener('app-event.change_pixel_scale_x', event => {
+    pixelScaleX.innerHTML = Math.round(event.detail * 1000.0) / 1000.0;
+    console.log('change_pixel_scale_x', event.detail);
+}, false);
+
+window.addEventListener('app-event.change_pixel_scale_y', event => {
+    pixelScaleY.innerHTML = Math.round(event.detail * 1000.0) / 1000.0;
+    console.log('change_pixel_scale_y', event.detail);
+}, false);
+
+window.addEventListener('app-event.change_pixel_gap', event => {
+    pixelGap.innerHTML = Math.round(event.detail * 1000.0) / 1000.0;
+    console.log('change_pixel_gap', event.detail);
 }, false);
 
 infoHide.onclick = () => {

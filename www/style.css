@@ -157,6 +157,11 @@ body {
     color: #eee;
 }
 
+.feature-value {
+    float: right;
+    width: 40px;
+}
+
 .info-category {
     margin-bottom: 20px;
 }
