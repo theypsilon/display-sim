@@ -3,4 +3,4 @@ Port of [Retro-Display-Simulator](https://github.com/theypsilon/Retro-Display-Si
 
 Demo at [theypsilon.github.io/crt-3d-sim](https://theypsilon.github.io/crt-3d-sim).
 
-Testing Rust with WebAssembly for first time was a great learning experience of both.
+Testing Rust with WebAssembly for first time was a great learning experience.
