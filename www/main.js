@@ -206,7 +206,7 @@ function prepareUi() {
                     ctx.drawImage(img, 0, 0);
                     const columns = Math.floor(img.width / 256);
                     const rawImgs = [];
-                    for (let i = 0; i < 45; i++) {
+                    for (let i = 0; i <= 45; i++) {
                         const x = i % columns;
                         const y = Math.floor(i / columns);
                         rawImgs.push(ctx.getImageData(x * 256, y * 224, 256, 224));
