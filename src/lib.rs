@@ -616,7 +616,7 @@ pub fn program(gl: JsValue, animation: Animation_Source) -> Result<()> {
 }
 
 const pixel_vertex_shader: &str = r#"#version 300 es
-precision lowp float;
+precision highp float;
 
 in vec3 aPos;
 in vec3 aNormal;
@@ -654,7 +654,7 @@ void main()
 "#;
 
 const pixel_fragment_shader: &str = r#"#version 300 es
-precision lowp float;
+precision highp float;
 
 out vec4 FragColor;
 
