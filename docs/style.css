@@ -43,7 +43,7 @@ body {
     white-space: wrap;
 }
 
-.option-inputs input {
+.option-inputs input[type="radio"] {
     margin-right: 5px;
     display: inline-block;
 }
