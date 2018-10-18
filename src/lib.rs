@@ -1,10 +1,10 @@
-extern crate cfg_if;
 extern crate wasm_bindgen;
 extern crate js_sys;
 extern crate web_sys;
 extern crate nalgebra_glm as glm;
+extern crate console_error_panic_hook;
 
-mod utils;
+use console_error_panic_hook::set_once as set_panic_hook;
 
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
@@ -12,6 +12,7 @@ use web_sys::{
     Window, console,
     WebGlProgram, WebGl2RenderingContext, 
     WebGlShader, WebGlVertexArrayObject, WebGlBuffer,
+    WebGlFramebuffer, WebGlTexture,
     KeyboardEvent, MouseEvent, WheelEvent, Event, EventTarget, CustomEvent, CustomEventInit
 };
 use js_sys::{Float32Array, ArrayBuffer};
@@ -39,6 +40,7 @@ pub struct Animation_Source {
     scale_y: f32,
     screen_width: u32,
     screen_height: u32,
+    dpi: f32,
     frame_length: f32,
     current_frame: usize,
     last_frame_change: f64,
@@ -48,7 +50,7 @@ pub struct Animation_Source {
 #[wasm_bindgen]
 impl Animation_Source {
     #[wasm_bindgen(constructor)]
-    pub fn new(width: u32, height: u32, screen_width: u32, screen_height: u32, frame_length: f32, scale_x: f32, scale_y: f32) -> Animation_Source {
+    pub fn new(width: u32, height: u32, screen_width: u32, screen_height: u32, frame_length: f32, scale_x: f32, scale_y: f32, dpi: f32) -> Animation_Source {
         Animation_Source {
             steps: Vec::new(),
             width: width,
@@ -58,6 +60,7 @@ impl Animation_Source {
             frame_length: frame_length,
             scale_x: scale_x,
             scale_y: scale_y,
+            dpi: dpi,
             current_frame: 1,
             last_frame_change: -100.0,
             needs_buffer_data_load: true,
@@ -161,6 +164,10 @@ pub struct Resources {
     pixel_shader: WebGlProgram,
     pixel_vao: Option<WebGlVertexArrayObject>,
     colors_vbo: WebGlBuffer,
+    bloom_shader: WebGlProgram,
+    framebuffer: Option<WebGlFramebuffer>,
+    texture: Option<WebGlTexture>,
+    quad_vao: Option<WebGlVertexArrayObject>,
     frame_count: u32,
     last_time: f64,
     last_second: f64,
@@ -259,6 +266,7 @@ struct State_Owner {
     animation_frame_id: Option<i32>,
     owned_closures: Vec<Option<Closure<FnMut(JsValue)>>>,
     resources: Resources,
+    resources2: Resources2,
 }
 
 impl State_Owner {
@@ -267,6 +275,7 @@ impl State_Owner {
             animation_frame_id: None,
             owned_closures: Vec::new(),
             resources: resources,
+            resources2: Resources2::new(),
         }
     }
 }
@@ -362,7 +371,7 @@ impl Camera {
         self.position += self.position_delta;
         self.position_delta = glm::vec3 (0.0, 0.0, 0.0);
 
-        if self.sending_camera_update_event == false {
+        if self.sending_camera_update_event == true {
             return Ok(())
         }
 
@@ -434,9 +443,18 @@ const cube_geometry : [f32; 216] = [
     -0.5,  0.5, -0.5,      0.0,  1.0,  0.0,
 ];
 
+
+const quad_geometry : [f32; 20] = [
+         1.0,  1.0, 0.0,   1.0, 1.0, // top right
+         1.0, -1.0, 0.0,   1.0, 0.0, // bottom right
+        -1.0, -1.0, 0.0,   0.0, 0.0, // bottom left
+        -1.0,  1.0, 0.0,   0.0, 1.0  // top left 
+];
+
 pub fn program(gl: JsValue, animation: Animation_Source) -> Result<()> {
     let gl = gl.dyn_into::<WebGl2RenderingContext>()?;
     gl.enable(WebGl2RenderingContext::DEPTH_TEST);
+    let image_buffer = animation.steps[0].clone();
     let render_loop = Rc::new(RefCell::new(State_Owner::new(load_resources(&gl, animation)?)));
     let input = Rc::new(RefCell::new( Input::new().ok().expect("cannot create input")));
     let frame_closure: Closure<FnMut(JsValue)> = {
@@ -458,6 +476,7 @@ pub fn program(gl: JsValue, animation: Animation_Source) -> Result<()> {
                         if next_update_needed == false {
                             return;
                         }
+                        //draw2(&gl, &mut render_loop.resources2, &image_buffer, &input);
                         if let Err(e) = draw(&gl, &render_loop.resources) {
                             console::error_2(&"An unexpected error happened during draw.".into(), &e.to_js());
                             return;
@@ -671,16 +690,70 @@ void main()
     if (ObjectColor.a == 0.0) {
         discard;
     }
-    
-    vec3 ambient = ambientStrength * lightColor;
 
-    vec3 norm = normalize(Normal);
-    vec3 lightDir = normalize(lightPos - FragPos);
-    float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = diff * lightColor;
-      
-    FragColor = ObjectColor * vec4(ambient + diffuse * (1.0 - ambientStrength), 1.0);
+    if (ambientStrength == 1.0) {
+        FragColor = ObjectColor;      
+    } else {
+        vec3 norm = normalize(Normal);
+        vec3 lightDir = normalize(lightPos - FragPos);
+        
+        vec3 ambient = ambientStrength * lightColor;
+
+        float diff = max(dot(norm, lightDir), 0.0);
+        vec3 diffuse = diff * lightColor;
+        
+        FragColor = ObjectColor * vec4(ambient + diffuse * (1.0 - ambientStrength), 1.0);
+    }
 } 
+"#;
+
+const bloom_vertex_shader: &str = r#"#version 300 es
+precision highp float;
+
+layout (location = 0) in vec3 qPos;
+layout (location = 1) in vec2 qTexCoords;
+
+out vec2 TexCoord;
+
+void main()
+{
+    TexCoord = qTexCoords;
+    gl_Position = vec4(qPos, 1.0);
+}
+"#;
+
+const bloom_fragment_shader: &str = r#"#version 300 es
+precision highp float;
+
+out vec4 FragColor;
+in vec2 TexCoord;
+
+uniform sampler2D image;
+uniform int horizontal;
+const float weight[5] = float[] (0.2270270270, 0.1945945946, 0.1216216216, 0.0540540541, 0.0162162162);
+
+void main()
+{
+    vec2 tex_offset = vec2(1.0, 1.0) / float(textureSize(image, 0)); // gets size of single texel
+    vec3 result = texture(image, TexCoord).rgb * weight[0];
+    if(horizontal == 1)
+    {
+        for(int i = 1; i < 5; ++i)
+        {
+            result += texture(image, TexCoord + vec2(tex_offset.x * float(i), 0.0)).rgb * weight[i % 5];
+            result += texture(image, TexCoord - vec2(tex_offset.x * float(i), 0.0)).rgb * weight[i % 5];
+        }
+    }
+    else
+    {
+        for(int i = 1; i < 5; ++i)
+        {
+            result += texture(image, TexCoord + vec2(0.0, tex_offset.y * float(i))).rgb * weight[i % 5];
+            result += texture(image, TexCoord - vec2(0.0, tex_offset.y * float(i))).rgb * weight[i % 5];
+        }
+    }
+    FragColor = vec4(result, 1.0);
+}
 "#;
 
 pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) -> Result<Resources> {
@@ -700,8 +773,52 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
         }
     }
 
-    let program = make_shader(&gl, pixel_vertex_shader, pixel_fragment_shader)?;
 
+    let fb = gl.create_framebuffer();
+    gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, fb.as_ref());
+
+    let texture = gl.create_texture();
+    gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, texture.as_ref());
+    let w: i32 = (animation.screen_width as f32 * animation.dpi) as i32;
+    let h: i32 = (animation.screen_height as f32 * animation.dpi) as i32;
+    gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
+        WebGl2RenderingContext::TEXTURE_2D, 0, WebGl2RenderingContext::RGBA as i32, w, h, 0, WebGl2RenderingContext::RGBA, WebGl2RenderingContext::UNSIGNED_BYTE, None
+    )?;
+    gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MIN_FILTER, WebGl2RenderingContext::LINEAR as i32);
+    gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MAG_FILTER, WebGl2RenderingContext::LINEAR as i32);
+    gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_WRAP_S, WebGl2RenderingContext::REPEAT as i32);
+    gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_WRAP_T, WebGl2RenderingContext::REPEAT as i32);
+    gl.framebuffer_texture_2d(WebGl2RenderingContext::FRAMEBUFFER, WebGl2RenderingContext::COLOR_ATTACHMENT0, WebGl2RenderingContext::TEXTURE_2D, texture.as_ref(), 0);
+
+    gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, None);
+    gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, None);
+
+    let quad_vao = gl.create_vertex_array();
+    gl.bind_vertex_array(quad_vao.as_ref());
+
+    let quad_vbo = gl.create_buffer().ok_or("cannot create quad_vbo")?;
+    let quad_ebo = gl.create_buffer().ok_or("cannot create quad_ebo")?;
+    gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&quad_vbo));
+    gl.buffer_data_with_opt_array_buffer(
+        WebGl2RenderingContext::ARRAY_BUFFER,
+        Some(&js_f32_array(&quad_geometry).buffer()),
+        WebGl2RenderingContext::STATIC_DRAW,
+    );
+    gl.bind_buffer(WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER, Some(&quad_ebo));
+    gl.buffer_data_with_opt_array_buffer(WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER, Some(&js_i32_array(&quad_indices).buffer()), WebGl2RenderingContext::STATIC_DRAW);
+
+    let bloom_shader = make_shader(&gl, bloom_vertex_shader, bloom_fragment_shader)?;
+
+    let q_pos_position = gl.get_attrib_location(&bloom_shader, "qPos") as u32;
+    let q_texture_position = gl.get_attrib_location(&bloom_shader, "qTexCoords") as u32;
+
+    gl.enable_vertex_attrib_array(q_pos_position);
+    gl.enable_vertex_attrib_array(q_texture_position);
+
+    gl.vertex_attrib_pointer_with_i32(q_pos_position, 3, WebGl2RenderingContext::FLOAT, false, 5 * size_of::<f32>() as i32, 0);
+    gl.vertex_attrib_pointer_with_i32(q_texture_position, 2, WebGl2RenderingContext::FLOAT, false, 5 * size_of::<f32>() as i32, 3 * size_of::<f32>() as i32);
+    
+    let pixel_shader = make_shader(&gl, pixel_vertex_shader, pixel_fragment_shader)?;
     let pixel_vao = gl.create_vertex_array();
     gl.bind_vertex_array(pixel_vao.as_ref());
 
@@ -713,18 +830,18 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
         WebGl2RenderingContext::STATIC_DRAW,
     );
 
-    let a_pos_position = gl.get_attrib_location(&program, "aPos") as u32;
+    let a_pos_position = gl.get_attrib_location(&pixel_shader, "aPos") as u32;
     gl.vertex_attrib_pointer_with_i32(a_pos_position, 3, WebGl2RenderingContext::FLOAT, false, 6 * size_of::<f32>() as i32, 0);
     gl.enable_vertex_attrib_array(a_pos_position);
 
-    let a_normal_position = gl.get_attrib_location(&program, "aNormal") as u32;
+    let a_normal_position = gl.get_attrib_location(&pixel_shader, "aNormal") as u32;
     gl.vertex_attrib_pointer_with_i32(a_normal_position, 3, WebGl2RenderingContext::FLOAT, false, 6 * size_of::<f32>() as i32, 3 * size_of::<f32>() as i32);
     gl.enable_vertex_attrib_array(a_normal_position);
 
     let colors_vbo = gl.create_buffer().ok_or("cannot create colors_vbo")?;
     gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&colors_vbo));
 
-    let a_color_position = gl.get_attrib_location(&program, "aColor") as u32;
+    let a_color_position = gl.get_attrib_location(&pixel_shader, "aColor") as u32;
     gl.enable_vertex_attrib_array(a_color_position);
     gl.vertex_attrib_pointer_with_i32(a_color_position, 1, WebGl2RenderingContext::FLOAT, false, size_of::<f32>() as i32, 0);
     gl.vertex_attrib_divisor(a_color_position, 1);
@@ -737,7 +854,7 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
         WebGl2RenderingContext::STATIC_DRAW,
     );
 
-    let a_offset_position = gl.get_attrib_location(&program, "aOffset") as u32;
+    let a_offset_position = gl.get_attrib_location(&pixel_shader, "aOffset") as u32;
     gl.enable_vertex_attrib_array(a_offset_position);
     gl.vertex_attrib_pointer_with_i32(a_offset_position, 2, WebGl2RenderingContext::FLOAT, false, size_of::<glm::Vec2>() as i32, 0);
     gl.vertex_attrib_divisor(a_offset_position, 1);
@@ -760,9 +877,13 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
     dispatch_event_with("app-event.change_pixel_gap", &1.0.into());
 
     Ok(Resources {
-        pixel_shader: program,
+        pixel_shader: pixel_shader,
         pixel_vao: pixel_vao,
         colors_vbo: colors_vbo,
+        bloom_shader: bloom_shader,
+        framebuffer: fb,
+        texture: texture,
+        quad_vao: quad_vao,
         frame_count: 0,
         translation_base_speed: camera.movement_speed,
         last_time: now,
@@ -785,6 +906,14 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
 
 pub fn js_f32_array(data: &[f32]) -> Float32Array {
     let array = Float32Array::new(&wasm_bindgen::JsValue::from(data.len() as u32));
+    for (i, f) in data.iter().enumerate() {
+        array.fill(*f, i as u32, (i + 1) as u32);
+    }
+    array
+}
+
+pub fn js_i32_array(data: &[i32]) -> js_sys::Int32Array {
+    let array = js_sys::Int32Array::new(&wasm_bindgen::JsValue::from(data.len() as u32));
     for (i, f) in data.iter().enumerate() {
         array.fill(*f, i as u32, (i + 1) as u32);
     }
@@ -998,8 +1127,124 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
     Ok(true)
 }
 
-pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
+pub struct Resources2 {
+    shader: Option<WebGlProgram>,
+    vao: Option<WebGlVertexArrayObject>,
+    framebuffer: Option<WebGlFramebuffer>,
+    texture: Option<WebGlTexture>,
+    pos: glm::Vec3,
+    fov: f32,
+}
 
+impl Resources2 {
+    fn new() -> Resources2 {
+        Resources2 {
+            shader: None,
+            vao: None,
+            framebuffer: None,
+            texture: None,
+            pos: glm::vec3(0.0, 0.0, 0.0),
+            fov: 45.0,
+        }
+    }
+}
+
+const quad_indices: [i32; 6] = [
+    0, 1, 3,
+    1, 2, 3,
+];
+
+pub fn draw2(gl: &WebGl2RenderingContext, res: &mut Resources2, image: &ArrayBuffer, input: &Input) {
+    if res.vao.is_none() {
+        res.shader = make_shader(&gl, bloom_vertex_shader, bloom_fragment_shader).ok();
+        res.vao = gl.create_vertex_array();
+        let vbo = gl.create_buffer();
+        let ebo = gl.create_buffer();
+
+        gl.bind_vertex_array(res.vao.as_ref());
+
+        gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, vbo.as_ref());
+        gl.buffer_data_with_opt_array_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&js_f32_array(&quad_geometry).buffer()), WebGl2RenderingContext::STATIC_DRAW);
+
+        gl.bind_buffer(WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER, ebo.as_ref());
+        gl.buffer_data_with_opt_array_buffer(WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER, Some(&js_i32_array(&quad_indices).buffer()), WebGl2RenderingContext::STATIC_DRAW);
+
+        let shader = &res.shader.as_ref().unwrap();
+        let q_pos_position = gl.get_attrib_location(&shader, "qPos") as u32;
+        let q_tex_coords_position = gl.get_attrib_location(&shader, "qTexCoords") as u32;
+
+        gl.enable_vertex_attrib_array(q_pos_position);
+        gl.enable_vertex_attrib_array(q_tex_coords_position);
+
+        gl.vertex_attrib_pointer_with_i32(q_pos_position, 3, WebGl2RenderingContext::FLOAT, false, 5 * size_of::<f32>() as i32, 0);
+        gl.vertex_attrib_pointer_with_i32(q_tex_coords_position, 2, WebGl2RenderingContext::FLOAT, false, 5 * size_of::<f32>() as i32, 3 * size_of::<f32>() as i32);
+
+        res.texture = gl.create_texture();
+        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, res.texture.as_ref());
+        gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MIN_FILTER, WebGl2RenderingContext::LINEAR as i32);
+        gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MAG_FILTER, WebGl2RenderingContext::LINEAR as i32);
+        gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_WRAP_S, WebGl2RenderingContext::REPEAT as i32);
+        gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_WRAP_T, WebGl2RenderingContext::REPEAT as i32);
+        let total_bytes = 256*224*4 as usize;
+        let mut vec: Vec<u8> = vec![0; total_bytes];
+        let bytes = js_sys::Uint8Array::new(&image.into());
+        bytes.for_each(&mut |byte: u8, i: u32, _| {
+            let index = (i / 4) as usize;
+            let offset = (i % 4) as usize;
+            vec[total_bytes - index * 4 - 4 + offset] = byte;
+        });
+        let array: &mut [u8] = vec.as_mut_slice();
+        gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
+            WebGl2RenderingContext::TEXTURE_2D, 0, WebGl2RenderingContext::RGBA as i32, 256, 224, 0, WebGl2RenderingContext::RGBA, WebGl2RenderingContext::UNSIGNED_BYTE, Some(array)
+        );
+        gl.generate_mipmap(WebGl2RenderingContext::TEXTURE_2D);
+    }
+    let dt = 0.001;
+    res.pos += &glm::vec3(
+        if input.walk_left { -dt } else { if input.walk_right { dt } else { 0.0 } },
+        if input.walk_up { -dt } else { if input.walk_down { dt } else { 0.0 } },
+        if input.walk_forward { -dt } else { if input.walk_backward { dt } else { 0.0 } })
+    ;
+    if input.turn_left {
+        res.fov += 1.0;
+    } else if input.turn_right {
+        res.fov -= 1.0;
+    }
+
+        let values_array = Float32Array::new(&wasm_bindgen::JsValue::from(9));
+        values_array.fill(res.pos.x, 0, 1);
+        values_array.fill(res.pos.y, 1, 2);
+        values_array.fill(res.pos.z, 2, 3);
+        values_array.fill(res.fov, 3, 4);
+        values_array.fill(0.0, 4, 5);
+        values_array.fill(0.0, 5, 6);
+        values_array.fill(34.0, 6, 7);
+        values_array.fill(0.0, 7, 8);
+        values_array.fill(0.0, 8, 9);
+        dispatch_event_with("app-event.camera_update", &values_array.into());
+
+    let mut projection = glm::perspective::<f32>(1920.0 / 1080.0, radians(res.fov), 1.0, 10000.0);
+    let mut position = glm::vec3(0.0, 0.0, 1.0);
+    let mut target = glm::vec3(0.0, 0.0, 0.0);
+    let mut direction = glm::normalize(&(&res.pos - &target));
+    let mut view = glm::look_at(&res.pos, &(&res.pos + &direction), &glm::vec3(0.0, 1.0, 0.0));
+    view = glm::Mat4::identity();
+    projection = glm::Mat4::identity();
+    let mut model = glm::Mat4::identity();
+    //model = glm::translate(&model, &res.pos);
+    gl.clear_color(0.2, 0.3, 0.3, 1.0);
+    gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
+    gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, res.texture.as_ref());
+    gl.use_program(res.shader.as_ref());
+    gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&res.shader.as_ref().unwrap(), "projection").as_ref(), false, projection.as_mut_slice());
+    gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&res.shader.as_ref().unwrap(), "view").as_ref(), false, view.as_mut_slice());
+    gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&res.shader.as_ref().unwrap(), "model").as_ref(), false, model.as_mut_slice());
+    gl.bind_vertex_array(res.vao.as_ref());
+    gl.draw_elements_with_i32(WebGl2RenderingContext::TRIANGLES, 6, WebGl2RenderingContext::UNSIGNED_INT, 0);
+
+}
+
+pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
     if res.animation.needs_buffer_data_load {
         gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&res.colors_vbo));
         gl.buffer_data_with_opt_array_buffer(
@@ -1014,9 +1259,6 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
 
     let mut projection = glm::perspective::<f32>(screen_width / screen_height, radians(res.camera_zoom), 0.01, 10000.0);
     let mut view = res.camera.get_view();
-
-    gl.clear_color(0.05, 0.05, 0.05, 1.0);  // Clear to black, fully opaque
-    gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
 
     let mut pixel_scale : &mut [f32] = &mut [
         res.cur_pixel_scale_x + 1.0,
@@ -1035,12 +1277,28 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
         pixel_gap[1] *= res.animation.scale_y;
     }
 
+    let ambient_strength = match res.pixels_or_voxels { Pixels_Or_Voxels::Pixels => 1.0, Pixels_Or_Voxels::Voxels => 0.5};
+
+    gl.clear_color(0.05, 0.05, 0.05, 1.0);  // Clear to black, fully opaque
+    gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
+    gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, res.framebuffer.as_ref());
+    gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
+
+    let far_away_position = {
+        let far_factor: f64 = 112.0 / 270.0;
+        res.animation.height as f64 / 2.0 / far_factor 
+    } as f32;
+
+    let mut camera = Camera::new();
+    camera.position = glm::vec3(0.0, 0.0, 1.0);
+
+
     gl.use_program(Some(&res.pixel_shader));
     gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "view").as_ref(), false, view.as_mut_slice());
     gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "projection").as_ref(), false, projection.as_mut_slice());
     gl.uniform3fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "lightPos").as_ref(), &mut [res.camera.position.x, res.camera.position.y, res.camera.position.z]);
     gl.uniform3fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "lightColor").as_ref(), &mut [1.0, 1.0, 1.0]);
-    gl.uniform1f(gl.get_uniform_location(&res.pixel_shader, "ambientStrength").as_ref(), 0.75);
+    gl.uniform1f(gl.get_uniform_location(&res.pixel_shader, "ambientStrength").as_ref(), ambient_strength);
     gl.uniform2fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "pixel_gap").as_ref(), &mut pixel_gap);
     gl.uniform3fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "pixel_scale").as_ref(), &mut pixel_scale);
     gl.uniform1f(gl.get_uniform_location(&res.pixel_shader, "pixel_pulse").as_ref(), res.pixels_pulse);
@@ -1052,6 +1310,37 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
         match res.pixels_or_voxels { Pixels_Or_Voxels::Pixels => 6, Pixels_Or_Voxels::Voxels => 36 },
         (res.animation.width * res.animation.height) as i32
     );
+    
+    /*
+    let mut pixels = vec![0; 1920*2*1080*2*4];
+    gl.read_pixels_with_opt_u8_array(0, 0, 1920 * 2, 1080 * 2, WebGl2RenderingContext::RGBA, WebGl2RenderingContext::UNSIGNED_BYTE, Some(&mut pixels));
+    let mut count = 0;
+    for i in 0..1920*2*1080*2*4 {
+        if pixels[i] != 0 {
+            count += 1;
+        }
+    }
+    console::log_2(&"pixels: ".into(), &count.into());*/
+
+
+    gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, None);
+
+    gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
+
+    let mut model = glm::mat4(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+
+
+    gl.use_program(Some(&res.bloom_shader));
+    gl.uniform1i(gl.get_uniform_location(&res.bloom_shader, "image").as_ref(), 0);
+
+    gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, res.texture.as_ref());
+    gl.bind_vertex_array(res.quad_vao.as_ref());
+        gl.uniform1i(gl.get_uniform_location(&res.bloom_shader, "horizontal").as_ref(), 0);
+        gl.draw_elements_with_i32(WebGl2RenderingContext::TRIANGLES, 6, WebGl2RenderingContext::UNSIGNED_INT, 0);
+        gl.uniform1i(gl.get_uniform_location(&res.bloom_shader, "horizontal").as_ref(), 1);
+        gl.draw_elements_with_i32(WebGl2RenderingContext::TRIANGLES, 6, WebGl2RenderingContext::UNSIGNED_INT, 0);
+    gl.bind_vertex_array(None);
+    gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, None);
 
     check_error(&gl, line!())?;
 

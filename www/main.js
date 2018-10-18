@@ -289,7 +289,7 @@ function prepareUi() {
         if (!gl) throw new Error("Could not get webgl context.");
 
         import(/* webpackPrefetch: true */"./crt_3d_sim").then(wasm => {
-            const animation = new wasm.Animation_Source(rawImgs[0].width, rawImgs[0].height, width, height, 1 / 60, +scaleX, +scaleY);
+            const animation = new wasm.Animation_Source(rawImgs[0].width, rawImgs[0].height, width, height, 1 / 60, +scaleX, +scaleY, dpi);
             for (let i = 0; i < rawImgs.length; i++) {
                 const rawImg = rawImgs[i];
                 animation.add(rawImg.data.buffer);
