@@ -266,7 +266,6 @@ struct State_Owner {
     animation_frame_id: Option<i32>,
     owned_closures: Vec<Option<Closure<FnMut(JsValue)>>>,
     resources: Resources,
-    resources2: Resources2,
 }
 
 impl State_Owner {
@@ -275,7 +274,6 @@ impl State_Owner {
             animation_frame_id: None,
             owned_closures: Vec::new(),
             resources: resources,
-            resources2: Resources2::new(),
         }
     }
 }
@@ -451,6 +449,11 @@ const quad_geometry : [f32; 20] = [
         -1.0,  1.0, 0.0,   0.0, 1.0  // top left 
 ];
 
+const quad_indices: [i32; 6] = [
+    0, 1, 3,
+    1, 2, 3,
+];
+
 pub fn program(gl: JsValue, animation: Animation_Source) -> Result<()> {
     let gl = gl.dyn_into::<WebGl2RenderingContext>()?;
     gl.enable(WebGl2RenderingContext::DEPTH_TEST);
@@ -476,7 +479,6 @@ pub fn program(gl: JsValue, animation: Animation_Source) -> Result<()> {
                         if next_update_needed == false {
                             return;
                         }
-                        //draw2(&gl, &mut render_loop.resources2, &image_buffer, &input);
                         if let Err(e) = draw(&gl, &render_loop.resources) {
                             console::error_2(&"An unexpected error happened during draw.".into(), &e.to_js());
                             return;
@@ -1125,123 +1127,6 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
     }
 
     Ok(true)
-}
-
-pub struct Resources2 {
-    shader: Option<WebGlProgram>,
-    vao: Option<WebGlVertexArrayObject>,
-    framebuffer: Option<WebGlFramebuffer>,
-    texture: Option<WebGlTexture>,
-    pos: glm::Vec3,
-    fov: f32,
-}
-
-impl Resources2 {
-    fn new() -> Resources2 {
-        Resources2 {
-            shader: None,
-            vao: None,
-            framebuffer: None,
-            texture: None,
-            pos: glm::vec3(0.0, 0.0, 0.0),
-            fov: 45.0,
-        }
-    }
-}
-
-const quad_indices: [i32; 6] = [
-    0, 1, 3,
-    1, 2, 3,
-];
-
-pub fn draw2(gl: &WebGl2RenderingContext, res: &mut Resources2, image: &ArrayBuffer, input: &Input) {
-    if res.vao.is_none() {
-        res.shader = make_shader(&gl, bloom_vertex_shader, bloom_fragment_shader).ok();
-        res.vao = gl.create_vertex_array();
-        let vbo = gl.create_buffer();
-        let ebo = gl.create_buffer();
-
-        gl.bind_vertex_array(res.vao.as_ref());
-
-        gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, vbo.as_ref());
-        gl.buffer_data_with_opt_array_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&js_f32_array(&quad_geometry).buffer()), WebGl2RenderingContext::STATIC_DRAW);
-
-        gl.bind_buffer(WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER, ebo.as_ref());
-        gl.buffer_data_with_opt_array_buffer(WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER, Some(&js_i32_array(&quad_indices).buffer()), WebGl2RenderingContext::STATIC_DRAW);
-
-        let shader = &res.shader.as_ref().unwrap();
-        let q_pos_position = gl.get_attrib_location(&shader, "qPos") as u32;
-        let q_tex_coords_position = gl.get_attrib_location(&shader, "qTexCoords") as u32;
-
-        gl.enable_vertex_attrib_array(q_pos_position);
-        gl.enable_vertex_attrib_array(q_tex_coords_position);
-
-        gl.vertex_attrib_pointer_with_i32(q_pos_position, 3, WebGl2RenderingContext::FLOAT, false, 5 * size_of::<f32>() as i32, 0);
-        gl.vertex_attrib_pointer_with_i32(q_tex_coords_position, 2, WebGl2RenderingContext::FLOAT, false, 5 * size_of::<f32>() as i32, 3 * size_of::<f32>() as i32);
-
-        res.texture = gl.create_texture();
-        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, res.texture.as_ref());
-        gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MIN_FILTER, WebGl2RenderingContext::LINEAR as i32);
-        gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MAG_FILTER, WebGl2RenderingContext::LINEAR as i32);
-        gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_WRAP_S, WebGl2RenderingContext::REPEAT as i32);
-        gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_WRAP_T, WebGl2RenderingContext::REPEAT as i32);
-        let total_bytes = 256*224*4 as usize;
-        let mut vec: Vec<u8> = vec![0; total_bytes];
-        let bytes = js_sys::Uint8Array::new(&image.into());
-        bytes.for_each(&mut |byte: u8, i: u32, _| {
-            let index = (i / 4) as usize;
-            let offset = (i % 4) as usize;
-            vec[total_bytes - index * 4 - 4 + offset] = byte;
-        });
-        let array: &mut [u8] = vec.as_mut_slice();
-        gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
-            WebGl2RenderingContext::TEXTURE_2D, 0, WebGl2RenderingContext::RGBA as i32, 256, 224, 0, WebGl2RenderingContext::RGBA, WebGl2RenderingContext::UNSIGNED_BYTE, Some(array)
-        );
-        gl.generate_mipmap(WebGl2RenderingContext::TEXTURE_2D);
-    }
-    let dt = 0.001;
-    res.pos += &glm::vec3(
-        if input.walk_left { -dt } else { if input.walk_right { dt } else { 0.0 } },
-        if input.walk_up { -dt } else { if input.walk_down { dt } else { 0.0 } },
-        if input.walk_forward { -dt } else { if input.walk_backward { dt } else { 0.0 } })
-    ;
-    if input.turn_left {
-        res.fov += 1.0;
-    } else if input.turn_right {
-        res.fov -= 1.0;
-    }
-
-        let values_array = Float32Array::new(&wasm_bindgen::JsValue::from(9));
-        values_array.fill(res.pos.x, 0, 1);
-        values_array.fill(res.pos.y, 1, 2);
-        values_array.fill(res.pos.z, 2, 3);
-        values_array.fill(res.fov, 3, 4);
-        values_array.fill(0.0, 4, 5);
-        values_array.fill(0.0, 5, 6);
-        values_array.fill(34.0, 6, 7);
-        values_array.fill(0.0, 7, 8);
-        values_array.fill(0.0, 8, 9);
-        dispatch_event_with("app-event.camera_update", &values_array.into());
-
-    let mut projection = glm::perspective::<f32>(1920.0 / 1080.0, radians(res.fov), 1.0, 10000.0);
-    let mut position = glm::vec3(0.0, 0.0, 1.0);
-    let mut target = glm::vec3(0.0, 0.0, 0.0);
-    let mut direction = glm::normalize(&(&res.pos - &target));
-    let mut view = glm::look_at(&res.pos, &(&res.pos + &direction), &glm::vec3(0.0, 1.0, 0.0));
-    view = glm::Mat4::identity();
-    projection = glm::Mat4::identity();
-    let mut model = glm::Mat4::identity();
-    //model = glm::translate(&model, &res.pos);
-    gl.clear_color(0.2, 0.3, 0.3, 1.0);
-    gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
-    gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, res.texture.as_ref());
-    gl.use_program(res.shader.as_ref());
-    gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&res.shader.as_ref().unwrap(), "projection").as_ref(), false, projection.as_mut_slice());
-    gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&res.shader.as_ref().unwrap(), "view").as_ref(), false, view.as_mut_slice());
-    gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&res.shader.as_ref().unwrap(), "model").as_ref(), false, model.as_mut_slice());
-    gl.bind_vertex_array(res.vao.as_ref());
-    gl.draw_elements_with_i32(WebGl2RenderingContext::TRIANGLES, 6, WebGl2RenderingContext::UNSIGNED_INT, 0);
-
 }
 
 pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
