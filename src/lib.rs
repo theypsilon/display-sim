@@ -135,6 +135,7 @@ struct Buttons {
     speed_up: Boolean_Button,
     speed_down: Boolean_Button,
     mouse_click: Boolean_Button,
+    toggle_bloom: Boolean_Button,
     toggle_pixels_or_voxels: Boolean_Button,
     showing_pixels_pulse: Boolean_Button,
     esc: Boolean_Button,
@@ -147,6 +148,7 @@ impl Buttons {
             speed_up: Boolean_Button::new(),
             speed_down: Boolean_Button::new(),
             mouse_click: Boolean_Button::new(),
+            toggle_bloom: Boolean_Button::new(),
             toggle_pixels_or_voxels: Boolean_Button::new(),
             showing_pixels_pulse: Boolean_Button::new(),
             esc: Boolean_Button::new(),
@@ -177,6 +179,7 @@ pub struct Resources {
     cur_pixel_scale_x: f32,
     cur_pixel_scale_y: f32,
     cur_pixel_gap: f32,
+    bloom: bool,
     pixels_or_voxels: Pixels_Or_Voxels,
     pixels_pulse: f32,
     showing_pixels_pulse: bool,
@@ -205,6 +208,7 @@ pub struct Input {
     speed_up: bool,
     speed_down: bool,
     reset_speeds: bool,
+    toggle_bloom: bool,
     shift: bool,
     alt: bool,
     space: bool,
@@ -242,6 +246,7 @@ impl Input {
             speed_up: false,
             speed_down: false,
             reset_speeds: false,
+            toggle_bloom: false,
             shift: false,
             alt: false,
             space: false,
@@ -526,6 +531,7 @@ pub fn program(gl: JsValue, animation: Animation_Source) -> Result<()> {
                     "k" => input.decrease_pixel_scale_y = true,
                     "n" => input.increase_pixel_gap = true,
                     "m" => input.decrease_pixel_gap = true,
+                    "b" => input.toggle_bloom = true,
                     "o" => input.toggle_pixels_or_voxels = true,
                     "p" => input.showing_pixels_pulse = true,
                     "shift" => input.shift = true,
@@ -565,6 +571,7 @@ pub fn program(gl: JsValue, animation: Animation_Source) -> Result<()> {
                     "k" => input.decrease_pixel_scale_y = false,
                     "n" => input.increase_pixel_gap = false,
                     "m" => input.decrease_pixel_gap = false,
+                    "b" => input.toggle_bloom =q false,
                     "o" => input.toggle_pixels_or_voxels = false,
                     "p" => input.showing_pixels_pulse = false,
                     "shift" => input.shift = false,
@@ -892,6 +899,7 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
         last_second: now,
         last_mouse_x: -1,
         last_mouse_y: -1,
+        bloom: false,
         pixel_manipulation_speed: pixel_manipulation_base_speed,
         cur_pixel_scale_x: 0.0,
         cur_pixel_scale_y: 0.0,
@@ -948,6 +956,12 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
         if last_frame != res.animation.current_frame {
             res.animation.needs_buffer_data_load = true;
         }
+    }
+
+    res.buttons.toggle_bloom.track(input.toggle_bloom);
+    if res.buttons.toggle_bloom.just_pressed {
+        res.bloom = !res.bloom;
+        dispatch_event_with("app-event.top_message", &(if res.bloom {"Activating bloom filter."} else {"Deactivating bloom."}).into())?;
     }
 
     res.buttons.esc.track(input.esc);
@@ -1166,17 +1180,10 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
 
     gl.clear_color(0.05, 0.05, 0.05, 1.0);  // Clear to black, fully opaque
     gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
-    gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, res.framebuffer.as_ref());
-    gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
-
-    let far_away_position = {
-        let far_factor: f64 = 112.0 / 270.0;
-        res.animation.height as f64 / 2.0 / far_factor 
-    } as f32;
-
-    let mut camera = Camera::new();
-    camera.position = glm::vec3(0.0, 0.0, 1.0);
-
+    if res.bloom {
+        gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, res.framebuffer.as_ref());
+        gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
+    }
 
     gl.use_program(Some(&res.pixel_shader));
     gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "view").as_ref(), false, view.as_mut_slice());
@@ -1195,37 +1202,24 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
         match res.pixels_or_voxels { Pixels_Or_Voxels::Pixels => 6, Pixels_Or_Voxels::Voxels => 36 },
         (res.animation.width * res.animation.height) as i32
     );
-    
-    /*
-    let mut pixels = vec![0; 1920*2*1080*2*4];
-    gl.read_pixels_with_opt_u8_array(0, 0, 1920 * 2, 1080 * 2, WebGl2RenderingContext::RGBA, WebGl2RenderingContext::UNSIGNED_BYTE, Some(&mut pixels));
-    let mut count = 0;
-    for i in 0..1920*2*1080*2*4 {
-        if pixels[i] != 0 {
-            count += 1;
-        }
-    }
-    console::log_2(&"pixels: ".into(), &count.into());*/
 
+    if res.bloom {
+        gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, None);
 
-    gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, None);
+        gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
 
-    gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
+        gl.use_program(Some(&res.bloom_shader));
+        gl.uniform1i(gl.get_uniform_location(&res.bloom_shader, "image").as_ref(), 0);
 
-    let mut model = glm::mat4(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-
-
-    gl.use_program(Some(&res.bloom_shader));
-    gl.uniform1i(gl.get_uniform_location(&res.bloom_shader, "image").as_ref(), 0);
-
-    gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, res.texture.as_ref());
-    gl.bind_vertex_array(res.quad_vao.as_ref());
+        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, res.texture.as_ref());
+        gl.bind_vertex_array(res.quad_vao.as_ref());
         gl.uniform1i(gl.get_uniform_location(&res.bloom_shader, "horizontal").as_ref(), 0);
         gl.draw_elements_with_i32(WebGl2RenderingContext::TRIANGLES, 6, WebGl2RenderingContext::UNSIGNED_INT, 0);
         gl.uniform1i(gl.get_uniform_location(&res.bloom_shader, "horizontal").as_ref(), 1);
         gl.draw_elements_with_i32(WebGl2RenderingContext::TRIANGLES, 6, WebGl2RenderingContext::UNSIGNED_INT, 0);
-    gl.bind_vertex_array(None);
-    gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, None);
+        gl.bind_vertex_array(None);
+        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, None);
+    }
 
     check_error(&gl, line!())?;
 
