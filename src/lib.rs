@@ -374,7 +374,7 @@ impl Camera {
         self.position += self.position_delta;
         self.position_delta = glm::vec3 (0.0, 0.0, 0.0);
 
-        if self.sending_camera_update_event == true {
+        if self.sending_camera_update_event == false {
             return Ok(())
         }
 
@@ -571,7 +571,7 @@ pub fn program(gl: JsValue, animation: Animation_Source) -> Result<()> {
                     "k" => input.decrease_pixel_scale_y = false,
                     "n" => input.increase_pixel_gap = false,
                     "m" => input.decrease_pixel_gap = false,
-                    "b" => input.toggle_bloom =q false,
+                    "b" => input.toggle_bloom = false,
                     "o" => input.toggle_pixels_or_voxels = false,
                     "p" => input.showing_pixels_pulse = false,
                     "shift" => input.shift = false,
@@ -766,32 +766,42 @@ void main()
 "#;
 
 pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) -> Result<Resources> {
+    let resolution_width = {
+        let estimated_width = (animation.screen_width as f32 * animation.dpi) as i32;
+        let factor_width = estimated_width / 80;
+        factor_width * 80
+    };
+    let resolution_height = {
+        let estimated_height = (animation.screen_height as f32 * animation.dpi) as i32;
+        let factor_height = estimated_height / 60;
+        factor_height * 60
+    };
     let width = animation.width as usize;
     let height = animation.height as usize;
-    let half_width: f32 = width as f32 / 2.0;
-    let half_height: f32 = height as f32 / 2.0;
     let pixels_total = width * height;
     let offsets = Float32Array::new(&wasm_bindgen::JsValue::from(pixels_total as u32 * 2));
-    for i in 0..width {
-        for j in 0..height {
-            let index = (pixels_total - width - j * width + i) as u32;
-            let x = i as f32 - half_width;
-            let y = j as f32 - half_height;
-            offsets.fill(x, index * 2 + 0, index * 2 + 1);
-            offsets.fill(y, index * 2 + 1, index * 2 + 2);
+    {
+        let half_width: f32 = width as f32 / 2.0;
+        let half_height: f32 = height as f32 / 2.0;
+        let center_dx = if width % 2 == 0 {0.5} else {0.0};
+        let center_dy = if height % 2 == 0 {0.5} else {0.0};
+        for i in 0..width {
+            for j in 0..height {
+                let index = (pixels_total - width - j * width + i) as u32;
+                let x = i as f32 - half_width;
+                let y = j as f32 - half_height;
+                offsets.fill(x + center_dx, index * 2 + 0, index * 2 + 1);
+                offsets.fill(y + center_dy, index * 2 + 1, index * 2 + 2);
+            }
         }
     }
-
-
     let fb = gl.create_framebuffer();
     gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, fb.as_ref());
 
     let texture = gl.create_texture();
     gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, texture.as_ref());
-    let w: i32 = (animation.screen_width as f32 * animation.dpi) as i32;
-    let h: i32 = (animation.screen_height as f32 * animation.dpi) as i32;
     gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
-        WebGl2RenderingContext::TEXTURE_2D, 0, WebGl2RenderingContext::RGBA as i32, w, h, 0, WebGl2RenderingContext::RGBA, WebGl2RenderingContext::UNSIGNED_BYTE, None
+        WebGl2RenderingContext::TEXTURE_2D, 0, WebGl2RenderingContext::RGBA as i32, resolution_width, resolution_height, 0, WebGl2RenderingContext::RGBA, WebGl2RenderingContext::UNSIGNED_BYTE, None
     )?;
     gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MIN_FILTER, WebGl2RenderingContext::LINEAR as i32);
     gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MAG_FILTER, WebGl2RenderingContext::LINEAR as i32);
@@ -870,10 +880,25 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
 
     let now = now()?;
 
-    let far_away_position = {
-        let far_factor: f64 = 112.0 / 270.0;
-        animation.height as f64 / 2.0 / far_factor 
-    } as f32;
+    let far_away_position = 0.5 + {
+        let width_ratio = resolution_width as f32 / width as f32;
+        let height_ratio = resolution_height as f32 / height as f32;
+        let floor_is_height = width_ratio > height_ratio;
+        let mut floor_ratio = if floor_is_height {height_ratio} else {width_ratio};
+        let mut resolution = if floor_is_height {resolution_height} else {resolution_width};
+        while floor_ratio < 1.0 {
+            floor_ratio *= 2.0;
+            resolution *= 2;
+        }
+        let mut divisor = floor_ratio as i32;
+        let greater = loop {
+            if divisor == 1 || resolution % divisor == 0 {
+                break divisor;
+            }
+            divisor -= 1;
+        };
+        (resolution / divisor) as f32 * if floor_is_height {1.21} else {0.68}
+    };
 
     let mut camera = Camera::new();
     camera.position_delta = glm::vec3(0.0, 0.0, far_away_position);
@@ -961,7 +986,7 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
     res.buttons.toggle_bloom.track(input.toggle_bloom);
     if res.buttons.toggle_bloom.just_pressed {
         res.bloom = !res.bloom;
-        dispatch_event_with("app-event.top_message", &(if res.bloom {"Activating bloom filter."} else {"Deactivating bloom."}).into())?;
+        dispatch_event_with("app-event.top_message", &(if res.bloom {"Bloom ON."} else {"Bloom OFF."}).into())?;
     }
 
     res.buttons.esc.track(input.esc);
