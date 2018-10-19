@@ -318,7 +318,12 @@ function prepareUi() {
         canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock;
         document.exitPointerLock = document.exitPointerLock || document.mozExitPointerLock;
     
-        if (!gl) throw new Error("Could not get webgl context.");
+        if (!gl) {
+            window.dispatchEvent(new CustomEvent('app-event.top_message', {
+                detail: "WebGL is not working on your browser, try restarting it first and then updating it! Are you on a PC?"
+            }));
+            throw new Error("Could not get webgl context.");
+        }
 
         import(/* webpackPrefetch: true */"./crt_3d_sim").then(wasm => {
             const animation = new wasm.Animation_Source(rawImgs[0].width, rawImgs[0].height, canvas.width, canvas.height, 1 / 60, +scaleX, stretch, dpi);
