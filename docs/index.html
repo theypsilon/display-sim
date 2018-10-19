@@ -48,20 +48,22 @@
             <input type="radio" id="powerPreference-3" name="powerPreference" value="low-power" /><div class="option-text">low-power</div>
           </div>
           <div class="option-inputs">
-            <label for="scale">pixel scale:</label>
-            <div class="scale-radio" title="None"><input type="radio" id="scale-1" name="scale" value="1" /><div class="option-text">none</div></div>
-            <div class="scale-radio" title="NES, SNES"><input type="radio" id="scale-2" name="scale" value="1.1428571428571428571428571428571" /><div class="option-text">256x224 on 4:3</div></div>
-            <div class="scale-radio" title="NES PPU"><input type="radio" id="scale-2" name="scale" value="1.1428571428571428571428571428571" /><div class="option-text">256x240 on 4:3</div></div>
-            <div class="scale-radio" title="Mega Drive"><input type="radio" id="scale-2" name="scale" value="1.1428571428571428571428571428571" /><div class="option-text">320x224 on 4:3</div></div>
-            <div class="scale-radio" title="Game Boy"><input type="radio" id="scale-3" name="scale" value="1.1428571428571428571428571428571" /><div class="option-text">160x144 on 4:3</div></div>
-            <div class="scale-radio" title="Game Boy Advance"><input type="radio" id="scale-3" name="scale" value="1.1428571428571428571428571428571" /><div class="option-text">240x160 on 4:3</div></div>
-            <div class="scale-radio" title="DOS"><input type="radio" id="scale-3" name="scale" value="1.1428571428571428571428571428571" /><div class="option-text">320x200 on 4:3</div></div>
+            <label for="scale">Scaling:</label>
+            <div class="scale-radio" title="Auto detect"><input type="radio" id="scale-auto" name="scale" value="0" /><div class="option-text">auto detect</div></div>
+            <div class="scale-radio" title="None"><input type="radio" id="scale-none" name="scale" value="1" /><div class="option-text">none</div></div>
+            <div class="scale-radio" title="NES, SNES"><input type="radio" id="scale-256x224" name="scale" value="1.16666666667" /><div class="option-text">256x224 on 4:3</div></div>
+            <div class="scale-radio" title="NES PPU"><input type="radio" id="scale-256x240" name="scale" value="1.25" /><div class="option-text">256x240 on 4:3</div></div>
+            <div class="scale-radio" title="Mega Drive"><input type="radio" id="scale-320x224" name="scale" value="0.93333333333" /><div class="option-text">320x224 on 4:3</div></div>
+            <div class="scale-radio" title="Game Boy"><input type="radio" id="scale-160x144" name="scale" value="1.2" /><div class="option-text">160x144 on 4:3</div></div>
+            <div class="scale-radio" title="Game Boy Advance"><input type="radio" id="scale-240x160" name="scale" value="0.88888888888" /><div class="option-text">240x160 on 4:3</div></div>
+            <div class="scale-radio" title="DOS"><input type="radio" id="scale-320x200" name="scale" value="0.83333333333" /><div class="option-text">320x200 on 4:3</div></div>
+            <div class="scale-radio" title="Stretch to the edges"><input type="radio" id="scale-stretch" name="scale" /><div class="option-text">stretch to the edges</div></div>
             <div class="scale-radio" title="Introduce the values yourself"><input type="radio" id="scale-custom" name="scale" /><div class="option-text">custom</div></div>
           </div>
           <div id="scale-custom-inputs" class="display-none">
             <div class="option-inputs">
             <label for="scale-x">horizontal scaling:</label>
-            <input type="number" id="scale-x" value="1" min="0.25" max="4">
+            <input type="number" id="scale-x" value="1" min="0.25" max="100">
             </div>
             <div class="option-inputs">
             <label for="scale-y">vertical scaling:</label>
@@ -128,6 +130,7 @@
         <li><div id="feature-size-x" class="feature-hotkeys">J, K</div><div class="feature-explanation">to change pixel width.</div><div class="feature-value"><div id="pixel-scale-x" class="feature-container">0</div></div></li>
         <li><div id="feature-size-y" class="feature-hotkeys">U, I</div><div class="feature-explanation">to change pixel height.</div><div class="feature-value"><div id="pixel-scale-y" class="feature-container">0</div></div></li>
         <li><div id="feature-gap" class="feature-hotkeys">N, M</div><div class="feature-explanation">to change distance between pixels.</div><div class="feature-value"><div id="pixel-gap" class="feature-container">0</div></div></li>
+        <li><div id="feature-bloom" class="feature-hotkeys">B</div><div class="feature-explanation">to toggle bloom filter.</div></li>
         <li><div id="feature-pulsation" class="feature-hotkeys">P</div><div class="feature-explanation">to activate a wave on the screen.</div></li>
         <li><div id="feature-change-pixel-shape" class="feature-hotkeys">O</div><div class="feature-explanation">show pixels as cubes.</div></li>
       </ul>
