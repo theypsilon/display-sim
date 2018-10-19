@@ -239,15 +239,15 @@ function prepareUi() {
                 if (imageWidth == 256 && imageHeight == 224) {
                     scaleSelectionIdPostfix = '256x224';
                 } else if (imageWidth == 256 && imageHeight == 240) {
-                    scaleSelectionIdPostfix = '256x224';
+                    scaleSelectionIdPostfix = '256x240';
                 } else if (imageWidth == 320 && imageHeight == 224) {
-                    scaleSelectionIdPostfix = '256x224';
+                    scaleSelectionIdPostfix = '320x224';
                 } else if (imageWidth == 160 && imageHeight == 144) {
-                    scaleSelectionIdPostfix = '256x224';
+                    scaleSelectionIdPostfix = '160x144';
                 } else if (imageWidth == 240 && imageHeight == 160) {
-                    scaleSelectionIdPostfix = '256x224';
+                    scaleSelectionIdPostfix = '240x160';
                 } else if (imageWidth == 320 && imageHeight == 200) {
-                    scaleSelectionIdPostfix = '256x224';
+                    scaleSelectionIdPostfix = '320x200';
                 }
                 scaleX = document.getElementById('scale-' + scaleSelectionIdPostfix).value;
                 window.dispatchEvent(new CustomEvent('app-event.top_message', {
