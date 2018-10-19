@@ -37,6 +37,7 @@ pub struct Animation_Source {
     width: u32,
     height: u32,
     scale_x: f32,
+    stretch: bool,
     canvas_width: u32,
     canvas_height: u32,
     dpi: f32,
@@ -49,7 +50,7 @@ pub struct Animation_Source {
 #[wasm_bindgen]
 impl Animation_Source {
     #[wasm_bindgen(constructor)]
-    pub fn new(width: u32, height: u32, canvas_width: u32, canvas_height: u32, frame_length: f32, scale_x: f32, dpi: f32) -> Animation_Source {
+    pub fn new(width: u32, height: u32, canvas_width: u32, canvas_height: u32, frame_length: f32, scale_x: f32, stretch: bool, dpi: f32) -> Animation_Source {
         Animation_Source {
             steps: Vec::new(),
             width: width,
@@ -58,6 +59,7 @@ impl Animation_Source {
             canvas_height: canvas_height,
             frame_length: frame_length,
             scale_x: scale_x,
+            stretch: stretch,
             dpi: dpi,
             current_frame: 1,
             last_frame_change: -100.0,
@@ -878,14 +880,17 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
             bound_ratio *= 2.0;
             resolution *= 2;
         }
-        let mut divisor = bound_ratio as i32;
-        while divisor > 1 {
-            if resolution % divisor == 0 {
-                break;
-            }
-            divisor -= 1;
-        };
-        (resolution / divisor) as f32 * if is_height_bounded {1.21} else {0.68 * animation.scale_x}
+        if animation.stretch == false {
+            let mut divisor = bound_ratio as i32;
+            while divisor > 1 {
+                if resolution % divisor == 0 {
+                    break;
+                }
+                divisor -= 1;
+            };
+            bound_ratio = divisor as f32;
+        }
+        (resolution as f32 / bound_ratio) * if is_height_bounded {1.21} else {0.68 * animation.scale_x}
     };
 
     let mut camera = Camera::new();

@@ -230,11 +230,13 @@ function prepareUi() {
     
         const scale = form.querySelector('input[name="scale"]:checked');
         let scaleX = 1;
+        let stretch = false;
         localStorage.setItem("scale", scale.id);
+
+        const imageWidth = rawImgs[0].width;
+        const imageHeight = rawImgs[0].height;
         switch(scale.id) {
             case "scale-auto":
-                const imageWidth = rawImgs[0].width;
-                const imageHeight = rawImgs[0].height;
                 let scaleIdPostfix = 'none';
                 if (imageWidth == 256 && imageHeight == 224) {
                     scaleIdPostfix = '256x224';
@@ -253,6 +255,10 @@ function prepareUi() {
                 window.dispatchEvent(new CustomEvent('app-event.top_message', {
                     detail: "Scaling auto detect applying: " + scaleIdPostfix + (scaleIdPostfix == "none" ? "" : " on 4:3")
                 }));
+                break;
+            case "scale-stretch":
+                scaleX = (width/height)/(imageWidth/imageHeight);
+                stretch = true;
                 break;
             case "scale-custom":
                 scaleX = document.getElementById('scale-x').value;
@@ -317,7 +323,7 @@ function prepareUi() {
         if (!gl) throw new Error("Could not get webgl context.");
 
         import(/* webpackPrefetch: true */"./crt_3d_sim").then(wasm => {
-            const animation = new wasm.Animation_Source(rawImgs[0].width, rawImgs[0].height, canvas.width, canvas.height, 1 / 60, +scaleX, dpi);
+            const animation = new wasm.Animation_Source(rawImgs[0].width, rawImgs[0].height, canvas.width, canvas.height, 1 / 60, +scaleX, stretch, dpi);
             for (let i = 0; i < rawImgs.length; i++) {
                 const rawImg = rawImgs[i];
                 animation.add(rawImg.data.buffer);
