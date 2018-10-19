@@ -15,7 +15,7 @@ use web_sys::{
     WebGlFramebuffer, WebGlTexture,
     KeyboardEvent, MouseEvent, WheelEvent, Event, EventTarget, CustomEvent, CustomEventInit
 };
-use js_sys::{Float32Array, ArrayBuffer};
+use js_sys::{Float32Array, Int32Array, ArrayBuffer};
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::mem::size_of;
@@ -947,8 +947,8 @@ pub fn js_f32_array(data: &[f32]) -> Float32Array {
     array
 }
 
-pub fn js_i32_array(data: &[i32]) -> js_sys::Int32Array {
-    let array = js_sys::Int32Array::new(&wasm_bindgen::JsValue::from(data.len() as u32));
+pub fn js_i32_array(data: &[i32]) -> Int32Array {
+    let array = Int32Array::new(&wasm_bindgen::JsValue::from(data.len() as u32));
     for (i, f) in data.iter().enumerate() {
         array.fill(*f, i as u32, (i + 1) as u32);
     }
