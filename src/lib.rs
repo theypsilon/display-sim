@@ -939,22 +939,6 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
     })
 }
 
-pub fn js_f32_array(data: &[f32]) -> Float32Array {
-    let array = Float32Array::new(&wasm_bindgen::JsValue::from(data.len() as u32));
-    for (i, f) in data.iter().enumerate() {
-        array.fill(*f, i as u32, (i + 1) as u32);
-    }
-    array
-}
-
-pub fn js_i32_array(data: &[i32]) -> Int32Array {
-    let array = Int32Array::new(&wasm_bindgen::JsValue::from(data.len() as u32));
-    for (i, f) in data.iter().enumerate() {
-        array.fill(*f, i as u32, (i + 1) as u32);
-    }
-    array
-}
-
 pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
     let dt: f32 = ((input.now - res.last_time) / 1000.0) as f32;
     let ellapsed = input.now - res.last_second;
@@ -1307,6 +1291,22 @@ pub fn link_shader<'a, T: IntoIterator<Item = &'a WebGlShader>>(gl: &WebGl2Rende
     } else {
         Err(Wasm_Error::Str(gl.get_program_info_log(&program).ok_or("cannot get program info log")?))
     }
+}
+
+pub fn js_f32_array(data: &[f32]) -> Float32Array {
+    let array = Float32Array::new(&wasm_bindgen::JsValue::from(data.len() as u32));
+    for (i, f) in data.iter().enumerate() {
+        array.fill(*f, i as u32, (i + 1) as u32);
+    }
+    array
+}
+
+pub fn js_i32_array(data: &[i32]) -> Int32Array {
+    let array = Int32Array::new(&wasm_bindgen::JsValue::from(data.len() as u32));
+    for (i, f) in data.iter().enumerate() {
+        array.fill(*f, i as u32, (i + 1) as u32);
+    }
+    array
 }
 
 pub fn check_error(gl: &WebGl2RenderingContext, line: u32) -> Result<()> {
