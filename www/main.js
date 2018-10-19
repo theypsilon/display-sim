@@ -242,8 +242,8 @@ function prepareUi() {
     
         canvas.id = 'gl-canvas';
 
-        canvas.width = width * dpi;
-        canvas.height = height * dpi;
+        canvas.width = Math.floor(width * dpi / 80) * 80;
+        canvas.height = Math.floor(height * dpi / 60) * 60;
     
         canvas.style.width = width;
         canvas.style.height = height;
@@ -289,7 +289,7 @@ function prepareUi() {
         if (!gl) throw new Error("Could not get webgl context.");
 
         import(/* webpackPrefetch: true */"./crt_3d_sim").then(wasm => {
-            const animation = new wasm.Animation_Source(rawImgs[0].width, rawImgs[0].height, width, height, 1 / 60, +scaleX, +scaleY, dpi);
+            const animation = new wasm.Animation_Source(rawImgs[0].width, rawImgs[0].height, canvas.width, canvas.height, 1 / 60, +scaleX, +scaleY, dpi);
             for (let i = 0; i < rawImgs.length; i++) {
                 const rawImg = rawImgs[i];
                 animation.add(rawImg.data.buffer);

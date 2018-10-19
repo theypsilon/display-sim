@@ -38,8 +38,8 @@ pub struct Animation_Source {
     height: u32,
     scale_x: f32,
     scale_y: f32,
-    screen_width: u32,
-    screen_height: u32,
+    canvas_width: u32,
+    canvas_height: u32,
     dpi: f32,
     frame_length: f32,
     current_frame: usize,
@@ -50,13 +50,13 @@ pub struct Animation_Source {
 #[wasm_bindgen]
 impl Animation_Source {
     #[wasm_bindgen(constructor)]
-    pub fn new(width: u32, height: u32, screen_width: u32, screen_height: u32, frame_length: f32, scale_x: f32, scale_y: f32, dpi: f32) -> Animation_Source {
+    pub fn new(width: u32, height: u32, canvas_width: u32, canvas_height: u32, frame_length: f32, scale_x: f32, scale_y: f32, dpi: f32) -> Animation_Source {
         Animation_Source {
             steps: Vec::new(),
             width: width,
             height: height,
-            screen_width: screen_width,
-            screen_height: screen_height,
+            canvas_width: canvas_width,
+            canvas_height: canvas_height,
             frame_length: frame_length,
             scale_x: scale_x,
             scale_y: scale_y,
@@ -766,16 +766,6 @@ void main()
 "#;
 
 pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) -> Result<Resources> {
-    let resolution_width = {
-        let estimated_width = (animation.screen_width as f32 * animation.dpi) as i32;
-        let factor_width = estimated_width / 80;
-        factor_width * 80
-    };
-    let resolution_height = {
-        let estimated_height = (animation.screen_height as f32 * animation.dpi) as i32;
-        let factor_height = estimated_height / 60;
-        factor_height * 60
-    };
     let width = animation.width as usize;
     let height = animation.height as usize;
     let pixels_total = width * height;
@@ -801,7 +791,7 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
     let texture = gl.create_texture();
     gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, texture.as_ref());
     gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
-        WebGl2RenderingContext::TEXTURE_2D, 0, WebGl2RenderingContext::RGBA as i32, resolution_width, resolution_height, 0, WebGl2RenderingContext::RGBA, WebGl2RenderingContext::UNSIGNED_BYTE, None
+        WebGl2RenderingContext::TEXTURE_2D, 0, WebGl2RenderingContext::RGBA as i32, animation.canvas_width as i32, animation.canvas_height as i32, 0, WebGl2RenderingContext::RGBA, WebGl2RenderingContext::UNSIGNED_BYTE, None
     )?;
     gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MIN_FILTER, WebGl2RenderingContext::LINEAR as i32);
     gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MAG_FILTER, WebGl2RenderingContext::LINEAR as i32);
@@ -881,11 +871,11 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
     let now = now()?;
 
     let far_away_position = 0.5 + {
-        let width_ratio = resolution_width as f32 / width as f32;
-        let height_ratio = resolution_height as f32 / height as f32;
+        let width_ratio = animation.canvas_width as f32 / width as f32;
+        let height_ratio = animation.canvas_height as f32 / height as f32;
         let is_height_bounded = width_ratio > height_ratio;
         let mut bound_ratio = if is_height_bounded {height_ratio} else {width_ratio};
-        let mut resolution = if is_height_bounded {resolution_height} else {resolution_width};
+        let mut resolution = if is_height_bounded {animation.canvas_height} else {animation.canvas_width} as i32;
         while bound_ratio < 1.0 {
             bound_ratio *= 2.0;
             resolution *= 2;
@@ -987,7 +977,7 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
     res.buttons.showing_pixels_pulse.track(input.showing_pixels_pulse);
     if res.buttons.showing_pixels_pulse.just_pressed {
         res.showing_pixels_pulse = !res.showing_pixels_pulse;
-        dispatch_event_with("app-event.top_message", &(if res.showing_pixels_pulse {"Screen wave activated."} else {"Screen wave deactivated."}).into())?;
+        dispatch_event_with("app-event.top_message", &(if res.showing_pixels_pulse {"Screen wave ON."} else {"Screen wave OFF."}).into())?;
         dispatch_event_with("app-event.showing_pixels_pulse", &res.showing_pixels_pulse.into())?;
     }
 
@@ -1162,10 +1152,10 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
         );
     }
 
-    let screen_width = res.animation.screen_width as f32;
-    let screen_height = res.animation.screen_height as f32;
+    let canvas_width = res.animation.canvas_width as f32;
+    let canvas_height = res.animation.canvas_height as f32;
 
-    let mut projection = glm::perspective::<f32>(screen_width / screen_height, radians(res.camera_zoom), 0.01, 10000.0);
+    let mut projection = glm::perspective::<f32>(canvas_width / canvas_height, radians(res.camera_zoom), 0.01, 10000.0);
     let mut view = res.camera.get_view();
 
     let mut pixel_scale : &mut [f32] = &mut [
