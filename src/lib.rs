@@ -267,7 +267,7 @@ impl Input {
 
 struct State_Owner {
     animation_frame_id: Option<i32>,
-    owned_closures: Vec<Option<Closure<FnMut(JsValue)>>>,
+    closures: Vec<Option<Closure<FnMut(JsValue)>>>,
     resources: Resources,
 }
 
@@ -275,7 +275,7 @@ impl State_Owner {
     fn new(resources: Resources) -> State_Owner {
         State_Owner {
             animation_frame_id: None,
-            owned_closures: Vec::new(),
+            closures: Vec::new(),
             resources: resources,
         }
     }
@@ -460,18 +460,17 @@ const quad_indices: [i32; 6] = [
 pub fn program(gl: JsValue, animation: Animation_Source) -> Result<()> {
     let gl = gl.dyn_into::<WebGl2RenderingContext>()?;
     gl.enable(WebGl2RenderingContext::DEPTH_TEST);
-    let image_buffer = animation.steps[0].clone();
-    let render_loop = Rc::new(RefCell::new(State_Owner::new(load_resources(&gl, animation)?)));
+    let owned_state = Rc::new(RefCell::new(State_Owner::new(load_resources(&gl, animation)?)));
     let input = Rc::new(RefCell::new( Input::new().ok().expect("cannot create input")));
     let frame_closure: Closure<FnMut(JsValue)> = {
-        let render_loop = render_loop.clone();
+        let owned_state = owned_state.clone();
         let mut input = Rc::clone(&input);
         let window = window()?;
         Closure::wrap(Box::new(move |_| {
-            let mut render_loop = render_loop.borrow_mut();
+            let mut owned_state = owned_state.borrow_mut();
                 let mut input = input.borrow_mut();
-                input.now = now().unwrap_or(render_loop.resources.last_time);
-                let update_status = update(&mut render_loop.resources, &input);
+                input.now = now().unwrap_or(owned_state.resources.last_time);
+                let update_status = update(&mut owned_state.resources, &input);
 
                 input.mouse_scroll_y = 0.0;
                 input.mouse_position_x = 0;
@@ -482,25 +481,25 @@ pub fn program(gl: JsValue, animation: Animation_Source) -> Result<()> {
                         if next_update_needed == false {
                             return;
                         }
-                        if let Err(e) = draw(&gl, &render_loop.resources) {
+                        if let Err(e) = draw(&gl, &owned_state.resources) {
                             console::error_2(&"An unexpected error happened during draw.".into(), &e.to_js());
                             return;
                         }
                         let mut frame_id = None;
-                        if let Some(ref frame_closure) = render_loop.owned_closures[0] {
+                        if let Some(ref frame_closure) = owned_state.closures[0] {
                             if let Ok(id) = window.request_animation_frame(frame_closure.as_ref().unchecked_ref()) {
                                 frame_id = Some(id);
                             }
                         }
-                        render_loop.animation_frame_id = frame_id;
+                        owned_state.animation_frame_id = frame_id;
                     },
                     Err(e) => console::error_2(&"An unexpected error happened during update.".into(), &e.to_js())
                 }
         }))
     };
-    let mut render_loop = render_loop.borrow_mut();
-    render_loop.animation_frame_id = Some(window()?.request_animation_frame(frame_closure.as_ref().unchecked_ref())?);
-    render_loop.owned_closures.push(Some(frame_closure));
+    let mut owned_state = owned_state.borrow_mut();
+    owned_state.animation_frame_id = Some(window()?.request_animation_frame(frame_closure.as_ref().unchecked_ref())?);
+    owned_state.closures.push(Some(frame_closure));
 
     let onkeydown: Closure<FnMut(JsValue)> = {
         let mut input = Rc::clone(&input);
@@ -631,12 +630,12 @@ pub fn program(gl: JsValue, animation: Animation_Source) -> Result<()> {
     document.set_onmousemove(Some(onmousemove.as_ref().unchecked_ref()));
     document.set_onwheel(Some(onmousewheel.as_ref().unchecked_ref()));
 
-    render_loop.owned_closures.push(Some(onkeydown));
-    render_loop.owned_closures.push(Some(onkeyup));
-    render_loop.owned_closures.push(Some(onmousedown));
-    render_loop.owned_closures.push(Some(onmouseup));
-    render_loop.owned_closures.push(Some(onmousemove));
-    render_loop.owned_closures.push(Some(onmousewheel));
+    owned_state.closures.push(Some(onkeydown));
+    owned_state.closures.push(Some(onkeyup));
+    owned_state.closures.push(Some(onmousedown));
+    owned_state.closures.push(Some(onmouseup));
+    owned_state.closures.push(Some(onmousemove));
+    owned_state.closures.push(Some(onmousewheel));
 
     Ok(())
 }
@@ -776,10 +775,10 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
         for i in 0..width {
             for j in 0..height {
                 let index = (pixels_total - width - j * width + i) as u32;
-                let x = i as f32 - half_width;
-                let y = j as f32 - half_height;
-                offsets.fill(x + center_dx, index * 2 + 0, index * 2 + 1);
-                offsets.fill(y + center_dy, index * 2 + 1, index * 2 + 2);
+                let x = i as f32 - half_width + center_dx;
+                let y = j as f32 - half_height + center_dy;
+                offsets.fill(x, index * 2 + 0, index * 2 + 1);
+                offsets.fill(y, index * 2 + 1, index * 2 + 2);
             }
         }
     }
@@ -869,11 +868,12 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
     let now = now()?;
 
     let far_away_position = 0.5 + {
-        let width_ratio = animation.canvas_width as f32 / width as f32;
+        let canvas_width_scaled = (animation.canvas_width as f32 / animation.scale_x) as u32;
+        let width_ratio = canvas_width_scaled as f32 / width as f32;
         let height_ratio = animation.canvas_height as f32 / height as f32;
         let is_height_bounded = width_ratio > height_ratio;
         let mut bound_ratio = if is_height_bounded {height_ratio} else {width_ratio};
-        let mut resolution = if is_height_bounded {animation.canvas_height} else {animation.canvas_width} as i32;
+        let mut resolution = if is_height_bounded {animation.canvas_height} else {canvas_width_scaled} as i32;
         while bound_ratio < 1.0 {
             bound_ratio *= 2.0;
             resolution *= 2;
@@ -885,7 +885,7 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
             }
             divisor -= 1;
         };
-        (resolution / divisor) as f32 * if is_height_bounded {1.21} else {0.68}
+        (resolution / divisor) as f32 * if is_height_bounded {1.21} else {0.68 * animation.scale_x}
     };
 
     let mut camera = Camera::new();
