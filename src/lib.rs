@@ -37,7 +37,6 @@ pub struct Animation_Source {
     width: u32,
     height: u32,
     scale_x: f32,
-    scale_y: f32,
     canvas_width: u32,
     canvas_height: u32,
     dpi: f32,
@@ -50,7 +49,7 @@ pub struct Animation_Source {
 #[wasm_bindgen]
 impl Animation_Source {
     #[wasm_bindgen(constructor)]
-    pub fn new(width: u32, height: u32, canvas_width: u32, canvas_height: u32, frame_length: f32, scale_x: f32, scale_y: f32, dpi: f32) -> Animation_Source {
+    pub fn new(width: u32, height: u32, canvas_width: u32, canvas_height: u32, frame_length: f32, scale_x: f32, dpi: f32) -> Animation_Source {
         Animation_Source {
             steps: Vec::new(),
             width: width,
@@ -59,7 +58,6 @@ impl Animation_Source {
             canvas_height: canvas_height,
             frame_length: frame_length,
             scale_x: scale_x,
-            scale_y: scale_y,
             dpi: dpi,
             current_frame: 1,
             last_frame_change: -100.0,
@@ -1169,10 +1167,6 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
     if res.animation.scale_x != 1.0 {
         pixel_scale[0] /= res.animation.scale_x;
         pixel_gap[0] *= res.animation.scale_x;
-    }
-    if res.animation.scale_y != 1.0 {
-        pixel_scale[1] /= res.animation.scale_y;
-        pixel_gap[1] *= res.animation.scale_y;
     }
 
     let ambient_strength = match res.pixels_or_voxels { Pixels_Or_Voxels::Pixels => 1.0, Pixels_Or_Voxels::Voxels => 0.5};

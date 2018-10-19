@@ -88,7 +88,7 @@ window.addEventListener('app-event.top_message', event => {
             }
         }
         fade();
-    }, 1000);
+    }, event.detail.length * 100);
 }, false);
 
 window.addEventListener('app-event.camera_update', event => {
@@ -157,8 +157,11 @@ prepareUi();
 
 function prepareUi() {
 
-    const scaleId = localStorage.getItem('scale') || "scale-1";
-    document.getElementById(scaleId).checked = true;
+    const scaleId = localStorage.getItem('scale') || "scale-auto";
+    scaleSelection = document.getElementById(scaleId);
+    if (scaleSelection) {
+        scaleSelection.checked = true;
+    }
     if (scaleId === 'scale-custom') {
         scaleCustomInputs.classList.remove("display-none");
     }
@@ -227,15 +230,40 @@ function prepareUi() {
     
         const scale = form.querySelector('input[name="scale"]:checked');
         let scaleX = 1;
-        let scaleY = 1;
         localStorage.setItem("scale", scale.id);
-        if (scale.id == "scale-custom") {
-            scaleX = document.getElementById('scale-x').value;
-            scaleY = document.getElementById('scale-y').value;
-            localStorage.setItem("scale-x", scaleX);
-            localStorage.setItem("scale-y", scaleY);
-        } else {
-            scaleX = scale.value;
+        switch(scale.id) {
+            case "scale-auto":
+                const imageWidth = rawImgs[0].width;
+                const imageHeight = rawImgs[0].height;
+                let scaleIdPostfix = 'none';
+                if (imageWidth == 256 && imageHeight == 224) {
+                    scaleIdPostfix = '256x224';
+                } else if (imageWidth == 256 && imageHeight == 240) {
+                    scaleIdPostfix = '256x224';
+                } else if (imageWidth == 320 && imageHeight == 224) {
+                    scaleIdPostfix = '256x224';
+                } else if (imageWidth == 160 && imageHeight == 144) {
+                    scaleIdPostfix = '256x224';
+                } else if (imageWidth == 240 && imageHeight == 160) {
+                    scaleIdPostfix = '256x224';
+                } else if (imageWidth == 320 && imageHeight == 200) {
+                    scaleIdPostfix = '256x224';
+                }
+                scaleX = document.getElementById('scale-' + scaleIdPostfix).value;
+                window.dispatchEvent(new CustomEvent('app-event.top_message', {
+                    detail: "Scaling auto detect applying: " + scaleIdPostfix + (scaleIdPostfix == "none" ? "" : " on 4:3")
+                }));
+                break;
+            case "scale-custom":
+                scaleX = document.getElementById('scale-x').value;
+                const scaleY = document.getElementById('scale-y').value;
+                localStorage.setItem("scale-x", scaleX);
+                localStorage.setItem("scale-y", scaleY);
+                scaleX = +scaleX / +scaleY;
+                break;
+            default:
+                scaleX = scale.value;
+                break;
         }
     
         const canvas = document.createElement("canvas");
@@ -289,7 +317,7 @@ function prepareUi() {
         if (!gl) throw new Error("Could not get webgl context.");
 
         import(/* webpackPrefetch: true */"./crt_3d_sim").then(wasm => {
-            const animation = new wasm.Animation_Source(rawImgs[0].width, rawImgs[0].height, canvas.width, canvas.height, 1 / 60, +scaleX, +scaleY, dpi);
+            const animation = new wasm.Animation_Source(rawImgs[0].width, rawImgs[0].height, canvas.width, canvas.height, 1 / 60, +scaleX, dpi);
             for (let i = 0; i < rawImgs.length; i++) {
                 const rawImg = rawImgs[i];
                 animation.add(rawImg.data.buffer);
