@@ -156,17 +156,18 @@ document.form.scale.forEach(s => {
 prepareUi();
 
 function prepareUi() {
-    const scaleSelection = document.getElementById(localStorage.getItem('scale')) || document.getElementById("scale-auto");
-    scaleSelection.checked = true;
-    const scaleId = scaleSelection.id;
-    if (scaleId === 'scale-custom') {
+    const scaleSelectionInput = document.getElementById(localStorage.getItem('scale')) || document.getElementById("scale-auto");
+    scaleSelectionInput.checked = true;
+    const scaleSelectionId = scaleSelectionInput.id;
+    if (scaleSelectionId === 'scale-custom') {
         scaleCustomInputs.classList.remove("display-none");
     }
     scaleX.value = localStorage.getItem('scale-x') || 1;
     scaleY.value = localStorage.getItem('scale-y') || 1;
     
     antialias.checked = localStorage.getItem('antialias') === "true";
-    document.getElementById(localStorage.getItem('powerPreference') || 'powerPreference-1').checked = true;
+    const powerPreferenceInput = document.getElementById(localStorage.getItem('powerPreference')) || document.getElementById('powerPreference-1');
+    powerPreferenceInput.checked = true;
     
     if (document.getElementById('preview')) {
         startCustom.classList.remove('display-none');
@@ -234,23 +235,23 @@ function prepareUi() {
         const imageHeight = rawImgs[0].height;
         switch(scale.id) {
             case "scale-auto":
-                let scaleIdPostfix = 'none';
+                let scaleSelectionIdPostfix = 'none';
                 if (imageWidth == 256 && imageHeight == 224) {
-                    scaleIdPostfix = '256x224';
+                    scaleSelectionIdPostfix = '256x224';
                 } else if (imageWidth == 256 && imageHeight == 240) {
-                    scaleIdPostfix = '256x224';
+                    scaleSelectionIdPostfix = '256x224';
                 } else if (imageWidth == 320 && imageHeight == 224) {
-                    scaleIdPostfix = '256x224';
+                    scaleSelectionIdPostfix = '256x224';
                 } else if (imageWidth == 160 && imageHeight == 144) {
-                    scaleIdPostfix = '256x224';
+                    scaleSelectionIdPostfix = '256x224';
                 } else if (imageWidth == 240 && imageHeight == 160) {
-                    scaleIdPostfix = '256x224';
+                    scaleSelectionIdPostfix = '256x224';
                 } else if (imageWidth == 320 && imageHeight == 200) {
-                    scaleIdPostfix = '256x224';
+                    scaleSelectionIdPostfix = '256x224';
                 }
-                scaleX = document.getElementById('scale-' + scaleIdPostfix).value;
+                scaleX = document.getElementById('scale-' + scaleSelectionIdPostfix).value;
                 window.dispatchEvent(new CustomEvent('app-event.top_message', {
-                    detail: "Scaling auto detect applying: " + scaleIdPostfix + (scaleIdPostfix == "none" ? "" : " on 4:3")
+                    detail: "Scaling auto detect applying: " + scaleSelectionIdPostfix + (scaleSelectionIdPostfix == "none" ? "" : " on 4:3")
                 }));
                 break;
             case "scale-stretch":
