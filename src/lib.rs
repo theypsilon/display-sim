@@ -883,21 +883,21 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
     let far_away_position = 0.5 + {
         let width_ratio = resolution_width as f32 / width as f32;
         let height_ratio = resolution_height as f32 / height as f32;
-        let floor_is_height = width_ratio > height_ratio;
-        let mut floor_ratio = if floor_is_height {height_ratio} else {width_ratio};
-        let mut resolution = if floor_is_height {resolution_height} else {resolution_width};
-        while floor_ratio < 1.0 {
-            floor_ratio *= 2.0;
+        let is_height_bounded = width_ratio > height_ratio;
+        let mut bound_ratio = if is_height_bounded {height_ratio} else {width_ratio};
+        let mut resolution = if is_height_bounded {resolution_height} else {resolution_width};
+        while bound_ratio < 1.0 {
+            bound_ratio *= 2.0;
             resolution *= 2;
         }
-        let mut divisor = floor_ratio as i32;
-        let greater = loop {
+        let mut divisor = bound_ratio as i32;
+        loop {
             if divisor == 1 || resolution % divisor == 0 {
-                break divisor;
+                break;
             }
             divisor -= 1;
         };
-        (resolution / divisor) as f32 * if floor_is_height {1.21} else {0.68}
+        (resolution / divisor) as f32 * if is_height_bounded {1.21} else {0.68}
     };
 
     let mut camera = Camera::new();
