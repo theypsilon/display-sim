@@ -156,12 +156,9 @@ document.form.scale.forEach(s => {
 prepareUi();
 
 function prepareUi() {
-
-    const scaleId = localStorage.getItem('scale') || "scale-auto";
-    scaleSelection = document.getElementById(scaleId);
-    if (scaleSelection) {
-        scaleSelection.checked = true;
-    }
+    const scaleSelection = document.getElementById(localStorage.getItem('scale')) || document.getElementById("scale-auto");
+    scaleSelection.checked = true;
+    const scaleId = scaleSelection.id;
     if (scaleId === 'scale-custom') {
         scaleCustomInputs.classList.remove("display-none");
     }
