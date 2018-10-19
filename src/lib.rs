@@ -891,8 +891,8 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
             resolution *= 2;
         }
         let mut divisor = bound_ratio as i32;
-        loop {
-            if divisor == 1 || resolution % divisor == 0 {
+        while divisor > 1 {
+            if resolution % divisor == 0 {
                 break;
             }
             divisor -= 1;
