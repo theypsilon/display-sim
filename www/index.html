@@ -56,7 +56,7 @@
             <div class="scaling-radio" title="Stretch to nearest edge, keeps proportions"><input type="radio" id="scaling-stretch-nearest" name="scaling" /><div class="option-text">stretch to nearest edge</div></div>
             <div class="scaling-radio" title="Introduce the values yourself"><input type="radio" id="scaling-custom" name="scaling" /><div class="option-text">custom</div></div>
           </div>
-          <div id="scaling-custom-inputs" class="display-none">
+          <div id="scaling-custom-inputs" class="well display-none">
             <div class="option-inputs">
               <label for="scaling-custom-resolution">resolution:</label>
               <span>width</span><input class="custom-resolution" type="number" id="scaling-custom-resolution-width" value="256" min="1" max="99999">
@@ -66,6 +66,10 @@
               <label for="scaling-custom-aspect-ratio">aspect ratio:</label>
               <input class="custom-aspect-ratio" type="number" id="scaling-custom-aspect-ratio-x" value="4" min="1" max="99"><span>:</span>
               <input class="custom-aspect-ratio" type="number" id="scaling-custom-aspect-ratio-y" value="3" min="1" max="99">
+            </div>
+            <div class="option-inputs">
+              <label for="scaling-custom-aspect-ratio">stretch to nearest edge:</label>
+              <input class="custom-checkbox" type="checkbox" id="scaling-custom-stretch-nearest">
             </div>
           </div>
           <input type="button" id="restore-default-options" value="Restore defaults">

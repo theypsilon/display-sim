@@ -890,7 +890,7 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
             };
             bound_ratio = divisor as f32;
         }
-        (resolution as f32 / bound_ratio) * if is_height_bounded {1.21} else {0.68 * animation.scale_x}
+        (resolution as f32 / bound_ratio) * if is_height_bounded {1.2076} else {0.68 * animation.scale_x}
     };
 
     let mut camera = Camera::new();

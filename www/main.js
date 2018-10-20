@@ -22,6 +22,7 @@ const scalingCustomResWidthDeo = document.getElementById('scaling-custom-resolut
 const scalingCustomResHeightDeo = document.getElementById('scaling-custom-resolution-height');
 const scalingCustomArXDeo = document.getElementById('scaling-custom-aspect-ratio-x');
 const scalingCustomArYDeo = document.getElementById('scaling-custom-aspect-ratio-y');
+const scalingCustomStretchNearestDeo = document.getElementById('scaling-custom-stretch-nearest');
 const scalingCustomInputsDeo = document.getElementById('scaling-custom-inputs');
 const dropZoneDeo = document.getElementById('drop-zone');
 const restoreDefaultOptionsDeo = document.getElementById('restore-default-options');
@@ -267,15 +268,15 @@ function prepareUi() {
                 stretch = true;
                 break;
             case scalingStretchToNearestEdgeHtmlId:
-                window.dispatchEvent(new CustomEvent('app-event.top_message', {
-                    detail: 'Stretch to nearest edge: Not implemented yet!'
-                }));
+                stretch = true;
                 break;
             case scalingCustomHtmlId:
+                stretch = scalingCustomStretchNearestDeo.checked;
                 storage.setCustomResWidth(scalingCustomResWidthDeo.value);
                 storage.setCustomResHeight(scalingCustomResHeightDeo.value);
                 storage.setCustomArX(scalingCustomArXDeo.value);
                 storage.setCustomArY(scalingCustomArYDeo.value);
+                storage.setCustomStretchNearest(stretch);
                 scaleX = (+scalingCustomArXDeo.value / +scalingCustomArYDeo.value)/(+scalingCustomResWidthDeo.value/+scalingCustomResHeightDeo.value);
                 break;
         }
@@ -368,6 +369,7 @@ function loadInputValuesFromStorage() {
     scalingCustomResHeightDeo.value = storage.getCustomResHeight();
     scalingCustomArXDeo.value = storage.getCustomArX();
     scalingCustomArYDeo.value = storage.getCustomArY();
+    scalingCustomStretchNearestDeo.checked = storage.getCustomStretchNearest();
     antialiasDeo.checked = storage.getAntiAliasing();
     const powerPreferenceInput = storage.getPowerPreferenceInputElement();
     powerPreferenceInput.checked = true;
@@ -409,29 +411,33 @@ function makeStorage() {
     const optionScalingCustomResHeight = 'option-scaling-custom-resolution-height';
     const optionScalingCustomArX = 'option-scaling-custom-aspect-ratio-x';
     const optionScalingCustomArY = 'option-scaling-custom-aspect-ratio-y';
+    const optionScalingCustomStretchNearest = 'option-scaling-custom-stretch-nearest';
     const optionPowerPreferenceId = 'option-powerPreference-id';
     const optionAntialias = 'option-antialias';
     return {
         getScalingInputElement: () => geElementByStoredIdOrBackup(optionScalingId, scalingAutoHtmlId),
         setScalingId: (scalingId) => localStorage.setItem(optionScalingId, scalingId),
         getCustomResWidth: () => localStorage.getItem(optionScalingCustomResWidth) || 256,
-        setCustomResWidth: (x) => localStorage.setItem(optionScalingCustomResWidth, x),
+        setCustomResWidth: width => localStorage.setItem(optionScalingCustomResWidth, width),
         getCustomResHeight: () => localStorage.getItem(optionScalingCustomResHeight) || 224,
-        setCustomResHeight: (y) => localStorage.setItem(optionScalingCustomResHeight, y),
+        setCustomResHeight: height => localStorage.setItem(optionScalingCustomResHeight, height),
         getCustomArX: () => localStorage.getItem(optionScalingCustomArX) || 4,
-        setCustomArX: (x) => localStorage.setItem(optionScalingCustomArX, x),
+        setCustomArX: x => localStorage.setItem(optionScalingCustomArX, x),
         getCustomArY: () => localStorage.getItem(optionScalingCustomArY) || 3,
-        setCustomArY: (y) => localStorage.setItem(optionScalingCustomArY, y),
+        setCustomArY: y => localStorage.setItem(optionScalingCustomArY, y),
+        getCustomStretchNearest: () => localStorage.getItem(optionScalingCustomStretchNearest) === 'true',
+        setCustomStretchNearest: stretch => localStorage.setItem(optionScalingCustomStretchNearest, stretch ? 'true' : 'false'),
         getPowerPreferenceInputElement: () => geElementByStoredIdOrBackup(optionPowerPreferenceId, powerPreferenceDefaultId),
         setPowerPreference: (powerPreference) => localStorage.setItem(optionPowerPreferenceId, powerPreference),
         getAntiAliasing: () => localStorage.getItem(optionAntialias) === 'true',
-        setAntiAliasing: (antiAliasing) => localStorage.setItem(optionAntialias, antiAliasing ? 'true' : 'false'),
+        setAntiAliasing: antiAliasing => localStorage.setItem(optionAntialias, antiAliasing ? 'true' : 'false'),
         removeAllOptions: ()  => {
             localStorage.removeItem(optionScalingId);
             localStorage.removeItem(optionScalingCustomResWidth);
             localStorage.removeItem(optionScalingCustomResHeight);
             localStorage.removeItem(optionScalingCustomArX);
             localStorage.removeItem(optionScalingCustomArY);
+            localStorage.removeItem(optionScalingCustomStretchNearest);
             localStorage.removeItem(optionPowerPreferenceId);
             localStorage.removeItem(optionAntialias);
         }
