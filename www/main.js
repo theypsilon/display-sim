@@ -268,7 +268,7 @@ function prepareUi() {
                 break;
             case scalingStretchToNearestEdgeHtmlId:
                 window.dispatchEvent(new CustomEvent('app-event.top_message', {
-                    detail: 'Not implemented yet!'
+                    detail: 'Stretch to nearest edge: Not implemented yet!'
                 }));
                 break;
             case scalingCustomHtmlId:
@@ -361,6 +361,8 @@ function loadInputValuesFromStorage() {
     const scalingSelectionId = scalingSelectionInput.id;
     if (scalingSelectionId === scalingCustomHtmlId) {
         visibility.showScaleCustomInputs();
+    } else {
+        visibility.hideScaleCustomInputs();
     }
     scalingCustomResWidthDeo.value = storage.getCustomResWidth();
     scalingCustomResHeightDeo.value = storage.getCustomResHeight();
@@ -428,6 +430,8 @@ function makeStorage() {
             localStorage.removeItem(optionScalingId);
             localStorage.removeItem(optionScalingCustomResWidth);
             localStorage.removeItem(optionScalingCustomResHeight);
+            localStorage.removeItem(optionScalingCustomArX);
+            localStorage.removeItem(optionScalingCustomArY);
             localStorage.removeItem(optionPowerPreferenceId);
             localStorage.removeItem(optionAntialias);
         }
