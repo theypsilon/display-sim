@@ -1,32 +1,50 @@
-const ui = document.getElementById('ui');
-const form = document.getElementById('form');
-const loading = document.getElementById('loading');
-const inputFileUpload = document.getElementById('file');
-const startCustom = document.getElementById('start-custom');
-const startAnimation = document.getElementById('start-animation');
-const antialias = document.getElementById('antialias');
-const scaleX = document.getElementById('scale-x');
-const scaleY = document.getElementById('scale-y');
-const scaleCustomInputs = document.getElementById('scale-custom-inputs');
-const dropZone = document.getElementById('drop-zone');
+const scalingAutoHtmlId = 'scale-auto';
+const scalingCustomHtmlId = 'scale-custom';
+const scalingStretchHtmlId = 'scale-stretch';
+const glCanvasHtmlId = 'gl-canvas';
+const topMessageHtmlId = 'top-message';
+const previewHtmlId = 'preview';
 
-const infoHide = document.getElementById('info-hide');
-const infoPanel = document.getElementById('info-panel');
-const fpsCounter = document.getElementById('fps-counter');
+const scalingHtmlName = 'scale';
+const powerPreferenceHtmlName = 'powerPreference';
 
-const cameraPosX = document.getElementById('camera-pos-x');
-const cameraPosY = document.getElementById('camera-pos-y');
-const cameraPosZ = document.getElementById('camera-pos-z');
-const cameraDirX = document.getElementById('camera-dir-x');
-const cameraDirY = document.getElementById('camera-dir-y');
-const cameraDirZ = document.getElementById('camera-dir-z');
-const cameraAxisUpX = document.getElementById('camera-axis-up-x');
-const cameraAxisUpY = document.getElementById('camera-axis-up-y');
-const cameraAxisUpZ = document.getElementById('camera-axis-up-z');
+const uiDeo = document.getElementById('ui');
+const formDeo = document.getElementById('form');
+const loadingDeo = document.getElementById('loading');
+const inputFileUploadDeo = document.getElementById('file');
+const startCustomDeo = document.getElementById('start-custom');
+const startAnimationDeo = document.getElementById('start-animation');
+const antialiasDeo = document.getElementById('antialias');
+const scalingCustomXDeo = document.getElementById('scale-x');
+const scalingCustomYDeo = document.getElementById('scale-y');
+const scaleCustomInputsDeo = document.getElementById('scale-custom-inputs');
+const dropZoneDeo = document.getElementById('drop-zone');
 
-const pixelScaleX = document.getElementById('pixel-scale-x');
-const pixelScaleY = document.getElementById('pixel-scale-y');
-const pixelGap = document.getElementById('pixel-gap');
+const infoHideDeo = document.getElementById('info-hide');
+const infoPanelDeo = document.getElementById('info-panel');
+const fpsCounterDeo = document.getElementById('fps-counter');
+
+const cameraPosXDeo = document.getElementById('camera-pos-x');
+const cameraPosYDeo = document.getElementById('camera-pos-y');
+const cameraPosZDeo = document.getElementById('camera-pos-z');
+const cameraDirXDeo = document.getElementById('camera-dir-x');
+const cameraDirYDeo = document.getElementById('camera-dir-y');
+const cameraDirZDeo = document.getElementById('camera-dir-z');
+const cameraAxisUpXDeo = document.getElementById('camera-axis-up-x');
+const cameraAxisUpYDeo = document.getElementById('camera-axis-up-y');
+const cameraAxisUpZDeo = document.getElementById('camera-axis-up-z');
+
+const pixelScaleXDeo = document.getElementById('pixel-scale-x');
+const pixelScaleYDeo = document.getElementById('pixel-scale-y');
+const pixelGapDeo = document.getElementById('pixel-gap');
+
+const getGlCanvasDeo = () => document.getElementById(glCanvasHtmlId);
+const getPreviewDeo = () => document.getElementById(previewHtmlId);
+const getTopMessageDeo = () => document.getElementById(topMessageHtmlId);
+const getScalingSelectionDeo = scalingSelectionIdPostfix => document.getElementById('scale-' + scalingSelectionIdPostfix);
+
+const visibility = makeVisibility();
+const storage = makeStorage();
 
 window.ondrop = event => {
     event.preventDefault();
@@ -38,15 +56,16 @@ window.ondragover = event => {
 };
 
 window.addEventListener('app-event.toggle_info_panel', () => {
-    if (document.getElementById('gl-canvas')) {
-        if (infoPanel.classList.contains('display-none')) {
-            infoPanel.classList.remove('display-none');
-        } else {
-            infoPanel.classList.add('display-none');
-            window.dispatchEvent(new CustomEvent('app-event.top_message', {
-                detail: "Toggle the Info Panel by pressing SPACE."
-            }));
-        }
+    if (!getGlCanvasDeo()) {
+        return;
+    }
+    if (visibility.isInfoPanelVisible() === false) {
+        visibility.showInfoPanel();
+    } else {
+        visibility.hideInfoPanel();
+        window.dispatchEvent(new CustomEvent('app-event.top_message', {
+            detail: 'Toggle the Info Panel by pressing SPACE.'
+        }));
     }
 }, false);
 
@@ -56,21 +75,21 @@ window.addEventListener('app-event.exit_pointer_lock', () => {
 
 window.addEventListener('app-event.exiting_session', () => {
     prepareUi();
-    document.getElementById('gl-canvas').remove();
-    infoPanel.classList.add("display-none");
+    getGlCanvasDeo().remove();
+    visibility.hideInfoPanel();
 }, false);
 
 window.addEventListener('app-event.fps', event => {
-    fpsCounter.innerHTML = Math.round(event.detail);
+    fpsCounterDeo.innerHTML = Math.round(event.detail);
 }, false);
 
 window.addEventListener('app-event.top_message', event => {
-    const existingTopMessage = document.getElementById('top-message');
+    const existingTopMessage = getTopMessageDeo();
     if (existingTopMessage) {
         existingTopMessage.remove();
     }
     const div = document.createElement('div');
-    div.id = 'top-message';
+    div.id = topMessageHtmlId;
     const span = document.createElement('span');
     span.innerHTML = event.detail;
     div.appendChild(span);
@@ -92,63 +111,64 @@ window.addEventListener('app-event.top_message', event => {
 }, false);
 
 window.addEventListener('app-event.camera_update', event => {
-    cameraPosX.innerHTML = Math.round(event.detail[0] * 100) / 100;
-    cameraPosY.innerHTML = Math.round(event.detail[1] * 100) / 100;
-    cameraPosZ.innerHTML = Math.round(event.detail[2] * 100) / 100;
-    cameraDirX.innerHTML = Math.round(event.detail[3] * 100) / 100;
-    cameraDirY.innerHTML = Math.round(event.detail[4] * 100) / 100;
-    cameraDirZ.innerHTML = Math.round(event.detail[5] * 100) / 100;
-    cameraAxisUpX.innerHTML = Math.round(event.detail[6] * 100) / 100;
-    cameraAxisUpY.innerHTML = Math.round(event.detail[7] * 100) / 100;
-    cameraAxisUpZ.innerHTML = Math.round(event.detail[8] * 100) / 100;
+    cameraPosXDeo.innerHTML = Math.round(event.detail[0] * 100) / 100;
+    cameraPosYDeo.innerHTML = Math.round(event.detail[1] * 100) / 100;
+    cameraPosZDeo.innerHTML = Math.round(event.detail[2] * 100) / 100;
+    cameraDirXDeo.innerHTML = Math.round(event.detail[3] * 100) / 100;
+    cameraDirYDeo.innerHTML = Math.round(event.detail[4] * 100) / 100;
+    cameraDirZDeo.innerHTML = Math.round(event.detail[5] * 100) / 100;
+    cameraAxisUpXDeo.innerHTML = Math.round(event.detail[6] * 100) / 100;
+    cameraAxisUpYDeo.innerHTML = Math.round(event.detail[7] * 100) / 100;
+    cameraAxisUpZDeo.innerHTML = Math.round(event.detail[8] * 100) / 100;
 }, false);
 
 window.addEventListener('app-event.change_pixel_scale_x', event => {
-    pixelScaleX.innerHTML = Math.round(event.detail * 1000.0) / 1000.0;
+    pixelScaleXDeo.innerHTML = Math.round(event.detail * 1000.0) / 1000.0;
 }, false);
 
 window.addEventListener('app-event.change_pixel_scale_y', event => {
-    pixelScaleY.innerHTML = Math.round(event.detail * 1000.0) / 1000.0;
+    pixelScaleYDeo.innerHTML = Math.round(event.detail * 1000.0) / 1000.0;
 }, false);
 
 window.addEventListener('app-event.change_pixel_gap', event => {
-    pixelGap.innerHTML = Math.round(event.detail * 1000.0) / 1000.0;
+    pixelGapDeo.innerHTML = Math.round(event.detail * 1000.0) / 1000.0;
 }, false);
 
-infoHide.onclick = () => {
-    if (document.getElementById('gl-canvas')) {
-        infoPanel.classList.add('display-none');
-        window.dispatchEvent(new CustomEvent('app-event.top_message', {
-            detail: "Show the Info Panel again by pressing SPACE."
-        }));
+infoHideDeo.onclick = () => {
+    if (!getGlCanvasDeo()) {
+        return;
     }
+    visibility.hideInfoPanel();
+    window.dispatchEvent(new CustomEvent('app-event.top_message', {
+        detail: 'Show the Info Panel again by pressing SPACE.'
+    }));
 }
-inputFileUpload.onchange = () => {
-  const file = inputFileUpload.files[0];
+inputFileUploadDeo.onchange = () => {
+  const file = inputFileUploadDeo.files[0];
   const url = (window.URL || window.webkitURL).createObjectURL(file);
   processFileToUpload(url);
 };
-dropZone.onclick = () => {
-    document.getElementById('file').click();
+dropZoneDeo.onclick = () => {
+    inputFileUploadDeo.click();
 }
-dropZone.ondragover = event => {
+dropZoneDeo.ondragover = event => {
     event.stopPropagation();
     event.preventDefault();
     event.dataTransfer.dropEffect = 'copy';
 };
-dropZone.ondrop = event => {
+dropZoneDeo.ondrop = event => {
     event.stopPropagation();
     event.preventDefault();
     var file = event.dataTransfer.files[0];
     const url = (window.URL || window.webkitURL).createObjectURL(file);
     processFileToUpload(url);
 };
-document.form.scale.forEach(s => {
+document.form[scalingHtmlName].forEach(s => {
     s.onclick = function() {
-        if (this.id === "scale-custom") {
-            scaleCustomInputs.classList.remove("display-none");
+        if (this.id === scalingCustomHtmlId) {
+            visibility.showScaleCustomInputs();
         } else {
-            scaleCustomInputs.classList.add("display-none");
+            visibility.hideScaleCustomInputs();
         }
     }
 });
@@ -156,32 +176,28 @@ document.form.scale.forEach(s => {
 prepareUi();
 
 function prepareUi() {
-    const scaleSelectionInput = document.getElementById(localStorage.getItem('scale')) || document.getElementById("scale-auto");
-    scaleSelectionInput.checked = true;
-    const scaleSelectionId = scaleSelectionInput.id;
-    if (scaleSelectionId === 'scale-custom') {
-        scaleCustomInputs.classList.remove("display-none");
+    const scalingSelectionInput = storage.getScalingInputElement();
+    scalingSelectionInput.checked = true;
+    const scalingSelectionId = scalingSelectionInput.id;
+    if (scalingSelectionId === scalingCustomHtmlId) {
+        visibility.showScaleCustomInputs();
     }
-    scaleX.value = localStorage.getItem('scale-x') || 1;
-    scaleY.value = localStorage.getItem('scale-y') || 1;
+    scalingCustomXDeo.value = storage.getCustomScalingX();
+    scalingCustomYDeo.value = storage.getCustomScalingY();
     
-    antialias.checked = localStorage.getItem('antialias') === "true";
-    const powerPreferenceInput = document.getElementById(localStorage.getItem('powerPreference')) || document.getElementById('powerPreference-1');
+    antialiasDeo.checked = storage.getAntiAliasing();
+    const powerPreferenceInput = storage.getPowerPreferenceInputElement();
     powerPreferenceInput.checked = true;
     
-    if (document.getElementById('preview')) {
-        startCustom.classList.remove('display-none');
-    }
-    
-    ui.classList.remove('display-none');
-    loading.classList.add('display-none');
+    visibility.showUi();
+    visibility.hideLoading();
     
     const startPromise = new Promise((startResolve, startReject) => {
-        startCustom.onclick = () => {
-            ui.classList.add("display-none");
-            loading.classList.remove("display-none");
+        startCustomDeo.onclick = () => {
+            visibility.hideUi();
+            visibility.showLoading();
             setTimeout(() => {
-                const img = document.getElementById('preview');
+                const img = getPreviewDeo();
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
                 canvas.width = img.width;
@@ -192,13 +208,13 @@ function prepareUi() {
                 startResolve([rawImg])
             }, 50);
         }
-        startAnimation.onclick = () => {
-            ui.classList.add("display-none");
-            loading.classList.remove("display-none");
+        startAnimationDeo.onclick = () => {
+            visibility.hideUi();
+            visibility.showLoading();
 
             const animationPromise = new Promise((imgResolve, imgReject) => {
                 const img = new Image();
-                img.src = "assets/wwix_spritesheet.png";
+                img.src = 'assets/wwix_spritesheet.png';
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
@@ -221,58 +237,58 @@ function prepareUi() {
     });
 
     startPromise.then((rawImgs) => {
-        console.log(new Date().toISOString(), "image readed");
+        console.log(new Date().toISOString(), 'image readed');
         const dpi = window.devicePixelRatio;
         const width = window.screen.width;
         const height = window.screen.height;
     
-        const scale = form.querySelector('input[name="scale"]:checked');
+        const checkedScalingInput = formDeo.querySelector('input[name=\''+scalingHtmlName+'\']:checked');
         let scaleX = 1;
         let stretch = false;
-        localStorage.setItem("scale", scale.id);
+        storage.setScalingId(checkedScalingInput.id);
 
         const imageWidth = rawImgs[0].width;
         const imageHeight = rawImgs[0].height;
-        switch(scale.id) {
-            case "scale-auto":
-                let scaleSelectionIdPostfix = 'none';
+        switch(checkedScalingInput.id) {
+            case scalingAutoHtmlId:
+                let scalingSelectionIdPostfix = 'none';
                 if (imageWidth == 256 && imageHeight == 224) {
-                    scaleSelectionIdPostfix = '256x224';
+                    scalingSelectionIdPostfix = '256x224';
                 } else if (imageWidth == 256 && imageHeight == 240) {
-                    scaleSelectionIdPostfix = '256x240';
+                    scalingSelectionIdPostfix = '256x240';
                 } else if (imageWidth == 320 && imageHeight == 224) {
-                    scaleSelectionIdPostfix = '320x224';
+                    scalingSelectionIdPostfix = '320x224';
                 } else if (imageWidth == 160 && imageHeight == 144) {
-                    scaleSelectionIdPostfix = '160x144';
+                    scalingSelectionIdPostfix = '160x144';
                 } else if (imageWidth == 240 && imageHeight == 160) {
-                    scaleSelectionIdPostfix = '240x160';
+                    scalingSelectionIdPostfix = '240x160';
                 } else if (imageWidth == 320 && imageHeight == 200) {
-                    scaleSelectionIdPostfix = '320x200';
+                    scalingSelectionIdPostfix = '320x200';
                 }
-                scaleX = document.getElementById('scale-' + scaleSelectionIdPostfix).value;
+                scaleX = getScalingSelectionDeo(scalingSelectionIdPostfix).value;
                 window.dispatchEvent(new CustomEvent('app-event.top_message', {
-                    detail: "Scaling auto detect applying: " + scaleSelectionIdPostfix + (scaleSelectionIdPostfix == "none" ? "" : " on 4:3")
+                    detail: 'Scaling auto detect applying: ' + scalingSelectionIdPostfix + (scalingSelectionIdPostfix == 'none' ? '' : ' on 4:3')
                 }));
                 break;
-            case "scale-stretch":
+            case scalingStretchHtmlId:
                 scaleX = (width/height)/(imageWidth/imageHeight);
                 stretch = true;
                 break;
-            case "scale-custom":
-                scaleX = document.getElementById('scale-x').value;
-                const scaleY = document.getElementById('scale-y').value;
-                localStorage.setItem("scale-x", scaleX);
-                localStorage.setItem("scale-y", scaleY);
+            case scalingCustomHtmlId:
+                scaleX = scalingCustomXDeo.value;
+                const scaleY = scalingCustomYDeo.value;
+                storage.setCustomScalingX(scaleX);
+                storage.setCustomScalingY(scaleY);
                 scaleX = +scaleX / +scaleY;
                 break;
             default:
-                scaleX = scale.value;
+                scaleX = checkedScalingInput.value;
                 break;
         }
     
-        const canvas = document.createElement("canvas");
+        const canvas = document.createElement('canvas');
     
-        canvas.id = 'gl-canvas';
+        canvas.id = glCanvasHtmlId;
 
         canvas.width = Math.floor(width * dpi / 80) * 80;
         canvas.height = Math.floor(height * dpi / 60) * 60;
@@ -280,25 +296,25 @@ function prepareUi() {
         canvas.style.width = width;
         canvas.style.height = height;
 
-        infoPanel.style.setProperty("max-height", height - 50);
+        infoPanelDeo.style.setProperty('max-height', height - 50);
     
         document.body.appendChild(canvas);
     
-        const powerPreference = form.querySelector('input[name="powerPreference"]:checked');
+        const checkedPowerPreferenceInput = formDeo.querySelector('input[name=\''+powerPreferenceHtmlName+'\']:checked');
     
         const ctxOptions = { 
             alpha: true, 
-            antialias: antialias.checked, 
+            antialias: antialiasDeo.checked, 
             depth: true, 
             failIfMajorPerformanceCaveat: false, 
-            powerPreference: powerPreference.value,
+            powerPreference: checkedPowerPreferenceInput.value,
             premultipliedAlpha: false, 
             preserveDrawingBuffer: false, 
             stencil: false 
         };
-        localStorage.setItem('antialias', ctxOptions.antialias ? "true" : "false");
-        localStorage.setItem('powerPreference', powerPreference.id);
-        console.log("gl context form", ctxOptions);
+        storage.setAntiAliasing(ctxOptions.antialias);
+        storage.setPowerPreference(checkedPowerPreferenceInput.id);
+        console.log('gl context form', ctxOptions);
         const gl = canvas.getContext('webgl2', ctxOptions);
     
         var documentElement = document.documentElement;
@@ -320,28 +336,30 @@ function prepareUi() {
     
         if (!gl) {
             window.dispatchEvent(new CustomEvent('app-event.top_message', {
-                detail: "WebGL is not working on your browser, try restarting it first and then updating it! Are you on a PC?"
+                detail: 'WebGL is not working on your browser, try restarting it! And remember, this works only on a PC with updated browser and graphics drivers.'
             }));
-            throw new Error("Could not get webgl context.");
+            console.error(new Error('Could not get webgl context.'));
+            canvas.remove();
+            prepareUi();
+            return;
         }
 
-        import(/* webpackPrefetch: true */"./crt_3d_sim").then(wasm => {
+        import(/* webpackPrefetch: true */'./crt_3d_sim').then(wasm => {
             const animation = new wasm.Animation_Source(rawImgs[0].width, rawImgs[0].height, canvas.width, canvas.height, 1 / 60, +scaleX, stretch, dpi);
             for (let i = 0; i < rawImgs.length; i++) {
                 const rawImg = rawImgs[i];
                 animation.add(rawImg.data.buffer);
             }
     
-            console.log(new Date().toISOString(), "calling wasm main");
+            console.log(new Date().toISOString(), 'calling wasm main');
             wasm.main(gl, animation);
-            console.log(new Date().toISOString(), "wasm main done");
+            console.log(new Date().toISOString(), 'wasm main done');
         
-            loading.classList.add("display-none");
-            infoPanel.classList.remove("display-none");
+            visibility.hideLoading();
+            visibility.showInfoPanel();
         });
     });
 }
-
 
 async function processFileToUpload(url) {
     var xhr = new XMLHttpRequest();
@@ -357,18 +375,59 @@ async function processFileToUpload(url) {
 
     await new Promise(resolve => img.onload = () => resolve());
     
-    const preview = document.getElementById('preview');
+    const preview = getPreviewDeo();
     if (preview) {
         preview.remove();
     }
-    img.id = 'preview';
+    img.id = previewHtmlId;
     if (img.width > img.height) {
-        img.style.width = "100px";
+        img.style.width = '100px';
     } else {
-        img.style.height = "100px";
+        img.style.height = '100px';
     }
-    dropZone.innerHTML = "";
-    dropZone.appendChild(img);
-    console.log(new Date().toISOString(), "image loaded");
-    startCustom.disabled = false;
+    dropZoneDeo.innerHTML = '';
+    dropZoneDeo.appendChild(img);
+    console.log(new Date().toISOString(), 'image loaded');
+    startCustomDeo.disabled = false;
+}
+
+function makeStorage() {
+    return {
+        getScalingInputElement: () => geElementByStoredIdOrBackup('stored-scale', scalingAutoHtmlId),
+        setScalingId: (scale) => localStorage.setItem('stored-scale', scale),
+        getCustomScalingX: () => localStorage.getItem('stored-scale-x') || 1,
+        setCustomScalingX: (scale) => localStorage.setItem('stored-scale-x', scale),
+        getCustomScalingY: () => localStorage.getItem('stored-scale-y') || 1,
+        setCustomScalingY: (scale) => localStorage.setItem('stored-scale-y', scale),
+        getPowerPreferenceInputElement: () => geElementByStoredIdOrBackup('stored-powerPreference', 'powerPreference-1'),
+        setPowerPreference: (powerPreference) => localStorage.setItem('stored-powerPreference', powerPreference),
+        getAntiAliasing: () => localStorage.getItem('stored-antialias') === 'true',
+        setAntiAliasing: (antiAliasing) => localStorage.setItem('stored-antialias', antiAliasing ? 'true' : 'false'),
+    };
+    function geElementByStoredIdOrBackup(storedId, backupId) {
+        return document.getElementById(localStorage.getItem(storedId)) || document.getElementById(backupId);
+    }
+}
+
+function makeVisibility() {
+    return {
+        showUi: () => showElement(uiDeo),
+        hideUi: () => hideElement(uiDeo),
+        showLoading: () => showElement(loadingDeo),
+        hideLoading: () => hideElement(loadingDeo),
+        showInfoPanel: () => showElement(infoPanelDeo),
+        hideInfoPanel: () => hideElement(infoPanelDeo),
+        isInfoPanelVisible: () => isVisible(infoPanelDeo),
+        showScaleCustomInputs: () => showElement(scaleCustomInputsDeo),
+        hideScaleCustomInputs: () => hideElement(scaleCustomInputsDeo),
+    };
+    function showElement(element) {
+        element.classList.remove('display-none');
+    }
+    function hideElement(element) {
+        element.classList.add('display-none');
+    }
+    function isVisible(element) {
+        return element.classList.contains('display-none') == false;
+    }
 }
