@@ -38,7 +38,7 @@ body {
     background-color: rgb(247, 247, 247);
 }
 
-.option-inputs .scale-radio {
+.option-inputs .scaling-radio {
     display: inline-block;
     white-space: wrap;
 }
@@ -52,9 +52,28 @@ body {
     margin-right: 10px;
 }
 
-#scale-custom-inputs input {
+#scaling-custom-inputs input {
     height: 1.5em;
     display: inline-block
+}
+
+.custom-aspect-ratio {
+    width: 3em;
+    text-align: center;
+}
+
+.custom-resolution {
+    width: 5em; 
+    text-align: center;
+}
+
+#scaling-custom-inputs span {
+    margin-right: 5px;
+    margin-left: 5px;
+}
+
+#restore-default-options {
+    display: block;
 }
 
 .option-text {
