@@ -1,11 +1,14 @@
-const scalingAutoHtmlId = 'scale-auto';
-const scalingCustomHtmlId = 'scale-custom';
-const scalingStretchHtmlId = 'scale-stretch';
+const scalingAutoHtmlId = 'scaling-auto';
+const scaling43HtmlId = 'scaling-4:3';
+const scalingCustomHtmlId = 'scaling-custom';
+const scalingStretchToBothEdgesHtmlId = 'scaling-stretch-both';
+const scalingStretchToNearestEdgeHtmlId = 'scaling-stretch-nearest';
+const powerPreferenceDefaultId = 'powerPreference-1';
 const glCanvasHtmlId = 'gl-canvas';
 const topMessageHtmlId = 'top-message';
 const previewHtmlId = 'preview';
 
-const scalingHtmlName = 'scale';
+const scalingHtmlName = 'scaling';
 const powerPreferenceHtmlName = 'powerPreference';
 
 const uiDeo = document.getElementById('ui');
@@ -15,10 +18,13 @@ const inputFileUploadDeo = document.getElementById('file');
 const startCustomDeo = document.getElementById('start-custom');
 const startAnimationDeo = document.getElementById('start-animation');
 const antialiasDeo = document.getElementById('antialias');
-const scalingCustomXDeo = document.getElementById('scale-x');
-const scalingCustomYDeo = document.getElementById('scale-y');
-const scaleCustomInputsDeo = document.getElementById('scale-custom-inputs');
+const scalingCustomResWidthDeo = document.getElementById('scaling-custom-resolution-width');
+const scalingCustomResHeightDeo = document.getElementById('scaling-custom-resolution-height');
+const scalingCustomArXDeo = document.getElementById('scaling-custom-aspect-ratio-x');
+const scalingCustomArYDeo = document.getElementById('scaling-custom-aspect-ratio-y');
+const scalingCustomInputsDeo = document.getElementById('scaling-custom-inputs');
 const dropZoneDeo = document.getElementById('drop-zone');
+const restoreDefaultOptionsDeo = document.getElementById('restore-default-options');
 
 const infoHideDeo = document.getElementById('info-hide');
 const infoPanelDeo = document.getElementById('info-panel');
@@ -41,7 +47,6 @@ const pixelGapDeo = document.getElementById('pixel-gap');
 const getGlCanvasDeo = () => document.getElementById(glCanvasHtmlId);
 const getPreviewDeo = () => document.getElementById(previewHtmlId);
 const getTopMessageDeo = () => document.getElementById(topMessageHtmlId);
-const getScalingSelectionDeo = scalingSelectionIdPostfix => document.getElementById('scale-' + scalingSelectionIdPostfix);
 
 const visibility = makeVisibility();
 const storage = makeStorage();
@@ -142,7 +147,7 @@ infoHideDeo.onclick = () => {
     window.dispatchEvent(new CustomEvent('app-event.top_message', {
         detail: 'Show the Info Panel again by pressing SPACE.'
     }));
-}
+};
 inputFileUploadDeo.onchange = () => {
   const file = inputFileUploadDeo.files[0];
   const url = (window.URL || window.webkitURL).createObjectURL(file);
@@ -150,7 +155,7 @@ inputFileUploadDeo.onchange = () => {
 };
 dropZoneDeo.onclick = () => {
     inputFileUploadDeo.click();
-}
+};
 dropZoneDeo.ondragover = event => {
     event.stopPropagation();
     event.preventDefault();
@@ -172,22 +177,19 @@ document.form[scalingHtmlName].forEach(s => {
         }
     }
 });
+restoreDefaultOptionsDeo.onclick = () => {
+    storage.removeAllOptions();
+    const scalingSelectionInput = storage.getScalingInputElement();
+    scalingSelectionInput.checked = false;
+    const powerPreferenceInput = storage.getPowerPreferenceInputElement();
+    powerPreferenceInput.checked = false;
+    loadInputValuesFromStorage();
+};
 
 prepareUi();
 
 function prepareUi() {
-    const scalingSelectionInput = storage.getScalingInputElement();
-    scalingSelectionInput.checked = true;
-    const scalingSelectionId = scalingSelectionInput.id;
-    if (scalingSelectionId === scalingCustomHtmlId) {
-        visibility.showScaleCustomInputs();
-    }
-    scalingCustomXDeo.value = storage.getCustomScalingX();
-    scalingCustomYDeo.value = storage.getCustomScalingY();
-    
-    antialiasDeo.checked = storage.getAntiAliasing();
-    const powerPreferenceInput = storage.getPowerPreferenceInputElement();
-    powerPreferenceInput.checked = true;
+    loadInputValuesFromStorage();
     
     visibility.showUi();
     visibility.hideLoading();
@@ -249,40 +251,32 @@ function prepareUi() {
 
         const imageWidth = rawImgs[0].width;
         const imageHeight = rawImgs[0].height;
+
         switch(checkedScalingInput.id) {
             case scalingAutoHtmlId:
-                let scalingSelectionIdPostfix = 'none';
-                if (imageWidth == 256 && imageHeight == 224) {
-                    scalingSelectionIdPostfix = '256x224';
-                } else if (imageWidth == 256 && imageHeight == 240) {
-                    scalingSelectionIdPostfix = '256x240';
-                } else if (imageWidth == 320 && imageHeight == 224) {
-                    scalingSelectionIdPostfix = '320x224';
-                } else if (imageWidth == 160 && imageHeight == 144) {
-                    scalingSelectionIdPostfix = '160x144';
-                } else if (imageWidth == 240 && imageHeight == 160) {
-                    scalingSelectionIdPostfix = '240x160';
-                } else if (imageWidth == 320 && imageHeight == 200) {
-                    scalingSelectionIdPostfix = '320x200';
-                }
-                scaleX = getScalingSelectionDeo(scalingSelectionIdPostfix).value;
+                scaleX = imageWidth <= 1024 ? (4/3)/(imageWidth/imageHeight) : 1;
                 window.dispatchEvent(new CustomEvent('app-event.top_message', {
-                    detail: 'Scaling auto detect applying: ' + scalingSelectionIdPostfix + (scalingSelectionIdPostfix == 'none' ? '' : ' on 4:3')
+                    detail: 'Scaling auto detect applying: ' + (scaleX === 1 ? 'none.' : '4:3 on full image.')
                 }));
                 break;
-            case scalingStretchHtmlId:
+            case scaling43HtmlId:
+                scaleX = (4/3)/(imageWidth/imageHeight);
+                break;
+            case scalingStretchToBothEdgesHtmlId:
                 scaleX = (width/height)/(imageWidth/imageHeight);
                 stretch = true;
                 break;
-            case scalingCustomHtmlId:
-                scaleX = scalingCustomXDeo.value;
-                const scaleY = scalingCustomYDeo.value;
-                storage.setCustomScalingX(scaleX);
-                storage.setCustomScalingY(scaleY);
-                scaleX = +scaleX / +scaleY;
+            case scalingStretchToNearestEdgeHtmlId:
+                window.dispatchEvent(new CustomEvent('app-event.top_message', {
+                    detail: 'Not implemented yet!'
+                }));
                 break;
-            default:
-                scaleX = checkedScalingInput.value;
+            case scalingCustomHtmlId:
+                storage.setCustomResWidth(scalingCustomResWidthDeo.value);
+                storage.setCustomResHeight(scalingCustomResHeightDeo.value);
+                storage.setCustomArX(scalingCustomArXDeo.value);
+                storage.setCustomArY(scalingCustomArYDeo.value);
+                scaleX = (+scalingCustomArXDeo.value / +scalingCustomArYDeo.value)/(+scalingCustomResWidthDeo.value/+scalingCustomResHeightDeo.value);
                 break;
         }
     
@@ -361,6 +355,22 @@ function prepareUi() {
     });
 }
 
+function loadInputValuesFromStorage() {
+    const scalingSelectionInput = storage.getScalingInputElement();
+    scalingSelectionInput.checked = true;
+    const scalingSelectionId = scalingSelectionInput.id;
+    if (scalingSelectionId === scalingCustomHtmlId) {
+        visibility.showScaleCustomInputs();
+    }
+    scalingCustomResWidthDeo.value = storage.getCustomResWidth();
+    scalingCustomResHeightDeo.value = storage.getCustomResHeight();
+    scalingCustomArXDeo.value = storage.getCustomArX();
+    scalingCustomArYDeo.value = storage.getCustomArY();
+    antialiasDeo.checked = storage.getAntiAliasing();
+    const powerPreferenceInput = storage.getPowerPreferenceInputElement();
+    powerPreferenceInput.checked = true;
+}
+
 async function processFileToUpload(url) {
     var xhr = new XMLHttpRequest();
     xhr.open('GET', url, true);
@@ -392,17 +402,35 @@ async function processFileToUpload(url) {
 }
 
 function makeStorage() {
+    const optionScalingId = 'option-scaling-id';
+    const optionScalingCustomResWidth = 'option-scaling-custom-resolution-width';
+    const optionScalingCustomResHeight = 'option-scaling-custom-resolution-height';
+    const optionScalingCustomArX = 'option-scaling-custom-aspect-ratio-x';
+    const optionScalingCustomArY = 'option-scaling-custom-aspect-ratio-y';
+    const optionPowerPreferenceId = 'option-powerPreference-id';
+    const optionAntialias = 'option-antialias';
     return {
-        getScalingInputElement: () => geElementByStoredIdOrBackup('stored-scale', scalingAutoHtmlId),
-        setScalingId: (scale) => localStorage.setItem('stored-scale', scale),
-        getCustomScalingX: () => localStorage.getItem('stored-scale-x') || 1,
-        setCustomScalingX: (scale) => localStorage.setItem('stored-scale-x', scale),
-        getCustomScalingY: () => localStorage.getItem('stored-scale-y') || 1,
-        setCustomScalingY: (scale) => localStorage.setItem('stored-scale-y', scale),
-        getPowerPreferenceInputElement: () => geElementByStoredIdOrBackup('stored-powerPreference', 'powerPreference-1'),
-        setPowerPreference: (powerPreference) => localStorage.setItem('stored-powerPreference', powerPreference),
-        getAntiAliasing: () => localStorage.getItem('stored-antialias') === 'true',
-        setAntiAliasing: (antiAliasing) => localStorage.setItem('stored-antialias', antiAliasing ? 'true' : 'false'),
+        getScalingInputElement: () => geElementByStoredIdOrBackup(optionScalingId, scalingAutoHtmlId),
+        setScalingId: (scalingId) => localStorage.setItem(optionScalingId, scalingId),
+        getCustomResWidth: () => localStorage.getItem(optionScalingCustomResWidth) || 256,
+        setCustomResWidth: (x) => localStorage.setItem(optionScalingCustomResWidth, x),
+        getCustomResHeight: () => localStorage.getItem(optionScalingCustomResHeight) || 224,
+        setCustomResHeight: (y) => localStorage.setItem(optionScalingCustomResHeight, y),
+        getCustomArX: () => localStorage.getItem(optionScalingCustomArX) || 4,
+        setCustomArX: (x) => localStorage.setItem(optionScalingCustomArX, x),
+        getCustomArY: () => localStorage.getItem(optionScalingCustomArY) || 3,
+        setCustomArY: (y) => localStorage.setItem(optionScalingCustomArY, y),
+        getPowerPreferenceInputElement: () => geElementByStoredIdOrBackup(optionPowerPreferenceId, powerPreferenceDefaultId),
+        setPowerPreference: (powerPreference) => localStorage.setItem(optionPowerPreferenceId, powerPreference),
+        getAntiAliasing: () => localStorage.getItem(optionAntialias) === 'true',
+        setAntiAliasing: (antiAliasing) => localStorage.setItem(optionAntialias, antiAliasing ? 'true' : 'false'),
+        removeAllOptions: ()  => {
+            localStorage.removeItem(optionScalingId);
+            localStorage.removeItem(optionScalingCustomResWidth);
+            localStorage.removeItem(optionScalingCustomResHeight);
+            localStorage.removeItem(optionPowerPreferenceId);
+            localStorage.removeItem(optionAntialias);
+        }
     };
     function geElementByStoredIdOrBackup(storedId, backupId) {
         return document.getElementById(localStorage.getItem(storedId)) || document.getElementById(backupId);
@@ -418,8 +446,8 @@ function makeVisibility() {
         showInfoPanel: () => showElement(infoPanelDeo),
         hideInfoPanel: () => hideElement(infoPanelDeo),
         isInfoPanelVisible: () => isVisible(infoPanelDeo),
-        showScaleCustomInputs: () => showElement(scaleCustomInputsDeo),
-        hideScaleCustomInputs: () => hideElement(scaleCustomInputsDeo),
+        showScaleCustomInputs: () => showElement(scalingCustomInputsDeo),
+        hideScaleCustomInputs: () => hideElement(scalingCustomInputsDeo),
     };
     function showElement(element) {
         element.classList.remove('display-none');
