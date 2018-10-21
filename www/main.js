@@ -429,7 +429,7 @@ function makeStorage() {
         setCustomStretchNearest: stretch => localStorage.setItem(optionScalingCustomStretchNearest, stretch ? 'true' : 'false'),
         getPowerPreferenceInputElement: () => geElementByStoredIdOrBackup(optionPowerPreferenceId, powerPreferenceDefaultId),
         setPowerPreference: (powerPreference) => localStorage.setItem(optionPowerPreferenceId, powerPreference),
-        getAntiAliasing: () => localStorage.getItem(optionAntialias) === 'true',
+        getAntiAliasing: () => localStorage.getItem(optionAntialias) !== 'false',
         setAntiAliasing: antiAliasing => localStorage.setItem(optionAntialias, antiAliasing ? 'true' : 'false'),
         removeAllOptions: ()  => {
             localStorage.removeItem(optionScalingId);
