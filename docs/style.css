@@ -122,8 +122,8 @@ body {
     border: 2px dashed rgb(187, 187, 187);
     border-radius: 5px 5px 5px 5px;
     position: absolute;
-    top: 25px;
-    left: 25px;
+    top: 18px;
+    left: 18px;
     background: white;
     width: 320px;
     overflow-y: scroll;
