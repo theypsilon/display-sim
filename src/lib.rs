@@ -135,7 +135,8 @@ struct Buttons {
     speed_up: Boolean_Button,
     speed_down: Boolean_Button,
     mouse_click: Boolean_Button,
-    toggle_bloom: Boolean_Button,
+    increase_bloom: Boolean_Button,
+    decrease_bloom: Boolean_Button,
     toggle_pixels_or_voxels: Boolean_Button,
     showing_pixels_pulse: Boolean_Button,
     esc: Boolean_Button,
@@ -148,7 +149,8 @@ impl Buttons {
             speed_up: Boolean_Button::new(),
             speed_down: Boolean_Button::new(),
             mouse_click: Boolean_Button::new(),
-            toggle_bloom: Boolean_Button::new(),
+            increase_bloom: Boolean_Button::new(),
+            decrease_bloom: Boolean_Button::new(),
             toggle_pixels_or_voxels: Boolean_Button::new(),
             showing_pixels_pulse: Boolean_Button::new(),
             esc: Boolean_Button::new(),
@@ -167,8 +169,9 @@ pub struct Resources {
     pixel_vao: Option<WebGlVertexArrayObject>,
     colors_vbo: WebGlBuffer,
     bloom_shader: WebGlProgram,
-    framebuffer: Option<WebGlFramebuffer>,
-    texture: Option<WebGlTexture>,
+    bloom_framebuffers: [Option<WebGlFramebuffer>; 2],
+    bloom_textures: [Option<WebGlTexture>; 2],
+    bloom_passes: usize,
     quad_vao: Option<WebGlVertexArrayObject>,
     frame_count: u32,
     last_time: f64,
@@ -179,7 +182,6 @@ pub struct Resources {
     cur_pixel_scale_x: f32,
     cur_pixel_scale_y: f32,
     cur_pixel_gap: f32,
-    bloom: bool,
     pixels_or_voxels: Pixels_Or_Voxels,
     pixels_pulse: f32,
     showing_pixels_pulse: bool,
@@ -208,7 +210,8 @@ pub struct Input {
     speed_up: bool,
     speed_down: bool,
     reset_speeds: bool,
-    toggle_bloom: bool,
+    increase_bloom: bool,
+    decrease_bloom: bool,
     shift: bool,
     alt: bool,
     space: bool,
@@ -246,7 +249,8 @@ impl Input {
             speed_up: false,
             speed_down: false,
             reset_speeds: false,
-            toggle_bloom: false,
+            increase_bloom: false,
+            decrease_bloom: false,
             shift: false,
             alt: false,
             space: false,
@@ -530,7 +534,8 @@ pub fn program(gl: JsValue, animation: Animation_Source) -> Result<()> {
                     "k" => input.decrease_pixel_scale_y = true,
                     "n" => input.increase_pixel_gap = true,
                     "m" => input.decrease_pixel_gap = true,
-                    "b" => input.toggle_bloom = true,
+                    "b" => input.increase_bloom = true,
+                    "v" => input.decrease_bloom = true,
                     "o" => input.toggle_pixels_or_voxels = true,
                     "p" => input.showing_pixels_pulse = true,
                     "shift" => input.shift = true,
@@ -570,7 +575,8 @@ pub fn program(gl: JsValue, animation: Animation_Source) -> Result<()> {
                     "k" => input.decrease_pixel_scale_y = false,
                     "n" => input.increase_pixel_gap = false,
                     "m" => input.decrease_pixel_gap = false,
-                    "b" => input.toggle_bloom = false,
+                    "b" => input.increase_bloom = false,
+                    "v" => input.decrease_bloom = false,
                     "o" => input.toggle_pixels_or_voxels = false,
                     "p" => input.showing_pixels_pulse = false,
                     "shift" => input.shift = false,
@@ -784,19 +790,28 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
             }
         }
     }
-    let fb = gl.create_framebuffer();
-    gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, fb.as_ref());
+    let bloom_framebuffers = [
+        gl.create_framebuffer(),
+        gl.create_framebuffer(),
+    ];
 
-    let texture = gl.create_texture();
-    gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, texture.as_ref());
-    gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
-        WebGl2RenderingContext::TEXTURE_2D, 0, WebGl2RenderingContext::RGBA as i32, animation.canvas_width as i32, animation.canvas_height as i32, 0, WebGl2RenderingContext::RGBA, WebGl2RenderingContext::UNSIGNED_BYTE, None
-    )?;
-    gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MIN_FILTER, WebGl2RenderingContext::LINEAR as i32);
-    gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MAG_FILTER, WebGl2RenderingContext::LINEAR as i32);
-    gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_WRAP_S, WebGl2RenderingContext::REPEAT as i32);
-    gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_WRAP_T, WebGl2RenderingContext::REPEAT as i32);
-    gl.framebuffer_texture_2d(WebGl2RenderingContext::FRAMEBUFFER, WebGl2RenderingContext::COLOR_ATTACHMENT0, WebGl2RenderingContext::TEXTURE_2D, texture.as_ref(), 0);
+    let bloom_textures = [
+        gl.create_texture(),
+        gl.create_texture(),
+    ];
+
+    for i in 0..=1 {
+        gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, bloom_framebuffers[i].as_ref());
+        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, bloom_textures[i].as_ref());
+        gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
+            WebGl2RenderingContext::TEXTURE_2D, 0, WebGl2RenderingContext::RGBA as i32, animation.canvas_width as i32, animation.canvas_height as i32, 0, WebGl2RenderingContext::RGBA, WebGl2RenderingContext::UNSIGNED_BYTE, None
+        )?;
+        gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MIN_FILTER, WebGl2RenderingContext::LINEAR as i32);
+        gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MAG_FILTER, WebGl2RenderingContext::LINEAR as i32);
+        gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_WRAP_S, WebGl2RenderingContext::REPEAT as i32);
+        gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_WRAP_T, WebGl2RenderingContext::REPEAT as i32);
+        gl.framebuffer_texture_2d(WebGl2RenderingContext::FRAMEBUFFER, WebGl2RenderingContext::COLOR_ATTACHMENT0, WebGl2RenderingContext::TEXTURE_2D, bloom_textures[i].as_ref(), 0);
+    }
 
     gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, None);
     gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, None);
@@ -908,8 +923,8 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
         pixel_vao: pixel_vao,
         colors_vbo: colors_vbo,
         bloom_shader: bloom_shader,
-        framebuffer: fb,
-        texture: texture,
+        bloom_framebuffers: bloom_framebuffers,
+        bloom_textures: bloom_textures,
         quad_vao: quad_vao,
         frame_count: 0,
         translation_base_speed: camera.movement_speed,
@@ -917,7 +932,7 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
         last_second: now,
         last_mouse_x: -1,
         last_mouse_y: -1,
-        bloom: false,
+        bloom_passes: 0,
         pixel_manipulation_speed: pixel_manipulation_base_speed,
         cur_pixel_scale_x: 0.0,
         cur_pixel_scale_y: 0.0,
@@ -960,10 +975,18 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
         }
     }
 
-    res.buttons.toggle_bloom.track(input.toggle_bloom);
-    if res.buttons.toggle_bloom.just_pressed {
-        res.bloom = !res.bloom;
-        dispatch_event_with("app-event.top_message", &(if res.bloom {"Bloom ON."} else {"Bloom OFF."}).into())?;
+    let last_bloom_passes = res.bloom_passes;
+    res.buttons.increase_bloom.track(input.increase_bloom);
+    res.buttons.decrease_bloom.track(input.decrease_bloom);
+    if res.buttons.increase_bloom.just_pressed {
+        res.bloom_passes += 1;
+    }
+    if res.buttons.decrease_bloom.just_pressed && res.bloom_passes > 0 {
+        res.bloom_passes -= 1;
+    }
+
+    if last_bloom_passes != res.bloom_passes {
+        dispatch_event_with("app-event.top_message", &("Bloom level: ".to_string() + &res.bloom_passes.to_string()).into())?;
     }
 
     res.buttons.esc.track(input.esc);
@@ -1008,24 +1031,18 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
     res.buttons.speed_down.track(input.speed_down);
     if input.alt {
         let last_turning_speed = res.camera.turning_speed;
-        if res.buttons.speed_up.just_pressed { res.camera.turning_speed *= 2.0; }
-        if res.buttons.speed_down.just_pressed { res.camera.turning_speed /= 2.0; }
+        if res.buttons.speed_up.just_pressed && res.camera.turning_speed < 10000.0 { res.camera.turning_speed *= 2.0; }
+        if res.buttons.speed_down.just_pressed && res.camera.turning_speed > 0.01 { res.camera.turning_speed /= 2.0; }
         if last_turning_speed != res.camera.turning_speed {
             let turning_speed = (res.camera.turning_speed / turning_base_speed * 1000.0).round() / 1000.0;
             let message = "Turning camera speed: ".to_string() + &turning_speed.to_string() + &"x".to_string();
             dispatch_event_with("app-event.top_message", &message.into())?;
             dispatch_event_with("app-event.turning_speed", &turning_speed.into())?;
         }
-        if res.camera.turning_speed > 10000.0 {
-            res.camera.turning_speed /= 2.0;
-        }
-        if res.camera.turning_speed < 0.1 {
-            res.camera.turning_speed *= 2.0;
-        }
     } else if input.shift {
         let last_pixel_manipulation_speed = res.pixel_manipulation_speed;
-        if res.buttons.speed_up.just_pressed { res.pixel_manipulation_speed *= 2.0; }
-        if res.buttons.speed_down.just_pressed { res.pixel_manipulation_speed /= 2.0; }
+        if res.buttons.speed_up.just_pressed && res.pixel_manipulation_speed < 10000.0 { res.pixel_manipulation_speed *= 2.0; }
+        if res.buttons.speed_down.just_pressed && res.pixel_manipulation_speed > 0.01 { res.pixel_manipulation_speed /= 2.0; }
         if last_pixel_manipulation_speed != res.pixel_manipulation_speed {
             let pixel_manipulation_speed = (res.pixel_manipulation_speed / pixel_manipulation_base_speed * 1000.0).round() / 1000.0;
             let message = "Pixel manipulation speed: ".to_string() + &pixel_manipulation_speed.to_string() + &"x".to_string();
@@ -1034,14 +1051,8 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
         }
     } else {
         let last_movement_speed = res.camera.movement_speed;
-        if res.buttons.speed_up.just_pressed { res.camera.movement_speed *= 2.0; }
-        if res.buttons.speed_down.just_pressed { res.camera.movement_speed /= 2.0; }
-        if res.camera.movement_speed > 10000.0 {
-            res.camera.movement_speed /= 2.0;
-        }
-        if res.camera.movement_speed < 0.1 {
-            res.camera.movement_speed *= 2.0;
-        }
+        if res.buttons.speed_up.just_pressed && res.camera.movement_speed < 10000.0 { res.camera.movement_speed *= 2.0; }
+        if res.buttons.speed_down.just_pressed && res.camera.movement_speed > 0.01 { res.camera.movement_speed /= 2.0; }
         if last_movement_speed != res.camera.movement_speed {
             let translation_speed = (res.camera.movement_speed / res.translation_base_speed * 1000.0).round() / 1000.0;
             let message = "Translation camera speed: ".to_string() + &translation_speed.to_string() + &"x".to_string();
@@ -1178,8 +1189,8 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
 
     gl.clear_color(0.05, 0.05, 0.05, 1.0);  // Clear to black, fully opaque
     gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
-    if res.bloom {
-        gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, res.framebuffer.as_ref());
+    if res.bloom_passes > 0 {
+        gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, res.bloom_framebuffers[1].as_ref());
         gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
     }
 
@@ -1201,20 +1212,23 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
         (res.animation.width * res.animation.height) as i32
     );
 
-    if res.bloom {
-        gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, None);
-
-        gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
-
+    if res.bloom_passes > 0 {
         gl.use_program(Some(&res.bloom_shader));
         gl.uniform1i(gl.get_uniform_location(&res.bloom_shader, "image").as_ref(), 0);
 
-        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, res.texture.as_ref());
         gl.bind_vertex_array(res.quad_vao.as_ref());
-        gl.uniform1i(gl.get_uniform_location(&res.bloom_shader, "horizontal").as_ref(), 0);
-        gl.draw_elements_with_i32(WebGl2RenderingContext::TRIANGLES, 6, WebGl2RenderingContext::UNSIGNED_INT, 0);
-        gl.uniform1i(gl.get_uniform_location(&res.bloom_shader, "horizontal").as_ref(), 1);
-        gl.draw_elements_with_i32(WebGl2RenderingContext::TRIANGLES, 6, WebGl2RenderingContext::UNSIGNED_INT, 0);
+        for i in 0 ..= res.bloom_passes {
+            let buffer_index = i % 2;
+            let texture_index = (i + 1) % 2;
+
+            gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, if i < res.bloom_passes {res.bloom_framebuffers[buffer_index].as_ref()} else {None});
+            if i == 0 || i == res.bloom_passes {
+                gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
+            }
+            gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, res.bloom_textures[texture_index].as_ref());
+            gl.uniform1i(gl.get_uniform_location(&res.bloom_shader, "horizontal").as_ref(), buffer_index as i32);
+            gl.draw_elements_with_i32(WebGl2RenderingContext::TRIANGLES, 6, WebGl2RenderingContext::UNSIGNED_INT, 0);
+        }
         gl.bind_vertex_array(None);
         gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, None);
     }
