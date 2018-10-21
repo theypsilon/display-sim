@@ -1416,6 +1416,32 @@ pub fn get_3_color_from_int(color: i32) -> [f32; 3] {[
     (color & 0xFF) as f32 / 255.0,
 ]}
 
+#[cfg(test)]
+mod tests { mod get_3_color_from_int { mod gives_good {
+    use super::super::super::*;
+
+    macro_rules! get_3_color_from_int_tests {
+        ($($name:ident: $value:expr,)*) => {
+        $(
+            #[test]
+            fn $name() {
+                let (input, expected) = $value;
+                assert_eq!(expected, get_3_color_from_int(input));
+            }
+        )*
+        }
+    }
+
+    get_3_color_from_int_tests! {
+        white: (0xFFFFFF, [1.0, 1.0, 1.0]),
+        black: (0x000000, [0.0, 0.0, 0.0]),
+        red: (0xFF0000, [1.0, 0.0, 0.0]),
+        green: (0x00FF00, [0.0, 1.0, 0.0]),
+        blue: (0x0000FF, [0.0, 0.0, 1.0]),
+        yellow: (0xebf114, [0.92156863, 0.94509804, 0.078431375]),
+    }
+} } }
+
 pub fn window() -> Result<Window> {
     Ok(web_sys::window().ok_or("cannot access window")?)
 }
