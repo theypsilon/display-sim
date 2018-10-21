@@ -173,7 +173,7 @@ pub struct Resources {
     bloom_textures: [Option<WebGlTexture>; 2],
     bloom_passes: usize,
     quad_vao: Option<WebGlVertexArrayObject>,
-    color_filter: i32,
+    light_color: i32,
     frame_count: u32,
     last_time: f64,
     last_second: f64,
@@ -196,7 +196,7 @@ pub struct Resources {
 #[derive(Clone)]
 pub struct Input {
     now: f64,
-    color_filter: i32,
+    light_color: i32,
     walk_left: bool,
     walk_right: bool,
     walk_up: bool,
@@ -236,7 +236,7 @@ impl Input {
     pub fn new() -> Result<Input> {
         Ok(Input {
             now: now()?,
-            color_filter: 0xFFFFFF,
+            light_color: 0xFFFFFF,
             walk_left: false,
             walk_right: false,
             walk_up: false,
@@ -639,7 +639,7 @@ pub fn program(gl: JsValue, animation: Animation_Source) -> Result<()> {
             if let Ok(e) = event.dyn_into::<CustomEvent>() {
                 if let Ok(int_array) = e.detail().dyn_into::<Int32Array>() {
                     let mut input = input.borrow_mut();
-                    int_array.for_each(&mut |value, _, _| input.color_filter = value);
+                    int_array.for_each(&mut |value, _, _| input.light_color = value);
                 }
             }
         }))
@@ -943,7 +943,7 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
         bloom_framebuffers: bloom_framebuffers,
         bloom_textures: bloom_textures,
         quad_vao: quad_vao,
-        color_filter: 0xFFFFFF,
+        light_color: 0xFFFFFF,
         frame_count: 0,
         translation_base_speed: camera.movement_speed,
         last_time: now,
@@ -993,8 +993,8 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
         }
     }
 
-    if input.color_filter != res.color_filter {
-        res.color_filter = input.color_filter;
+    if input.light_color != res.light_color {
+        res.light_color = input.light_color;
         dispatch_event_with("app-event.top_message", &"Light color changed.".into());
     }
 
@@ -1208,12 +1208,12 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
         pixel_gap[0] *= res.animation.scale_x;
     }
 
-    let ambient_strength = match res.pixels_or_voxels { Pixels_Or_Voxels::Pixels => if res.color_filter == 0xFFFFFF {0.0} else {0.5}, Pixels_Or_Voxels::Voxels => 0.5};
+    let ambient_strength = match res.pixels_or_voxels { Pixels_Or_Voxels::Pixels => if res.light_color == 0xFFFFFF {0.0} else {0.5}, Pixels_Or_Voxels::Voxels => 0.5};
 
-    let mut color_filter: [f32; 3] = [
-        (res.color_filter >> 16) as f32 / 255.0,
-        ((res.color_filter >> 8) & 0xFF) as f32 / 255.0,
-        (res.color_filter & 0xFF) as f32 / 255.0,
+    let mut light_color: [f32; 3] = [
+        (res.light_color >> 16) as f32 / 255.0,
+        ((res.light_color >> 8) & 0xFF) as f32 / 255.0,
+        (res.light_color & 0xFF) as f32 / 255.0,
     ];
 
     gl.clear_color(0.05, 0.05, 0.05, 1.0);  // Clear to black, fully opaque
@@ -1227,7 +1227,7 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
     gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "view").as_ref(), false, view.as_mut_slice());
     gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "projection").as_ref(), false, projection.as_mut_slice());
     gl.uniform3fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "lightPos").as_ref(), &mut [res.camera.position.x, res.camera.position.y, res.camera.position.z]);
-    gl.uniform3fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "lightColor").as_ref(), &mut color_filter);
+    gl.uniform3fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "lightColor").as_ref(), &mut light_color);
     gl.uniform1f(gl.get_uniform_location(&res.pixel_shader, "ambientStrength").as_ref(), ambient_strength);
     gl.uniform2fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "pixel_gap").as_ref(), &mut pixel_gap);
     gl.uniform3fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "pixel_scale").as_ref(), &mut pixel_scale);
