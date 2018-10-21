@@ -848,6 +848,8 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
     gl.buffer_data_with_opt_array_buffer(WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER, Some(&js_i32_array(&quad_indices).buffer()), WebGl2RenderingContext::STATIC_DRAW);
 
     let bloom_shader = make_shader(&gl, bloom_vertex_shader, bloom_fragment_shader)?;
+    gl.use_program(Some(&bloom_shader));
+    gl.uniform1i(gl.get_uniform_location(&bloom_shader, "image").as_ref(), 0);
 
     let q_pos_position = gl.get_attrib_location(&bloom_shader, "qPos") as u32;
     let q_texture_position = gl.get_attrib_location(&bloom_shader, "qTexCoords") as u32;
@@ -1243,8 +1245,6 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
 
     if res.bloom_passes > 0 {
         gl.use_program(Some(&res.bloom_shader));
-        gl.uniform1i(gl.get_uniform_location(&res.bloom_shader, "image").as_ref(), 0);
-
         gl.bind_vertex_array(res.quad_vao.as_ref());
         for i in 0 ..= res.bloom_passes {
             let buffer_index = i % 2;
