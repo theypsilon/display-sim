@@ -174,6 +174,8 @@ pub struct Resources {
     bloom_passes: usize,
     quad_vao: Option<WebGlVertexArrayObject>,
     light_color: i32,
+    brightness_color: i32,
+    extra_bright: f32,
     frame_count: u32,
     last_time: f64,
     last_second: f64,
@@ -196,7 +198,8 @@ pub struct Resources {
 #[derive(Clone)]
 pub struct Input {
     now: f64,
-    light_color: i32,
+    color_value: i32,
+    color_kind: i32,
     walk_left: bool,
     walk_right: bool,
     walk_up: bool,
@@ -228,6 +231,9 @@ pub struct Input {
     decrease_pixel_scale_x: bool,
     increase_pixel_gap: bool,
     decrease_pixel_gap: bool,
+    increase_bright: bool,
+    decrease_bright: bool,
+    reset_brightness: bool,
     toggle_pixels_or_voxels: bool,
     showing_pixels_pulse: bool,
 }
@@ -236,7 +242,8 @@ impl Input {
     pub fn new() -> Result<Input> {
         Ok(Input {
             now: now()?,
-            light_color: 0xFFFFFF,
+            color_value: 0xFFFFFF,
+            color_kind: 1,
             walk_left: false,
             walk_right: false,
             walk_up: false,
@@ -268,6 +275,9 @@ impl Input {
             decrease_pixel_scale_x: false,
             increase_pixel_gap: false,
             decrease_pixel_gap: false,
+            increase_bright: false,
+            decrease_bright: false,
+            reset_brightness: false,
             toggle_pixels_or_voxels: false,
             showing_pixels_pulse: false,
         })
@@ -539,6 +549,9 @@ pub fn program(gl: JsValue, animation: Animation_Source) -> Result<()> {
                     "m" => input.decrease_pixel_gap = true,
                     "b" => input.increase_bloom = true,
                     "v" => input.decrease_bloom = true,
+                    "c" => input.increase_bright = true,
+                    "x" => input.decrease_bright = true,
+                    "z" => input.reset_brightness = true,
                     "o" => input.toggle_pixels_or_voxels = true,
                     "p" => input.showing_pixels_pulse = true,
                     "shift" => input.shift = true,
@@ -580,6 +593,9 @@ pub fn program(gl: JsValue, animation: Animation_Source) -> Result<()> {
                     "m" => input.decrease_pixel_gap = false,
                     "b" => input.increase_bloom = false,
                     "v" => input.decrease_bloom = false,
+                    "c" => input.increase_bright = false,
+                    "x" => input.decrease_bright = false,
+                    "z" => input.reset_brightness = false,
                     "o" => input.toggle_pixels_or_voxels = false,
                     "p" => input.showing_pixels_pulse = false,
                     "shift" => input.shift = false,
@@ -633,13 +649,21 @@ pub fn program(gl: JsValue, animation: Animation_Source) -> Result<()> {
         }))
     };
 
-    let onlightcolor: Closure<FnMut(JsValue)> = {
+    let onpickcolor: Closure<FnMut(JsValue)> = {
         let mut input = Rc::clone(&input);
         Closure::wrap(Box::new(move |event: JsValue| {
             if let Ok(e) = event.dyn_into::<CustomEvent>() {
-                if let Ok(int_array) = e.detail().dyn_into::<Int32Array>() {
-                    let mut input = input.borrow_mut();
-                    int_array.for_each(&mut |value, _, _| input.light_color = value);
+                let mut input = input.borrow_mut();
+                let object = e.detail();
+                if let Ok(value) = js_sys::Reflect::get(&object, &"color".into()) {
+                    if let Some(js_color) = value.as_f64() {
+                        input.color_value = js_color as i32;
+                    }
+                }
+                if let Ok(value) = js_sys::Reflect::get(&object, &"kind".into()) {
+                    if let Some(js_kind) = value.as_f64() {
+                        input.color_kind = js_kind as i32;
+                    }
                 }
             }
         }))
@@ -652,7 +676,7 @@ pub fn program(gl: JsValue, animation: Animation_Source) -> Result<()> {
     document.set_onmouseup(Some(onmouseup.as_ref().unchecked_ref()));
     document.set_onmousemove(Some(onmousemove.as_ref().unchecked_ref()));
     document.set_onwheel(Some(onmousewheel.as_ref().unchecked_ref()));
-    EventTarget::from(window()?).add_event_listener_with_callback("app-event.light_color", onlightcolor.as_ref().unchecked_ref())?;
+    EventTarget::from(window()?).add_event_listener_with_callback("app-event.pick_color", onpickcolor.as_ref().unchecked_ref())?;
 
     owned_state.closures.push(Some(onkeydown));
     owned_state.closures.push(Some(onkeyup));
@@ -660,7 +684,7 @@ pub fn program(gl: JsValue, animation: Animation_Source) -> Result<()> {
     owned_state.closures.push(Some(onmouseup));
     owned_state.closures.push(Some(onmousemove));
     owned_state.closures.push(Some(onmousewheel));
-    owned_state.closures.push(Some(onlightcolor));
+    owned_state.closures.push(Some(onpickcolor));
 
     Ok(())
 }
@@ -713,6 +737,7 @@ in vec3 FragPos;
 in vec4 ObjectColor;
 
 uniform vec3 lightColor;
+uniform vec3 extraLight;
 uniform vec3 lightPos;
 uniform float ambientStrength;
 
@@ -722,8 +747,9 @@ void main()
         discard;
     }
 
+    vec4 result;
     if (ambientStrength == 1.0) {
-        FragColor = ObjectColor;      
+        result = ObjectColor * vec4(lightColor, 1.0);
     } else {
         vec3 norm = normalize(Normal);
         vec3 lightDir = normalize(lightPos - FragPos);
@@ -733,8 +759,9 @@ void main()
         float diff = max(dot(norm, lightDir), 0.0);
         vec3 diffuse = diff * lightColor;
         
-        FragColor = ObjectColor * vec4(ambient + diffuse * (1.0 - ambientStrength), 1.0);
+        result = ObjectColor * vec4(ambient + diffuse * (1.0 - ambientStrength), 1.0);
     }
+    FragColor = result + vec4(extraLight, 1.0);
 } 
 "#;
 
@@ -936,6 +963,7 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
     dispatch_event_with("app-event.change_pixel_scale_x", &1.0.into());
     dispatch_event_with("app-event.change_pixel_scale_y", &1.0.into());
     dispatch_event_with("app-event.change_pixel_gap", &1.0.into());
+    dispatch_event_with("app-event.change_pixel_brightness", &0.0.into());
 
     Ok(Resources {
         pixel_shader: pixel_shader,
@@ -946,6 +974,8 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
         bloom_textures: bloom_textures,
         quad_vao: quad_vao,
         light_color: 0xFFFFFF,
+        brightness_color: 0xFFFFFF,
+        extra_bright: 0.0,
         frame_count: 0,
         translation_base_speed: camera.movement_speed,
         last_time: now,
@@ -995,9 +1025,15 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
         }
     }
 
-    if input.light_color != res.light_color {
-        res.light_color = input.light_color;
-        dispatch_event_with("app-event.top_message", &"Light color changed.".into());
+    let mut color_variable = match input.color_kind {
+        0 => &mut res.light_color,
+        1 => &mut res.brightness_color,
+        other => return Err(("color kind invalid: ".to_string() + &other.to_string()).into()),
+    };
+
+    if input.color_value != *color_variable {
+        *color_variable = input.color_value;
+        dispatch_event_with("app-event.top_message", &"Color changed.".into());
     }
 
     let last_bloom_passes = res.bloom_passes;
@@ -1178,6 +1214,26 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
         dispatch_event_with("app-event.change_pixel_gap", &pixel_gap.into());
     }
 
+    let last_bright = res.extra_bright;
+    if input.increase_bright {
+        res.extra_bright += 0.01 * dt * res.pixel_manipulation_speed;
+    }
+    if input.decrease_bright {
+        res.extra_bright -= 0.01 * dt * res.pixel_manipulation_speed;
+    }
+    if input.reset_brightness {
+        res.extra_bright = 0.0;
+    }
+    if last_bright != res.extra_bright {
+        if res.extra_bright < -1.0 {
+            res.extra_bright = -1.0;
+        }
+        if res.extra_bright > 1.0 {
+            res.extra_bright = 1.0;
+        }
+        dispatch_event_with("app-event.change_pixel_brightness", &res.extra_bright.into());
+    }
+
     Ok(true)
 }
 
@@ -1210,26 +1266,27 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
         pixel_gap[0] *= res.animation.scale_x;
     }
 
-    let ambient_strength = match res.pixels_or_voxels { Pixels_Or_Voxels::Pixels => if res.light_color == 0xFFFFFF {0.0} else {0.5}, Pixels_Or_Voxels::Voxels => 0.5};
+    let mut ambient_strength = match res.pixels_or_voxels { Pixels_Or_Voxels::Pixels => 1.0, Pixels_Or_Voxels::Voxels => 0.5};
 
-    let mut light_color: [f32; 3] = [
-        (res.light_color >> 16) as f32 / 255.0,
-        ((res.light_color >> 8) & 0xFF) as f32 / 255.0,
-        (res.light_color & 0xFF) as f32 / 255.0,
-    ];
+    let mut light_color = get_3_color_from_int(res.light_color);
+    let mut extra_light = get_3_color_from_int(res.brightness_color);
 
-    gl.clear_color(0.05, 0.05, 0.05, 1.0);  // Clear to black, fully opaque
-    gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
+    for i in 0 .. 3 {
+        extra_light[i] *= res.extra_bright;
+    }
+
+    gl.clear_color(0.05, 0.05, 0.05, 1.0);
     if res.bloom_passes > 0 {
         gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, res.bloom_framebuffers[1].as_ref());
-        gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
     }
+    gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
 
     gl.use_program(Some(&res.pixel_shader));
     gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "view").as_ref(), false, view.as_mut_slice());
     gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "projection").as_ref(), false, projection.as_mut_slice());
     gl.uniform3fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "lightPos").as_ref(), &mut [res.camera.position.x, res.camera.position.y, res.camera.position.z]);
     gl.uniform3fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "lightColor").as_ref(), &mut light_color);
+    gl.uniform3fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "extraLight").as_ref(), &mut extra_light);
     gl.uniform1f(gl.get_uniform_location(&res.pixel_shader, "ambientStrength").as_ref(), ambient_strength);
     gl.uniform2fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "pixel_gap").as_ref(), &mut pixel_gap);
     gl.uniform3fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "pixel_scale").as_ref(), &mut pixel_scale);
@@ -1250,7 +1307,11 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
             let buffer_index = i % 2;
             let texture_index = (i + 1) % 2;
 
-            gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, if i < res.bloom_passes {res.bloom_framebuffers[buffer_index].as_ref()} else {None});
+            let mut framebuffer = None;
+            if i < res.bloom_passes {
+                framebuffer = res.bloom_framebuffers[buffer_index].as_ref();
+            }
+            gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, framebuffer);
             if i == 0 || i == res.bloom_passes {
                 gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
             }
@@ -1348,6 +1409,12 @@ pub fn check_error(gl: &WebGl2RenderingContext, line: u32) -> Result<()> {
     }
     Ok(())
 }
+
+pub fn get_3_color_from_int(color: i32) -> [f32; 3] {[
+    (color >> 16) as f32 / 255.0,
+    ((color >> 8) & 0xFF) as f32 / 255.0,
+    (color & 0xFF) as f32 / 255.0,
+]}
 
 pub fn window() -> Result<Window> {
     Ok(web_sys::window().ok_or("cannot access window")?)

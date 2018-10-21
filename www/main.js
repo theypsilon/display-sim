@@ -31,6 +31,7 @@ const infoHideDeo = document.getElementById('info-hide');
 const infoPanelDeo = document.getElementById('info-panel');
 const fpsCounterDeo = document.getElementById('fps-counter');
 const lightColorDeo = document.getElementById('light-color');
+const brightnessColorDeo = document.getElementById('brightness-color');
 
 const cameraPosXDeo = document.getElementById('camera-pos-x');
 const cameraPosYDeo = document.getElementById('camera-pos-y');
@@ -45,6 +46,7 @@ const cameraAxisUpZDeo = document.getElementById('camera-axis-up-z');
 const pixelScaleXDeo = document.getElementById('pixel-scale-x');
 const pixelScaleYDeo = document.getElementById('pixel-scale-y');
 const pixelGapDeo = document.getElementById('pixel-gap');
+const pixelBrigthnessDeo = document.getElementById('pixel-brightness');
 
 const getGlCanvasDeo = () => document.getElementById(glCanvasHtmlId);
 const getPreviewDeo = () => document.getElementById(previewHtmlId);
@@ -129,26 +131,29 @@ window.addEventListener('app-event.camera_update', event => {
     cameraAxisUpZDeo.innerHTML = Math.round(event.detail[8] * 100) / 100;
 }, false);
 
-window.addEventListener('app-event.change_pixel_scale_x', event => {
-    pixelScaleXDeo.innerHTML = Math.round(event.detail * 1000.0) / 1000.0;
-}, false);
+updateInnerHtmlWithEventNumber(pixelScaleXDeo, 'app-event.change_pixel_scale_x');
+updateInnerHtmlWithEventNumber(pixelScaleYDeo, 'app-event.change_pixel_scale_y');
+updateInnerHtmlWithEventNumber(pixelGapDeo, 'app-event.change_pixel_gap');
+updateInnerHtmlWithEventNumber(pixelBrigthnessDeo, 'app-event.change_pixel_brightness');
+function updateInnerHtmlWithEventNumber(deo, eventId) {
+    window.addEventListener(eventId, event => {
+        deo.innerHTML = Math.round(event.detail * 1000.0) / 1000.0;
+    }, false);
+}
 
-window.addEventListener('app-event.change_pixel_scale_y', event => {
-    pixelScaleYDeo.innerHTML = Math.round(event.detail * 1000.0) / 1000.0;
-}, false);
+colorPickerOnChange(lightColorDeo, 0);
+colorPickerOnChange(brightnessColorDeo, 1);
+function colorPickerOnChange(deo, kind) {
+    deo.onchange = () => {
+        window.dispatchEvent(new CustomEvent('app-event.pick_color', {
+            detail: {
+                color: parseInt('0x' +deo.value.substring(1)),
+                kind: kind,
+            },
+        }));
+    }
+}
 
-window.addEventListener('app-event.change_pixel_gap', event => {
-    pixelGapDeo.innerHTML = Math.round(event.detail * 1000.0) / 1000.0;
-}, false);
-
-lightColorDeo.onchange = () => {
-    const array = new Int32Array(1);
-    const hex = '0x' +lightColorDeo.value.substring(1);
-    array.fill(parseInt(hex), 0, 1);
-    window.dispatchEvent(new CustomEvent('app-event.light_color', {
-        detail: array
-    }));
-};
 infoHideDeo.onclick = () => {
     if (!getGlCanvasDeo()) {
         return;
@@ -291,6 +296,7 @@ function prepareUi() {
         }
 
         lightColorDeo.value = '#FFFFFF';
+        brightnessColorDeo.value = '#FFFFFF';
     
         const canvas = document.createElement('canvas');
     
