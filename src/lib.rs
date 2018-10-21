@@ -173,6 +173,7 @@ pub struct Resources {
     bloom_textures: [Option<WebGlTexture>; 2],
     bloom_passes: usize,
     quad_vao: Option<WebGlVertexArrayObject>,
+    color_filter: i32,
     frame_count: u32,
     last_time: f64,
     last_second: f64,
@@ -195,6 +196,7 @@ pub struct Resources {
 #[derive(Clone)]
 pub struct Input {
     now: f64,
+    color_filter: i32,
     walk_left: bool,
     walk_right: bool,
     walk_up: bool,
@@ -234,6 +236,7 @@ impl Input {
     pub fn new() -> Result<Input> {
         Ok(Input {
             now: now()?,
+            color_filter: 0xFFFFFF,
             walk_left: false,
             walk_right: false,
             walk_up: false,
@@ -630,6 +633,18 @@ pub fn program(gl: JsValue, animation: Animation_Source) -> Result<()> {
         }))
     };
 
+    let onlightcolor: Closure<FnMut(JsValue)> = {
+        let mut input = Rc::clone(&input);
+        Closure::wrap(Box::new(move |event: JsValue| {
+            if let Ok(e) = event.dyn_into::<CustomEvent>() {
+                if let Ok(int_array) = e.detail().dyn_into::<Int32Array>() {
+                    let mut input = input.borrow_mut();
+                    int_array.for_each(&mut |value, _, _| input.color_filter = value);
+                }
+            }
+        }))
+    };
+
     let document = window()?.document().ok_or("cannot access document")?;
     document.set_onkeydown(Some(onkeydown.as_ref().unchecked_ref()));
     document.set_onkeyup(Some(onkeyup.as_ref().unchecked_ref()));
@@ -637,6 +652,7 @@ pub fn program(gl: JsValue, animation: Animation_Source) -> Result<()> {
     document.set_onmouseup(Some(onmouseup.as_ref().unchecked_ref()));
     document.set_onmousemove(Some(onmousemove.as_ref().unchecked_ref()));
     document.set_onwheel(Some(onmousewheel.as_ref().unchecked_ref()));
+    EventTarget::from(window()?).add_event_listener_with_callback("app-event.light_color", onlightcolor.as_ref().unchecked_ref())?;
 
     owned_state.closures.push(Some(onkeydown));
     owned_state.closures.push(Some(onkeyup));
@@ -644,6 +660,7 @@ pub fn program(gl: JsValue, animation: Animation_Source) -> Result<()> {
     owned_state.closures.push(Some(onmouseup));
     owned_state.closures.push(Some(onmousemove));
     owned_state.closures.push(Some(onmousewheel));
+    owned_state.closures.push(Some(onlightcolor));
 
     Ok(())
 }
@@ -926,6 +943,7 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
         bloom_framebuffers: bloom_framebuffers,
         bloom_textures: bloom_textures,
         quad_vao: quad_vao,
+        color_filter: 0xFFFFFF,
         frame_count: 0,
         translation_base_speed: camera.movement_speed,
         last_time: now,
@@ -973,6 +991,11 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
         if last_frame != res.animation.current_frame {
             res.animation.needs_buffer_data_load = true;
         }
+    }
+
+    if input.color_filter != res.color_filter {
+        res.color_filter = input.color_filter;
+        dispatch_event_with("app-event.top_message", &"Light color changed.".into());
     }
 
     let last_bloom_passes = res.bloom_passes;
@@ -1185,7 +1208,13 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
         pixel_gap[0] *= res.animation.scale_x;
     }
 
-    let ambient_strength = match res.pixels_or_voxels { Pixels_Or_Voxels::Pixels => 1.0, Pixels_Or_Voxels::Voxels => 0.5};
+    let ambient_strength = match res.pixels_or_voxels { Pixels_Or_Voxels::Pixels => if res.color_filter == 0xFFFFFF {0.0} else {0.5}, Pixels_Or_Voxels::Voxels => 0.5};
+
+    let mut color_filter: [f32; 3] = [
+        (res.color_filter >> 16) as f32 / 255.0,
+        ((res.color_filter >> 8) & 0xFF) as f32 / 255.0,
+        (res.color_filter & 0xFF) as f32 / 255.0,
+    ];
 
     gl.clear_color(0.05, 0.05, 0.05, 1.0);  // Clear to black, fully opaque
     gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
@@ -1198,7 +1227,7 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
     gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "view").as_ref(), false, view.as_mut_slice());
     gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "projection").as_ref(), false, projection.as_mut_slice());
     gl.uniform3fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "lightPos").as_ref(), &mut [res.camera.position.x, res.camera.position.y, res.camera.position.z]);
-    gl.uniform3fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "lightColor").as_ref(), &mut [1.0, 1.0, 1.0]);
+    gl.uniform3fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "lightColor").as_ref(), &mut color_filter);
     gl.uniform1f(gl.get_uniform_location(&res.pixel_shader, "ambientStrength").as_ref(), ambient_strength);
     gl.uniform2fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "pixel_gap").as_ref(), &mut pixel_gap);
     gl.uniform3fv_with_f32_array(gl.get_uniform_location(&res.pixel_shader, "pixel_scale").as_ref(), &mut pixel_scale);

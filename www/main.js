@@ -30,6 +30,7 @@ const restoreDefaultOptionsDeo = document.getElementById('restore-default-option
 const infoHideDeo = document.getElementById('info-hide');
 const infoPanelDeo = document.getElementById('info-panel');
 const fpsCounterDeo = document.getElementById('fps-counter');
+const lightColorDeo = document.getElementById('light-color');
 
 const cameraPosXDeo = document.getElementById('camera-pos-x');
 const cameraPosYDeo = document.getElementById('camera-pos-y');
@@ -140,6 +141,14 @@ window.addEventListener('app-event.change_pixel_gap', event => {
     pixelGapDeo.innerHTML = Math.round(event.detail * 1000.0) / 1000.0;
 }, false);
 
+lightColorDeo.onchange = () => {
+    const array = new Int32Array(1);
+    const hex = '0x' +lightColorDeo.value.substring(1);
+    array.fill(parseInt(hex), 0, 1);
+    window.dispatchEvent(new CustomEvent('app-event.light_color', {
+        detail: array
+    }));
+};
 infoHideDeo.onclick = () => {
     if (!getGlCanvasDeo()) {
         return;
@@ -257,7 +266,7 @@ function prepareUi() {
             case scalingAutoHtmlId:
                 scaleX = imageWidth <= 1024 ? (4/3)/(imageWidth/imageHeight) : 1;
                 window.dispatchEvent(new CustomEvent('app-event.top_message', {
-                    detail: 'Scaling auto detect applying: ' + (scaleX === 1 ? 'none.' : '4:3 on full image.')
+                    detail: 'Scaling auto detect: ' + (scaleX === 1 ? 'none.' : '4:3 on full image.')
                 }));
                 break;
             case scaling43HtmlId:
@@ -280,6 +289,8 @@ function prepareUi() {
                 scaleX = (+scalingCustomArXDeo.value / +scalingCustomArYDeo.value)/(+scalingCustomResWidthDeo.value/+scalingCustomResHeightDeo.value);
                 break;
         }
+
+        lightColorDeo.value = '#FFFFFF';
     
         const canvas = document.createElement('canvas');
     
@@ -291,7 +302,7 @@ function prepareUi() {
         canvas.style.width = width;
         canvas.style.height = height;
 
-        infoPanelDeo.style.setProperty('max-height', height - 50);
+        infoPanelDeo.style.setProperty('max-height', height - 36);
     
         document.body.appendChild(canvas);
     
