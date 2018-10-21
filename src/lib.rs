@@ -1011,7 +1011,7 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
     }
 
     if last_bloom_passes != res.bloom_passes {
-        dispatch_event_with("app-event.top_message", &("Bloom level: ".to_string() + &res.bloom_passes.to_string()).into())?;
+        dispatch_event_with("app-event.top_message", &("Blur level: ".to_string() + &res.bloom_passes.to_string()).into())?;
     }
 
     res.buttons.esc.track(input.esc);
