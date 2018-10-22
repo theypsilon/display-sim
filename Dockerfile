@@ -5,7 +5,7 @@ RUN rustup toolchain install beta \
     && rustup component add clippy-preview \
     && curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh \
     && curl -sSfL https://github.com/WebAssembly/binaryen/releases/download/version_50/binaryen-version_50-x86_64-linux.tar.gz | tar xvz
-ADD Cargo.toml /app/
+ADD Cargo.* /app/
 RUN mkdir -p src && touch src/lib.rs \
     && cargo build --release \
     && cargo clippy \
@@ -19,7 +19,7 @@ RUN cargo test --release \
 
 FROM node:8.12.0-alpine as webpack
 WORKDIR /www
-ADD www/package.json .
+ADD www/package*.json .
 RUN npm install --dev
 ADD www .
 COPY --from=rust-wasm /app/wasm/* ./
