@@ -2,4 +2,11 @@ sudo: required
 services:
   - docker
 script:
-  - ./docker-build.sh
+  - ./docker-build.sh --extract-dist
+deploy:
+  provider: pages
+  skip_cleanup: true
+  github_token: $GITHUB_TOKEN
+  local_dir: dist/
+  on:
+    branch: gh-pages
