@@ -1268,8 +1268,8 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
 
     let mut ambient_strength = match res.pixels_or_voxels { Pixels_Or_Voxels::Pixels => 1.0, Pixels_Or_Voxels::Voxels => 0.5};
 
-    let mut light_color = get_3_color_from_int(res.light_color);
-    let mut extra_light = get_3_color_from_int(res.brightness_color);
+    let mut light_color = get_3_f32color_from_int(res.light_color);
+    let mut extra_light = get_3_f32color_from_int(res.brightness_color);
 
     for i in 0 .. 3 {
         extra_light[i] *= res.extra_bright;
@@ -1410,29 +1410,29 @@ pub fn check_error(gl: &WebGl2RenderingContext, line: u32) -> Result<()> {
     Ok(())
 }
 
-pub fn get_3_color_from_int(color: i32) -> [f32; 3] {[
+pub fn get_3_f32color_from_int(color: i32) -> [f32; 3] {[
     (color >> 16) as f32 / 255.0,
     ((color >> 8) & 0xFF) as f32 / 255.0,
     (color & 0xFF) as f32 / 255.0,
 ]}
 
 #[cfg(test)]
-mod tests { mod get_3_color_from_int { mod gives_good {
+mod tests { mod get_3_f32color_from_int { mod gives_good {
     use super::super::super::*;
 
-    macro_rules! get_3_color_from_int_tests {
+    macro_rules! get_3_f32color_from_int_tests {
         ($($name:ident: $value:expr,)*) => {
         $(
             #[test]
             fn $name() {
                 let (input, expected) = $value;
-                assert_eq!(expected, get_3_color_from_int(input));
+                assert_eq!(expected, get_3_f32color_from_int(input));
             }
         )*
         }
     }
 
-    get_3_color_from_int_tests! {
+    get_3_f32color_from_int_tests! {
         white: (0xFFFFFF, [1.0, 1.0, 1.0]),
         black: (0x000000, [0.0, 0.0, 0.0]),
         red: (0xFF0000, [1.0, 0.0, 0.0]),
