@@ -21,18 +21,18 @@ use std::cell::RefCell;
 use std::mem::size_of;
 
 #[wasm_bindgen]
-pub fn main(gl: JsValue, animation: Animation_Source) {
-    match program(gl, animation) {
-        Err(e) => match e {
-            Wasm_Error::Js(o) => console::error_2(&"An unexpected error ocurred.".into(), &o),
-            Wasm_Error::Str(s) => console::error_2(&"An unexpected error ocurred.".into(), &s.into()),
-        },
-        Ok(_) => {}
-    };
+pub fn main(gl: JsValue, animation: AnimationSource) {
+    set_panic_hook();
+    if let Err(e) = program(gl, animation) {
+        match e {
+            WasmError::Js(o) => console::error_2(&"An unexpected error ocurred.".into(), &o),
+            WasmError::Str(s) => console::error_2(&"An unexpected error ocurred.".into(), &s.into()),
+        };
+    }
 }
 
 #[wasm_bindgen]
-pub struct Animation_Source {
+pub struct AnimationSource {
     steps: Vec<ArrayBuffer>,
     width: u32,
     height: u32,
@@ -40,7 +40,6 @@ pub struct Animation_Source {
     stretch: bool,
     canvas_width: u32,
     canvas_height: u32,
-    dpi: f32,
     frame_length: f32,
     current_frame: usize,
     last_frame_change: f64,
@@ -48,19 +47,18 @@ pub struct Animation_Source {
 }
 
 #[wasm_bindgen]
-impl Animation_Source {
+impl AnimationSource {
     #[wasm_bindgen(constructor)]
-    pub fn new(width: u32, height: u32, canvas_width: u32, canvas_height: u32, frame_length: f32, scale_x: f32, stretch: bool, dpi: f32) -> Animation_Source {
-        Animation_Source {
+    pub fn new(width: u32, height: u32, canvas_width: u32, canvas_height: u32, frame_length: f32, scale_x: f32, stretch: bool) -> AnimationSource {
+        AnimationSource {
             steps: Vec::new(),
-            width: width,
-            height: height,
-            canvas_width: canvas_width,
-            canvas_height: canvas_height,
-            frame_length: frame_length,
-            scale_x: scale_x,
-            stretch: stretch,
-            dpi: dpi,
+            width,
+            height,
+            canvas_width,
+            canvas_height,
+            frame_length,
+            scale_x,
+            stretch,
             current_frame: 1,
             last_frame_change: -100.0,
             needs_buffer_data_load: true,
@@ -73,46 +71,46 @@ impl Animation_Source {
     }
 }
 
-pub enum Wasm_Error {
+pub enum WasmError {
     Js(JsValue),
     Str(String)
 }
 
-impl Wasm_Error {
-    fn to_js(self) -> JsValue {
-        match self { Wasm_Error::Js(o) => o, Wasm_Error::Str(s) => s.into()}
+impl WasmError {
+    fn to_js(&self) -> JsValue {
+        match self { WasmError::Js(o) => o.clone(), WasmError::Str(s) => s.into()}
     }
 }
 
-impl From<std::string::String> for Wasm_Error {
+impl From<std::string::String> for WasmError {
     fn from(string: std::string::String) -> Self {
-        Wasm_Error::Str(string)
+        WasmError::Str(string)
     }
 }
 
-impl<'a> From<&'a str> for Wasm_Error {
+impl<'a> From<&'a str> for WasmError {
     fn from(string: &'a str) -> Self {
-        Wasm_Error::Str(string.into())
+        WasmError::Str(string.into())
     }
 }
 
-impl From<wasm_bindgen::JsValue> for Wasm_Error {
+impl From<wasm_bindgen::JsValue> for WasmError {
     fn from(o: wasm_bindgen::JsValue) -> Self {
-        Wasm_Error::Js(o)
+        WasmError::Js(o)
     }
 }
 
-type Result<T> = std::result::Result<T, Wasm_Error>;
+type Result<T> = std::result::Result<T, WasmError>;
 
-struct Boolean_Button {
+struct BooleanButton {
     activated: bool,
     just_pressed: bool,
     just_released: bool
 }
 
-impl Boolean_Button {
-    fn new() -> Boolean_Button {
-        Boolean_Button {
+impl BooleanButton {
+    fn new() -> BooleanButton {
+        BooleanButton {
             activated: false,
             just_pressed: false,
             just_released: false
@@ -122,9 +120,9 @@ impl Boolean_Button {
     fn track(&mut self, pushed: bool) {
         self.just_pressed = false;
         self.just_released = false;
-        if pushed == false && self.activated {
+        if !pushed && self.activated {
             self.just_released = true;
-        } else if pushed && self.activated == false {
+        } else if pushed && !self.activated {
             self.just_pressed = true;
         }
         self.activated = pushed;
@@ -132,34 +130,34 @@ impl Boolean_Button {
 }
 
 struct Buttons {
-    speed_up: Boolean_Button,
-    speed_down: Boolean_Button,
-    mouse_click: Boolean_Button,
-    increase_bloom: Boolean_Button,
-    decrease_bloom: Boolean_Button,
-    toggle_pixels_or_voxels: Boolean_Button,
-    showing_pixels_pulse: Boolean_Button,
-    esc: Boolean_Button,
-    space: Boolean_Button,
+    speed_up: BooleanButton,
+    speed_down: BooleanButton,
+    mouse_click: BooleanButton,
+    increase_bloom: BooleanButton,
+    decrease_bloom: BooleanButton,
+    toggle_pixels_or_voxels: BooleanButton,
+    showing_pixels_pulse: BooleanButton,
+    esc: BooleanButton,
+    space: BooleanButton,
 }
 
 impl Buttons {
     fn new() -> Buttons {
         Buttons {
-            speed_up: Boolean_Button::new(),
-            speed_down: Boolean_Button::new(),
-            mouse_click: Boolean_Button::new(),
-            increase_bloom: Boolean_Button::new(),
-            decrease_bloom: Boolean_Button::new(),
-            toggle_pixels_or_voxels: Boolean_Button::new(),
-            showing_pixels_pulse: Boolean_Button::new(),
-            esc: Boolean_Button::new(),
-            space: Boolean_Button::new(),
+            speed_up: BooleanButton::new(),
+            speed_down: BooleanButton::new(),
+            mouse_click: BooleanButton::new(),
+            increase_bloom: BooleanButton::new(),
+            decrease_bloom: BooleanButton::new(),
+            toggle_pixels_or_voxels: BooleanButton::new(),
+            showing_pixels_pulse: BooleanButton::new(),
+            esc: BooleanButton::new(),
+            space: BooleanButton::new(),
         }
     }
 }
 
-enum Pixels_Or_Voxels {
+enum PixelsOrVoxels {
     Pixels,
     Voxels
 }
@@ -179,19 +177,17 @@ pub struct Resources {
     frame_count: u32,
     last_time: f64,
     last_second: f64,
-    last_mouse_x: i32,
-    last_mouse_y: i32,
     translation_base_speed: f32,
     cur_pixel_scale_x: f32,
     cur_pixel_scale_y: f32,
     cur_pixel_gap: f32,
-    pixels_or_voxels: Pixels_Or_Voxels,
+    pixels_or_voxels: PixelsOrVoxels,
     pixels_pulse: f32,
     showing_pixels_pulse: bool,
     pixel_manipulation_speed: f32,
     camera: Camera,
     camera_zoom: f32,
-    animation: Animation_Source,
+    animation: AnimationSource,
     buttons: Buttons,
 }
 
@@ -242,7 +238,7 @@ impl Input {
     pub fn new() -> Result<Input> {
         Ok(Input {
             now: now()?,
-            color_value: 0xFFFFFF,
+            color_value: 0x00FF_FFFF,
             color_kind: 1,
             walk_left: false,
             walk_right: false,
@@ -284,23 +280,23 @@ impl Input {
     }
 }
 
-struct State_Owner {
+struct StateOwner {
     animation_frame_id: Option<i32>,
     closures: Vec<Option<Closure<FnMut(JsValue)>>>,
     resources: Resources,
 }
 
-impl State_Owner {
-    fn new(resources: Resources) -> State_Owner {
-        State_Owner {
+impl StateOwner {
+    fn new(resources: Resources) -> StateOwner {
+        StateOwner {
             animation_frame_id: None,
             closures: Vec::new(),
-            resources: resources,
+            resources,
         }
     }
 }
 
-enum Camera_Direction{Down, Up, Left, Right, Forward, Backward}
+enum CameraDirection{Down, Up, Left, Right, Forward, Backward}
 
 struct Camera {
     position: glm::Vec3,
@@ -327,40 +323,40 @@ impl Camera {
             pitch: 0.0,
             heading: 0.0,
             rotate: 0.0,
-            movement_speed: movement_base_speed,
-            turning_speed: turning_base_speed,
+            movement_speed: MOVEMENT_BASE_SPEED,
+            turning_speed: TURNING_BASE_SPEED,
             sending_camera_update_event: true,
         }
     }
 
-    fn advance(&mut self, direction: Camera_Direction, dt: f32) {
+    fn advance(&mut self, direction: CameraDirection, dt: f32) {
         let velocity = self.movement_speed * dt;
         self.position_delta += match direction {
-            Camera_Direction::Up => self.axis_up * velocity,
-            Camera_Direction::Down => - self.axis_up * velocity,
-            Camera_Direction::Left => - self.axis_right * velocity,
-            Camera_Direction::Right => self.axis_right * velocity,
-            Camera_Direction::Forward => self.direction * velocity,
-            Camera_Direction::Backward => - self.direction * velocity,
+            CameraDirection::Up => self.axis_up * velocity,
+            CameraDirection::Down => - self.axis_up * velocity,
+            CameraDirection::Left => - self.axis_right * velocity,
+            CameraDirection::Right => self.axis_right * velocity,
+            CameraDirection::Forward => self.direction * velocity,
+            CameraDirection::Backward => - self.direction * velocity,
         };
     }
 
-    fn turn(&mut self, direction: Camera_Direction, dt: f32) {
+    fn turn(&mut self, direction: CameraDirection, dt: f32) {
         let velocity = 20.0 * dt * 0.003 * self.turning_speed;
         match direction {
-            Camera_Direction::Up => self.heading += velocity,
-            Camera_Direction::Down => self.heading -= velocity,
-            Camera_Direction::Left => self.pitch += velocity,
-            Camera_Direction::Right => self.pitch -= velocity,
+            CameraDirection::Up => self.heading += velocity,
+            CameraDirection::Down => self.heading -= velocity,
+            CameraDirection::Left => self.pitch += velocity,
+            CameraDirection::Right => self.pitch -= velocity,
             _ => unreachable!()
         };
     }
 
-    fn rotate(&mut self, direction: Camera_Direction, dt: f32) {
+    fn rotate(&mut self, direction: CameraDirection, dt: f32) {
         let velocity = 60.0 * dt * 0.001 * self.turning_speed;
         match direction {
-            Camera_Direction::Left => self.rotate += velocity,
-            Camera_Direction::Right => self.rotate -= velocity,
+            CameraDirection::Left => self.rotate += velocity,
+            CameraDirection::Right => self.rotate -= velocity,
             _ => unreachable!()
         };
     }
@@ -413,12 +409,12 @@ impl Camera {
     }
 }
 
-const pixel_manipulation_base_speed: f32 = 20.0;
-const turning_base_speed: f32 = 3.0;
-const movement_base_speed: f32 = 10.0;
-const movement_speed_factor: f32 = 50.0;
+const PIXEL_MANIPULATION_BASE_SPEED: f32 = 20.0;
+const TURNING_BASE_SPEED: f32 = 3.0;
+const MOVEMENT_BASE_SPEED: f32 = 10.0;
+const MOVEMENT_SPEED_FACTOR: f32 = 50.0;
 
-const cube_geometry : [f32; 216] = [
+const CUBE_GEOMETRY : [f32; 216] = [
     // cube coordinates       cube normals
     -0.5, -0.5,  0.5,      0.0,  0.0,  1.0,
      0.5, -0.5,  0.5,      0.0,  0.0,  1.0,
@@ -464,22 +460,22 @@ const cube_geometry : [f32; 216] = [
 ];
 
 
-const quad_geometry : [f32; 20] = [
+const QUAD_GEOMETRY : [f32; 20] = [
          1.0,  1.0, 0.0,   1.0, 1.0, // top right
          1.0, -1.0, 0.0,   1.0, 0.0, // bottom right
         -1.0, -1.0, 0.0,   0.0, 0.0, // bottom left
         -1.0,  1.0, 0.0,   0.0, 1.0  // top left 
 ];
 
-const quad_indices: [i32; 6] = [
+const QUAD_INDICES: [i32; 6] = [
     0, 1, 3,
     1, 2, 3,
 ];
 
-pub fn program(gl: JsValue, animation: Animation_Source) -> Result<()> {
+pub fn program(gl: JsValue, animation: AnimationSource) -> Result<()> {
     let gl = gl.dyn_into::<WebGl2RenderingContext>()?;
     gl.enable(WebGl2RenderingContext::DEPTH_TEST);
-    let owned_state = Rc::new(RefCell::new(State_Owner::new(load_resources(&gl, animation)?)));
+    let owned_state = Rc::new(RefCell::new(StateOwner::new(load_resources(&gl, animation)?)));
     let input = Rc::new(RefCell::new( Input::new().ok().expect("cannot create input")));
     let frame_closure: Closure<FnMut(JsValue)> = {
         let owned_state = owned_state.clone();
@@ -689,7 +685,7 @@ pub fn program(gl: JsValue, animation: Animation_Source) -> Result<()> {
     Ok(())
 }
 
-const pixel_vertex_shader: &str = r#"#version 300 es
+const PIXEL_VERTEX_SHADER: &str = r#"#version 300 es
 precision highp float;
 
 in vec3 aPos;
@@ -727,7 +723,7 @@ void main()
 }
 "#;
 
-const pixel_fragment_shader: &str = r#"#version 300 es
+const PIXEL_FRAGMENT_SHADER: &str = r#"#version 300 es
 precision highp float;
 
 out vec4 FragColor;
@@ -765,7 +761,7 @@ void main()
 } 
 "#;
 
-const bloom_vertex_shader: &str = r#"#version 300 es
+const BLOOM_VERTEX_SHADER: &str = r#"#version 300 es
 precision highp float;
 
 layout (location = 0) in vec3 qPos;
@@ -780,7 +776,7 @@ void main()
 }
 "#;
 
-const bloom_fragment_shader: &str = r#"#version 300 es
+const BLOOM_FRAGMENT_SHADER: &str = r#"#version 300 es
 precision highp float;
 
 out vec4 FragColor;
@@ -814,7 +810,7 @@ void main()
 }
 "#;
 
-pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) -> Result<Resources> {
+pub fn load_resources(gl: &WebGl2RenderingContext, animation: AnimationSource) -> Result<Resources> {
     let width = animation.width as usize;
     let height = animation.height as usize;
     let pixels_total = width * height;
@@ -868,13 +864,13 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
     gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&quad_vbo));
     gl.buffer_data_with_opt_array_buffer(
         WebGl2RenderingContext::ARRAY_BUFFER,
-        Some(&js_f32_array(&quad_geometry).buffer()),
+        Some(&js_f32_array(&QUAD_GEOMETRY).buffer()),
         WebGl2RenderingContext::STATIC_DRAW,
     );
     gl.bind_buffer(WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER, Some(&quad_ebo));
-    gl.buffer_data_with_opt_array_buffer(WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER, Some(&js_i32_array(&quad_indices).buffer()), WebGl2RenderingContext::STATIC_DRAW);
+    gl.buffer_data_with_opt_array_buffer(WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER, Some(&js_i32_array(&QUAD_INDICES).buffer()), WebGl2RenderingContext::STATIC_DRAW);
 
-    let bloom_shader = make_shader(&gl, bloom_vertex_shader, bloom_fragment_shader)?;
+    let bloom_shader = make_shader(&gl, BLOOM_VERTEX_SHADER, BLOOM_FRAGMENT_SHADER)?;
     gl.use_program(Some(&bloom_shader));
     gl.uniform1i(gl.get_uniform_location(&bloom_shader, "image").as_ref(), 0);
 
@@ -887,7 +883,7 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
     gl.vertex_attrib_pointer_with_i32(q_pos_position, 3, WebGl2RenderingContext::FLOAT, false, 5 * size_of::<f32>() as i32, 0);
     gl.vertex_attrib_pointer_with_i32(q_texture_position, 2, WebGl2RenderingContext::FLOAT, false, 5 * size_of::<f32>() as i32, 3 * size_of::<f32>() as i32);
     
-    let pixel_shader = make_shader(&gl, pixel_vertex_shader, pixel_fragment_shader)?;
+    let pixel_shader = make_shader(&gl, PIXEL_VERTEX_SHADER, PIXEL_FRAGMENT_SHADER)?;
     let pixel_vao = gl.create_vertex_array();
     gl.bind_vertex_array(pixel_vao.as_ref());
 
@@ -895,7 +891,7 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
     gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&pixel_vbo));
     gl.buffer_data_with_opt_array_buffer(
         WebGl2RenderingContext::ARRAY_BUFFER,
-        Some(&js_f32_array(&cube_geometry).buffer()),
+        Some(&js_f32_array(&CUBE_GEOMETRY).buffer()),
         WebGl2RenderingContext::STATIC_DRAW,
     );
 
@@ -956,42 +952,40 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: Animation_Source) 
 
     let mut camera = Camera::new();
     camera.position_delta = glm::vec3(0.0, 0.0, far_away_position);
-    camera.movement_speed *= far_away_position / movement_speed_factor;
+    camera.movement_speed *= far_away_position / MOVEMENT_SPEED_FACTOR;
 
     check_error(&gl, line!())?;
 
-    dispatch_event_with("app-event.change_pixel_scale_x", &1.0.into());
-    dispatch_event_with("app-event.change_pixel_scale_y", &1.0.into());
-    dispatch_event_with("app-event.change_pixel_gap", &1.0.into());
-    dispatch_event_with("app-event.change_pixel_brightness", &0.0.into());
+    dispatch_event_with("app-event.change_pixel_scale_x", &1.0.into())?;
+    dispatch_event_with("app-event.change_pixel_scale_y", &1.0.into())?;
+    dispatch_event_with("app-event.change_pixel_gap", &1.0.into())?;
+    dispatch_event_with("app-event.change_pixel_brightness", &0.0.into())?;
 
     Ok(Resources {
-        pixel_shader: pixel_shader,
-        pixel_vao: pixel_vao,
-        colors_vbo: colors_vbo,
-        bloom_shader: bloom_shader,
-        bloom_framebuffers: bloom_framebuffers,
-        bloom_textures: bloom_textures,
-        quad_vao: quad_vao,
-        light_color: 0xFFFFFF,
-        brightness_color: 0xFFFFFF,
+        pixel_shader,
+        pixel_vao,
+        colors_vbo,
+        bloom_shader,
+        bloom_framebuffers,
+        bloom_textures,
+        quad_vao,
+        light_color: 0x00FF_FFFF,
+        brightness_color: 0x00FF_FFFF,
         extra_bright: 0.0,
         frame_count: 0,
         translation_base_speed: camera.movement_speed,
         last_time: now,
         last_second: now,
-        last_mouse_x: -1,
-        last_mouse_y: -1,
         bloom_passes: 0,
-        pixel_manipulation_speed: pixel_manipulation_base_speed,
+        pixel_manipulation_speed: PIXEL_MANIPULATION_BASE_SPEED,
         cur_pixel_scale_x: 0.0,
         cur_pixel_scale_y: 0.0,
         cur_pixel_gap: 0.0,
-        pixels_or_voxels: Pixels_Or_Voxels::Pixels,
+        pixels_or_voxels: PixelsOrVoxels::Pixels,
         pixels_pulse: 0.0,
         showing_pixels_pulse: false,
-        animation: animation,
-        camera: camera,
+        animation,
+        camera,
         camera_zoom: 45.0,
         buttons: Buttons::new()
     })
@@ -1025,7 +1019,7 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
         }
     }
 
-    let mut color_variable = match input.color_kind {
+    let color_variable = match input.color_kind {
         0 => &mut res.light_color,
         1 => &mut res.brightness_color,
         other => return Err(("color kind invalid: ".to_string() + &other.to_string()).into()),
@@ -1033,7 +1027,7 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
 
     if input.color_value != *color_variable {
         *color_variable = input.color_value;
-        dispatch_event_with("app-event.top_message", &"Color changed.".into());
+        dispatch_event_with("app-event.top_message", &"Color changed.".into())?;
     }
 
     let last_bloom_passes = res.bloom_passes;
@@ -1077,12 +1071,12 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
     res.buttons.toggle_pixels_or_voxels.track(input.toggle_pixels_or_voxels);
     if res.buttons.toggle_pixels_or_voxels.just_released {
         res.pixels_or_voxels = match res.pixels_or_voxels {
-            Pixels_Or_Voxels::Pixels => Pixels_Or_Voxels::Voxels,
-            Pixels_Or_Voxels::Voxels => Pixels_Or_Voxels::Pixels
+            PixelsOrVoxels::Pixels => PixelsOrVoxels::Voxels,
+            PixelsOrVoxels::Voxels => PixelsOrVoxels::Pixels
         };
         let message = match res.pixels_or_voxels {
-            Pixels_Or_Voxels::Pixels => "squares",
-            Pixels_Or_Voxels::Voxels => "cubes"
+            PixelsOrVoxels::Pixels => "squares",
+            PixelsOrVoxels::Voxels => "cubes"
         };
         dispatch_event_with("app-event.top_message", &("Showing pixels as ".to_string() + &message+ &".").into())?;
         dispatch_event_with("app-event.showing_pixels_as", &message.into())?;
@@ -1094,8 +1088,8 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
         let last_turning_speed = res.camera.turning_speed;
         if res.buttons.speed_up.just_pressed && res.camera.turning_speed < 10000.0 { res.camera.turning_speed *= 2.0; }
         if res.buttons.speed_down.just_pressed && res.camera.turning_speed > 0.01 { res.camera.turning_speed /= 2.0; }
-        if last_turning_speed != res.camera.turning_speed {
-            let turning_speed = (res.camera.turning_speed / turning_base_speed * 1000.0).round() / 1000.0;
+        if (last_turning_speed - res.camera.turning_speed).abs() < std::f32::EPSILON {
+            let turning_speed = (res.camera.turning_speed / TURNING_BASE_SPEED * 1000.0).round() / 1000.0;
             let message = "Turning camera speed: ".to_string() + &turning_speed.to_string() + &"x".to_string();
             dispatch_event_with("app-event.top_message", &message.into())?;
             dispatch_event_with("app-event.turning_speed", &turning_speed.into())?;
@@ -1104,8 +1098,8 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
         let last_pixel_manipulation_speed = res.pixel_manipulation_speed;
         if res.buttons.speed_up.just_pressed && res.pixel_manipulation_speed < 10000.0 { res.pixel_manipulation_speed *= 2.0; }
         if res.buttons.speed_down.just_pressed && res.pixel_manipulation_speed > 0.01 { res.pixel_manipulation_speed /= 2.0; }
-        if last_pixel_manipulation_speed != res.pixel_manipulation_speed {
-            let pixel_manipulation_speed = (res.pixel_manipulation_speed / pixel_manipulation_base_speed * 1000.0).round() / 1000.0;
+        if (last_pixel_manipulation_speed - res.pixel_manipulation_speed).abs() < std::f32::EPSILON {
+            let pixel_manipulation_speed = (res.pixel_manipulation_speed / PIXEL_MANIPULATION_BASE_SPEED * 1000.0).round() / 1000.0;
             let message = "Pixel manipulation speed: ".to_string() + &pixel_manipulation_speed.to_string() + &"x".to_string();
             dispatch_event_with("app-event.top_message", &message.into())?;
             dispatch_event_with("app-event.pixel_manipulation_speed", &pixel_manipulation_speed.into())?;
@@ -1114,7 +1108,7 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
         let last_movement_speed = res.camera.movement_speed;
         if res.buttons.speed_up.just_pressed && res.camera.movement_speed < 10000.0 { res.camera.movement_speed *= 2.0; }
         if res.buttons.speed_down.just_pressed && res.camera.movement_speed > 0.01 { res.camera.movement_speed /= 2.0; }
-        if last_movement_speed != res.camera.movement_speed {
+        if (last_movement_speed - res.camera.movement_speed).abs() < std::f32::EPSILON {
             let translation_speed = (res.camera.movement_speed / res.translation_base_speed * 1000.0).round() / 1000.0;
             let message = "Translation camera speed: ".to_string() + &translation_speed.to_string() + &"x".to_string();
             dispatch_event_with("app-event.top_message", &message.into())?;
@@ -1123,27 +1117,27 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
     }
 
     if input.reset_speeds {
-        res.camera.turning_speed = turning_base_speed;
+        res.camera.turning_speed = TURNING_BASE_SPEED;
         res.camera.movement_speed = res.translation_base_speed;
-        res.pixel_manipulation_speed = pixel_manipulation_base_speed;
+        res.pixel_manipulation_speed = PIXEL_MANIPULATION_BASE_SPEED;
         dispatch_event_with("app-event.top_message", &"All speeds have been reset.".into())?;
         dispatch_event("app-event.speed_reset")?;
     }
 
-    if input.walk_left { res.camera.advance(Camera_Direction::Left, dt); }
-    if input.walk_right { res.camera.advance(Camera_Direction::Right, dt); }
-    if input.walk_up { res.camera.advance(Camera_Direction::Up, dt); }
-    if input.walk_down { res.camera.advance(Camera_Direction::Down, dt); }
-    if input.walk_forward { res.camera.advance(Camera_Direction::Forward, dt); }
-    if input.walk_backward { res.camera.advance(Camera_Direction::Backward, dt); }
+    if input.walk_left { res.camera.advance(CameraDirection::Left, dt); }
+    if input.walk_right { res.camera.advance(CameraDirection::Right, dt); }
+    if input.walk_up { res.camera.advance(CameraDirection::Up, dt); }
+    if input.walk_down { res.camera.advance(CameraDirection::Down, dt); }
+    if input.walk_forward { res.camera.advance(CameraDirection::Forward, dt); }
+    if input.walk_backward { res.camera.advance(CameraDirection::Backward, dt); }
 
-    if input.turn_left { res.camera.turn(Camera_Direction::Left, dt); }
-    if input.turn_right { res.camera.turn(Camera_Direction::Right, dt); }
-    if input.turn_up { res.camera.turn(Camera_Direction::Up, dt); }
-    if input.turn_down { res.camera.turn(Camera_Direction::Down, dt); }
+    if input.turn_left { res.camera.turn(CameraDirection::Left, dt); }
+    if input.turn_right { res.camera.turn(CameraDirection::Right, dt); }
+    if input.turn_up { res.camera.turn(CameraDirection::Up, dt); }
+    if input.turn_down { res.camera.turn(CameraDirection::Down, dt); }
 
-    if input.rotate_left { res.camera.rotate(Camera_Direction::Left, dt); }
-    if input.rotate_right { res.camera.rotate(Camera_Direction::Right, dt); }
+    if input.rotate_left { res.camera.rotate(CameraDirection::Left, dt); }
+    if input.rotate_right { res.camera.rotate(CameraDirection::Right, dt); }
 
     res.buttons.mouse_click.track(input.mouse_left_click);
     if res.buttons.mouse_click.just_pressed {
@@ -1176,12 +1170,12 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
         res.cur_pixel_scale_x -= 0.005 * dt * res.pixel_manipulation_speed;
     }
 
-    if last_pixel_scale_x != res.cur_pixel_scale_x {
+    if (last_pixel_scale_x - res.cur_pixel_scale_x).abs() < std::f32::EPSILON {
         if res.cur_pixel_scale_x <= 0.0 {
             res.cur_pixel_scale_x = 0.0;
         }
         let pixel_scale_x = res.cur_pixel_scale_x + 1.0;
-        dispatch_event_with("app-event.change_pixel_scale_x", &pixel_scale_x.into());
+        dispatch_event_with("app-event.change_pixel_scale_x", &pixel_scale_x.into())?;
     }
 
     let last_pixel_scale_y = res.cur_pixel_scale_y;
@@ -1191,12 +1185,12 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
     if input.decrease_pixel_scale_y {
         res.cur_pixel_scale_y -= 0.005 * dt * res.pixel_manipulation_speed;
     }
-    if res.cur_pixel_scale_y != last_pixel_scale_y {
+    if (res.cur_pixel_scale_y - last_pixel_scale_y).abs() < std::f32::EPSILON {
         if res.cur_pixel_scale_y <= 0.0 {
             res.cur_pixel_scale_y = 0.0;
         }
         let pixel_scale_y = res.cur_pixel_scale_y + 1.0;
-        dispatch_event_with("app-event.change_pixel_scale_y", &pixel_scale_y.into());
+        dispatch_event_with("app-event.change_pixel_scale_y", &pixel_scale_y.into())?;
     }
 
     let last_pixel_gap = res.cur_pixel_gap;
@@ -1206,12 +1200,12 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
     if input.decrease_pixel_gap {
         res.cur_pixel_gap -= 0.005 * dt * res.pixel_manipulation_speed;
     }
-    if last_pixel_gap != res.cur_pixel_gap {
+    if (last_pixel_gap - res.cur_pixel_gap).abs() < std::f32::EPSILON {
         if res.cur_pixel_gap <= 0.0 {
             res.cur_pixel_gap = 0.0;
         }
         let pixel_gap = res.cur_pixel_gap + 1.0;
-        dispatch_event_with("app-event.change_pixel_gap", &pixel_gap.into());
+        dispatch_event_with("app-event.change_pixel_gap", &pixel_gap.into())?;
     }
 
     let last_bright = res.extra_bright;
@@ -1224,14 +1218,14 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
     if input.reset_brightness {
         res.extra_bright = 0.0;
     }
-    if last_bright != res.extra_bright {
+    if (last_bright - res.extra_bright).abs() < std::f32::EPSILON {
         if res.extra_bright < -1.0 {
             res.extra_bright = -1.0;
         }
         if res.extra_bright > 1.0 {
             res.extra_bright = 1.0;
         }
-        dispatch_event_with("app-event.change_pixel_brightness", &res.extra_bright.into());
+        dispatch_event_with("app-event.change_pixel_brightness", &res.extra_bright.into())?;
     }
 
     Ok(true)
@@ -1261,12 +1255,12 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
 
     let mut pixel_gap : &mut [f32] = &mut [1.0 + res.cur_pixel_gap, 1.0 + res.cur_pixel_gap];
 
-    if res.animation.scale_x != 1.0 {
+    if (res.animation.scale_x - 1.0).abs() < std::f32::EPSILON {
         pixel_scale[0] /= res.animation.scale_x;
         pixel_gap[0] *= res.animation.scale_x;
     }
 
-    let mut ambient_strength = match res.pixels_or_voxels { Pixels_Or_Voxels::Pixels => 1.0, Pixels_Or_Voxels::Voxels => 0.5};
+    let ambient_strength = match res.pixels_or_voxels { PixelsOrVoxels::Pixels => 1.0, PixelsOrVoxels::Voxels => 0.5};
 
     let mut light_color = get_3_f32color_from_int(res.light_color);
     let mut extra_light = get_3_f32color_from_int(res.brightness_color);
@@ -1296,7 +1290,7 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
     gl.draw_arrays_instanced(
         WebGl2RenderingContext::TRIANGLES,
         0,
-        match res.pixels_or_voxels { Pixels_Or_Voxels::Pixels => 6, Pixels_Or_Voxels::Voxels => 36 },
+        match res.pixels_or_voxels { PixelsOrVoxels::Pixels => 6, PixelsOrVoxels::Voxels => 36 },
         (res.animation.width * res.animation.height) as i32
     );
 
@@ -1361,7 +1355,7 @@ pub fn compile_shader(gl: &WebGl2RenderingContext, shader_type: u32, source: &st
     {
         Ok(shader)
     } else {
-        Err(Wasm_Error::Str(gl
+        Err(WasmError::Str(gl
             .get_shader_info_log(&shader)
             .ok_or("Unknown error creating shader")?)
         )
@@ -1382,7 +1376,7 @@ pub fn link_shader<'a, T: IntoIterator<Item = &'a WebGlShader>>(gl: &WebGl2Rende
     {
         Ok(program)
     } else {
-        Err(Wasm_Error::Str(gl.get_program_info_log(&program).ok_or("cannot get program info log")?))
+        Err(WasmError::Str(gl.get_program_info_log(&program).ok_or("cannot get program info log")?))
     }
 }
 
@@ -1405,7 +1399,7 @@ pub fn js_i32_array(data: &[i32]) -> Int32Array {
 pub fn check_error(gl: &WebGl2RenderingContext, line: u32) -> Result<()> {
     let error = gl.get_error();
     if error != WebGl2RenderingContext::NO_ERROR {
-        return Err(Wasm_Error::Str(error.to_string() + " on line: " + &line.to_string()));
+        return Err(WasmError::Str(error.to_string() + " on line: " + &line.to_string()));
     }
     Ok(())
 }
@@ -1433,12 +1427,12 @@ mod tests { mod get_3_f32color_from_int { mod gives_good {
     }
 
     get_3_f32color_from_int_tests! {
-        white: (0xFFFFFF, [1.0, 1.0, 1.0]),
-        black: (0x000000, [0.0, 0.0, 0.0]),
-        red: (0xFF0000, [1.0, 0.0, 0.0]),
-        green: (0x00FF00, [0.0, 1.0, 0.0]),
-        blue: (0x0000FF, [0.0, 0.0, 1.0]),
-        yellow: (0xebf114, [0.92156863, 0.94509804, 0.078431375]),
+        white: (0x00FF_FFFF, [1.0, 1.0, 1.0]),
+        black: (0x0000_0000, [0.0, 0.0, 0.0]),
+        red: (0x00FF_0000, [1.0, 0.0, 0.0]),
+        green: (0x0000_FF00, [0.0, 1.0, 0.0]),
+        blue: (0x0000_00FF, [0.0, 0.0, 1.0]),
+        yellow: (0x00eb_f114, [0.92156863, 0.94509804, 0.078431375]),
     }
 } } }
 
@@ -1470,12 +1464,12 @@ fn dispatch_event_internal(event: &Event) -> Result<()> {
     .ok()
     .ok_or("cannot have even target")?
     .dispatch_event(&event)
-    .map_err(|err| Wasm_Error::Js(err))
+    .map_err(|err| WasmError::Js(err))
     .and_then(|result| 
         if result {
             Ok(())
         } else {
-            Err(Wasm_Error::Str("could not dispatch event".to_string()))
+            Err(WasmError::Str("could not dispatch event".to_string()))
         }
     )
 }

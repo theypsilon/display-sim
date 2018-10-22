@@ -1,13 +1,18 @@
 FROM liuchong/rustup:stable as rust-wasm
 WORKDIR /app
-RUN rustup toolchain install beta && rustup default beta \
+RUN rustup toolchain install beta \
+    && rustup default beta \
+    && rustup component add clippy-preview \
     && curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh \
     && curl -sSfL https://github.com/WebAssembly/binaryen/releases/download/version_50/binaryen-version_50-x86_64-linux.tar.gz | tar xvz
 ADD Cargo.toml /app/
 RUN mkdir -p src && touch src/lib.rs \
-    && cargo build --release
+    && cargo build --release \
+    && cargo clippy \
+    && wasm-pack build --debug
 ADD src /app/src
 RUN cargo test --release \
+    && cargo clippy --all-targets --all-features \
     && wasm-pack build \
     && mkdir -p wasm && cp -r pkg/crt_3d_sim* wasm/ \
     && cd binaryen-version_50 && ./wasm-opt --debug -O3 -o ../wasm/crt_3d_sim_bg.wasm ../wasm/crt_3d_sim_bg.wasm >/dev/null 2>&1

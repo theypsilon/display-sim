@@ -1,6 +1,6 @@
 [package]
 name = "crt-3d-sim"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["José manuel Barroso Galindo <theypsilon@gmail.com>"]
 
 [lib]
