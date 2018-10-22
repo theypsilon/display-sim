@@ -10,7 +10,7 @@ if [[ $@ =~ .*--git-docs.* ]] ; then
         docker run --rm -v $(pwd)/docs:/tmp crt-3d-sim:0.0.0 sh -c "cp -r /var/www/html/* /tmp && chown -R $UID:$UID /tmp"
         git add docs
     else
-        echo "Can't add docs because some other changes are not commited."
+        echo "Can't add docs because some other changes are not commited." >2
         exit -1
     fi
 fi
