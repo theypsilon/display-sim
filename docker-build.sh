@@ -5,9 +5,14 @@ set -euo pipefail
 docker build -t crt-3d-sim:0.0.0 .
 
 if [[ $@ =~ .*--git-docs.* ]] ; then
-    rm -rf docs || true && mkdir -p docs
-    docker run --rm -v $(pwd)/docs:/tmp crt-3d-sim:0.0.0 sh -c "cp -r /var/www/html/* /tmp && chown -R $UID:$UID /tmp"
-    git add docs
+    if git diff-index --quiet HEAD -- ; then
+        rm -rf docs || true && mkdir -p docs
+        docker run --rm -v $(pwd)/docs:/tmp crt-3d-sim:0.0.0 sh -c "cp -r /var/www/html/* /tmp && chown -R $UID:$UID /tmp"
+        git add docs
+    else
+        echo "Can't add docs because some other changes are not commited."
+        exit -1
+    fi
 fi
 
 if [[ $@ =~ .*--serve.* ]] ; then
