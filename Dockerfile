@@ -32,6 +32,7 @@ RUN set -eux; \
     bash -c 'rm -rf ${RUSTUP_HOME}/toolchains/*/share'
 
 FROM rust-wasm as wasm-artifact
+ENV RUST_BACKTRACE=1
 ADD Cargo.* /app/
 RUN mkdir -p src && touch src/lib.rs \
     && cargo build --release \
