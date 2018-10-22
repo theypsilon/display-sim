@@ -1,13 +1,8 @@
 language: rust
-sudo: false
-
-matrix:
-  include:
-
-  # tests pass
-  - rust: 1.30
-    script:
-    - cargo test --locked
-    - rustup component add rustfmt-preview
-    - cargo fmt --all -- --check
-    env: RUST_BACKTRACE=1
+sudo: required
+services:
+  - docker
+script:
+  - ./docker-build.sh --git-docs
+  - git commit -m "Web updated."
+  - git push origin master
