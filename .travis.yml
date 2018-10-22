@@ -3,6 +3,4 @@ sudo: required
 services:
   - docker
 script:
-  - ./docker-build.sh --git-docs
-  - git commit -m "Web updated."
-  - git push origin master
+  - ./docker-build.sh
