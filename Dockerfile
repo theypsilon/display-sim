@@ -5,7 +5,7 @@ ENV RUSTUP_HOME=/usr/local/rustup \
     PATH=/usr/local/cargo/bin:$PATH \
     BINARYEN_VER="1.38.13"
 RUN set -eux; \
-    apt-get update; \
+    apt-get update || true; \
     apt-get install -y --no-install-recommends \
         ca-certificates \
         gcc \
