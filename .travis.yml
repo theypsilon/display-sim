@@ -1,13 +1,16 @@
 language: bash
 sudo: required
 services:
-  - docker
+- docker
 script:
-  - ./docker-build.sh --extract-dist
+- "./docker-build.sh --extract-dist"
 deploy:
   provider: pages
   skip_cleanup: true
-  github_token: $GITHUB_TOKEN
+  github_token: "$GITHUB_TOKEN"
   local_dir: dist/
   on:
     branch: master
+env:
+  global:
+    secure: f+zpXcjuBHtQHYs0jQADZbwkNNH5bog2nrhe3iFvcNo7XMXcNbU25KLN29c5U6OiQILePBkUKI63BQPc5RaSfkRHUd+DcC3efRuIlutEq/hmktJIw7PEx02Y5pV8hO0tPTEI6M+E4m/W34TFBYvqcTtYRdMvmLkrqA4mjB1uD5Ba+JFSJofxbFRMh/ZZZ2j2+p4+GqigzVs+rCV0VRkZoY5jR9FTxqL8OkJDfev2+n4tNWGs0I1tUXC0Doh5SBEt5g6wSMVEvK6JS395QOyokf11/efecukWRs9ysNLcP4mFcNT4T/vjnJv6sKm9BUkWeA9eL5U0CBdbsEe/WMVu84QF/RJEspfhD9xCfdeinEGw54HgZ37AySR0SIoommsOkI4ZOy8Xp81hc9AX8t9HjDsjc5RDJQXcnlT1gRp+Kr9viRyJ1cKXLVNcXGffwUR7yD5VI7JlAex1CkFfAES7UN4leAdseGF4GeOI38tYNCCTO+GfeX5cfxsa7IcVLRmiauTL0/c0kppjfw4z0dwTiZaKzBv9m2XQTNIceTK6RtVHDcit0rSnxn4y7WcNqYl4IT529VP8IbWrmP3lwlTz3tmQysSR2UfVZtiYwRpdjYjdCkKZRsDxbq3SRhs6Q4ppQFm6OJn6bSLHAzN9LJQcFQw1A2LKHhElp1g7SSgnon8=
