@@ -4,6 +4,7 @@ services:
 - docker
 script:
 - "./docker-build.sh --extract-dist"
+- "git rev-parse HEAD > dist/commit.txt"
 deploy:
   provider: pages
   skip_cleanup: true
