@@ -28,8 +28,6 @@ if ${release} ; then
     cp favicon.ico dist/
     cp -r assets dist/
     popd
-    rm -rf docs || true
-    mv www/dist docs
 else
     if [ ! -d www/node_modules ]; then
         cd www
