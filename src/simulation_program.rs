@@ -74,6 +74,43 @@ pub fn program(gl: JsValue, animation: AnimationData) -> Result<()> {
 }
 
 pub fn load_resources(gl: &WebGl2RenderingContext, animation: AnimationData) -> Result<Resources> {
+    let far_away_position = calculate_far_away_position(&animation);
+    let mut camera = Camera::new(MOVEMENT_BASE_SPEED * far_away_position / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED);
+    camera.set_position(glm::vec3(0.0, 0.0, far_away_position));
+
+    dispatch_event_with("app-event.change_pixel_scale_x", &1.0.into())?;
+    dispatch_event_with("app-event.change_pixel_scale_y", &1.0.into())?;
+    dispatch_event_with("app-event.change_pixel_gap", &1.0.into())?;
+    dispatch_event_with("app-event.change_pixel_brightness", &0.0.into())?;
+
+    let now = now()?;
+
+    Ok(Resources {
+        pixels_render: PixelsRender::new(&gl, &calculate_offsets(&animation))?,
+        blur_render: BlurRender::new(&gl, animation.canvas_width as i32, animation.canvas_height as i32)?,
+        light_color: 0x00FF_FFFF,
+        brightness_color: 0x00FF_FFFF,
+        extra_bright: 0.0,
+        frame_count: 0,
+        translation_base_speed: camera.movement_speed,
+        last_time: now,
+        last_second: now,
+        blur_passes: 0,
+        pixel_manipulation_speed: PIXEL_MANIPULATION_BASE_SPEED,
+        cur_pixel_scale_x: 0.0,
+        cur_pixel_scale_y: 0.0,
+        cur_pixel_gap: 0.0,
+        pixels_render_kind: PixelsRenderKind::Squares,
+        pixels_pulse: 0.0,
+        showing_pixels_pulse: false,
+        animation,
+        camera,
+        camera_zoom: 45.0,
+        buttons: Buttons::new()
+    })
+}
+
+fn calculate_offsets(animation: &AnimationData) -> Float32Array {
     let width = animation.width as usize;
     let height = animation.height as usize;
     let pixels_total = width * height;
@@ -93,73 +130,62 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: AnimationData) -> 
             }
         }
     }
+    offsets
+}
 
-    let blur_render = BlurRender::new(&gl, animation.canvas_width as i32, animation.canvas_height as i32)?;
-    
-    let pixels_render = PixelsRender::new(&gl, &offsets)?;
-
-    let now = now()?;
-
-    let far_away_position = 0.5 + {
-        let canvas_width_scaled = (animation.canvas_width as f32 / animation.scale_x) as u32;
-        let width_ratio = canvas_width_scaled as f32 / width as f32;
-        let height_ratio = animation.canvas_height as f32 / height as f32;
-        let is_height_bounded = width_ratio > height_ratio;
-        let mut bound_ratio = if is_height_bounded {height_ratio} else {width_ratio};
-        let mut resolution = if is_height_bounded {animation.canvas_height} else {canvas_width_scaled} as i32;
-        while bound_ratio < 1.0 {
-            bound_ratio *= 2.0;
-            resolution *= 2;
-        }
-        if !animation.stretch {
-            let mut divisor = bound_ratio as i32;
-            while divisor > 1 {
-                if resolution % divisor == 0 {
-                    break;
-                }
-                divisor -= 1;
-            };
-            bound_ratio = divisor as f32;
-        }
-        (resolution as f32 / bound_ratio) * if is_height_bounded {1.2076} else {0.68 * animation.scale_x}
-    };
-
-    let mut camera = Camera::new(MOVEMENT_BASE_SPEED * far_away_position / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED);
-    camera.set_position(glm::vec3(0.0, 0.0, far_away_position));
-
-    check_error(&gl, line!())?;
-
-    dispatch_event_with("app-event.change_pixel_scale_x", &1.0.into())?;
-    dispatch_event_with("app-event.change_pixel_scale_y", &1.0.into())?;
-    dispatch_event_with("app-event.change_pixel_gap", &1.0.into())?;
-    dispatch_event_with("app-event.change_pixel_brightness", &0.0.into())?;
-
-    Ok(Resources {
-        pixels_render,
-        blur_render,
-        light_color: 0x00FF_FFFF,
-        brightness_color: 0x00FF_FFFF,
-        extra_bright: 0.0,
-        frame_count: 0,
-        translation_base_speed: camera.movement_speed,
-        last_time: now,
-        last_second: now,
-        bloom_passes: 0,
-        pixel_manipulation_speed: PIXEL_MANIPULATION_BASE_SPEED,
-        cur_pixel_scale_x: 0.0,
-        cur_pixel_scale_y: 0.0,
-        cur_pixel_gap: 0.0,
-        pixels_render_kind: PixelsRenderKind::Squares,
-        pixels_pulse: 0.0,
-        showing_pixels_pulse: false,
-        animation,
-        camera,
-        camera_zoom: 45.0,
-        buttons: Buttons::new()
-    })
+fn calculate_far_away_position(animation: &AnimationData) -> f32 {
+    let width = animation.width as f32;
+    let height = animation.height as f32;
+    let canvas_width_scaled = (animation.canvas_width as f32 / animation.scale_x) as u32;
+    let width_ratio = canvas_width_scaled as f32 / width;
+    let height_ratio = animation.canvas_height as f32 / height;
+    let is_height_bounded = width_ratio > height_ratio;
+    let mut bound_ratio = if is_height_bounded {height_ratio} else {width_ratio};
+    let mut resolution = if is_height_bounded {animation.canvas_height} else {canvas_width_scaled} as i32;
+    while bound_ratio < 1.0 {
+        bound_ratio *= 2.0;
+        resolution *= 2;
+    }
+    if !animation.stretch {
+        let mut divisor = bound_ratio as i32;
+        while divisor > 1 {
+            if resolution % divisor == 0 {
+                break;
+            }
+            divisor -= 1;
+        };
+        bound_ratio = divisor as f32;
+    }
+    0.5 + (resolution as f32 / bound_ratio) * if is_height_bounded {1.2076} else {0.68 * animation.scale_x}
 }
 
 pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
+    let dt = update_timers_and_dt(res, input)?;
+
+    update_animation_buffer(res, input);
+    update_colors(dt, res, input)?;
+    update_blur(res, input)?;
+
+    res.buttons.esc.track(input.esc);
+    if res.buttons.esc.is_just_pressed() {
+        dispatch_event("app-event.exiting_session")?;
+        return Ok(false);
+    }
+
+    res.buttons.space.track(input.space);
+    if res.buttons.space.is_just_pressed() {
+        dispatch_event("app-event.toggle_info_panel")?;
+    }
+
+    update_pixel_pulse(dt, res, input)?;
+    update_pixel_characteristics(dt, res, input)?;
+    update_speeds(res, input)?;
+    update_view_and_perspective(dt, res, input)?;
+
+    Ok(true)
+}
+
+fn update_timers_and_dt(res: &mut Resources, input: &Input) -> Result<f32> {
     let dt: f32 = ((input.now - res.last_time) / 1000.0) as f32;
     let ellapsed = input.now - res.last_second;
     res.last_time = input.now;
@@ -172,7 +198,10 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
     } else {
         res.frame_count += 1;
     }
+    Ok(dt)
+}
 
+fn update_animation_buffer(res: &mut Resources, input: &Input) {
     res.animation.needs_buffer_data_load = false;
     let next_frame_update = res.animation.last_frame_change + f64::from(res.animation.frame_length);
     if input.now >= next_frame_update {
@@ -186,7 +215,9 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
             res.animation.needs_buffer_data_load = true;
         }
     }
+}
 
+fn update_colors(dt: f32, res: &mut Resources, input: &Input) -> Result<()> {
     let color_variable = match input.color_kind {
         0 => &mut res.light_color,
         1 => &mut res.brightness_color,
@@ -198,31 +229,46 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
         dispatch_event_with("app-event.top_message", &"Color changed.".into())?;
     }
 
-    let last_bloom_passes = res.bloom_passes;
-    res.buttons.increase_bloom.track(input.increase_bloom);
-    res.buttons.decrease_bloom.track(input.decrease_bloom);
-    if res.buttons.increase_bloom.is_just_pressed() {
-        res.bloom_passes += 1;
+    if input.increase_bright {
+        res.extra_bright += 0.01 * dt * res.pixel_manipulation_speed;
     }
-    if res.buttons.decrease_bloom.is_just_pressed() && res.bloom_passes > 0 {
-        res.bloom_passes -= 1;
+    if input.decrease_bright {
+        res.extra_bright -= 0.01 * dt * res.pixel_manipulation_speed;
+    }
+    if input.reset_brightness {
+        res.extra_bright = 0.0;
+    }
+    if input.increase_bright || input.decrease_bright || input.reset_brightness {
+        if res.extra_bright < -1.0 {
+            res.extra_bright = -1.0;
+        } else if res.extra_bright > 1.0 {
+            res.extra_bright = 1.0;
+        } else {
+            dispatch_event_with("app-event.change_pixel_brightness", &res.extra_bright.into())?;
+        }
+    }
+    
+    Ok(())
+}
+
+fn update_blur(res: &mut Resources, input: &Input) -> Result<()> {
+    let last_blur_passes = res.blur_passes;
+    res.buttons.increase_blur.track(input.increase_blur);
+    res.buttons.decrease_blur.track(input.decrease_blur);
+    if res.buttons.increase_blur.is_just_pressed() {
+        res.blur_passes += 1;
+    }
+    if res.buttons.decrease_blur.is_just_pressed() && res.blur_passes > 0 {
+        res.blur_passes -= 1;
     }
 
-    if last_bloom_passes != res.bloom_passes {
-        dispatch_event_with("app-event.top_message", &("Blur level: ".to_string() + &res.bloom_passes.to_string()).into())?;
+    if last_blur_passes != res.blur_passes {
+        dispatch_event_with("app-event.top_message", &("Blur level: ".to_string() + &res.blur_passes.to_string()).into())?;
     }
+    Ok(())
+}
 
-    res.buttons.esc.track(input.esc);
-    if res.buttons.esc.is_just_pressed() {
-        dispatch_event("app-event.exiting_session")?;
-        return Ok(false);
-    }
-
-    res.buttons.space.track(input.space);
-    if res.buttons.space.is_just_pressed() {
-        dispatch_event("app-event.toggle_info_panel")?;
-    }
-
+fn update_pixel_pulse(dt: f32, res: &mut Resources, input: &Input) -> Result<()> {
     res.buttons.showing_pixels_pulse.track(input.showing_pixels_pulse);
     if res.buttons.showing_pixels_pulse.is_just_pressed() {
         res.showing_pixels_pulse = !res.showing_pixels_pulse;
@@ -235,7 +281,10 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
     } else {
         res.pixels_pulse = 0.0;
     }
+    Ok(())
+}
 
+fn update_pixel_characteristics(dt: f32, res: &mut Resources, input: &Input) -> Result<()> {
     res.buttons.toggle_pixels_render_kind.track(input.toggle_pixels_render_kind);
     if res.buttons.toggle_pixels_render_kind.is_just_released() {
         res.pixels_render_kind = match res.pixels_render_kind {
@@ -250,38 +299,51 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
         dispatch_event_with("app-event.showing_pixels_as", &message.into())?;
     }
 
+    change_pixel_sizes(input.increase_pixel_scale_x, input.decrease_pixel_scale_x, &mut res.cur_pixel_scale_x, dt * res.pixel_manipulation_speed * 0.005, "app-event.change_pixel_scale_x")?;
+    change_pixel_sizes(input.increase_pixel_scale_y, input.decrease_pixel_scale_y, &mut res.cur_pixel_scale_y, dt * res.pixel_manipulation_speed * 0.005, "app-event.change_pixel_scale_y")?;
+    change_pixel_sizes(input.increase_pixel_gap, input.decrease_pixel_gap, &mut res.cur_pixel_gap, dt * res.pixel_manipulation_speed * 0.005, "app-event.change_pixel_gap")?;
+
+    fn change_pixel_sizes(increase: bool, decrease: bool, cur_size: &mut f32, velocity: f32, event_id: &str) -> Result<()> {
+        if increase {
+            *cur_size += velocity;
+        }
+        if decrease {
+            *cur_size -= velocity;
+        }
+        if increase || decrease {
+            if *cur_size <= 0.0 {
+                *cur_size = 0.0;
+            } else {
+                let size = *cur_size + 1.0;
+                dispatch_event_with(event_id, &size.into())?;
+            }
+        }
+        Ok(())
+    }
+    Ok(())
+}
+
+fn update_speeds(res: &mut Resources, input: &Input) -> Result<()> {
     res.buttons.speed_up.track(input.speed_up);
     res.buttons.speed_down.track(input.speed_down);
     if input.alt {
-        let last_turning_speed = res.camera.turning_speed;
-        if res.buttons.speed_up.is_just_pressed() && res.camera.turning_speed < 10000.0 { res.camera.turning_speed *= 2.0; }
-        if res.buttons.speed_down.is_just_pressed() && res.camera.turning_speed > 0.01 { res.camera.turning_speed /= 2.0; }
-        if (last_turning_speed - res.camera.turning_speed).abs() > std::f32::EPSILON {
-            let turning_speed = (res.camera.turning_speed / TURNING_BASE_SPEED * 1000.0).round() / 1000.0;
-            let message = "Turning camera speed: ".to_string() + &turning_speed.to_string() + &"x".to_string();
-            dispatch_event_with("app-event.top_message", &message.into())?;
-            dispatch_event_with("app-event.turning_speed", &turning_speed.into())?;
-        }
+        change_speed(&res.buttons, &mut res.camera.turning_speed, TURNING_BASE_SPEED, "app-event.pixelturning_speed_manipulation_speed", "Turning camera speed: ")?;
     } else if input.shift {
-        let last_pixel_manipulation_speed = res.pixel_manipulation_speed;
-        if res.buttons.speed_up.is_just_pressed() && res.pixel_manipulation_speed < 10000.0 { res.pixel_manipulation_speed *= 2.0; }
-        if res.buttons.speed_down.is_just_pressed() && res.pixel_manipulation_speed > 0.01 { res.pixel_manipulation_speed /= 2.0; }
-        if (last_pixel_manipulation_speed - res.pixel_manipulation_speed).abs() > std::f32::EPSILON {
-            let pixel_manipulation_speed = (res.pixel_manipulation_speed / PIXEL_MANIPULATION_BASE_SPEED * 1000.0).round() / 1000.0;
-            let message = "Pixel manipulation speed: ".to_string() + &pixel_manipulation_speed.to_string() + &"x".to_string();
-            dispatch_event_with("app-event.top_message", &message.into())?;
-            dispatch_event_with("app-event.pixel_manipulation_speed", &pixel_manipulation_speed.into())?;
-        }
+        change_speed(&res.buttons, &mut res.pixel_manipulation_speed, PIXEL_MANIPULATION_BASE_SPEED, "app-event.pixel_manipulation_speed", "Pixel manipulation speed: ")?;
     } else {
-        let last_movement_speed = res.camera.movement_speed;
-        if res.buttons.speed_up.is_just_pressed() && res.camera.movement_speed < 10000.0 { res.camera.movement_speed *= 2.0; }
-        if res.buttons.speed_down.is_just_pressed() && res.camera.movement_speed > 0.01 { res.camera.movement_speed /= 2.0; }
-        if (last_movement_speed - res.camera.movement_speed).abs() > std::f32::EPSILON {
-            let translation_speed = (res.camera.movement_speed / res.translation_base_speed * 1000.0).round() / 1000.0;
-            let message = "Translation camera speed: ".to_string() + &translation_speed.to_string() + &"x".to_string();
+        change_speed(&res.buttons, &mut res.camera.movement_speed, res.translation_base_speed, "app-event.translation_speed", "Translation camera speed: ")?;
+    }
+
+    fn change_speed(buttons: &Buttons, cur_speed: &mut f32, base_speed: f32, event_id: &str, top_message: &str) -> Result<()> {
+        if buttons.speed_up.is_just_pressed() && *cur_speed < 10000.0 { *cur_speed *= 2.0; }
+        if buttons.speed_down.is_just_pressed() && *cur_speed > 0.01 { *cur_speed /= 2.0; }
+        if buttons.speed_up.is_just_pressed() || buttons.speed_down.is_just_pressed() {
+            let speed = (*cur_speed / base_speed * 1000.0).round() / 1000.0;
+            let message = top_message.to_string() + &speed.to_string() + &"x".to_string();
             dispatch_event_with("app-event.top_message", &message.into())?;
-            dispatch_event_with("app-event.translation_speed", &translation_speed.into())?;
+            dispatch_event_with(event_id, &speed.into())?;
         }
+        Ok(())
     }
 
     if input.reset_speeds {
@@ -291,7 +353,10 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
         dispatch_event_with("app-event.top_message", &"All speeds have been reset.".into())?;
         dispatch_event("app-event.speed_reset")?;
     }
+    Ok(())
+}
 
+fn update_view_and_perspective(dt: f32, res: &mut Resources, input: &Input) -> Result<()> {
     if input.walk_left { res.camera.advance(CameraDirection::Left, dt); }
     if input.walk_right { res.camera.advance(CameraDirection::Right, dt); }
     if input.walk_up { res.camera.advance(CameraDirection::Up, dt); }
@@ -327,79 +392,7 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
             res.camera_zoom = 45.0;
         }
     }
-
-    let last_pixel_scale_x = res.cur_pixel_scale_x;
-    if input.increase_pixel_scale_x {
-        res.cur_pixel_scale_x += 0.005 * dt * res.pixel_manipulation_speed;
-    }
-    if input.decrease_pixel_scale_x {
-        res.cur_pixel_scale_x -= 0.005 * dt * res.pixel_manipulation_speed;
-    }
-
-    if (last_pixel_scale_x - res.cur_pixel_scale_x).abs() > std::f32::EPSILON {
-        if res.cur_pixel_scale_x <= 0.0 {
-            res.cur_pixel_scale_x = 0.0;
-        } else {
-            let pixel_scale_x = res.cur_pixel_scale_x + 1.0;
-            dispatch_event_with("app-event.change_pixel_scale_x", &pixel_scale_x.into())?;
-        }
-    }
-
-    let last_pixel_scale_y = res.cur_pixel_scale_y;
-    if input.increase_pixel_scale_y {
-        res.cur_pixel_scale_y += 0.005 * dt * res.pixel_manipulation_speed; 
-    }
-    if input.decrease_pixel_scale_y {
-        res.cur_pixel_scale_y -= 0.005 * dt * res.pixel_manipulation_speed;
-    }
-    if (res.cur_pixel_scale_y - last_pixel_scale_y).abs() > std::f32::EPSILON {
-        if res.cur_pixel_scale_y <= 0.0 {
-            res.cur_pixel_scale_y = 0.0;
-        } else {
-            let pixel_scale_y = res.cur_pixel_scale_y + 1.0;
-            dispatch_event_with("app-event.change_pixel_scale_y", &pixel_scale_y.into())?;
-        }
-    }
-
-    let last_pixel_gap = res.cur_pixel_gap;
-    if input.increase_pixel_gap {
-        res.cur_pixel_gap += 0.005 * dt * res.pixel_manipulation_speed;
-    }
-    if input.decrease_pixel_gap {
-        res.cur_pixel_gap -= 0.005 * dt * res.pixel_manipulation_speed;
-    }
-    if (last_pixel_gap - res.cur_pixel_gap).abs() > std::f32::EPSILON {
-        if res.cur_pixel_gap <= 0.0 {
-            res.cur_pixel_gap = 0.0;
-        } else {
-            let pixel_gap = res.cur_pixel_gap + 1.0;
-            dispatch_event_with("app-event.change_pixel_gap", &pixel_gap.into())?;
-        }
-    }
-
-    let last_bright = res.extra_bright;
-    if input.increase_bright {
-        res.extra_bright += 0.01 * dt * res.pixel_manipulation_speed;
-    }
-    if input.decrease_bright {
-        res.extra_bright -= 0.01 * dt * res.pixel_manipulation_speed;
-    }
-    if input.reset_brightness {
-        res.extra_bright = 0.0;
-    }
-    if (last_bright - res.extra_bright).abs() > std::f32::EPSILON {
-        if res.extra_bright < -1.0 {
-            res.extra_bright = -1.0;
-        } else if res.extra_bright > 1.0 {
-            res.extra_bright = 1.0;
-        } else {
-            dispatch_event_with("app-event.change_pixel_brightness", &res.extra_bright.into())?;
-        }
-    }
-
-    res.camera.update_view()?;
-
-    Ok(true)
+    res.camera.update_view()
 }
 
 pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
@@ -407,46 +400,43 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
         res.pixels_render.apply_colors(gl, &res.animation.steps[res.animation.current_frame]);
     }
 
-    let aspect_ratio = res.animation.canvas_width as f32 / res.animation.canvas_height as f32;
-
-    let pixel_scale : &mut [f32] = &mut [
-        res.cur_pixel_scale_x + 1.0,
-        res.cur_pixel_scale_y + 1.0,
-        (res.cur_pixel_scale_x + res.cur_pixel_scale_x)/2.0 + 1.0
-    ];
-
-    let pixel_gap : &mut [f32] = &mut [1.0 + res.cur_pixel_gap, 1.0 + res.cur_pixel_gap];
-
-    if (res.animation.scale_x - 1.0).abs() > std::f32::EPSILON {
-        pixel_scale[0] /= res.animation.scale_x;
-        pixel_gap[0] *= res.animation.scale_x;
+    gl.clear_color(0.05, 0.05, 0.05, 1.0);
+    if res.blur_passes > 0 {
+        res.blur_render.pre_render(&gl);
     }
+    gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
 
     let mut extra_light = get_3_f32color_from_int(res.brightness_color);
     for i in 0 .. 3 {
         extra_light[i] *= res.extra_bright;
     }
 
-    gl.clear_color(0.05, 0.05, 0.05, 1.0);
-    if res.bloom_passes > 0 {
-        res.blur_render.pre_render(&gl);
-    }
-    gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
-
     res.pixels_render.render(gl, &res.pixels_render_kind, PixelsUniform {
         view: res.camera.get_view().as_mut_slice(),
-        projection: glm::perspective::<f32>(aspect_ratio, radians(res.camera_zoom), 0.01, 10000.0).as_mut_slice(),
+        projection: glm::perspective::<f32>(
+            res.animation.canvas_width as f32 / res.animation.canvas_height as f32,
+            radians(res.camera_zoom),
+            0.01,
+            10000.0
+        ).as_mut_slice(),
         ambient_strength: match res.pixels_render_kind { PixelsRenderKind::Squares => 1.0, PixelsRenderKind::Cubes => 0.5},
         light_color: &mut get_3_f32color_from_int(res.light_color),
         extra_light: &mut extra_light,
         light_pos: res.camera.get_position().as_mut_slice(),
-        pixel_gap,
-        pixel_scale,
+        pixel_gap: &mut [
+            (1.0 + res.cur_pixel_gap) * res.animation.scale_x,
+            1.0 + res.cur_pixel_gap,
+        ],
+        pixel_scale: &mut [
+            (res.cur_pixel_scale_x + 1.0) / res.animation.scale_x,
+            res.cur_pixel_scale_y + 1.0,
+            (res.cur_pixel_scale_x + res.cur_pixel_scale_x)/2.0 + 1.0,
+        ],
         pixel_pulse: res.pixels_pulse,
     });
 
-    if res.bloom_passes > 0 {
-        res.blur_render.render(&gl, res.bloom_passes);
+    if res.blur_passes > 0 {
+        res.blur_render.render(&gl, res.blur_passes);
     }
 
     check_error(&gl, line!())?;
