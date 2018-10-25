@@ -145,9 +145,7 @@ pub fn make_shader(gl: &WebGl2RenderingContext, vertex_shader: &str, fragment_sh
 }
 
 fn compile_shader(gl: &WebGl2RenderingContext, shader_type: u32, source: &str) -> WasmResult<WebGlShader> {
-    let shader = gl
-        .create_shader(shader_type)
-        .ok_or("Unable to create shader object")?;
+    let shader = gl.create_shader(shader_type).ok_or("Unable to create shader object")?;
     gl.shader_source(&shader, source);
     gl.compile_shader(&shader);
 
