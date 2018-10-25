@@ -13,20 +13,18 @@ pub fn dispatch_event_with(kind: &str, value: &JsValue) -> WasmResult<()> {
     parameters.detail(&value);
     let event = CustomEvent::new_with_event_init_dict(kind, &parameters)?
     .dyn_into::<Event>()
-    .ok()
-    .ok_or("cannot make a custom event")?;
+    .map_err(|_| "cannot make a custom event")?;
     dispatch_event_internal(&event)
 }
 
 fn dispatch_event_internal(event: &Event) -> WasmResult<()> {
     window()?
     .dyn_into::<EventTarget>()
-    .ok()
-    .ok_or("cannot have even target")?
+    .map_err(|_| "cannot have even target")?
     .dispatch_event(&event)
     .map_err(WasmError::Js)
-    .and_then(|result| 
-        if result {
+    .and_then(|success|
+        if success {
             Ok(())
         } else {
             Err(WasmError::Str("could not dispatch event".to_string()))

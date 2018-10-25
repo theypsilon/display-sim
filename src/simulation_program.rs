@@ -27,7 +27,7 @@ pub fn program(gl: JsValue, animation: AnimationData) -> WasmResult<()> {
     let gl = gl.dyn_into::<WebGl2RenderingContext>()?;
     gl.enable(WebGl2RenderingContext::DEPTH_TEST);
     let owned_state = Rc::new(RefCell::new(StateOwner::new(load_resources(&gl, animation)?)));
-    let input = Rc::new(RefCell::new( Input::new().ok().expect("cannot create input")));
+    let input = Rc::new(RefCell::new( Input::new()?));
     let frame_closure: Closure<FnMut(JsValue)> = {
         let owned_state = owned_state.clone();
         let mut input = Rc::clone(&input);
