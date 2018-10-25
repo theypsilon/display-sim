@@ -406,8 +406,8 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
     gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
 
     let mut extra_light = get_3_f32color_from_int(res.brightness_color);
-    for i in 0 .. 3 {
-        extra_light[i] *= res.extra_bright;
+    for light in extra_light.iter_mut() {
+        *light *= res.extra_bright;
     }
 
     res.pixels_render.render(gl, &res.pixels_render_kind, PixelsUniform {
