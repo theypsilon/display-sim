@@ -44,7 +44,7 @@ pub fn program(gl: JsValue, animation: AnimationData) -> Result<()> {
 
                 match update_status {
                     Ok(next_update_needed) => {
-                        if next_update_needed == false {
+                        if !next_update_needed {
                             return;
                         }
                         if let Err(e) = draw(&gl, &owned_state.resources) {
@@ -111,7 +111,7 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: AnimationData) -> 
             bound_ratio *= 2.0;
             resolution *= 2;
         }
-        if animation.stretch == false {
+        if !animation.stretch {
             let mut divisor = bound_ratio as i32;
             while divisor > 1 {
                 if resolution % divisor == 0 {
@@ -174,7 +174,7 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
     }
 
     res.animation.needs_buffer_data_load = false;
-    let next_frame_update = res.animation.last_frame_change + res.animation.frame_length as f64;
+    let next_frame_update = res.animation.last_frame_change + f64::from(res.animation.frame_length);
     if input.now >= next_frame_update {
         res.animation.last_frame_change = next_frame_update;
         let last_frame = res.animation.current_frame;
@@ -246,7 +246,7 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
             PixelsRenderKind::Squares => "squares",
             PixelsRenderKind::Cubes => "cubes"
         };
-        dispatch_event_with("app-event.top_message", &("Showing pixels as ".to_string() + &message+ &".").into())?;
+        dispatch_event_with("app-event.top_message", &("Showing pixels as ".to_string() + message + ".").into())?;
         dispatch_event_with("app-event.showing_pixels_as", &message.into())?;
     }
 
@@ -328,8 +328,6 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
         }
     }
 
-    res.camera.update_view()?;
-
     let last_pixel_scale_x = res.cur_pixel_scale_x;
     if input.increase_pixel_scale_x {
         res.cur_pixel_scale_x += 0.005 * dt * res.pixel_manipulation_speed;
@@ -398,6 +396,8 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
             dispatch_event_with("app-event.change_pixel_brightness", &res.extra_bright.into())?;
         }
     }
+
+    res.camera.update_view()?;
 
     Ok(true)
 }

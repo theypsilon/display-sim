@@ -9,9 +9,9 @@ use std::cell::RefCell;
 
 use wasm_error::{Result};
 use web_utils::{window};
-use simulation_state::Input;
+use simulation_state::{Input, OwnedClosure};
 
-pub fn set_event_listeners(input: &Rc<RefCell<Input>>) -> Result<Vec<Option<Closure<FnMut(JsValue)>>>> {
+pub fn set_event_listeners(input: &Rc<RefCell<Input>>) -> Result<Vec<OwnedClosure>> {
 
     let onkeydown: Closure<FnMut(JsValue)> = {
         let mut input = Rc::clone(&input);
@@ -114,7 +114,7 @@ pub fn set_event_listeners(input: &Rc<RefCell<Input>>) -> Result<Vec<Option<Clos
     let onmouseup: Closure<FnMut(JsValue)> = {
         let mut input = Rc::clone(&input);
         Closure::wrap(Box::new(move |event: JsValue| {
-            if let Ok(_) = event.dyn_into::<MouseEvent>() {
+            if event.dyn_into::<MouseEvent>().is_ok() {
                 let mut input = input.borrow_mut();
                 input.mouse_left_click = false;
             }
@@ -171,7 +171,7 @@ pub fn set_event_listeners(input: &Rc<RefCell<Input>>) -> Result<Vec<Option<Clos
     document.set_onwheel(Some(onmousewheel.as_ref().unchecked_ref()));
     EventTarget::from(window()?).add_event_listener_with_callback("app-event.pick_color", onpickcolor.as_ref().unchecked_ref())?;
 
-    let mut closures: Vec<Option<Closure<FnMut(JsValue)>>> = vec!();
+    let mut closures: Vec<OwnedClosure> = vec!();
     closures.push(Some(onkeydown));
     closures.push(Some(onkeyup));
     closures.push(Some(onmousedown));

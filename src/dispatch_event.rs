@@ -24,7 +24,7 @@ fn dispatch_event_internal(event: &Event) -> Result<()> {
     .ok()
     .ok_or("cannot have even target")?
     .dispatch_event(&event)
-    .map_err(|err| WasmError::Js(err))
+    .map_err(WasmError::Js)
     .and_then(|result| 
         if result {
             Ok(())

@@ -22,9 +22,11 @@ pub struct AnimationData {
     pub needs_buffer_data_load: bool,
 }
 
+pub type OwnedClosure = Option<Closure<FnMut(JsValue)>>;
+
 pub struct StateOwner {
     pub animation_frame_id: Option<i32>,
-    pub closures: Vec<Option<Closure<FnMut(JsValue)>>>,
+    pub closures: Vec<OwnedClosure>,
     pub resources: Resources,
 }
 

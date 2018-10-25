@@ -79,8 +79,8 @@ impl Camera {
     }
 
     pub fn drag(&mut self, xoffset: i32, yoffset: i32) {
-        self.pitch = self.pitch - xoffset as f32 * 0.0003;
-        self.heading = self.heading - yoffset as f32 * 0.0003;
+        self.pitch -= xoffset as f32 * 0.0003;
+        self.heading -= yoffset as f32 * 0.0003;
     }
 
     pub fn update_view(&mut self) -> Result<()> {
@@ -104,7 +104,7 @@ impl Camera {
         self.position += self.position_delta;
         self.position_delta = glm::vec3 (0.0, 0.0, 0.0);
 
-        if self.sending_camera_update_event == false {
+        if !self.sending_camera_update_event {
             return Ok(())
         }
 
