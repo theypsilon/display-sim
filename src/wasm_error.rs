@@ -1,4 +1,3 @@
-
 pub enum WasmError {
     Js(wasm_bindgen::JsValue),
     Str(String)

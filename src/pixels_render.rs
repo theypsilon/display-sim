@@ -12,10 +12,28 @@ use shaders::{
 };
 use web_utils::{js_f32_array};
 
+pub enum PixelsRenderKind {
+    Squares,
+    Cubes
+}
+
 pub struct PixelsRender {
-    pub shader: WebGlProgram,
-    pub vao: Option<WebGlVertexArrayObject>,
-    pub colors_vbo: WebGlBuffer,
+    shader: WebGlProgram,
+    vao: Option<WebGlVertexArrayObject>,
+    colors_vbo: WebGlBuffer,
+    element_quantity: i32,
+}
+
+pub struct PixelsUniform<'a> {
+    pub view: &'a mut [f32],
+    pub projection: &'a mut [f32],
+    pub light_pos: &'a mut [f32],
+    pub light_color: &'a mut [f32],
+    pub extra_light: &'a mut [f32],
+    pub ambient_strength: f32,
+    pub pixel_gap: &'a mut [f32],
+    pub pixel_scale: &'a mut [f32],
+    pub pixel_pulse: f32,
 }
 
 impl PixelsRender {
@@ -62,7 +80,7 @@ impl PixelsRender {
         gl.vertex_attrib_pointer_with_i32(a_offset_position, 2, WebGl2RenderingContext::FLOAT, false, size_of::<glm::Vec2>() as i32, 0);
         gl.vertex_attrib_divisor(a_offset_position, 1);
         
-        Ok(PixelsRender {vao, shader, colors_vbo})
+        Ok(PixelsRender {vao, shader, colors_vbo, element_quantity: offsets.length() as i32 / 2})
     }
 
     pub fn apply_colors(&self, gl: &WebGl2RenderingContext, buffer: &ArrayBuffer) {
@@ -71,6 +89,27 @@ impl PixelsRender {
             WebGl2RenderingContext::ARRAY_BUFFER,
             Some(&buffer),
             WebGl2RenderingContext::STATIC_DRAW,
+        );
+    }
+
+    pub fn render(&self, gl: &WebGl2RenderingContext, pixels_or_voxels: &PixelsRenderKind, uniforms: PixelsUniform) {
+        gl.use_program(Some(&self.shader));
+        gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&self.shader, "view").as_ref(), false, uniforms.view);
+        gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&self.shader, "projection").as_ref(), false, uniforms.projection);
+        gl.uniform3fv_with_f32_array(gl.get_uniform_location(&self.shader, "lightPos").as_ref(), uniforms.light_pos);
+        gl.uniform3fv_with_f32_array(gl.get_uniform_location(&self.shader, "lightColor").as_ref(), uniforms.light_color);
+        gl.uniform3fv_with_f32_array(gl.get_uniform_location(&self.shader, "extraLight").as_ref(), uniforms.extra_light);
+        gl.uniform1f(gl.get_uniform_location(&self.shader, "ambientStrength").as_ref(), uniforms.ambient_strength);
+        gl.uniform2fv_with_f32_array(gl.get_uniform_location(&self.shader, "pixel_gap").as_ref(), uniforms.pixel_gap);
+        gl.uniform3fv_with_f32_array(gl.get_uniform_location(&self.shader, "pixel_scale").as_ref(), uniforms.pixel_scale);
+        gl.uniform1f(gl.get_uniform_location(&self.shader, "pixel_pulse").as_ref(), uniforms.pixel_pulse);
+
+        gl.bind_vertex_array(self.vao.as_ref());
+        gl.draw_arrays_instanced(
+            WebGl2RenderingContext::TRIANGLES,
+            0,
+            match pixels_or_voxels { PixelsRenderKind::Squares => 6, PixelsRenderKind::Cubes => 36 },
+            self.element_quantity
         );
     }
 }

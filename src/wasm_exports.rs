@@ -4,8 +4,8 @@ use wasm_bindgen::prelude::*;
 use web_sys::console;
 use js_sys::ArrayBuffer;
 
-use simulation::program;
-use state::AnimationData;
+use simulation_program::program;
+use simulation_state::AnimationData;
 use wasm_error::WasmError;
 
 #[wasm_bindgen]

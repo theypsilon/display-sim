@@ -9,7 +9,7 @@ use std::cell::RefCell;
 
 use wasm_error::{Result};
 use web_utils::{window};
-use state::Input;
+use simulation_state::Input;
 
 pub fn set_event_listeners(input: &Rc<RefCell<Input>>) -> Result<Vec<Option<Closure<FnMut(JsValue)>>>> {
 
@@ -45,7 +45,7 @@ pub fn set_event_listeners(input: &Rc<RefCell<Input>>) -> Result<Vec<Option<Clos
                     "c" => input.increase_bright = true,
                     "x" => input.decrease_bright = true,
                     "z" => input.reset_brightness = true,
-                    "o" => input.toggle_pixels_or_voxels = true,
+                    "o" => input.toggle_pixels_render_kind = true,
                     "p" => input.showing_pixels_pulse = true,
                     "shift" => input.shift = true,
                     "alt" => input.alt = true,
@@ -89,7 +89,7 @@ pub fn set_event_listeners(input: &Rc<RefCell<Input>>) -> Result<Vec<Option<Clos
                     "c" => input.increase_bright = false,
                     "x" => input.decrease_bright = false,
                     "z" => input.reset_brightness = false,
-                    "o" => input.toggle_pixels_or_voxels = false,
+                    "o" => input.toggle_pixels_render_kind = false,
                     "p" => input.showing_pixels_pulse = false,
                     "shift" => input.shift = false,
                     "alt" => input.alt = false,

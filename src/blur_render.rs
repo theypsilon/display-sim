@@ -12,14 +12,26 @@ use web_utils::{js_f32_array, js_i32_array};
 
 
 pub struct BlurRender {
-    pub shader: WebGlProgram,
-    pub vao: Option<WebGlVertexArrayObject>,
-    pub framebuffers: [Option<WebGlFramebuffer>; 2],
-    pub textures: [Option<WebGlTexture>; 2],
+    shader: WebGlProgram,
+    vao: Option<WebGlVertexArrayObject>,
+    framebuffers: [Option<WebGlFramebuffer>; 2],
+    textures: [Option<WebGlTexture>; 2],
 }
 
 impl BlurRender {
     pub fn new(gl: &WebGl2RenderingContext, width: i32, height: i32) -> Result<BlurRender> {
+
+        const QUAD_GEOMETRY : [f32; 20] = [
+            1.0,  1.0, 0.0,   1.0, 1.0,
+            1.0, -1.0, 0.0,   1.0, 0.0,
+            -1.0, -1.0, 0.0,   0.0, 0.0,
+            -1.0,  1.0, 0.0,   0.0, 1.0
+        ];
+
+        const QUAD_INDICES: [i32; 6] = [
+            0, 1, 3,
+            1, 2, 3,
+        ];
             
         let framebuffers = [
             gl.create_framebuffer(),
@@ -76,18 +88,30 @@ impl BlurRender {
 
         Ok(BlurRender {shader, vao, framebuffers, textures})
     }
+
+    pub fn pre_render(&self, gl: &WebGl2RenderingContext) {
+        for i in 0..=1 {
+            gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, self.framebuffers[i].as_ref());
+            gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
+        }
+    }
+
+    pub fn render(&self, gl: &WebGl2RenderingContext, passes: usize) {
+        gl.use_program(Some(&self.shader));
+        gl.bind_vertex_array(self.vao.as_ref());
+        for i in 0 ..= passes {
+            let buffer_index = i % 2;
+            let texture_index = (i + 1) % 2;
+
+            gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, if i < passes { self.framebuffers[buffer_index].as_ref() } else { None });
+            if i == passes {
+                gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
+            }
+            gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, self.textures[texture_index].as_ref());
+            gl.uniform1i(gl.get_uniform_location(&self.shader, "horizontal").as_ref(), buffer_index as i32);
+            gl.draw_elements_with_i32(WebGl2RenderingContext::TRIANGLES, 6, WebGl2RenderingContext::UNSIGNED_INT, 0);
+        }
+        gl.bind_vertex_array(None);
+        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, None);
+    }
 }
-
-
-
-const QUAD_GEOMETRY : [f32; 20] = [
-         1.0,  1.0, 0.0,   1.0, 1.0, // top right
-         1.0, -1.0, 0.0,   1.0, 0.0, // bottom right
-        -1.0, -1.0, 0.0,   0.0, 0.0, // bottom left
-        -1.0,  1.0, 0.0,   0.0, 1.0  // top left 
-];
-
-const QUAD_INDICES: [i32; 6] = [
-    0, 1, 3,
-    1, 2, 3,
-];

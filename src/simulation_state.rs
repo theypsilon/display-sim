@@ -5,7 +5,7 @@ use wasm_error::{Result};
 use boolean_button::BooleanButton;
 use camera::{Camera};
 use web_utils::{now};
-use pixels_render::PixelsRender;
+use pixels_render::{PixelsRender, PixelsRenderKind};
 use blur_render::BlurRender;
 
 pub struct AnimationData {
@@ -52,7 +52,7 @@ pub struct Resources {
     pub cur_pixel_scale_x: f32,
     pub cur_pixel_scale_y: f32,
     pub cur_pixel_gap: f32,
-    pub pixels_or_voxels: PixelsOrVoxels,
+    pub pixels_render_kind: PixelsRenderKind,
     pub pixels_pulse: f32,
     pub showing_pixels_pulse: bool,
     pub pixel_manipulation_speed: f32,
@@ -68,7 +68,7 @@ pub struct Buttons {
     pub mouse_click: BooleanButton,
     pub increase_bloom: BooleanButton,
     pub decrease_bloom: BooleanButton,
-    pub toggle_pixels_or_voxels: BooleanButton,
+    pub toggle_pixels_render_kind: BooleanButton,
     pub showing_pixels_pulse: BooleanButton,
     pub esc: BooleanButton,
     pub space: BooleanButton,
@@ -82,17 +82,12 @@ impl Buttons {
             mouse_click: BooleanButton::new(),
             increase_bloom: BooleanButton::new(),
             decrease_bloom: BooleanButton::new(),
-            toggle_pixels_or_voxels: BooleanButton::new(),
+            toggle_pixels_render_kind: BooleanButton::new(),
             showing_pixels_pulse: BooleanButton::new(),
             esc: BooleanButton::new(),
             space: BooleanButton::new(),
         }
     }
-}
-
-pub enum PixelsOrVoxels {
-    Pixels,
-    Voxels
 }
 
 #[derive(Clone)]
@@ -134,7 +129,7 @@ pub struct Input {
     pub increase_bright: bool,
     pub decrease_bright: bool,
     pub reset_brightness: bool,
-    pub toggle_pixels_or_voxels: bool,
+    pub toggle_pixels_render_kind: bool,
     pub showing_pixels_pulse: bool,
 }
 
@@ -178,7 +173,7 @@ impl Input {
             increase_bright: false,
             decrease_bright: false,
             reset_brightness: false,
-            toggle_pixels_or_voxels: false,
+            toggle_pixels_render_kind: false,
             showing_pixels_pulse: false,
         })
     }
