@@ -20,18 +20,6 @@ pub struct BlurRender {
 
 impl BlurRender {
     pub fn new(gl: &WebGl2RenderingContext, width: i32, height: i32) -> WasmResult<BlurRender> {
-
-        const QUAD_GEOMETRY : [f32; 20] = [
-            1.0,  1.0, 0.0,   1.0, 1.0,
-            1.0, -1.0, 0.0,   1.0, 0.0,
-            -1.0, -1.0, 0.0,   0.0, 0.0,
-            -1.0,  1.0, 0.0,   0.0, 1.0
-        ];
-
-        const QUAD_INDICES: [i32; 6] = [
-            0, 1, 3,
-            1, 2, 3,
-        ];
             
         let framebuffers = [
             gl.create_framebuffer(),
@@ -115,3 +103,15 @@ impl BlurRender {
         gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, None);
     }
 }
+
+const QUAD_GEOMETRY : [f32; 20] = [
+    1.0,  1.0, 0.0,   1.0, 1.0,
+    1.0, -1.0, 0.0,   1.0, 0.0,
+    -1.0, -1.0, 0.0,   0.0, 0.0,
+    -1.0,  1.0, 0.0,   0.0, 1.0
+];
+
+const QUAD_INDICES: [i32; 6] = [
+    0, 1, 3,
+    1, 2, 3,
+];
