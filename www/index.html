@@ -36,16 +36,19 @@
       </div>
       <div>
         <h3 class="page-header">Options</h3>
-        <div class="well options">
+        <div class="options">
           <div class="option-inputs">
-            <label for="antialias">antialias:</label>
-            <input type="checkbox" id="antialias" value="antialias">
-          </div>
-          <div class="option-inputs">
-            <label for="powerPreference">powerPreference:</label>
-            <input type="radio" id="powerPreference-1" name="powerPreference" value="default" /><div class="option-text">default</div>
-            <input type="radio" id="powerPreference-2" name="powerPreference" value="high-performance" /><div class="option-text">high-performance</div>
-            <input type="radio" id="powerPreference-3" name="powerPreference" value="low-power" /><div class="option-text">low-power</div>
+            <label for="webgl-options">WebGl Context:</label>
+            <div class="option-inputs">
+              <label for="antialias">antialias:</label>
+              <input type="checkbox" id="antialias" value="antialias">
+            </div>
+            <div class="option-inputs">
+              <label for="powerPreference">powerPreference:</label>
+              <input type="radio" id="powerPreference-1" name="powerPreference" value="default" /><div class="option-text">default</div>
+              <input type="radio" id="powerPreference-2" name="powerPreference" value="high-performance" /><div class="option-text">high-performance</div>
+              <input type="radio" id="powerPreference-3" name="powerPreference" value="low-power" /><div class="option-text">low-power</div>
+            </div>
           </div>
           <div class="option-inputs">
             <label for="scaling">Scaling:</label>
@@ -55,22 +58,22 @@
             <div class="scaling-radio" title="Stretch to both edges"><input type="radio" id="scaling-stretch-both" name="scaling" /><div class="option-text">stretch to both edges</div></div>
             <div class="scaling-radio" title="Stretch to nearest edge, keeps proportions"><input type="radio" id="scaling-stretch-nearest" name="scaling" /><div class="option-text">stretch to nearest edge</div></div>
             <div class="scaling-radio" title="Introduce the values yourself"><input type="radio" id="scaling-custom" name="scaling" /><div class="option-text">custom</div></div>
-          </div>
-          <div id="scaling-custom-inputs" class="option-inputs display-none">
-            <label for="scaling-custom">Custom Scaling:</label>
-            <div class="option-inputs">
-              <label for="scaling-custom-resolution">resolution:</label>
-              <span>width</span><input class="custom-resolution" type="number" id="scaling-custom-resolution-width" value="256" min="1" max="99999">
-              <span>height</span><input class="custom-resolution" type="number" id="scaling-custom-resolution-height" value="224" min="1" max="99999">
-            </div>
-            <div class="option-inputs">
-              <label for="scaling-custom-aspect-ratio">aspect ratio:</label>
-              <input class="custom-aspect-ratio" type="number" id="scaling-custom-aspect-ratio-x" value="4" min="1" max="99"><span>:</span>
-              <input class="custom-aspect-ratio" type="number" id="scaling-custom-aspect-ratio-y" value="3" min="1" max="99">
-            </div>
-            <div class="option-inputs">
-              <label for="scaling-custom-aspect-ratio">stretch to nearest edge:</label>
-              <input class="custom-checkbox" type="checkbox" id="scaling-custom-stretch-nearest">
+            <div id="scaling-custom-inputs" class="option-inputs display-none">
+              <label for="scaling-custom">Custom Scaling:</label>
+              <div class="option-inputs">
+                <label for="scaling-custom-resolution">resolution:</label>
+                <span>width</span><input class="custom-resolution" type="number" id="scaling-custom-resolution-width" value="256" min="1" max="99999">
+                <span>height</span><input class="custom-resolution" type="number" id="scaling-custom-resolution-height" value="224" min="1" max="99999">
+              </div>
+              <div class="option-inputs">
+                <label for="scaling-custom-aspect-ratio">aspect ratio:</label>
+                <input class="custom-aspect-ratio" type="number" id="scaling-custom-aspect-ratio-x" value="4" min="1" max="99"><span>:</span>
+                <input class="custom-aspect-ratio" type="number" id="scaling-custom-aspect-ratio-y" value="3" min="1" max="99">
+              </div>
+              <div class="option-inputs">
+                <label for="scaling-custom-aspect-ratio">stretch to nearest edge:</label>
+                <input class="custom-checkbox" type="checkbox" id="scaling-custom-stretch-nearest">
+              </div>
             </div>
           </div>
           <input type="button" id="restore-default-options" value="Restore defaults">
@@ -138,9 +141,9 @@
         <li><div id="feature-light-color" class="feature-hotkeys">Click <input id="light-color" type="color" value="#ffffff"></div><div class="feature-explanation">to pick source light color.</div></li>
         <li><div id="feature-brightness-intensity" class="feature-hotkeys">C, X</div><div class="feature-explanation">to change brightness.</div><div class="feature-value"><div id="pixel-brightness" class="feature-container">0</div></div></li>
         <li><div id="feature-brightness-reset" class="feature-hotkeys">Z</div><div class="feature-explanation">to reset brightness to zero.</div></li>
-        <li><div id="feature-brightness-color" class="feature-hotkeys">Click <input id="brightness-color" type="color" value="#ffffff"></div><div class="feature-explanation">to pick brightness color.</div></li>
+        <li class="display-none"><div id="feature-brightness-color" class="feature-hotkeys">Click <input id="brightness-color" type="color" value="#ffffff"></div><div class="feature-explanation">to pick brightness color.</div></li>
         <li><div id="feature-pulsation" class="feature-hotkeys">P</div><div class="feature-explanation">to activate a wave on the screen.</div></li>
-        <li><div id="feature-change-pixel-shape" class="feature-hotkeys">O</div><div class="feature-explanation">show pixels as cubes.</div></li>
+        <li><div id="feature-change-pixel-shape" class="feature-hotkeys">O</div><div class="feature-explanation">to change pixel geometry.</div></li>
       </ul>
     </div>
     <div class="info-category">

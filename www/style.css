@@ -73,6 +73,7 @@ body {
 
 #restore-default-options {
     display: block;
+    margin-top: 15px;
 }
 
 .option-text {
