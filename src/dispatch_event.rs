@@ -20,7 +20,7 @@ pub fn dispatch_event_with(kind: &str, value: &JsValue) -> WasmResult<()> {
 fn dispatch_event_internal(event: &Event) -> WasmResult<()> {
     window()?
     .dyn_into::<EventTarget>()
-    .map_err(|_| "cannot have even target")?
+    .map_err(|_| "cannot have event target")?
     .dispatch_event(&event)
     .map_err(WasmError::Js)
     .and_then(|success|
