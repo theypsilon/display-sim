@@ -1,4 +1,4 @@
-use wasm_bindgen::prelude::*;
+use wasm_bindgen::prelude::{JsValue, Closure};
 use wasm_bindgen::JsCast;
 use web_sys::{
     console,

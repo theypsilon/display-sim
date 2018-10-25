@@ -1,4 +1,4 @@
-use wasm_bindgen::prelude::*;
+use wasm_bindgen::prelude::{Closure, JsValue};
 use js_sys::{ArrayBuffer};
 
 use wasm_error::{WasmResult};

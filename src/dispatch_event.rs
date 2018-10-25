@@ -1,6 +1,6 @@
 use web_sys::{Event, EventTarget, CustomEvent, CustomEventInit};
 
-use wasm_bindgen::*;
+use wasm_bindgen::{JsValue, JsCast};
 use wasm_error::{WasmError, WasmResult};
 use web_utils::{window};
 

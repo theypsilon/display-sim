@@ -1,5 +1,4 @@
-use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsCast;
+use wasm_bindgen::{JsCast, JsValue, prelude::Closure};
 use web_sys::{
     console,
     WebGl2RenderingContext,
