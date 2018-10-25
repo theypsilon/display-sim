@@ -357,7 +357,7 @@ function prepareUi() {
         }
 
         import(/* webpackPrefetch: true */'./crt_3d_sim').then(wasm => {
-            const animation = new wasm.AnimationSource(rawImgs[0].width, rawImgs[0].height, canvas.width, canvas.height, 1 / 60, +scaleX, stretch);
+            const animation = new wasm.AnimationWasm(rawImgs[0].width, rawImgs[0].height, canvas.width, canvas.height, 1 / 60, +scaleX, stretch);
             for (let i = 0; i < rawImgs.length; i++) {
                 const rawImg = rawImgs[i];
                 animation.add(rawImg.data.buffer);

@@ -1,2 +1,5 @@
 www/node_modules
 www/dist
+target
+pkg
+bin
