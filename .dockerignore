@@ -1,5 +1,9 @@
+.git
 www/node_modules
 www/dist
+www/crt_3d_sim*
 target
 pkg
 bin
+*.log
+.*
