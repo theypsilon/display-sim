@@ -1,14 +1,14 @@
 use web_sys::{Event, EventTarget, CustomEvent, CustomEventInit};
 
 use wasm_bindgen::*;
-use wasm_error::{WasmError, Result};
+use wasm_error::{WasmError, WasmResult};
 use web_utils::{window};
 
-pub fn dispatch_event(kind: &str) -> Result<()> {
+pub fn dispatch_event(kind: &str) -> WasmResult<()> {
     dispatch_event_internal(&Event::new(kind)?)
 }
 
-pub fn dispatch_event_with(kind: &str, value: &JsValue) -> Result<()> {
+pub fn dispatch_event_with(kind: &str, value: &JsValue) -> WasmResult<()> {
     let mut parameters = CustomEventInit::new();
     parameters.detail(&value);
     let event = CustomEvent::new_with_event_init_dict(kind, &parameters)?
@@ -18,7 +18,7 @@ pub fn dispatch_event_with(kind: &str, value: &JsValue) -> Result<()> {
     dispatch_event_internal(&event)
 }
 
-fn dispatch_event_internal(event: &Event) -> Result<()> {
+fn dispatch_event_internal(event: &Event) -> WasmResult<()> {
     window()?
     .dyn_into::<EventTarget>()
     .ok()

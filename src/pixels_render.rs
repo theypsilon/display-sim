@@ -5,7 +5,7 @@ use web_sys::{
     WebGl2RenderingContext, WebGlVertexArrayObject, WebGlProgram, WebGlBuffer,
 };
 
-use wasm_error::Result;
+use wasm_error::WasmResult;
 use shaders::{
     make_shader,
     PIXEL_VERTEX_SHADER, PIXEL_FRAGMENT_SHADER
@@ -37,7 +37,7 @@ pub struct PixelsUniform<'a> {
 }
 
 impl PixelsRender {
-    pub fn new(gl: &WebGl2RenderingContext, offsets: &Float32Array) -> Result<PixelsRender> {
+    pub fn new(gl: &WebGl2RenderingContext, offsets: &Float32Array) -> WasmResult<PixelsRender> {
         let shader = make_shader(&gl, PIXEL_VERTEX_SHADER, PIXEL_FRAGMENT_SHADER)?;
 
         let vao = gl.create_vertex_array();

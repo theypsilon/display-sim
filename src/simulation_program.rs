@@ -9,7 +9,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use super::glm;
 
-use wasm_error::{Result, WasmError};
+use wasm_error::{WasmResult, WasmError};
 use camera::{CameraDirection, Camera};
 use dispatch_event::{dispatch_event, dispatch_event_with};
 use web_utils::{now, window};
@@ -23,7 +23,7 @@ const TURNING_BASE_SPEED: f32 = 3.0;
 const MOVEMENT_BASE_SPEED: f32 = 10.0;
 const MOVEMENT_SPEED_FACTOR: f32 = 50.0;
 
-pub fn program(gl: JsValue, animation: AnimationData) -> Result<()> {
+pub fn program(gl: JsValue, animation: AnimationData) -> WasmResult<()> {
     let gl = gl.dyn_into::<WebGl2RenderingContext>()?;
     gl.enable(WebGl2RenderingContext::DEPTH_TEST);
     let owned_state = Rc::new(RefCell::new(StateOwner::new(load_resources(&gl, animation)?)));
@@ -73,7 +73,7 @@ pub fn program(gl: JsValue, animation: AnimationData) -> Result<()> {
     Ok(())
 }
 
-pub fn load_resources(gl: &WebGl2RenderingContext, animation: AnimationData) -> Result<Resources> {
+pub fn load_resources(gl: &WebGl2RenderingContext, animation: AnimationData) -> WasmResult<Resources> {
     let far_away_position = calculate_far_away_position(&animation);
     let mut camera = Camera::new(MOVEMENT_BASE_SPEED * far_away_position / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED);
     camera.set_position(glm::vec3(0.0, 0.0, far_away_position));
@@ -159,7 +159,7 @@ fn calculate_far_away_position(animation: &AnimationData) -> f32 {
     0.5 + (resolution as f32 / bound_ratio) * if is_height_bounded {1.2076} else {0.68 * animation.scale_x}
 }
 
-pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
+pub fn update(res: &mut Resources, input: &Input) -> WasmResult<bool> {
     let dt = update_timers_and_dt(res, input)?;
 
     update_animation_buffer(res, input);
@@ -185,7 +185,7 @@ pub fn update(res: &mut Resources, input: &Input) -> Result<bool> {
     Ok(true)
 }
 
-fn update_timers_and_dt(res: &mut Resources, input: &Input) -> Result<f32> {
+fn update_timers_and_dt(res: &mut Resources, input: &Input) -> WasmResult<f32> {
     let dt: f32 = ((input.now - res.last_time) / 1000.0) as f32;
     let ellapsed = input.now - res.last_second;
     res.last_time = input.now;
@@ -217,7 +217,7 @@ fn update_animation_buffer(res: &mut Resources, input: &Input) {
     }
 }
 
-fn update_colors(dt: f32, res: &mut Resources, input: &Input) -> Result<()> {
+fn update_colors(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> {
     let color_variable = match input.color_kind {
         0 => &mut res.light_color,
         1 => &mut res.brightness_color,
@@ -251,7 +251,7 @@ fn update_colors(dt: f32, res: &mut Resources, input: &Input) -> Result<()> {
     Ok(())
 }
 
-fn update_blur(res: &mut Resources, input: &Input) -> Result<()> {
+fn update_blur(res: &mut Resources, input: &Input) -> WasmResult<()> {
     let last_blur_passes = res.blur_passes;
     res.buttons.increase_blur.track(input.increase_blur);
     res.buttons.decrease_blur.track(input.decrease_blur);
@@ -268,7 +268,7 @@ fn update_blur(res: &mut Resources, input: &Input) -> Result<()> {
     Ok(())
 }
 
-fn update_pixel_pulse(dt: f32, res: &mut Resources, input: &Input) -> Result<()> {
+fn update_pixel_pulse(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> {
     res.buttons.showing_pixels_pulse.track(input.showing_pixels_pulse);
     if res.buttons.showing_pixels_pulse.is_just_pressed() {
         res.showing_pixels_pulse = !res.showing_pixels_pulse;
@@ -284,7 +284,7 @@ fn update_pixel_pulse(dt: f32, res: &mut Resources, input: &Input) -> Result<()>
     Ok(())
 }
 
-fn update_pixel_characteristics(dt: f32, res: &mut Resources, input: &Input) -> Result<()> {
+fn update_pixel_characteristics(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> {
     res.buttons.toggle_pixels_render_kind.track(input.toggle_pixels_render_kind);
     if res.buttons.toggle_pixels_render_kind.is_just_released() {
         res.pixels_render_kind = match res.pixels_render_kind {
@@ -303,7 +303,7 @@ fn update_pixel_characteristics(dt: f32, res: &mut Resources, input: &Input) -> 
     change_pixel_sizes(input.increase_pixel_scale_y, input.decrease_pixel_scale_y, &mut res.cur_pixel_scale_y, dt * res.pixel_manipulation_speed * 0.005, "app-event.change_pixel_scale_y")?;
     change_pixel_sizes(input.increase_pixel_gap, input.decrease_pixel_gap, &mut res.cur_pixel_gap, dt * res.pixel_manipulation_speed * 0.005, "app-event.change_pixel_gap")?;
 
-    fn change_pixel_sizes(increase: bool, decrease: bool, cur_size: &mut f32, velocity: f32, event_id: &str) -> Result<()> {
+    fn change_pixel_sizes(increase: bool, decrease: bool, cur_size: &mut f32, velocity: f32, event_id: &str) -> WasmResult<()> {
         if increase {
             *cur_size += velocity;
         }
@@ -323,7 +323,7 @@ fn update_pixel_characteristics(dt: f32, res: &mut Resources, input: &Input) -> 
     Ok(())
 }
 
-fn update_speeds(res: &mut Resources, input: &Input) -> Result<()> {
+fn update_speeds(res: &mut Resources, input: &Input) -> WasmResult<()> {
     res.buttons.speed_up.track(input.speed_up);
     res.buttons.speed_down.track(input.speed_down);
     if input.alt {
@@ -334,7 +334,7 @@ fn update_speeds(res: &mut Resources, input: &Input) -> Result<()> {
         change_speed(&res.buttons, &mut res.camera.movement_speed, res.translation_base_speed, "app-event.translation_speed", "Translation camera speed: ")?;
     }
 
-    fn change_speed(buttons: &Buttons, cur_speed: &mut f32, base_speed: f32, event_id: &str, top_message: &str) -> Result<()> {
+    fn change_speed(buttons: &Buttons, cur_speed: &mut f32, base_speed: f32, event_id: &str, top_message: &str) -> WasmResult<()> {
         if buttons.speed_up.is_just_pressed() && *cur_speed < 10000.0 { *cur_speed *= 2.0; }
         if buttons.speed_down.is_just_pressed() && *cur_speed > 0.01 { *cur_speed /= 2.0; }
         if buttons.speed_up.is_just_pressed() || buttons.speed_down.is_just_pressed() {
@@ -356,7 +356,7 @@ fn update_speeds(res: &mut Resources, input: &Input) -> Result<()> {
     Ok(())
 }
 
-fn update_view_and_perspective(dt: f32, res: &mut Resources, input: &Input) -> Result<()> {
+fn update_view_and_perspective(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> {
     if input.walk_left { res.camera.advance(CameraDirection::Left, dt); }
     if input.walk_right { res.camera.advance(CameraDirection::Right, dt); }
     if input.walk_up { res.camera.advance(CameraDirection::Up, dt); }
@@ -395,7 +395,7 @@ fn update_view_and_perspective(dt: f32, res: &mut Resources, input: &Input) -> R
     res.camera.update_view()
 }
 
-pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> Result<()> {
+pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
     if res.animation.needs_buffer_data_load {
         res.pixels_render.apply_colors(gl, &res.animation.steps[res.animation.current_frame]);
     }
@@ -449,7 +449,7 @@ pub fn radians(grad: f32) -> f32 {
     grad * pi / 180.0
 }
 
-pub fn check_error(gl: &WebGl2RenderingContext, line: u32) -> Result<()> {
+pub fn check_error(gl: &WebGl2RenderingContext, line: u32) -> WasmResult<()> {
     let error = gl.get_error();
     if error != WebGl2RenderingContext::NO_ERROR {
         return Err(WasmError::Str(error.to_string() + " on line: " + &line.to_string()));

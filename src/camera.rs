@@ -2,7 +2,7 @@ extern crate nalgebra_glm as glm;
 
 use js_sys::{Float32Array};
 
-use wasm_error::Result;
+use wasm_error::WasmResult;
 use dispatch_event::{dispatch_event_with};
 
 pub enum CameraDirection{Down, Up, Left, Right, Forward, Backward}
@@ -83,7 +83,7 @@ impl Camera {
         self.heading -= yoffset as f32 * 0.0003;
     }
 
-    pub fn update_view(&mut self) -> Result<()> {
+    pub fn update_view(&mut self) -> WasmResult<()> {
         if self.pitch == 0.0 && self.heading == 0.0 && self.rotate == 0.0 && self.position_delta == glm::vec3 (0.0, 0.0, 0.0) {
             return Ok(());
         }

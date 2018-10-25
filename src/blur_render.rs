@@ -3,7 +3,7 @@ use web_sys::{
     WebGl2RenderingContext, WebGlVertexArrayObject, WebGlProgram, WebGlFramebuffer, WebGlTexture,
 };
 
-use wasm_error::Result;
+use wasm_error::WasmResult;
 use shaders::{
     make_shader,
     BLOOM_VERTEX_SHADER, BLOOM_FRAGMENT_SHADER
@@ -19,7 +19,7 @@ pub struct BlurRender {
 }
 
 impl BlurRender {
-    pub fn new(gl: &WebGl2RenderingContext, width: i32, height: i32) -> Result<BlurRender> {
+    pub fn new(gl: &WebGl2RenderingContext, width: i32, height: i32) -> WasmResult<BlurRender> {
 
         const QUAD_GEOMETRY : [f32; 20] = [
             1.0,  1.0, 0.0,   1.0, 1.0,

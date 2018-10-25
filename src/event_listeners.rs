@@ -7,11 +7,11 @@ use web_sys::{
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use wasm_error::{Result};
+use wasm_error::{WasmResult};
 use web_utils::{window};
 use simulation_state::{Input, OwnedClosure};
 
-pub fn set_event_listeners(input: &Rc<RefCell<Input>>) -> Result<Vec<OwnedClosure>> {
+pub fn set_event_listeners(input: &Rc<RefCell<Input>>) -> WasmResult<Vec<OwnedClosure>> {
 
     let onkeydown: Closure<FnMut(JsValue)> = {
         let mut input = Rc::clone(&input);

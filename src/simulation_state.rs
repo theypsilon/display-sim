@@ -1,7 +1,7 @@
 use wasm_bindgen::prelude::*;
 use js_sys::{ArrayBuffer};
 
-use wasm_error::{Result};
+use wasm_error::{WasmResult};
 use boolean_button::BooleanButton;
 use camera::{Camera};
 use web_utils::{now};
@@ -136,7 +136,7 @@ pub struct Input {
 }
 
 impl Input {
-    pub fn new() -> Result<Input> {
+    pub fn new() -> WasmResult<Input> {
         Ok(Input {
             now: now()?,
             color_value: 0x00FF_FFFF,

@@ -27,4 +27,4 @@ impl From<wasm_bindgen::JsValue> for WasmError {
     }
 }
 
-pub type Result<T> = std::result::Result<T, WasmError>;
+pub type WasmResult<T> = std::result::Result<T, WasmError>;

@@ -3,7 +3,7 @@ use web_sys::{
     WebGlShader,
 };
 
-use wasm_error::{WasmError, Result};
+use wasm_error::{WasmError, WasmResult};
 
 pub const PIXEL_VERTEX_SHADER: &str = r#"#version 300 es
 precision highp float;
@@ -130,7 +130,7 @@ void main()
 }
 "#;
 
-pub fn make_shader(gl: &WebGl2RenderingContext, vertex_shader: &str, fragment_shader: &str) -> Result<WebGlProgram> {
+pub fn make_shader(gl: &WebGl2RenderingContext, vertex_shader: &str, fragment_shader: &str) -> WasmResult<WebGlProgram> {
     let vert_shader = compile_shader(
         &gl,
         WebGl2RenderingContext::VERTEX_SHADER,
@@ -144,7 +144,7 @@ pub fn make_shader(gl: &WebGl2RenderingContext, vertex_shader: &str, fragment_sh
     link_shader(&gl, [vert_shader, frag_shader].iter())
 }
 
-fn compile_shader(gl: &WebGl2RenderingContext, shader_type: u32, source: &str) -> Result<WebGlShader> {
+fn compile_shader(gl: &WebGl2RenderingContext, shader_type: u32, source: &str) -> WasmResult<WebGlShader> {
     let shader = gl
         .create_shader(shader_type)
         .ok_or("Unable to create shader object")?;
@@ -165,7 +165,7 @@ fn compile_shader(gl: &WebGl2RenderingContext, shader_type: u32, source: &str) -
     }
 }
 
-fn link_shader<'a, T: IntoIterator<Item = &'a WebGlShader>>(gl: &WebGl2RenderingContext, shaders: T) -> Result<WebGlProgram> {
+fn link_shader<'a, T: IntoIterator<Item = &'a WebGlShader>>(gl: &WebGl2RenderingContext, shaders: T) -> WasmResult<WebGlProgram> {
     let program = gl.create_program().ok_or("Unable to create shader object")?;
     for shader in shaders {
         gl.attach_shader(&program, shader)
