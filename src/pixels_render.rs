@@ -92,7 +92,7 @@ impl PixelsRender {
         );
     }
 
-    pub fn render(&self, gl: &WebGl2RenderingContext, pixels_or_voxels: &PixelsRenderKind, uniforms: PixelsUniform) {
+    pub fn render(&self, gl: &WebGl2RenderingContext, pixels_render_kind: &PixelsRenderKind, uniforms: PixelsUniform) {
         gl.use_program(Some(&self.shader));
         gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&self.shader, "view").as_ref(), false, uniforms.view);
         gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&self.shader, "projection").as_ref(), false, uniforms.projection);
@@ -108,7 +108,7 @@ impl PixelsRender {
         gl.draw_arrays_instanced(
             WebGl2RenderingContext::TRIANGLES,
             0,
-            match pixels_or_voxels { PixelsRenderKind::Squares => 6, PixelsRenderKind::Cubes => 36 },
+            match pixels_render_kind { PixelsRenderKind::Squares => 6, PixelsRenderKind::Cubes => 36 },
             self.element_quantity
         );
     }
