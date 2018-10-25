@@ -6,7 +6,5 @@
 /www/crt_3d_sim*
 wasm-pack.log
 **/*.rs.bk
-Cargo.lock
 /www/node_modules
-/www/package-lock.json
 /www/.bin
