@@ -20,11 +20,16 @@ const startAnimationDeo = document.getElementById('start-animation');
 const antialiasDeo = document.getElementById('antialias');
 const scalingCustomResWidthDeo = document.getElementById('scaling-custom-resolution-width');
 const scalingCustomResHeightDeo = document.getElementById('scaling-custom-resolution-height');
+const scalingCustomResButtonDeo = document.getElementById('scaling-custom-resolution-button');
 const scalingCustomArXDeo = document.getElementById('scaling-custom-aspect-ratio-x');
 const scalingCustomArYDeo = document.getElementById('scaling-custom-aspect-ratio-y');
 const scalingCustomStretchNearestDeo = document.getElementById('scaling-custom-stretch-nearest');
 const scalingCustomInputsDeo = document.getElementById('scaling-custom-inputs');
 const dropZoneDeo = document.getElementById('drop-zone');
+const dropZoneTextDeo = document.getElementById('drop-zone-text');
+const previewSizeElementsDeo = document.getElementById('preview-size-elements');
+const previewWidthDeo = document.getElementById('preview-width');
+const previewHeightDeo = document.getElementById('preview-height');
 const restoreDefaultOptionsDeo = document.getElementById('restore-default-options');
 
 const infoHideDeo = document.getElementById('info-hide');
@@ -411,14 +416,24 @@ async function processFileToUpload(url) {
         preview.remove();
     }
     img.id = previewHtmlId;
-    if (img.width > img.height) {
+    const width = img.width;
+    const height = img.height;
+    if (width > height) {
         img.style.width = '100px';
     } else {
         img.style.height = '100px';
     }
-    dropZoneDeo.innerHTML = '';
-    dropZoneDeo.appendChild(img);
-    console.log(new Date().toISOString(), 'image loaded');
+    scalingCustomResButtonDeo.value = "Set to " + width + " ✕ " + height;
+    scalingCustomResButtonDeo.onclick = () => {
+        scalingCustomResWidthDeo.value = width;
+        scalingCustomResHeightDeo.value = height;
+    };
+    previewWidthDeo.innerHTML = width;
+    previewHeightDeo.innerHTML = height;
+    dropZoneTextDeo.innerHTML = '';
+    dropZoneDeo.insertBefore(img, previewSizeElementsDeo);
+    visibility.showPreviewSizeElements();
+    visibility.showScalingCustomResButton();
     startCustomDeo.disabled = false;
 }
 
@@ -473,6 +488,8 @@ function makeVisibility() {
         showInfoPanel: () => showElement(infoPanelDeo),
         hideInfoPanel: () => hideElement(infoPanelDeo),
         isInfoPanelVisible: () => isVisible(infoPanelDeo),
+        showPreviewSizeElements: () => showElement(previewSizeElementsDeo),
+        showScalingCustomResButton: () => showElement(scalingCustomResButtonDeo),
         showScaleCustomInputs: () => showElement(scalingCustomInputsDeo),
         hideScaleCustomInputs: () => hideElement(scalingCustomInputsDeo),
     };

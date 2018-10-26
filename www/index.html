@@ -21,7 +21,7 @@
         <div class="render-panel-dad col-sm-6">
           <h3 class="page-header">Render test animation</h3>
           <div class="well render-panel">
-            <div class="gif"><img src="assets/wwix.gif"></div><br/>
+            <div class="gif"><img src="assets/wwix.gif"><span>256 ✕ 224</span></div><br/>
             <input id="start-animation" class="start" type="button" value="Launch">
           </div>
         </div>
@@ -29,7 +29,14 @@
           <h3 class="page-header">Render image from your disk</h3>
           <div class="well render-panel">
             <input type="file" id="file" class="display-none" accept="image/*">
-            <div id="drop-zone">drop an image file here or click to upload it</div>
+            <div id="drop-zone">
+              <div id="drop-zone-text">drop an image file here or click to upload it</div>
+              <div class="display-none" id="preview-size-elements">
+                <div class="preview-size" id="preview-width">256</div>
+                <div class="preview-size">✕</div>
+                <div class="preview-size" id="preview-height">224</div>
+              </div>
+            </div>
             <input id="start-custom" class="start" type="button" value="Launch" title="You need to have an image first" disabled>
           </div>
         </div>
@@ -61,13 +68,16 @@
             <div id="scaling-custom-inputs" class="option-inputs display-none">
               <label for="scaling-custom">Custom Scaling:</label>
               <div class="option-inputs">
-                <label for="scaling-custom-resolution">resolution:</label>
-                <span>width</span><input class="custom-resolution" type="number" id="scaling-custom-resolution-width" value="256" min="1" max="99999">
-                <span>height</span><input class="custom-resolution" type="number" id="scaling-custom-resolution-height" value="224" min="1" max="99999">
+                <label for="scaling-custom-resolution">image resolution:</label>
+                <input class="custom-resolution" type="number" id="scaling-custom-resolution-width" value="256" min="1" max="99999">
+                <span>✕</span>
+                <input class="custom-resolution" type="number" id="scaling-custom-resolution-height" value="224" min="1" max="99999">
+                <input class="display-none" type="button" value="Set to " id="scaling-custom-resolution-button">
               </div>
               <div class="option-inputs">
                 <label for="scaling-custom-aspect-ratio">aspect ratio:</label>
-                <input class="custom-aspect-ratio" type="number" id="scaling-custom-aspect-ratio-x" value="4" min="1" max="99"><span>:</span>
+                <input class="custom-aspect-ratio" type="number" id="scaling-custom-aspect-ratio-x" value="4" min="1" max="99">
+                <span>:</span>
                 <input class="custom-aspect-ratio" type="number" id="scaling-custom-aspect-ratio-y" value="3" min="1" max="99">
               </div>
               <div class="option-inputs">

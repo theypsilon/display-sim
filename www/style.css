@@ -66,11 +66,6 @@ body {
     text-align: center;
 }
 
-#scaling-custom-inputs span {
-    margin-right: 5px;
-    margin-left: 5px;
-}
-
 #restore-default-options {
     display: block;
     margin-top: 15px;
@@ -93,8 +88,8 @@ body {
 .gif {
     margin-left: auto;
     margin-right: auto;
-    border: 2px dashed rgb(187, 187, 187);
-    height: 101px;
+    border: 2px solid rgb(187, 187, 187);
+    height: 116px;
     width: 114px;
     border-radius: 5px 5px 5px 5px;
 }
@@ -116,6 +111,10 @@ body {
     border: 2px solid #428bca;
     cursor: pointer;
     color: #a3cef5;
+}
+
+.preview-size {
+    display: inline-block;
 }
 
 #info-panel {
