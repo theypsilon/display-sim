@@ -25,13 +25,16 @@ pub struct AnimationWasm{data: AnimationData}
 #[wasm_bindgen]
 impl AnimationWasm {
     #[wasm_bindgen(constructor)]
-    pub fn new(width: u32, height: u32, canvas_width: u32, canvas_height: u32, frame_length: f32, scale_x: f32, stretch: bool) -> AnimationWasm {
+    pub fn new(image_width: u32, image_height: u32,
+        background_width: u32, background_height: u32,
+        canvas_width: u32, canvas_height: u32,
+        frame_length: f32, scale_x: f32, stretch: bool) -> AnimationWasm 
+    {
         AnimationWasm{ data: AnimationData {
+            image_width, image_height,
+            background_width, background_height,
+            viewport_width: canvas_width, viewport_height: canvas_height,
             steps: Vec::new(),
-            width,
-            height,
-            canvas_width,
-            canvas_height,
             frame_length,
             scale_x,
             stretch,

@@ -1,4 +1,4 @@
-use js_sys::{Float32Array, ArrayBuffer};
+use js_sys::{Float32Array, Uint32Array, ArrayBuffer};
 use super::glm;
 use std::mem::size_of;
 use web_sys::{
@@ -8,7 +8,6 @@ use web_sys::{
 use wasm_error::WasmResult;
 use shaders::{
     make_shader,
-    PIXEL_VERTEX_SHADER, PIXEL_FRAGMENT_SHADER
 };
 use web_utils::{js_f32_array};
 
@@ -17,11 +16,18 @@ pub enum PixelsRenderKind {
     Cubes
 }
 
+pub enum PixelsColorChannels {
+    Separate,
+    Together
+}
+
 pub struct PixelsRender {
     shader: WebGlProgram,
     vao: Option<WebGlVertexArrayObject>,
     colors_vbo: WebGlBuffer,
-    element_quantity: i32,
+    offset_vbo: WebGlBuffer,
+    width: usize,
+    height: usize,
 }
 
 pub struct PixelsUniform<'a> {
@@ -33,11 +39,13 @@ pub struct PixelsUniform<'a> {
     pub ambient_strength: f32,
     pub pixel_gap: &'a mut [f32],
     pub pixel_scale: &'a mut [f32],
+    pub pixel_offset: f32,
     pub pixel_pulse: f32,
 }
 
 impl PixelsRender {
-    pub fn new(gl: &WebGl2RenderingContext, offsets: &Float32Array) -> WasmResult<PixelsRender> {
+    pub fn new(gl: &WebGl2RenderingContext, width: usize, height: usize) -> WasmResult<PixelsRender> {
+
         let shader = make_shader(&gl, PIXEL_VERTEX_SHADER, PIXEL_FRAGMENT_SHADER)?;
 
         let vao = gl.create_vertex_array();
@@ -59,7 +67,7 @@ impl PixelsRender {
         gl.vertex_attrib_pointer_with_i32(a_normal_position, 3, WebGl2RenderingContext::FLOAT, false, 6 * size_of::<f32>() as i32, 3 * size_of::<f32>() as i32);
         gl.enable_vertex_attrib_array(a_normal_position);
 
-        let colors_vbo = gl.create_buffer().ok_or("cannot create colors_vbo")?;
+        let colors_vbo = gl.create_buffer().ok_or("cannot create colors_vbo")?; 
         gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&colors_vbo));
 
         let a_color_position = gl.get_attrib_location(&shader, "aColor") as u32;
@@ -69,22 +77,27 @@ impl PixelsRender {
 
         let offset_vbo = gl.create_buffer().ok_or("cannot create offset_vbo")?;
         gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&offset_vbo));
+
+        let offsets = calculate_offsets(width, height);
+
+        let a_offset_position = gl.get_attrib_location(&shader, "aOffset") as u32;
+        gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&offset_vbo));
         gl.buffer_data_with_opt_array_buffer(
             WebGl2RenderingContext::ARRAY_BUFFER,
             Some(&offsets.buffer()),
             WebGl2RenderingContext::STATIC_DRAW,
         );
-
-        let a_offset_position = gl.get_attrib_location(&shader, "aOffset") as u32;
         gl.enable_vertex_attrib_array(a_offset_position);
-        gl.vertex_attrib_pointer_with_i32(a_offset_position, 2, WebGl2RenderingContext::FLOAT, false, size_of::<glm::Vec2>() as i32, 0);
+        gl.vertex_attrib_pointer_with_i32(a_offset_position, 2, WebGl2RenderingContext::FLOAT, false, 2 * size_of::<f32>() as i32, 0);
         gl.vertex_attrib_divisor(a_offset_position, 1);
         
-        Ok(PixelsRender {vao, shader, colors_vbo, element_quantity: offsets.length() as i32 / 2})
+        Ok(PixelsRender {vao, shader, offset_vbo, colors_vbo, width, height})
     }
 
-    pub fn apply_colors(&self, gl: &WebGl2RenderingContext, buffer: &ArrayBuffer) {
+    pub fn apply_colors(&self, gl: &WebGl2RenderingContext, buffer: &ArrayBuffer, color_channels: &PixelsColorChannels) {
+        gl.bind_vertex_array(self.vao.as_ref());
         gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&self.colors_vbo));
+
         gl.buffer_data_with_opt_array_buffer(
             WebGl2RenderingContext::ARRAY_BUFFER,
             Some(&buffer),
@@ -102,6 +115,7 @@ impl PixelsRender {
         gl.uniform1f(gl.get_uniform_location(&self.shader, "ambientStrength").as_ref(), uniforms.ambient_strength);
         gl.uniform2fv_with_f32_array(gl.get_uniform_location(&self.shader, "pixel_gap").as_ref(), uniforms.pixel_gap);
         gl.uniform3fv_with_f32_array(gl.get_uniform_location(&self.shader, "pixel_scale").as_ref(), uniforms.pixel_scale);
+        gl.uniform1f(gl.get_uniform_location(&self.shader, "pixel_offset").as_ref(), uniforms.pixel_offset);
         gl.uniform1f(gl.get_uniform_location(&self.shader, "pixel_pulse").as_ref(), uniforms.pixel_pulse);
 
         gl.bind_vertex_array(self.vao.as_ref());
@@ -109,9 +123,30 @@ impl PixelsRender {
             WebGl2RenderingContext::TRIANGLES,
             0,
             match pixels_render_kind { PixelsRenderKind::Squares => 6, PixelsRenderKind::Cubes => 36 },
-            self.element_quantity
+            (self.width * self.height) as i32
         );
     }
+}
+
+fn calculate_offsets(width: usize, height: usize) -> Float32Array {
+    let pixels_total = width * height;
+    let offsets = Float32Array::new(&wasm_bindgen::JsValue::from(pixels_total as u32 * 2));
+    {
+        let half_width: f32 = width as f32 / 2.0;
+        let half_height: f32 = height as f32 / 2.0;
+        let center_dx = if width % 2 == 0 {0.5} else {0.0};
+        let center_dy = if height % 2 == 0 {0.5} else {0.0};
+        for i in 0..width {
+            for j in 0..height {
+                let index = (pixels_total - width - j * width + i) as u32;
+                let x = i as f32 - half_width + center_dx;
+                let y = j as f32 - half_height + center_dy;
+                offsets.fill(x, index * 2 + 0, index * 2 + 1);
+                offsets.fill(y, index * 2 + 1, index * 2 + 2);
+            }
+        }
+    }
+    offsets
 }
 
 const CUBE_GEOMETRY : [f32; 216] = [
@@ -158,3 +193,89 @@ const CUBE_GEOMETRY : [f32; 216] = [
     -0.5,  0.5,  0.5,      0.0,  1.0,  0.0,
     -0.5,  0.5, -0.5,      0.0,  1.0,  0.0,
 ];
+
+pub const PIXEL_VERTEX_SHADER: &str = r#"#version 300 es
+precision highp float;
+
+in vec3 aPos;
+in vec3 aNormal;
+in float aColor;
+in vec2 aOffset;
+
+out vec3 FragPos;
+out vec3 Normal;
+out vec4 ObjectColor;
+
+uniform mat4 view;
+uniform mat4 projection;
+
+uniform vec2 pixel_gap;
+uniform vec3 pixel_scale;
+uniform float pixel_pulse;
+uniform float pixel_offset;
+
+const float COLOR_FACTOR = 1.0/255.0;
+const uint hex_FF = uint(0xFF);
+
+void main()
+{
+    vec3 pos = aPos / pixel_scale + vec3(aOffset * pixel_gap, 0);
+    if (pixel_pulse > 0.0) {
+        float radius = length(aOffset);
+        pos += vec3(0, 0, sin(pixel_pulse + sin(pixel_pulse / 10.0) * radius / 4.0) * 2.0);
+    }
+    if (pixel_offset != 0.0) {
+        pos.x += pixel_offset;
+    }
+    FragPos = pos;
+    Normal = aNormal;
+
+    uint color = floatBitsToUint(aColor);
+    float r = float((color >>  0) & hex_FF);
+    float g = float((color >>  8) & hex_FF);
+    float b = float((color >> 16) & hex_FF);
+    float a = float((color >> 24) & hex_FF);
+
+    ObjectColor = vec4(r * COLOR_FACTOR, g * COLOR_FACTOR, b * COLOR_FACTOR, a * COLOR_FACTOR);
+    
+    gl_Position = projection * view * vec4(FragPos, 1.0);
+}
+"#;
+
+pub const PIXEL_FRAGMENT_SHADER: &str = r#"#version 300 es
+precision highp float;
+
+out vec4 FragColor;
+
+in vec3 Normal;  
+in vec3 FragPos;
+in vec4 ObjectColor;
+
+uniform vec3 lightColor;
+uniform vec3 extraLight;
+uniform vec3 lightPos;
+uniform float ambientStrength;
+
+void main()
+{
+    if (ObjectColor.a == 0.0) {
+        discard;
+    }
+
+    vec4 result;
+    if (ambientStrength == 1.0) {
+        result = ObjectColor * vec4(lightColor, 1.0);
+    } else {
+        vec3 norm = normalize(Normal);
+        vec3 lightDir = normalize(lightPos - FragPos);
+        
+        vec3 ambient = ambientStrength * lightColor;
+
+        float diff = max(dot(norm, lightDir), 0.0);
+        vec3 diffuse = diff * lightColor;
+        
+        result = ObjectColor * vec4(ambient + diffuse * (1.0 - ambientStrength), 1.0);
+    }
+    FragColor = result + vec4(extraLight, 1.0);
+} 
+"#;

@@ -6,7 +6,6 @@ use web_sys::{
 use wasm_error::WasmResult;
 use shaders::{
     make_shader,
-    BLOOM_VERTEX_SHADER, BLOOM_FRAGMENT_SHADER
 };
 use web_utils::{js_f32_array, js_i32_array};
 
@@ -61,7 +60,7 @@ impl BlurRender {
         gl.bind_buffer(WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER, Some(&quad_ebo));
         gl.buffer_data_with_opt_array_buffer(WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER, Some(&js_i32_array(&QUAD_INDICES).buffer()), WebGl2RenderingContext::STATIC_DRAW);
 
-        let shader = make_shader(&gl, BLOOM_VERTEX_SHADER, BLOOM_FRAGMENT_SHADER)?;
+        let shader = make_shader(&gl, BLUR_VERTEX_SHADER, BLUR_FRAGMENT_SHADER)?;
         gl.use_program(Some(&shader));
         gl.uniform1i(gl.get_uniform_location(&shader, "image").as_ref(), 0);
 
@@ -115,3 +114,53 @@ const QUAD_INDICES: [i32; 6] = [
     0, 1, 3,
     1, 2, 3,
 ];
+
+
+pub const BLUR_VERTEX_SHADER: &str = r#"#version 300 es
+precision highp float;
+
+layout (location = 0) in vec3 qPos;
+layout (location = 1) in vec2 qTexCoords;
+
+out vec2 TexCoord;
+
+void main()
+{
+    TexCoord = qTexCoords;
+    gl_Position = vec4(qPos, 1.0);
+}
+"#;
+
+pub const BLUR_FRAGMENT_SHADER: &str = r#"#version 300 es
+precision highp float;
+
+out vec4 FragColor;
+in vec2 TexCoord;
+
+uniform sampler2D image;
+uniform int horizontal;
+const float weight[5] = float[] (0.2270270270, 0.1945945946, 0.1216216216, 0.0540540541, 0.0162162162);
+
+void main()
+{
+    vec2 tex_offset = vec2(1.0, 1.0) / float(textureSize(image, 0)); // gets size of single texel
+    vec3 result = texture(image, TexCoord).rgb * weight[0];
+    if(horizontal == 1)
+    {
+        for(int i = 1; i < 5; ++i)
+        {
+            result += texture(image, TexCoord + vec2(tex_offset.x * float(i), 0.0)).rgb * weight[i % 5];
+            result += texture(image, TexCoord - vec2(tex_offset.x * float(i), 0.0)).rgb * weight[i % 5];
+        }
+    }
+    else
+    {
+        for(int i = 1; i < 5; ++i)
+        {
+            result += texture(image, TexCoord + vec2(0.0, tex_offset.y * float(i))).rgb * weight[i % 5];
+            result += texture(image, TexCoord - vec2(0.0, tex_offset.y * float(i))).rgb * weight[i % 5];
+        }
+    }
+    FragColor = vec4(result, 1.0);
+}
+"#;

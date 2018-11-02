@@ -10,12 +10,14 @@ use blur_render::BlurRender;
 
 pub struct AnimationData {
     pub steps: Vec<ArrayBuffer>,
-    pub width: u32,
-    pub height: u32,
+    pub image_width: u32,
+    pub image_height: u32,
+    pub background_width: u32,
+    pub background_height: u32,
+    pub viewport_width: u32,
+    pub viewport_height: u32,
     pub scale_x: f32,
     pub stretch: bool,
-    pub canvas_width: u32,
-    pub canvas_height: u32,
     pub frame_length: f32,
     pub current_frame: usize,
     pub last_frame_change: f64,
@@ -41,6 +43,9 @@ impl StateOwner {
 }
 
 pub struct Resources {
+    pub animation: AnimationData,
+    pub camera: Camera,
+    pub camera_zoom: f32,
     pub pixels_render: PixelsRender,
     pub blur_render: BlurRender,
     pub blur_passes: usize,
@@ -54,13 +59,11 @@ pub struct Resources {
     pub cur_pixel_scale_x: f32,
     pub cur_pixel_scale_y: f32,
     pub cur_pixel_gap: f32,
-    pub pixels_render_kind: PixelsRenderKind,
     pub pixels_pulse: f32,
-    pub showing_pixels_pulse: bool,
     pub pixel_manipulation_speed: f32,
-    pub camera: Camera,
-    pub camera_zoom: f32,
-    pub animation: AnimationData,
+    pub pixels_render_kind: PixelsRenderKind,
+    pub showing_split_colors: bool,
+    pub showing_pixels_pulse: bool,
     pub buttons: Buttons,
 }
 
@@ -70,6 +73,7 @@ pub struct Buttons {
     pub mouse_click: BooleanButton,
     pub increase_blur: BooleanButton,
     pub decrease_blur: BooleanButton,
+    pub toggle_split_colors: BooleanButton,
     pub toggle_pixels_render_kind: BooleanButton,
     pub showing_pixels_pulse: BooleanButton,
     pub esc: BooleanButton,
@@ -84,6 +88,7 @@ impl Buttons {
             mouse_click: BooleanButton::new(),
             increase_blur: BooleanButton::new(),
             decrease_blur: BooleanButton::new(),
+            toggle_split_colors: BooleanButton::new(),
             toggle_pixels_render_kind: BooleanButton::new(),
             showing_pixels_pulse: BooleanButton::new(),
             esc: BooleanButton::new(),
@@ -131,6 +136,7 @@ pub struct Input {
     pub increase_bright: bool,
     pub decrease_bright: bool,
     pub reset_brightness: bool,
+    pub toggle_split_colors: bool,
     pub toggle_pixels_render_kind: bool,
     pub showing_pixels_pulse: bool,
 }
@@ -175,6 +181,7 @@ impl Input {
             increase_bright: false,
             decrease_bright: false,
             reset_brightness: false,
+            toggle_split_colors: false,
             toggle_pixels_render_kind: false,
             showing_pixels_pulse: false,
         })

@@ -77,11 +77,11 @@
             <div id="scaling-custom-inputs" class="option-inputs display-none">
               <label for="scaling-custom">Custom Scaling:</label>
               <div class="option-inputs">
-                <label for="scaling-custom-resolution">image resolution:</label>
+                <label for="scaling-custom-resolution">background resolution:</label>
                 <input class="custom-resolution" type="number" id="scaling-custom-resolution-width" value="256" min="1" max="99999">
                 <span>✕</span>
                 <input class="custom-resolution" type="number" id="scaling-custom-resolution-height" value="224" min="1" max="99999">
-                <input class="display-none" type="button" value="Set to " id="scaling-custom-resolution-button">
+                <input class="display-none" type="button" value="Set to " id="scaling-custom-resolution-button" title="Set it to fit the uploaded image">
               </div>
               <div class="option-inputs">
                 <label for="scaling-custom-aspect-ratio">aspect ratio:</label>
@@ -153,16 +153,18 @@
     <div class="info-category">
       <h5>Pixel manipulation</h5>
       <ul>
-        <li><div id="feature-size-x" class="feature-hotkeys">J, K</div><div class="feature-explanation">to change pixel width.</div><div class="feature-value"><div id="pixel-scale-x" class="feature-container">0</div></div></li>
-        <li><div id="feature-size-y" class="feature-hotkeys">U, I</div><div class="feature-explanation">to change pixel height.</div><div class="feature-value"><div id="pixel-scale-y" class="feature-container">0</div></div></li>
-        <li><div id="feature-gap" class="feature-hotkeys">N, M</div><div class="feature-explanation">to change distance between pixels.</div><div class="feature-value"><div id="pixel-gap" class="feature-container">0</div></div></li>
+        <li><div id="feature-size-x" class="feature-hotkeys">J, K</div><div class="feature-explanation">to change horizontal gap.</div><div class="feature-value"><div id="pixel-horizontal-gap" class="feature-container">0</div></div></li>
+        <li><div id="feature-size-y" class="feature-hotkeys">U, I</div><div class="feature-explanation">to change vertical gap.</div><div class="feature-value"><div id="pixel-vertical-gap" class="feature-container">0</div></div></li>
+        <li><div id="feature-gap" class="feature-hotkeys">N, M</div><div class="feature-explanation">to change pixel width.</div><div class="feature-value"><div id="pixel-width" class="feature-container">0</div></div></li>
+        <li class="display-none"><div id="feature-gap" class="feature-hotkeys">Shift+N, Shift+M</div><div class="feature-explanation">to spread pixels.</div><div class="feature-value"><div id="pixel-spread" class="feature-container">0</div></div></li>
         <li><div id="feature-blur" class="feature-hotkeys">B, V</div><div class="feature-explanation">to change the blur level.</div></li>
         <li><div id="feature-light-color" class="feature-hotkeys">Click <input id="light-color" type="color" value="#ffffff"></div><div class="feature-explanation">to pick source light color.</div></li>
         <li><div id="feature-brightness-intensity" class="feature-hotkeys">C, X</div><div class="feature-explanation">to change brightness.</div><div class="feature-value"><div id="pixel-brightness" class="feature-container">0</div></div></li>
         <li><div id="feature-brightness-reset" class="feature-hotkeys">Z</div><div class="feature-explanation">to reset brightness to zero.</div></li>
         <li class="display-none"><div id="feature-brightness-color" class="feature-hotkeys">Click <input id="brightness-color" type="color" value="#ffffff"></div><div class="feature-explanation">to pick brightness color.</div></li>
-        <li><div id="feature-pulsation" class="feature-hotkeys">P</div><div class="feature-explanation">to activate a wave on the screen.</div></li>
+        <li><div id="feature-change-color-representation" class="feature-hotkeys">Y</div><div class="feature-explanation">to show color channels combined or separated.</div></li>
         <li><div id="feature-change-pixel-shape" class="feature-hotkeys">O</div><div class="feature-explanation">to change pixel geometry.</div></li>
+        <li><div id="feature-pulsation" class="feature-hotkeys">P</div><div class="feature-explanation">to activate a wave on the screen.</div></li>
       </ul>
     </div>
     <div class="info-category">

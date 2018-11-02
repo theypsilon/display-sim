@@ -48,9 +48,10 @@ const cameraAxisUpXDeo = document.getElementById('camera-axis-up-x');
 const cameraAxisUpYDeo = document.getElementById('camera-axis-up-y');
 const cameraAxisUpZDeo = document.getElementById('camera-axis-up-z');
 
-const pixelScaleXDeo = document.getElementById('pixel-scale-x');
-const pixelScaleYDeo = document.getElementById('pixel-scale-y');
-const pixelGapDeo = document.getElementById('pixel-gap');
+const pixelWidthDeo = document.getElementById('pixel-width');
+const pixelHorizontalGapDeo = document.getElementById('pixel-horizontal-gap');
+const pixelVerticalGapDeo = document.getElementById('pixel-vertical-gap');
+const pixelSpreadDeo = document.getElementById('pixel-spread');
 const pixelBrigthnessDeo = document.getElementById('pixel-brightness');
 
 const getGlCanvasDeo = () => document.getElementById(glCanvasHtmlId);
@@ -136,9 +137,10 @@ window.addEventListener('app-event.camera_update', event => {
     cameraAxisUpZDeo.innerHTML = Math.round(event.detail[8] * 100) / 100;
 }, false);
 
-updateInnerHtmlWithEventNumber(pixelScaleXDeo, 'app-event.change_pixel_scale_x');
-updateInnerHtmlWithEventNumber(pixelScaleYDeo, 'app-event.change_pixel_scale_y');
-updateInnerHtmlWithEventNumber(pixelGapDeo, 'app-event.change_pixel_gap');
+updateInnerHtmlWithEventNumber(pixelWidthDeo, 'app-event.change_pixel_width');
+updateInnerHtmlWithEventNumber(pixelHorizontalGapDeo, 'app-event.change_pixel_horizontal_gap');
+updateInnerHtmlWithEventNumber(pixelVerticalGapDeo, 'app-event.change_pixel_vertical_gap');
+updateInnerHtmlWithEventNumber(pixelSpreadDeo, 'app-event.change_pixel_spread');
 updateInnerHtmlWithEventNumber(pixelBrigthnessDeo, 'app-event.change_pixel_brightness');
 function updateInnerHtmlWithEventNumber(deo, eventId) {
     window.addEventListener(eventId, event => {
@@ -219,13 +221,13 @@ function prepareUi() {
             visibility.hideUi();
             visibility.showLoading();
             setTimeout(() => {
-                const img = getPreviewDeo();
+                const preview = getPreviewDeo();
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
-                canvas.width = img.width;
-                canvas.height = img.height;
-                ctx.drawImage(img, 0, 0);
-                var rawImg = ctx.getImageData(0, 0, img.width, img.height);
+                canvas.width = preview.width;
+                canvas.height = preview.height;
+                ctx.drawImage(preview, 0, 0);
+                var rawImg = ctx.getImageData(0, 0, preview.width, preview.height);
     
                 startResolve([rawImg])
             }, 50);
@@ -271,6 +273,8 @@ function prepareUi() {
 
         const imageWidth = rawImgs[0].width;
         const imageHeight = rawImgs[0].height;
+        let backgroundWidth = imageWidth;
+        let backgroundHeight = imageHeight;
 
         switch(checkedScalingInput.id) {
             case scalingAutoHtmlId:
@@ -296,7 +300,9 @@ function prepareUi() {
                 storage.setCustomArX(scalingCustomArXDeo.value);
                 storage.setCustomArY(scalingCustomArYDeo.value);
                 storage.setCustomStretchNearest(stretch);
-                scaleX = (+scalingCustomArXDeo.value / +scalingCustomArYDeo.value)/(+scalingCustomResWidthDeo.value/+scalingCustomResHeightDeo.value);
+                backgroundWidth = +scalingCustomResWidthDeo.value;
+                backgroundHeight = +scalingCustomResHeightDeo.value;
+                scaleX = (+scalingCustomArXDeo.value / +scalingCustomArYDeo.value)/(backgroundWidth/backgroundHeight);
                 break;
         }
 
@@ -362,7 +368,12 @@ function prepareUi() {
         }
 
         import(/* webpackPrefetch: true */'./crt_3d_sim').then(wasm => {
-            const animation = new wasm.AnimationWasm(rawImgs[0].width, rawImgs[0].height, canvas.width, canvas.height, 1 / 60, +scaleX, stretch);
+            const animation = new wasm.AnimationWasm(
+                imageWidth, imageHeight, // to read the image pixels
+                backgroundWidth, backgroundHeight, // to calculate model distance to the camera
+                canvas.width, canvas.height, // gl.viewport
+                1 / 60, +scaleX, stretch
+            );
             for (let i = 0; i < rawImgs.length; i++) {
                 const rawImg = rawImgs[i];
                 animation.add(rawImg.data.buffer);
