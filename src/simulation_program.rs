@@ -24,7 +24,9 @@ const MOVEMENT_SPEED_FACTOR: f32 = 50.0;
 
 pub fn program(gl: JsValue, animation: AnimationData) -> WasmResult<()> {
     let gl = gl.dyn_into::<WebGl2RenderingContext>()?;
+    gl.viewport(0, 0, animation.viewport_width as i32, animation.viewport_height as i32);
     gl.enable(WebGl2RenderingContext::DEPTH_TEST);
+    gl.enable(WebGl2RenderingContext::BLEND);
     let owned_state = Rc::new(RefCell::new(
         StateOwner::new(load_resources(&gl, animation)?)
     ));
@@ -84,8 +86,6 @@ pub fn load_resources(gl: &WebGl2RenderingContext, animation: AnimationData) -> 
     dispatch_event_with("app-event.change_pixel_width", &animation.scale_x.into())?;
     dispatch_event_with("app-event.change_pixel_spread", &0.0.into())?;
     dispatch_event_with("app-event.change_pixel_brightness", &0.0.into())?;
-
-    gl.viewport(0, 0, animation.viewport_width as i32, animation.viewport_height as i32);
 
     let now = now()?;
 
@@ -395,11 +395,12 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
         res.pixels_render.apply_colors(gl, &res.animation.steps[res.animation.current_frame], &color_channels);
     }
 
-    gl.clear_color(0.05, 0.05, 0.05, 1.0);
+    gl.clear_color(0.05, 0.05, 0.05, 0.0);
     if res.blur_passes > 0 {
         res.blur_render.pre_render(&gl);
     }
     gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
+    gl.blend_func(WebGl2RenderingContext::SRC_ALPHA, WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA);
 
     let mut extra_light = get_3_f32color_from_int(res.brightness_color);
     for light in extra_light.iter_mut() {
@@ -411,6 +412,7 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
         let mut light_color = get_3_f32color_from_int(res.light_color);
         let mut pixel_offset = 0.0;
         if res.showing_split_colors {
+            light_color[(i + 0) % 3] *= 1.5;
             light_color[(i + 1) % 3] = 0.0;
             light_color[(i + 2) % 3] = 0.0;
             pixel_offset = (i as f32 - 1.0) * res.animation.scale_x * (1.0 / 3.0) + match i % 3 {
@@ -447,6 +449,7 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
     }
 
     if res.blur_passes > 0 {
+        gl.blend_func(WebGl2RenderingContext::ONE, WebGl2RenderingContext::ZERO);
         res.blur_render.render(&gl, res.blur_passes);
     }
 

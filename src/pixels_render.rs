@@ -276,6 +276,6 @@ void main()
         
         result = ObjectColor * vec4(ambient + diffuse * (1.0 - ambientStrength), 1.0);
     }
-    FragColor = result + vec4(extraLight, 1.0);
+    FragColor = result + vec4(extraLight, 0.0);
 } 
 "#;

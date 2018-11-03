@@ -326,7 +326,7 @@ function prepareUi() {
         const checkedPowerPreferenceInput = formDeo.querySelector('input[name=\''+powerPreferenceHtmlName+'\']:checked');
     
         const ctxOptions = { 
-            alpha: true, 
+            alpha: false,
             antialias: antialiasDeo.checked, 
             depth: true, 
             failIfMajorPerformanceCaveat: false, 
