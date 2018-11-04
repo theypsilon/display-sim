@@ -9,15 +9,15 @@ use std::cell::RefCell;
 
 use wasm_error::{WasmResult};
 use web_utils::{window};
-use simulation_state::{Input, OwnedClosure};
+use simulation_state::{Input, OwnedClosure, StateOwner};
 
-pub fn set_event_listeners(input: &Rc<RefCell<Input>>) -> WasmResult<Vec<OwnedClosure>> {
+pub fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<OwnedClosure>> {
 
     let onkeydown: Closure<FnMut(JsValue)> = {
-        let mut input = Rc::clone(&input);
+        let mut state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |event: JsValue| {
             if let Ok(e) = event.dyn_into::<KeyboardEvent>() {
-                let mut input = input.borrow_mut();
+                let mut input = state_owner.input.borrow_mut();
                 match e.key().to_lowercase().as_ref() {
                     "a" => input.walk_left = true,
                     "d" => input.walk_right = true,
@@ -59,10 +59,10 @@ pub fn set_event_listeners(input: &Rc<RefCell<Input>>) -> WasmResult<Vec<OwnedCl
     };
 
     let onkeyup: Closure<FnMut(JsValue)> = {
-        let mut input = Rc::clone(&input);
+        let mut state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |event: JsValue| {
             if let Ok(e) = event.dyn_into::<KeyboardEvent>() {
-                let mut input = input.borrow_mut();
+                let mut input = state_owner.input.borrow_mut();
                 match e.key().to_lowercase().as_ref() {
                     "a" => input.walk_left = false,
                     "d" => input.walk_right = false,
@@ -104,30 +104,30 @@ pub fn set_event_listeners(input: &Rc<RefCell<Input>>) -> WasmResult<Vec<OwnedCl
     };
 
     let onmousedown: Closure<FnMut(JsValue)> = {
-        let mut input = Rc::clone(&input);
+        let mut state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |event: JsValue| {
             if let Ok(e) = event.dyn_into::<MouseEvent>() {
-                let mut input = input.borrow_mut();
+                let mut input = state_owner.input.borrow_mut();
                 input.mouse_left_click = e.buttons() == 1;
             }
         }))
     };
 
     let onmouseup: Closure<FnMut(JsValue)> = {
-        let mut input = Rc::clone(&input);
+        let mut state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |event: JsValue| {
             if event.dyn_into::<MouseEvent>().is_ok() {
-                let mut input = input.borrow_mut();
+                let mut input = state_owner.input.borrow_mut();
                 input.mouse_left_click = false;
             }
         }))
     };
 
     let onmousemove: Closure<FnMut(JsValue)> = {
-        let mut input = Rc::clone(&input);
+        let mut state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |event: JsValue| {
             if let Ok(e) = event.dyn_into::<MouseEvent>() {
-                let mut input = input.borrow_mut();
+                let mut input = state_owner.input.borrow_mut();
                 input.mouse_position_x = e.movement_x();
                 input.mouse_position_y = e.movement_y();
             }
@@ -135,20 +135,20 @@ pub fn set_event_listeners(input: &Rc<RefCell<Input>>) -> WasmResult<Vec<OwnedCl
     };
 
     let onmousewheel: Closure<FnMut(JsValue)> = {
-        let mut input = Rc::clone(&input);
+        let mut state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |event: JsValue| {
             if let Ok(e) = event.dyn_into::<WheelEvent>() {
-                let mut input = input.borrow_mut();
+                let mut input = state_owner.input.borrow_mut();
                 input.mouse_scroll_y = e.delta_y() as f32;
             }
         }))
     };
 
     let onpickcolor: Closure<FnMut(JsValue)> = {
-        let mut input = Rc::clone(&input);
+        let mut state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |event: JsValue| {
             if let Ok(e) = event.dyn_into::<CustomEvent>() {
-                let mut input = input.borrow_mut();
+                let mut input = state_owner.input.borrow_mut();
                 let object = e.detail();
                 if let Ok(value) = js_sys::Reflect::get(&object, &"color".into()) {
                     if let Some(js_color) = value.as_f64() {

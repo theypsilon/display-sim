@@ -3,7 +3,6 @@ use web_sys::{
     console,
     WebGl2RenderingContext,
 };
-use js_sys::{Float32Array};
 use std::rc::Rc;
 use std::cell::RefCell;
 use super::glm;
@@ -12,7 +11,7 @@ use wasm_error::{WasmResult, WasmError};
 use camera::{CameraDirection, Camera};
 use dispatch_event::{dispatch_event, dispatch_event_with};
 use web_utils::{now, window};
-use pixels_render::{PixelsRender, PixelsRenderKind, PixelsColorChannels, PixelsUniform};
+use pixels_render::{PixelsRender, PixelsRenderKind, PixelsUniform};
 use blur_render::BlurRender;
 use event_listeners::set_event_listeners;
 use simulation_state::{StateOwner, Resources, Input, AnimationData, Buttons};
@@ -27,51 +26,46 @@ pub fn program(gl: JsValue, animation: AnimationData) -> WasmResult<()> {
     gl.viewport(0, 0, animation.viewport_width as i32, animation.viewport_height as i32);
     gl.enable(WebGl2RenderingContext::DEPTH_TEST);
     gl.enable(WebGl2RenderingContext::BLEND);
-    let owned_state = Rc::new(RefCell::new(
-        StateOwner::new(load_resources(&gl, animation)?)
-    ));
-    let input = Rc::new(RefCell::new( Input::new()?));
+    let owned_state = StateOwner::new_rc(load_resources(&gl, animation)?, Input::new()?);
     let frame_closure: Closure<FnMut(JsValue)> = {
         let owned_state = owned_state.clone();
-        let mut input = Rc::clone(&input);
         let window = window()?;
         Closure::wrap(Box::new(move |_| {
-            let mut owned_state = owned_state.borrow_mut();
-                let mut input = input.borrow_mut();
-                input.now = now().unwrap_or(owned_state.resources.last_time);
-                let update_status = update(&mut owned_state.resources, &input);
+            let mut input = owned_state.input.borrow_mut();
+            let mut resources = owned_state.resources.borrow_mut();
+            let closures = owned_state.closures.borrow();
+            input.now = now().unwrap_or(resources.last_time);
+            let update_status = update(&mut resources, &input);
 
-                input.mouse_scroll_y = 0.0;
-                input.mouse_position_x = 0;
-                input.mouse_position_y = 0;
+            input.mouse_scroll_y = 0.0;
+            input.mouse_position_x = 0;
+            input.mouse_position_y = 0;
 
-                match update_status {
-                    Ok(next_update_needed) => {
-                        if !next_update_needed {
-                            return;
+            match update_status {
+                Ok(next_update_needed) => {
+                    if !next_update_needed {
+                        return;
+                    }
+                    if let Err(e) = draw(&gl, &resources) {
+                        console::error_2(&"An unexpected error happened during draw.".into(), &e.to_js());
+                        return;
+                    }
+                    if let Some(ref frame_closure) = closures[0] {
+                        if let Err(e) = window.request_animation_frame(frame_closure.as_ref().unchecked_ref()) {
+                            console::error_2(&"An unexpected error happened during window.request_animation_frame.".into(), &e);
                         }
-                        if let Err(e) = draw(&gl, &owned_state.resources) {
-                            console::error_2(&"An unexpected error happened during draw.".into(), &e.to_js());
-                            return;
-                        }
-                        let mut frame_id = None;
-                        if let Some(ref frame_closure) = owned_state.closures[0] {
-                            if let Ok(id) = window.request_animation_frame(frame_closure.as_ref().unchecked_ref()) {
-                                frame_id = Some(id);
-                            }
-                        }
-                        owned_state.animation_frame_id = frame_id;
-                    },
-                    Err(e) => console::error_2(&"An unexpected error happened during update.".into(), &e.to_js())
-                }
+                    }
+                },
+                Err(e) => console::error_2(&"An unexpected error happened during update.".into(), &e.to_js())
+            }
         }))
     };
-    let mut owned_state = owned_state.borrow_mut();
-    owned_state.animation_frame_id = Some(window()?.request_animation_frame(frame_closure.as_ref().unchecked_ref())?);
-    owned_state.closures.push(Some(frame_closure));
+    window()?.request_animation_frame(frame_closure.as_ref().unchecked_ref())?;
+    let mut closures = owned_state.closures.borrow_mut();
+    closures.push(Some(frame_closure));
 
-    let listeners = set_event_listeners(&input)?;
-    owned_state.closures.extend(listeners);
+    let listeners = set_event_listeners(&owned_state)?;
+    closures.extend(listeners);
 
     Ok(())
 }
@@ -390,9 +384,8 @@ fn update_view_and_perspective(dt: f32, res: &mut Resources, input: &Input) -> W
 }
 
 pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
-    let color_channels = if res.showing_split_colors { PixelsColorChannels::Separate } else { PixelsColorChannels::Together };
     if res.animation.needs_buffer_data_load {
-        res.pixels_render.apply_colors(gl, &res.animation.steps[res.animation.current_frame], &color_channels);
+        res.pixels_render.apply_colors(gl, &res.animation.steps[res.animation.current_frame]);
     }
 
     gl.clear_color(0.05, 0.05, 0.05, 0.0);
@@ -407,7 +400,7 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
         *light *= res.extra_bright;
     }
 
-    let mut color_splits = if res.showing_split_colors {3} else {1};
+    let color_splits = if res.showing_split_colors {3} else {1};
     for i in 0..color_splits {
         let mut light_color = get_3_f32color_from_int(res.light_color);
         let mut pixel_offset = 0.0;

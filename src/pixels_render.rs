@@ -1,5 +1,4 @@
-use js_sys::{Float32Array, Uint32Array, ArrayBuffer};
-use super::glm;
+use js_sys::{Float32Array, ArrayBuffer};
 use std::mem::size_of;
 use web_sys::{
     WebGl2RenderingContext, WebGlVertexArrayObject, WebGlProgram, WebGlBuffer,
@@ -94,7 +93,7 @@ impl PixelsRender {
         Ok(PixelsRender {vao, shader, offset_vbo, colors_vbo, width, height})
     }
 
-    pub fn apply_colors(&self, gl: &WebGl2RenderingContext, buffer: &ArrayBuffer, color_channels: &PixelsColorChannels) {
+    pub fn apply_colors(&self, gl: &WebGl2RenderingContext, buffer: &ArrayBuffer) {
         gl.bind_vertex_array(self.vao.as_ref());
         gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&self.colors_vbo));
 

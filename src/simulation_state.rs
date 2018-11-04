@@ -1,3 +1,6 @@
+use std::rc::Rc;
+use std::cell::RefCell;
+
 use wasm_bindgen::prelude::{Closure, JsValue};
 use js_sys::{ArrayBuffer};
 
@@ -27,18 +30,18 @@ pub struct AnimationData {
 pub type OwnedClosure = Option<Closure<FnMut(JsValue)>>;
 
 pub struct StateOwner {
-    pub animation_frame_id: Option<i32>,
-    pub closures: Vec<OwnedClosure>,
-    pub resources: Resources,
+    pub closures: RefCell<Vec<OwnedClosure>>,
+    pub resources: RefCell<Resources>,
+    pub input: RefCell<Input>,
 }
 
 impl StateOwner {
-    pub fn new(resources: Resources) -> StateOwner {
-        StateOwner {
-            animation_frame_id: None,
-            closures: Vec::new(),
-            resources,
-        }
+    pub fn new_rc(resources: Resources, input: Input) -> Rc<StateOwner> {
+        Rc::new(StateOwner {
+            closures: RefCell::new(Vec::new()),
+            resources: RefCell::new(resources),
+            input: RefCell::new(input),
+        })
     }
 }
 
