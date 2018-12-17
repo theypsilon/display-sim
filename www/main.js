@@ -53,6 +53,7 @@ const pixelHorizontalGapDeo = document.getElementById('pixel-horizontal-gap');
 const pixelVerticalGapDeo = document.getElementById('pixel-vertical-gap');
 const pixelSpreadDeo = document.getElementById('pixel-spread');
 const pixelBrigthnessDeo = document.getElementById('pixel-brightness');
+const blurLevelDeo = document.getElementById('blur-level');
 
 const getGlCanvasDeo = () => document.getElementById(glCanvasHtmlId);
 const getPreviewDeo = () => document.getElementById(previewHtmlId);
@@ -142,20 +143,28 @@ updateInnerHtmlWithEventNumber(pixelHorizontalGapDeo, 'app-event.change_pixel_ho
 updateInnerHtmlWithEventNumber(pixelVerticalGapDeo, 'app-event.change_pixel_vertical_gap');
 updateInnerHtmlWithEventNumber(pixelSpreadDeo, 'app-event.change_pixel_spread');
 updateInnerHtmlWithEventNumber(pixelBrigthnessDeo, 'app-event.change_pixel_brightness');
+updateInnerHtmlWithEventNumber(blurLevelDeo, 'app-event.change_blur_level');
 function updateInnerHtmlWithEventNumber(deo, eventId) {
+    if (!deo) throw new Error("Wrong deo on defining: " + eventId);
     window.addEventListener(eventId, event => {
-        deo.innerHTML = Math.round(event.detail * 1000.0) / 1000.0;
+        deo.value = Math.round(event.detail * 1000.0) / 1000.0;
     }, false);
 }
 
-colorPickerOnChange(lightColorDeo, 0);
-colorPickerOnChange(brightnessColorDeo, 1);
-function colorPickerOnChange(deo, kind) {
+customEventOnChange(pixelWidthDeo, "pixel_width", a => +a);
+customEventOnChange(pixelHorizontalGapDeo, "pixel_horizontal_gap", a => +a);
+customEventOnChange(pixelVerticalGapDeo, "pixel_vertical_gap", a => +a);
+customEventOnChange(pixelSpreadDeo, "pixel_spread", a => +a);
+
+const parseColor = (value) => parseInt('0x' +value.substring(1));
+customEventOnChange(lightColorDeo, "light_color", parseColor);
+customEventOnChange(brightnessColorDeo, "brightness_color", parseColor);
+function customEventOnChange(deo, kind, parse) {
     deo.onchange = () => {
-        window.dispatchEvent(new CustomEvent('app-event.pick_color', {
+        window.dispatchEvent(new CustomEvent('app-event.custom_input_event', {
             detail: {
-                color: parseInt('0x' +deo.value.substring(1)),
-                kind: kind,
+                value: parse(deo.value),
+                kind: "event_kind:"+kind,
             },
         }));
     }

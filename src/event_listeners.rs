@@ -5,11 +5,10 @@ use web_sys::{
     KeyboardEvent, MouseEvent, WheelEvent, EventTarget, CustomEvent
 };
 use std::rc::Rc;
-use std::cell::RefCell;
 
 use wasm_error::{WasmResult};
 use web_utils::{window};
-use simulation_state::{Input, OwnedClosure, StateOwner};
+use simulation_state::{OwnedClosure, StateOwner};
 
 pub fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<OwnedClosure>> {
 
@@ -144,20 +143,18 @@ pub fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<Owned
         }))
     };
 
-    let onpickcolor: Closure<FnMut(JsValue)> = {
+    let oncustominputevent: Closure<FnMut(JsValue)> = {
         let mut state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |event: JsValue| {
             if let Ok(e) = event.dyn_into::<CustomEvent>() {
                 let mut input = state_owner.input.borrow_mut();
                 let object = e.detail();
-                if let Ok(value) = js_sys::Reflect::get(&object, &"color".into()) {
-                    if let Some(js_color) = value.as_f64() {
-                        input.color_value = js_color as i32;
-                    }
+                if let Ok(value) = js_sys::Reflect::get(&object, &"value".into()) {
+                    input.custom_event.value = value;
                 }
                 if let Ok(value) = js_sys::Reflect::get(&object, &"kind".into()) {
-                    if let Some(js_kind) = value.as_f64() {
-                        input.color_kind = js_kind as i32;
+                    if let Some(js_kind) = value.as_string() {
+                        input.custom_event.kind = js_kind;
                     }
                 }
             }
@@ -171,7 +168,7 @@ pub fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<Owned
     document.set_onmouseup(Some(onmouseup.as_ref().unchecked_ref()));
     document.set_onmousemove(Some(onmousemove.as_ref().unchecked_ref()));
     document.set_onwheel(Some(onmousewheel.as_ref().unchecked_ref()));
-    EventTarget::from(window()?).add_event_listener_with_callback("app-event.pick_color", onpickcolor.as_ref().unchecked_ref())?;
+    EventTarget::from(window()?).add_event_listener_with_callback("app-event.custom_input_event", oncustominputevent.as_ref().unchecked_ref())?;
 
     let mut closures: Vec<OwnedClosure> = vec!();
     closures.push(Some(onkeydown));
@@ -180,7 +177,7 @@ pub fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<Owned
     closures.push(Some(onmouseup));
     closures.push(Some(onmousemove));
     closures.push(Some(onmousewheel));
-    closures.push(Some(onpickcolor));
+    closures.push(Some(oncustominputevent));
 
     Ok(closures)
 }

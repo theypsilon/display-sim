@@ -180,6 +180,10 @@ body {
     width: 40px;
 }
 
+.feature-number-input {
+    width: 55px;
+}
+
 .info-category {
     margin-bottom: 20px;
 }

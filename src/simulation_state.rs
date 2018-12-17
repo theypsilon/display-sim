@@ -100,11 +100,23 @@ impl Buttons {
     }
 }
 
-#[derive(Clone)]
+pub struct CustomInputEvent {
+    pub value: JsValue,
+    pub kind: String,
+}
+
+impl CustomInputEvent {
+    pub fn new() -> CustomInputEvent {
+        CustomInputEvent {
+            value: JsValue::undefined(),
+            kind: String::new(),
+        }
+    }
+}
+
 pub struct Input {
     pub now: f64,
-    pub color_value: i32,
-    pub color_kind: i32,
+    pub custom_event: CustomInputEvent,
     pub walk_left: bool,
     pub walk_right: bool,
     pub walk_up: bool,
@@ -148,8 +160,7 @@ impl Input {
     pub fn new() -> WasmResult<Input> {
         Ok(Input {
             now: now()?,
-            color_value: 0x00FF_FFFF,
-            color_kind: 1,
+            custom_event: CustomInputEvent::new(),
             walk_left: false,
             walk_right: false,
             walk_up: false,

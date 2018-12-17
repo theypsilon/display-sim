@@ -4,7 +4,6 @@ use web_sys::{
     WebGl2RenderingContext,
 };
 use std::rc::Rc;
-use std::cell::RefCell;
 use super::glm;
 
 use wasm_error::{WasmResult, WasmError};
@@ -28,7 +27,7 @@ pub fn program(gl: JsValue, animation: AnimationData) -> WasmResult<()> {
     gl.enable(WebGl2RenderingContext::BLEND);
     let owned_state = StateOwner::new_rc(load_resources(&gl, animation)?, Input::new()?);
     let frame_closure: Closure<FnMut(JsValue)> = {
-        let owned_state = owned_state.clone();
+        let owned_state = Rc::clone(&owned_state);
         let window = window()?;
         Closure::wrap(Box::new(move |_| {
             let mut input = owned_state.input.borrow_mut();
@@ -40,6 +39,7 @@ pub fn program(gl: JsValue, animation: AnimationData) -> WasmResult<()> {
             input.mouse_scroll_y = 0.0;
             input.mouse_position_x = 0;
             input.mouse_position_y = 0;
+            input.custom_event.kind = String::new();
 
             match update_status {
                 Ok(next_update_needed) => {
@@ -194,17 +194,6 @@ fn update_animation_buffer(res: &mut Resources, input: &Input) {
 }
 
 fn update_colors(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> {
-    let color_variable = match input.color_kind {
-        0 => &mut res.light_color,
-        1 => &mut res.brightness_color,
-        other => return Err(("color kind invalid: ".to_string() + &other.to_string()).into()),
-    };
-
-    if input.color_value != *color_variable {
-        *color_variable = input.color_value;
-        dispatch_event_with("app-event.top_message", &"Color changed.".into())?;
-    }
-
     if input.increase_bright {
         res.extra_bright += 0.01 * dt * res.pixel_manipulation_speed;
     }
@@ -223,6 +212,18 @@ fn update_colors(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> 
             dispatch_event_with("app-event.change_pixel_brightness", &res.extra_bright.into())?;
         }
     }
+
+    let color_variable = match input.custom_event.kind.as_ref() {
+        "event_kind:light_color" => &mut res.light_color,
+        "event_kind:brightness_color" => &mut res.brightness_color,
+        other => return Ok(()),
+    };
+
+    let color_pick = input.custom_event.value.as_f64().ok_or("it should be a number")? as i32;
+    if color_pick != *color_variable {
+        *color_variable = color_pick;
+        dispatch_event_with("app-event.top_message", &"Color changed.".into())?;
+    }
     
     Ok(())
 }
@@ -240,6 +241,7 @@ fn update_blur(res: &mut Resources, input: &Input) -> WasmResult<()> {
 
     if last_blur_passes != res.blur_passes {
         dispatch_event_with("app-event.top_message", &("Blur level: ".to_string() + &res.blur_passes.to_string()).into())?;
+        dispatch_event_with("app-event.change_blur_level", &(res.blur_passes as i32).into())?;
     }
     Ok(())
 }
@@ -283,21 +285,24 @@ fn update_pixel_characteristics(dt: f32, res: &mut Resources, input: &Input) -> 
     }
 
     let pixel_velocity = dt * res.pixel_manipulation_speed;
-    change_pixel_sizes(input.increase_pixel_scale_x, input.decrease_pixel_scale_x, &mut res.cur_pixel_scale_x, pixel_velocity * 0.00125, "app-event.change_pixel_horizontal_gap")?;
-    change_pixel_sizes(input.increase_pixel_scale_y, input.decrease_pixel_scale_y, &mut res.cur_pixel_scale_y, pixel_velocity * 0.00125, "app-event.change_pixel_vertical_gap")?;
+    change_pixel_sizes(&input, input.increase_pixel_scale_x, input.decrease_pixel_scale_x, &mut res.cur_pixel_scale_x, pixel_velocity * 0.00125, "app-event.change_pixel_horizontal_gap", "event_kind:pixel_horizontal_gap")?;
+    change_pixel_sizes(&input, input.increase_pixel_scale_y, input.decrease_pixel_scale_y, &mut res.cur_pixel_scale_y, pixel_velocity * 0.00125, "app-event.change_pixel_vertical_gap", "event_kind:pixel_vertical_gap")?;
     if input.shift {
-        change_pixel_sizes(input.increase_pixel_gap, input.decrease_pixel_gap, &mut res.cur_pixel_gap, pixel_velocity * 0.005, "app-event.change_pixel_spread")?;
+        change_pixel_sizes(&input, input.increase_pixel_gap, input.decrease_pixel_gap, &mut res.cur_pixel_gap, pixel_velocity * 0.005, "app-event.change_pixel_spread", "event_kind:pixel_width")?;
     } else {
-        change_pixel_sizes(input.increase_pixel_gap, input.decrease_pixel_gap, &mut res.animation.scale_x, pixel_velocity * 0.005, "app-event.change_pixel_width")?;
+        change_pixel_sizes(&input, input.increase_pixel_gap, input.decrease_pixel_gap, &mut res.animation.scale_x, pixel_velocity * 0.005, "app-event.change_pixel_width", "event_kind:pixel_spread")?;
     }
 
-    fn change_pixel_sizes(increase: bool, decrease: bool, cur_size: &mut f32, velocity: f32, event_id: &str) -> WasmResult<()> {
+    fn change_pixel_sizes(input: &Input, increase: bool, decrease: bool, cur_size: &mut f32, velocity: f32, event_id: &str, event_kind: &str) -> WasmResult<()> {
         let before_size = *cur_size;
         if increase {
             *cur_size += velocity;
         }
         if decrease {
             *cur_size -= velocity;
+        }
+        if input.custom_event.kind.as_ref() as &str == event_kind {
+            *cur_size = input.custom_event.value.as_f64().ok_or("it should be a number")? as f32;
         }
         if *cur_size != before_size {
             if *cur_size < 0.0 {
