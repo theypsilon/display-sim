@@ -1,0 +1,111 @@
+@import url('https://fonts.googleapis.com/css?family=Archivo+Black|Roboto');
+
+h1, h2, h3 {
+  font-family: 'Archivo Black';
+}
+
+p {
+  font-family: 'Roboto';
+  font-size: 16px;
+  line-height: 26px;
+  margin-bottom: 20px;
+}
+
+.bg-white {
+  background-color: #ffffff;
+}
+
+.bg-green {
+  background-color: #247E8F;
+}
+
+.bg-warning {
+  background-color: #C1435A;
+}
+
+.bg-footer {
+  background-color: #212425;
+}
+
+.text-white {
+  color: #ffffff
+}
+
+.jumbotron {
+  border: none;
+}
+
+.jumbotron > .row {
+  display: flex;
+}
+
+.warning{
+  padding: 2rem 0;
+}
+
+.warning p {
+  margin: 0;
+}
+
+.btn-crt {
+  text-transform: uppercase;
+  width: 100%;
+  font-weight: 700;
+  padding: 1rem;
+  transition: color .2s, background-color .2s;
+}
+
+.btn-green {
+  background-color: #247E8F;
+  border-color: #247E8F;
+}
+
+.btn-green:hover {
+  background-color: #ffffff;
+  color: #247E8F;
+}
+
+.btn-white {
+  color: #247E8F;
+  background-color: #ffffff;
+  border-color: #ffffff;
+}
+
+.btn-white:hover {
+  background-color: #247E8F;
+  color: #ffffff
+}
+
+.well {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.form {
+  padding: 3rem 0;
+}
+
+#drop-zone {
+  height: 116px;
+}
+
+#drop-zone:hover {
+  border: 2px solid #ffffff;
+  cursor: pointer;
+}
+
+.option-inputs {
+  background: transparent;
+}
+
+footer {
+  padding: 1rem 0 2rem;
+}
+
+footer label {
+  font-weight: 400;
+  text-transform: uppercase;
+  margin-top: 10px;
+  margin-bottom: 0;
+}
