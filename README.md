@@ -13,5 +13,6 @@ Prerequisites:
 - https://www.rust-lang.org/tools/install
 - https://nodejs.org/
 - https://rustwasm.github.io/wasm-pack/installer
+- bash
 
 Run: `./run.sh`
