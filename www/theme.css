@@ -1,14 +1,35 @@
-@import url('https://fonts.googleapis.com/css?family=Archivo+Black|Roboto');
+@import url('https://fonts.googleapis.com/css?family=Archivo+Black|Lato:400,700');
 
 h1, h2, h3 {
   font-family: 'Archivo Black';
 }
 
 p {
-  font-family: 'Roboto';
+  font-family: 'Lato';
   font-size: 16px;
   line-height: 26px;
-  margin-bottom: 20px;
+  margin-bottom: 0px;
+}
+
+.strong {
+  font-weight: 700
+}
+
+.font-white {
+  font-size: 20px;
+}
+
+section > section,
+section > footer {
+  padding: 3rem 0;
+}
+
+.block {
+  display: block;
+}
+
+.margin-left {
+  margin-left: 20px
 }
 
 .bg-white {
@@ -27,6 +48,14 @@ p {
   background-color: #212425;
 }
 
+.spacing-md {
+  margin-bottom: 10px;
+}
+
+.explanation p {
+  margin-bottom: 20px;
+}
+
 .text-white {
   color: #ffffff
 }
@@ -41,10 +70,6 @@ p {
 
 .warning{
   padding: 2rem 0;
-}
-
-.warning p {
-  margin: 0;
 }
 
 .btn-crt {
@@ -82,10 +107,6 @@ p {
   box-shadow: none;
 }
 
-.form {
-  padding: 3rem 0;
-}
-
 #drop-zone {
   height: 116px;
 }
@@ -97,6 +118,7 @@ p {
 
 .option-inputs {
   background: transparent;
+  border: none;
 }
 
 footer {

@@ -24,14 +24,12 @@ body {
 }
 
 .options {
-    text-align: left;   
+    text-align: left;
 }
 
 .option-inputs {
     border: 1px solid rgb(187, 187, 187);
     border-radius: 5px 5px 5px 5px;
-    padding: 5px;
-    margin: 5px;
     text-align: left;
     display: inline-block;
     min-height: 2.5em;
@@ -62,7 +60,7 @@ body {
 }
 
 .custom-resolution {
-    width: 5em; 
+    width: 5em;
     text-align: center;
 }
 
@@ -118,20 +116,19 @@ body {
 }
 
 #info-panel {
+    font-family: 'Lato';
+    font-size: 14px;
     padding: 10px;
-    border: 2px dashed rgb(187, 187, 187);
     border-radius: 5px 5px 5px 5px;
     position: absolute;
     top: 18px;
     left: 18px;
     background: white;
-    width: 320px;
-    overflow-y: scroll;
+    width: 335px;
 }
 
 #info-panel h3 {
     margin: 0px;
-    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
     font-weight: 500;
     line-height: 1.1;
     border-bottom: 1px solid #eee;
@@ -142,9 +139,9 @@ body {
 }
 
 #info-panel ul {
-    margin-left: -10px;
-    list-style-type: none;
-    list-style-position: inside;
+    margin: 0;
+    padding: 0;
+    list-style: none;
 }
 
 #info-panel li {
@@ -161,23 +158,16 @@ body {
     text-align: center;
 }
 
-#info-panel input {
-    height: 25px;
-}
-
 .feature-hotkeys {
-    padding-right: 5px;
-    border-right: 2px solid rgb(187, 187, 187);
-    border-left: 2px solid rgb(187, 187, 187);
-    padding-left: 5px;
-    margin-left: -20px;
-    background-color: #428bca;
-    color: #eee;
+    padding: 2px 5px;
+    border-right: 2px solid #0b2a2f;
+    border-left: 2px solid #0b2a2f;
+    background-color: #247E8F;
+    color: #ffffff;
 }
 
 .feature-value {
     float: right;
-    width: 40px;
 }
 
 .feature-number-input {
@@ -278,7 +268,7 @@ body {
 
 .camera-field-center {
     margin-left: -3px;
-    margin-right: -3px;   
+    margin-right: -3px;
 }
 
 .camera-field-mid {
@@ -290,4 +280,30 @@ body {
 
 .display-none {
     display: none !important;
+}
+
+#fork-me {
+    position: absolute;
+    top: 0;
+    left: 0;
+    border: 0;
+    width: 8%;
+}
+
+@media all and (max-width: 767px) {
+    .margin-sm-bottom {
+        margin-bottom: 25px;
+    }
+
+    .jumbotron > .row {
+        flex-direction: column
+    }
+
+    .margin-left {
+        margin-left: 0;
+    }
+
+    #fork-me {
+        width: 110px;
+    }
 }

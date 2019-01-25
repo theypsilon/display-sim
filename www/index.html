@@ -21,16 +21,16 @@
 
   <section id="ui" class="display-none">
     <a href="https://github.com/theypsilon/crt-3d-sim">
-      <img style="position: absolute; top: 0; left: 0; border: 0; width: 8%;" src="assets/forkme.png" alt="Fork me on GitHub">
+      <img id="fork-me" src="assets/forkme.png" alt="Fork me on GitHub">
     </a>
 
     <header class="container bg-white jumbotron page-header">
-      <h1>CRT 3D Sim</h1>
+      <h1 class="margin-sm-bottom">CRT 3D Sim</h1>
       <div class="row">
-        <div class="col-md-8">
+        <div class="col-md-6 col-sm-12 margin-sm-bottom">
           <p>This tool is a proof of concept of a sandbox to create filters that mitigate the unrealistic experience of watching content designed for old CRTs in modern LCD screens.</p>
         </div>
-        <div class="col-md-4  text-center">
+        <div class="col-md-4 col-md-offset-2 col-sm-12 text-center">
           <p>Don't get why this is a thing?</p>
           <a class="btn btn-crt btn-green text-white" href="#explanation">Read some explanation below</a>
         </div>
@@ -38,15 +38,16 @@
     </header>
 
     <section class="warning bg-warning text-white">
-      <div class="container">
-        <p><strong>WARNING!</strong> Mobile devices won't work! You need a PC with NVIDIA or ATI graphics card with updated drivers and a modern browser (but not Edge) in order to run this without problems.</p>
+      <div class="container text-center">
+        <p class="text-big spacing-md"><strong>WARNING! Mobile devices won't work!</strong></p>
+        <p>You need a PC with NVIDIA or ATI graphics card with updated drivers<br> and a modern browser (but not Edge) in order to run this without problems.</p>
       </div>
     </section>
 
     <section class="bg-green text-white form">
       <form class="container" id="form" name="form">
         <div class="render-tests row">
-          <div class="render-panel-dad col-sm-6">
+          <div class="render-panel-dad col-sm-6 margin-sm-bottom">
             <h3>Render test animation</h3>
             <div class="well render-panel">
               <div class="gif bg-white"><img src="assets/wwix.gif"><span>256 ✕ 224</span></div><br/>
@@ -73,22 +74,25 @@
           <h3>Options</h3>
           <div class="options">
             <div class="option-inputs">
-              <label for="webgl-options">WebGl Context:</label>
+              <label class="block" for="webgl-options">WebGl Context:</label>
               <div class="option-inputs">
                 <label for="antialias">antialias:</label>
                 <input type="checkbox" id="antialias" value="antialias">
               </div>
 
               <div class="option-inputs">
-                <label for="powerPreference">powerPreference:</label>
+                <label class="margin-left" for="powerPreference">powerPreference:</label>
                 <input type="radio" id="powerPreference-1" name="powerPreference" value="default" /><div class="option-text">default</div>
                 <input type="radio" id="powerPreference-2" name="powerPreference" value="high-performance" /><div class="option-text">high-performance</div>
                 <input type="radio" id="powerPreference-3" name="powerPreference" value="low-power" /><div class="option-text">low-power</div>
               </div>
             </div>
             <div class="option-inputs">
-              <label for="scaling">Scaling:</label>
-              <div class="scaling-radio" title="Auto detect"><input type="radio" id="scaling-auto" name="scaling" value="0" /><div class="option-text">auto detect</div></div>
+              <label class="block" for="scaling">Scaling:</label>
+              <div class="scaling-radio" title="Auto detect">
+                <input type="radio" id="scaling-auto" name="scaling" value="0" />
+                <div class="option-text">auto detect</div>
+              </div>
               <div class="scaling-radio" title="None"><input type="radio" id="scaling-none" name="scaling" value="1" /><div class="option-text">none</div></div>
               <div class="scaling-radio" title="4:3 on full image"><input type="radio" id="scaling-4:3" name="scaling" value="-1" /><div class="option-text">4:3 on full image</div></div>
               <div class="scaling-radio" title="Stretch to both edges"><input type="radio" id="scaling-stretch-both" name="scaling" /><div class="option-text">stretch to both edges</div></div>
@@ -121,7 +125,7 @@
       </form>
     </section>
 
-    <section class="container">
+    <section class="container explanation">
       <h3>Explanation:</h3>
       <a name="explanation"></a>
       <p>Old systems, like the NES, SNES, or Mega Drive, did usually work with resolutions such as 256x224 or 320x224 that would be deformed to fit a 4:3 screen. Graphics were designed with this aspect ratio transformation in mind. Therefore, when scaling them up by multiplying the original resolution by a given integer factor, those graphics are distorted if not using some sort of filtering for that matter. Stretching the images to fit a 4:3 aspect ratio within the current resolution also gives distortion as result, because of pixel interpolation, but is usually a preferred solution.</p>
@@ -136,11 +140,14 @@
       <div class="container">
         <h3>Credits</h3>
         <div class="row">
-          <div class="col-md-6">
-            <label>Concept + Implementation</label><p>José Manuel Barroso Galindo &lt;theypsilon@gmail.com&gt;</p>
+          <div class="col-sm-4 margin-sm-bottom">
+            <label>Concept + Implementation</label><p>José Manuel Barroso Galindo<br />&lt;theypsilon@gmail.com&gt;</p>
           </div>
-          <div class="col-md-6">
-            <label>Test animation sprites</label><p>Ryoga &lt;pig_saint@gmail.com&gt;</p>
+          <div class="col-sm-4 margin-sm-bottom">
+            <label>Test animation sprites</label><p>Ryoga<br />&lt;pig_saint@gmail.com&gt;</p>
+          </div>
+          <div class="col-sm-4 margin-sm-bottom">
+            <label>Front-end Designer</label><p>Ana Manosfrias<br />&lt;a.gilamor@gmail.com&gt;</p>
           </div>
       </div>
     </footer>
@@ -214,7 +221,7 @@
       </ul>
     </div>
     <div class="info-button">
-      <input id="info-hide" type="button" value="Hide this panel">
+      <input class="btn btn-crt btn-green text-white" id="info-hide" type="button" value="Hide this panel">
     </div>
   </section>
 </body>
