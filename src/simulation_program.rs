@@ -293,7 +293,7 @@ fn update_pixel_characteristics(dt: f32, res: &mut Resources, input: &Input) -> 
     let pixel_velocity = dt * res.pixel_manipulation_speed;
     change_pixel_sizes(&input, input.increase_pixel_scale_x, input.decrease_pixel_scale_x, &mut res.cur_pixel_scale_x, pixel_velocity * 0.00125, "app-event.change_pixel_horizontal_gap", "event_kind:pixel_horizontal_gap")?;
     change_pixel_sizes(&input, input.increase_pixel_scale_y, input.decrease_pixel_scale_y, &mut res.cur_pixel_scale_y, pixel_velocity * 0.00125, "app-event.change_pixel_vertical_gap", "event_kind:pixel_vertical_gap")?;
-    change_pixel_sizes(&input, input.increase_pixel_gap, input.decrease_pixel_gap, &mut res.animation.scale_x, pixel_velocity * 0.005, "app-event.change_pixel_width", "event_kind:pixel_width")?;
+    change_pixel_sizes(&input, input.increase_pixel_gap && !input.shift, input.decrease_pixel_gap && !input.shift, &mut res.animation.scale_x, pixel_velocity * 0.005, "app-event.change_pixel_width", "event_kind:pixel_width")?;
     change_pixel_sizes(&input, input.increase_pixel_gap && input.shift, input.decrease_pixel_gap && input.shift, &mut res.cur_pixel_gap, pixel_velocity * 0.005, "app-event.change_pixel_spread", "event_kind:pixel_spread")?;
 
     fn change_pixel_sizes(input: &Input, increase: bool, decrease: bool, cur_size: &mut f32, velocity: f32, event_id: &str, event_kind: &str) -> WasmResult<()> {
