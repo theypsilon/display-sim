@@ -152,22 +152,26 @@ function updateInnerHtmlWithEventNumber(deo, eventId) {
 }
 
 customEventOnChange(pixelWidthDeo, "pixel_width", a => +a);
+customEventOnChange(pixelSpreadDeo, "pixel_spread", a => +a);
 customEventOnChange(pixelHorizontalGapDeo, "pixel_horizontal_gap", a => +a);
 customEventOnChange(pixelVerticalGapDeo, "pixel_vertical_gap", a => +a);
-customEventOnChange(pixelSpreadDeo, "pixel_spread", a => +a);
+customEventOnChange(blurLevelDeo, "blur_level", a => +a);
+customEventOnChange(pixelBrigthnessDeo, "pixel_brightness", a => +a);
 
 const parseColor = (value) => parseInt('0x' +value.substring(1));
 customEventOnChange(lightColorDeo, "light_color", parseColor);
 customEventOnChange(brightnessColorDeo, "brightness_color", parseColor);
 function customEventOnChange(deo, kind, parse) {
-    deo.onchange = () => {
+    const changed = () => {
         window.dispatchEvent(new CustomEvent('app-event.custom_input_event', {
             detail: {
                 value: parse(deo.value),
                 kind: "event_kind:"+kind,
             },
         }));
-    }
+    };
+    deo.onclick = changed;
+    deo.onchange = changed;
 }
 
 infoHideDeo.onclick = () => {
