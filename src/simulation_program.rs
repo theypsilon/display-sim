@@ -1,6 +1,7 @@
 use wasm_bindgen::{JsCast, JsValue, prelude::Closure};
 use web_sys::{
     console,
+    Window,
     WebGl2RenderingContext,
 };
 use std::rc::Rc;
@@ -30,33 +31,13 @@ pub fn program(gl: JsValue, animation: AnimationData) -> WasmResult<()> {
         let owned_state = Rc::clone(&owned_state);
         let window = window()?;
         Closure::wrap(Box::new(move |_| {
-            let mut input = owned_state.input.borrow_mut();
-            let mut resources = owned_state.resources.borrow_mut();
-            let closures = owned_state.closures.borrow();
-            input.now = now().unwrap_or(resources.last_time);
-            let update_status = update(&mut resources, &input);
-
-            input.mouse_scroll_y = 0.0;
-            input.mouse_position_x = 0;
-            input.mouse_position_y = 0;
-            input.custom_event.kind = String::new();
-
-            match update_status {
-                Ok(next_update_needed) => {
-                    if !next_update_needed {
-                        return;
-                    }
-                    if let Err(e) = draw(&gl, &resources) {
-                        console::error_2(&"An unexpected error happened during draw.".into(), &e.to_js());
-                        return;
-                    }
-                    if let Some(ref frame_closure) = closures[0] {
-                        if let Err(e) = window.request_animation_frame(frame_closure.as_ref().unchecked_ref()) {
-                            console::error_2(&"An unexpected error happened during window.request_animation_frame.".into(), &e);
-                        }
-                    }
-                },
-                Err(e) => console::error_2(&"An unexpected error happened during update.".into(), &e.to_js())
+            match program_iteration(&owned_state, &gl, &window) {
+                Ok(true) => {},
+                Ok(false) => return,
+                Err(e) => {
+                    console::error_2(&"An unexpected error happened during program_iteration.".into(), &e.to_js());
+                    return
+                }
             }
         }))
     };
@@ -70,7 +51,21 @@ pub fn program(gl: JsValue, animation: AnimationData) -> WasmResult<()> {
     Ok(())
 }
 
-pub fn load_resources(gl: &WebGl2RenderingContext, animation: AnimationData) -> WasmResult<Resources> {
+fn program_iteration(owned_state: &StateOwner, gl: &WebGl2RenderingContext, window: &Window) -> WasmResult<bool> {
+    let mut input = owned_state.input.borrow_mut();
+    let mut resources = owned_state.resources.borrow_mut();
+    let closures = owned_state.closures.borrow();
+    pre_process_input(&mut input, &resources)?;
+    let update_state = update(&mut resources, &input)?;
+    post_process_input(&mut input)?;
+    draw(&gl, &resources)?;
+    if let Some(ref frame_closure) = closures[0] {
+        window.request_animation_frame(frame_closure.as_ref().unchecked_ref())?;
+    }
+    Ok(update_state)
+}
+
+fn load_resources(gl: &WebGl2RenderingContext, animation: AnimationData) -> WasmResult<Resources> {
     let far_away_position = calculate_far_away_position(&animation);
     let mut camera = Camera::new(MOVEMENT_BASE_SPEED * far_away_position / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED);
     camera.set_position(glm::vec3(0.0, 0.0, far_away_position));
@@ -135,7 +130,20 @@ fn calculate_far_away_position(animation: &AnimationData) -> f32 {
     0.5 + (resolution as f32 / bound_ratio) * if is_height_bounded {1.2076} else {0.68 * animation.scale_x}
 }
 
-pub fn update(res: &mut Resources, input: &Input) -> WasmResult<bool> {
+fn pre_process_input(input: &mut Input, resources: &Resources) -> WasmResult<()> {
+    input.now = now().unwrap_or(resources.last_time);
+    Ok(())
+}
+
+fn post_process_input(input: &mut Input) -> WasmResult<()> {
+    input.mouse_scroll_y = 0.0;
+    input.mouse_position_x = 0;
+    input.mouse_position_y = 0;
+    input.custom_event.kind = String::new();
+    Ok(())
+}
+
+fn update(res: &mut Resources, input: &Input) -> WasmResult<bool> {
     let dt = update_timers_and_dt(res, input)?;
     
     update_animation_buffer(res, input);
