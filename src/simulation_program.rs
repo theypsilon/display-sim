@@ -31,13 +31,8 @@ pub fn program(gl: JsValue, animation: AnimationData) -> WasmResult<()> {
         let owned_state = Rc::clone(&owned_state);
         let window = window()?;
         Closure::wrap(Box::new(move |_| {
-            match program_iteration(&owned_state, &gl, &window) {
-                Ok(true) => {},
-                Ok(false) => return,
-                Err(e) => {
-                    console::error_2(&"An unexpected error happened during program_iteration.".into(), &e.to_js());
-                    return
-                }
+            if let Err(e) = program_iteration(&owned_state, &gl, &window) {
+                console::error_2(&"An unexpected error happened during program_iteration.".into(), &e.to_js());
             }
         }))
     };
@@ -51,18 +46,21 @@ pub fn program(gl: JsValue, animation: AnimationData) -> WasmResult<()> {
     Ok(())
 }
 
-fn program_iteration(owned_state: &StateOwner, gl: &WebGl2RenderingContext, window: &Window) -> WasmResult<bool> {
+fn program_iteration(owned_state: &StateOwner, gl: &WebGl2RenderingContext, window: &Window) -> WasmResult<()> {
     let mut input = owned_state.input.borrow_mut();
     let mut resources = owned_state.resources.borrow_mut();
     let closures = owned_state.closures.borrow();
     pre_process_input(&mut input, &resources)?;
-    let update_state = update(&mut resources, &input)?;
+    if !update(&mut resources, &input)? { 
+        console::log_1(&"User closed the simulation.".into());
+        return Ok(());
+    }
     post_process_input(&mut input)?;
     draw(&gl, &resources)?;
     if let Some(ref frame_closure) = closures[0] {
         window.request_animation_frame(frame_closure.as_ref().unchecked_ref())?;
     }
-    Ok(update_state)
+    Ok(())
 }
 
 fn load_resources(gl: &WebGl2RenderingContext, animation: AnimationData) -> WasmResult<Resources> {
@@ -136,12 +134,10 @@ fn pre_process_input(input: &mut Input, resources: &Resources) -> WasmResult<()>
         "button_down" => {
             let button = input.custom_event.value.as_string().ok_or("invalid-botton-down")?;
             on_button_action(input, button.as_ref(), true);
-            console::log_2(&"button_down!".into(), &input.custom_event.value);
         },
         "button_up" => {
             let button = input.custom_event.value.as_string().ok_or("invalid-botton-up")?;
             on_button_action(input, button.as_ref(), false);
-            console::log_2(&"button_up!".into(), &input.custom_event.value);
         },
         _ => {}
     }
