@@ -139,15 +139,15 @@ window.addEventListener('app-event.top_message', event => {
 }, false);
 
 window.addEventListener('app-event.camera_update', event => {
-    cameraPosXDeo.innerHTML = Math.round(event.detail[0] * 100) / 100;
-    cameraPosYDeo.innerHTML = Math.round(event.detail[1] * 100) / 100;
-    cameraPosZDeo.innerHTML = Math.round(event.detail[2] * 100) / 100;
-    cameraDirXDeo.innerHTML = Math.round(event.detail[3] * 100) / 100;
-    cameraDirYDeo.innerHTML = Math.round(event.detail[4] * 100) / 100;
-    cameraDirZDeo.innerHTML = Math.round(event.detail[5] * 100) / 100;
-    cameraAxisUpXDeo.innerHTML = Math.round(event.detail[6] * 100) / 100;
-    cameraAxisUpYDeo.innerHTML = Math.round(event.detail[7] * 100) / 100;
-    cameraAxisUpZDeo.innerHTML = Math.round(event.detail[8] * 100) / 100;
+    cameraPosXDeo.value = Math.round(event.detail[0] * 100) / 100;
+    cameraPosYDeo.value = Math.round(event.detail[1] * 100) / 100;
+    cameraPosZDeo.value = Math.round(event.detail[2] * 100) / 100;
+    cameraDirXDeo.value = Math.round(event.detail[3] * 100) / 100;
+    cameraDirYDeo.value = Math.round(event.detail[4] * 100) / 100;
+    cameraDirZDeo.value = Math.round(event.detail[5] * 100) / 100;
+    cameraAxisUpXDeo.value = Math.round(event.detail[6] * 100) / 100;
+    cameraAxisUpYDeo.value = Math.round(event.detail[7] * 100) / 100;
+    cameraAxisUpZDeo.value = Math.round(event.detail[8] * 100) / 100;
 }, false);
 
 updateInnerHtmlWithEventNumber(pixelWidthDeo, 'app-event.change_pixel_width');

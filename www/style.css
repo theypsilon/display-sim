@@ -245,7 +245,14 @@ body {
     margin-left: -20px;
 }
 
+input.camera-field::-webkit-inner-spin-button,
+input.camera-field::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
 .camera-field {
+    border-width: 0;
     font-size: 60%;
     margin-top: -5px;
     display: inline-block;
@@ -269,6 +276,7 @@ body {
 .camera-field-center {
     margin-left: -3px;
     margin-right: -3px;
+    border-left: 1px solid rgb(187, 187, 187);
 }
 
 .camera-field-mid {
