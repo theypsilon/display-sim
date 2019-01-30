@@ -8,7 +8,7 @@ use std::rc::Rc;
 
 use wasm_error::{WasmResult};
 use web_utils::{window};
-use simulation_state::{OwnedClosure, StateOwner};
+use simulation_state::{OwnedClosure, StateOwner, Input};
 
 pub fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<OwnedClosure>> {
 
@@ -17,42 +17,7 @@ pub fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<Owned
         Closure::wrap(Box::new(move |event: JsValue| {
             if let Ok(e) = event.dyn_into::<KeyboardEvent>() {
                 let mut input = state_owner.input.borrow_mut();
-                match e.key().to_lowercase().as_ref() {
-                    "a" => input.walk_left = true,
-                    "d" => input.walk_right = true,
-                    "w" => input.walk_forward = true,
-                    "s" => input.walk_backward = true,
-                    "q" => input.walk_up = true,
-                    "e" => input.walk_down = true,
-                    "arrowleft" => input.turn_left = true,
-                    "arrowright" => input.turn_right = true,
-                    "arrowup" => input.turn_up = true,
-                    "arrowdown" => input.turn_down = true,
-                    "+" => input.rotate_left = true,
-                    "-" => input.rotate_right = true,
-                    "f" => input.speed_up = true,
-                    "r" => input.speed_down = true,
-                    "t" => input.reset_speeds = true,
-                    "u" => input.increase_pixel_scale_x = true,
-                    "i" => input.decrease_pixel_scale_x = true,
-                    "j" => input.increase_pixel_scale_y = true,
-                    "k" => input.decrease_pixel_scale_y = true,
-                    "n" => input.increase_pixel_gap = true,
-                    "m" => input.decrease_pixel_gap = true,
-                    "b" => input.increase_blur = true,
-                    "v" => input.decrease_blur = true,
-                    "c" => input.increase_bright = true,
-                    "x" => input.decrease_bright = true,
-                    "z" => input.reset_brightness = true,
-                    "y" => input.toggle_split_colors = true,
-                    "o" => input.toggle_pixels_render_kind = true,
-                    "p" => input.showing_pixels_pulse = true,
-                    "shift" => input.shift = true,
-                    "alt" => input.alt = true,
-                    " " => input.space = true,
-                    "escape" => input.esc = true,
-                    _ => console::log_2(&"down".into(), &e.key().into())
-                }
+                on_button_action(&mut input, e.key().to_lowercase().as_ref(), true);
             }
         }))
     };
@@ -62,42 +27,7 @@ pub fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<Owned
         Closure::wrap(Box::new(move |event: JsValue| {
             if let Ok(e) = event.dyn_into::<KeyboardEvent>() {
                 let mut input = state_owner.input.borrow_mut();
-                match e.key().to_lowercase().as_ref() {
-                    "a" => input.walk_left = false,
-                    "d" => input.walk_right = false,
-                    "w" => input.walk_forward = false,
-                    "s" => input.walk_backward = false,
-                    "q" => input.walk_up = false,
-                    "e" => input.walk_down = false,
-                    "arrowleft" => input.turn_left = false,
-                    "arrowright" => input.turn_right = false,
-                    "arrowup" => input.turn_up = false,
-                    "arrowdown" => input.turn_down = false,
-                    "+" => input.rotate_left = false,
-                    "-" => input.rotate_right = false,
-                    "f" => input.speed_up = false,
-                    "r" => input.speed_down = false,
-                    "t" => input.reset_speeds = false,
-                    "u" => input.increase_pixel_scale_x = false,
-                    "i" => input.decrease_pixel_scale_x = false,
-                    "j" => input.increase_pixel_scale_y = false,
-                    "k" => input.decrease_pixel_scale_y = false,
-                    "n" => input.increase_pixel_gap = false,
-                    "m" => input.decrease_pixel_gap = false,
-                    "b" => input.increase_blur = false,
-                    "v" => input.decrease_blur = false,
-                    "c" => input.increase_bright = false,
-                    "x" => input.decrease_bright = false,
-                    "z" => input.reset_brightness = false,
-                    "y" => input.toggle_split_colors = false,
-                    "o" => input.toggle_pixels_render_kind = false,
-                    "p" => input.showing_pixels_pulse = false,
-                    "shift" => input.shift = false,
-                    "alt" => input.alt = false,
-                    " " => input.space = false,
-                    "escape" => input.esc = false,
-                    _ => console::log_2(&"up".into(), &e.key().into())
-                }
+                on_button_action(&mut input, e.key().to_lowercase().as_ref(), false);
             }
         }))
     };
@@ -180,4 +110,43 @@ pub fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<Owned
     closures.push(Some(oncustominputevent));
 
     Ok(closures)
+}
+
+pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
+    match button_action {
+        "a" => input.walk_left = pressed,
+        "d" => input.walk_right = pressed,
+        "w" => input.walk_forward = pressed,
+        "s" => input.walk_backward = pressed,
+        "q" => input.walk_up = pressed,
+        "e" => input.walk_down = pressed,
+        "arrowleft" => input.turn_left = pressed,
+        "arrowright" => input.turn_right = pressed,
+        "arrowup" => input.turn_up = pressed,
+        "arrowdown" => input.turn_down = pressed,
+        "+" => input.rotate_left = pressed,
+        "-" => input.rotate_right = pressed,
+        "f" => input.speed_up = pressed,
+        "r" => input.speed_down = pressed,
+        "t" => input.reset_speeds = pressed,
+        "u" => input.increase_pixel_scale_x = pressed,
+        "i" => input.decrease_pixel_scale_x = pressed,
+        "j" => input.increase_pixel_scale_y = pressed,
+        "k" => input.decrease_pixel_scale_y = pressed,
+        "n" => input.increase_pixel_gap = pressed,
+        "m" => input.decrease_pixel_gap = pressed,
+        "b" => input.increase_blur = pressed,
+        "v" => input.decrease_blur = pressed,
+        "c" => input.increase_bright = pressed,
+        "x" => input.decrease_bright = pressed,
+        "z" => input.reset_brightness = pressed,
+        "y" => input.toggle_split_colors = pressed,
+        "o" => input.toggle_pixels_render_kind = pressed,
+        "p" => input.showing_pixels_pulse = pressed,
+        "shift" => input.shift = pressed,
+        "alt" => input.alt = pressed,
+        " " => input.space = pressed,
+        "escape" => input.esc = pressed,
+        _ => console::log_3(&"button_action".into(), &button_action.into(), &pressed.into())
+    }
 }
