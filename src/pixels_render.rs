@@ -15,11 +15,6 @@ pub enum PixelsRenderKind {
     Cubes
 }
 
-pub enum PixelsColorChannels {
-    Separate,
-    Together
-}
-
 pub struct PixelsRender {
     shader: WebGlProgram,
     vao: Option<WebGlVertexArrayObject>,

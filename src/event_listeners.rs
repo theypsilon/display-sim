@@ -12,6 +12,14 @@ use simulation_state::{OwnedClosure, StateOwner, Input};
 
 pub fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<OwnedClosure>> {
 
+    let onblur: Closure<FnMut(JsValue)> = {
+        let mut state_owner = Rc::clone(&state_owner);
+        Closure::wrap(Box::new(move |_: JsValue| {
+            let mut input = state_owner.input.borrow_mut();
+            *input = Input::new().ok().unwrap();
+        }))
+    };
+
     let onkeydown: Closure<FnMut(JsValue)> = {
         let mut state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |event: JsValue| {
@@ -91,16 +99,20 @@ pub fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<Owned
         }))
     };
 
-    let document = window()?.document().ok_or("cannot access document")?;
+    let window = window()?;
+    window.set_onblur(Some(onblur.as_ref().unchecked_ref()));
+
+    let document = window.document().ok_or("cannot access document")?;
     document.set_onkeydown(Some(onkeydown.as_ref().unchecked_ref()));
     document.set_onkeyup(Some(onkeyup.as_ref().unchecked_ref()));
     document.set_onmousedown(Some(onmousedown.as_ref().unchecked_ref()));
     document.set_onmouseup(Some(onmouseup.as_ref().unchecked_ref()));
     document.set_onmousemove(Some(onmousemove.as_ref().unchecked_ref()));
     document.set_onwheel(Some(onmousewheel.as_ref().unchecked_ref()));
-    EventTarget::from(window()?).add_event_listener_with_callback("app-event.custom_input_event", oncustominputevent.as_ref().unchecked_ref())?;
+    EventTarget::from(window).add_event_listener_with_callback("app-event.custom_input_event", oncustominputevent.as_ref().unchecked_ref())?;
 
     let mut closures: Vec<OwnedClosure> = vec!();
+    closures.push(Some(onblur));
     closures.push(Some(onkeydown));
     closures.push(Some(onkeyup));
     closures.push(Some(onmousedown));
@@ -151,8 +163,8 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
                 for button_fraction in button_action.split("+") {
                     on_button_action(input, button_fraction, pressed);
                 }
-            } else {
-                console::log_3(&"button_action".into(), &button_action.into(), &pressed.into());
+            } else if pressed {
+                console::log_2(&"Ignored key: ".into(), &button_action.into());
             }
         }
     }
