@@ -51,7 +51,7 @@ fn program_iteration(owned_state: &StateOwner, gl: &WebGl2RenderingContext, wind
     let mut resources = owned_state.resources.borrow_mut();
     let closures = owned_state.closures.borrow();
     pre_process_input(&mut input, &resources)?;
-    if !update(&mut resources, &input)? { 
+    if !update_simulation(&mut resources, &input)? { 
         console::log_1(&"User closed the simulation.".into());
         return Ok(());
     }
@@ -153,7 +153,7 @@ fn post_process_input(input: &mut Input) -> WasmResult<()> {
     Ok(())
 }
 
-fn update(res: &mut Resources, input: &Input) -> WasmResult<bool> {
+fn update_simulation(res: &mut Resources, input: &Input) -> WasmResult<bool> {
     let dt = update_timers_and_dt(res, input)?;
     
     update_animation_buffer(res, input);
