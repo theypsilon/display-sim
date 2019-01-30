@@ -13,7 +13,7 @@ use dispatch_event::{dispatch_event, dispatch_event_with};
 use web_utils::{now, window};
 use pixels_render::{PixelsRender, PixelsRenderKind, PixelsUniform};
 use blur_render::BlurRender;
-use event_listeners::set_event_listeners;
+use event_listeners::{set_event_listeners, on_button_action};
 use simulation_state::{StateOwner, Resources, Input, AnimationData, Buttons};
 
 const PIXEL_MANIPULATION_BASE_SPEED: f32 = 20.0;
@@ -132,6 +132,19 @@ fn calculate_far_away_position(animation: &AnimationData) -> f32 {
 
 fn pre_process_input(input: &mut Input, resources: &Resources) -> WasmResult<()> {
     input.now = now().unwrap_or(resources.last_time);
+    match input.custom_event.kind.as_ref() {
+        "button_down" => {
+            let button = input.custom_event.value.as_string().ok_or("invalid-botton-down")?;
+            on_button_action(input, button.as_ref(), true);
+            console::log_2(&"button_down!".into(), &input.custom_event.value);
+        },
+        "button_up" => {
+            let button = input.custom_event.value.as_string().ok_or("invalid-botton-up")?;
+            on_button_action(input, button.as_ref(), false);
+            console::log_2(&"button_up!".into(), &input.custom_event.value);
+        },
+        _ => {}
+    }
     Ok(())
 }
 
@@ -299,8 +312,8 @@ fn update_pixel_characteristics(dt: f32, res: &mut Resources, input: &Input) -> 
     }
 
     let pixel_velocity = dt * res.pixel_manipulation_speed;
-    change_pixel_sizes(&input, input.increase_pixel_scale_x, input.decrease_pixel_scale_x, &mut res.cur_pixel_scale_x, pixel_velocity * 0.00125, "app-event.change_pixel_horizontal_gap", "event_kind:pixel_horizontal_gap")?;
-    change_pixel_sizes(&input, input.increase_pixel_scale_y, input.decrease_pixel_scale_y, &mut res.cur_pixel_scale_y, pixel_velocity * 0.00125, "app-event.change_pixel_vertical_gap", "event_kind:pixel_vertical_gap")?;
+    change_pixel_sizes(&input, input.increase_pixel_scale_x, input.decrease_pixel_scale_x, &mut res.cur_pixel_scale_x, pixel_velocity * 0.00125, "app-event.change_pixel_vertical_gap", "event_kind:pixel_vertical_gap")?;
+    change_pixel_sizes(&input, input.increase_pixel_scale_y, input.decrease_pixel_scale_y, &mut res.cur_pixel_scale_y, pixel_velocity * 0.00125, "app-event.change_pixel_horizontal_gap", "event_kind:pixel_horizontal_gap")?;
     change_pixel_sizes(&input, input.increase_pixel_gap && !input.shift, input.decrease_pixel_gap && !input.shift, &mut res.animation.scale_x, pixel_velocity * 0.005, "app-event.change_pixel_width", "event_kind:pixel_width")?;
     change_pixel_sizes(&input, input.increase_pixel_gap && input.shift, input.decrease_pixel_gap && input.shift, &mut res.cur_pixel_gap, pixel_velocity * 0.005, "app-event.change_pixel_spread", "event_kind:pixel_spread")?;
 

@@ -151,6 +151,32 @@ function updateInnerHtmlWithEventNumber(deo, eventId) {
     }, false);
 }
 
+customEventOnButtonPressed(pixelHorizontalGapDeo);
+customEventOnButtonPressed(pixelVerticalGapDeo);
+customEventOnButtonPressed(pixelWidthDeo);
+customEventOnButtonPressed(blurLevelDeo);
+customEventOnButtonPressed(pixelBrigthnessDeo);
+function customEventOnButtonPressed(deo) {
+    const increaseButton = deo.parentNode.parentNode.querySelector('.increase');
+    const decreaseButton = deo.parentNode.parentNode.querySelector('.decrease');
+    attachListenersToButtons(increaseButton);
+    attachListenersToButtons(decreaseButton);
+    function attachListenersToButtons(button) {
+        button.onmousedown = sendButtonEvent(button.innerHTML.toLocaleLowerCase(), true);
+        button.onmouseup = sendButtonEvent(button.innerHTML.toLocaleLowerCase(), false);
+    }
+    function sendButtonEvent(buttonAction, pressed) {
+        return () => {
+            window.dispatchEvent(new CustomEvent('app-event.custom_input_event', {
+                detail: {
+                    value: buttonAction,
+                    kind: pressed ? "button_down" : "button_up",
+                },
+            }));
+        };
+    }
+}
+
 customEventOnChange(pixelWidthDeo, "pixel_width", a => +a);
 customEventOnChange(pixelSpreadDeo, "pixel_spread", a => +a);
 customEventOnChange(pixelHorizontalGapDeo, "pixel_horizontal_gap", a => +a);
