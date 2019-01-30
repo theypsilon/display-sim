@@ -57,9 +57,10 @@ fn program_iteration(owned_state: &StateOwner, gl: &WebGl2RenderingContext, wind
     }
     post_process_input(&mut input)?;
     draw(&gl, &resources)?;
-    if let Some(ref frame_closure) = closures[0] {
-        window.request_animation_frame(frame_closure.as_ref().unchecked_ref())?;
-    }
+    window.request_animation_frame(
+        closures[0].as_ref().ok_or("Wrong closure.")?
+        .as_ref().unchecked_ref()
+    )?;
     Ok(())
 }
 
@@ -217,10 +218,7 @@ fn update_colors(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> 
     if input.decrease_bright {
         res.extra_bright -= 0.01 * dt * res.pixel_manipulation_speed;
     }
-    if input.reset_brightness {
-        res.extra_bright = 0.0;
-    }
-    if input.increase_bright || input.decrease_bright || input.reset_brightness {
+    if input.increase_bright || input.decrease_bright {
         if res.extra_bright < -1.0 {
             res.extra_bright = -1.0;
         } else if res.extra_bright > 1.0 {
@@ -236,7 +234,7 @@ fn update_colors(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> 
     let color_variable = match input.custom_event.kind.as_ref() {
         "event_kind:light_color" => &mut res.light_color,
         "event_kind:brightness_color" => &mut res.brightness_color,
-        other => return Ok(()),
+        _ => return Ok(()),
     };
 
     let color_pick = input.custom_event.value.as_f64().ok_or("it should be a number")? as i32;

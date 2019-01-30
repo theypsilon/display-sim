@@ -139,14 +139,21 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
         "v" => input.decrease_blur = pressed,
         "c" => input.increase_bright = pressed,
         "x" => input.decrease_bright = pressed,
-        "z" => input.reset_brightness = pressed,
         "y" => input.toggle_split_colors = pressed,
         "o" => input.toggle_pixels_render_kind = pressed,
         "p" => input.showing_pixels_pulse = pressed,
         "shift" => input.shift = pressed,
         "alt" => input.alt = pressed,
-        " " => input.space = pressed,
-        "escape" => input.esc = pressed,
-        _ => console::log_3(&"button_action".into(), &button_action.into(), &pressed.into())
+        " " | "space" => input.space = pressed,
+        "escape" | "esc" => input.esc = pressed,
+        _ => {
+            if button_action.contains("+") {
+                for button_fraction in button_action.split("+") {
+                    on_button_action(input, button_fraction, pressed);
+                }
+            } else {
+                console::log_3(&"button_action".into(), &button_action.into(), &pressed.into());
+            }
+        }
     }
 }

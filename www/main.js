@@ -54,6 +54,18 @@ const pixelVerticalGapDeo = document.getElementById('pixel-vertical-gap');
 const pixelSpreadDeo = document.getElementById('pixel-spread');
 const pixelBrigthnessDeo = document.getElementById('pixel-brightness');
 const blurLevelDeo = document.getElementById('blur-level');
+const featureChangeColorRepresentationDeo = document.getElementById('feature-change-color-representation');
+const featureChangePixelShapeDeo = document.getElementById('feature-change-pixel-shape');
+const featurePulsationDeo = document.getElementById('feature-pulsation');
+const featureQuitDeo = document.getElementById('feature-quit');
+const featureInfoPanelDeo = document.getElementById('feature-info-panel');
+const featureChangeMoveSpeedDeo = document.getElementById('feature-change-move-speed');
+const featureChangeTurnSpeedDeo = document.getElementById('feature-change-turn-speed');
+const featureChangePixelSpeedDeo = document.getElementById('feature-change-pixel-speed');
+const featureAdvanceDeo = document.getElementById('feature-advance');
+const featureStrafeDeo = document.getElementById('feature-strafe');
+const featureClimbDeo = document.getElementById('feature-climb');
+const featureKbRotateDeo = document.getElementById('feature-kb-rotate');
 
 const getGlCanvasDeo = () => document.getElementById(glCanvasHtmlId);
 const getPreviewDeo = () => document.getElementById(previewHtmlId);
@@ -151,21 +163,39 @@ function updateInnerHtmlWithEventNumber(deo, eventId) {
     }, false);
 }
 
-customEventOnButtonPressed(pixelHorizontalGapDeo);
-customEventOnButtonPressed(pixelVerticalGapDeo);
-customEventOnButtonPressed(pixelWidthDeo);
-customEventOnButtonPressed(blurLevelDeo);
-customEventOnButtonPressed(pixelBrigthnessDeo);
+customEventOnButtonPressed(featureAdvanceDeo);
+customEventOnButtonPressed(featureStrafeDeo);
+customEventOnButtonPressed(featureClimbDeo);
+customEventOnButtonPressed(featureKbRotateDeo);
+
+customEventOnButtonPressed(pixelHorizontalGapDeo.parentNode.parentNode);
+customEventOnButtonPressed(pixelVerticalGapDeo.parentNode.parentNode);
+customEventOnButtonPressed(pixelWidthDeo.parentNode.parentNode);
+customEventOnButtonPressed(blurLevelDeo.parentNode.parentNode);
+customEventOnButtonPressed(pixelBrigthnessDeo.parentNode.parentNode);
+customEventOnButtonPressed(pixelSpreadDeo.parentNode.parentNode);
+
+customEventOnButtonPressed(featureChangeColorRepresentationDeo);
+customEventOnButtonPressed(featureChangePixelShapeDeo);
+customEventOnButtonPressed(featurePulsationDeo);
+
+customEventOnButtonPressed(featureChangeMoveSpeedDeo);
+customEventOnButtonPressed(featureChangeTurnSpeedDeo);
+customEventOnButtonPressed(featureChangePixelSpeedDeo);
+
+customEventOnButtonPressed(featureQuitDeo);
+customEventOnButtonPressed(featureInfoPanelDeo);
 function customEventOnButtonPressed(deo) {
-    const increaseButton = deo.parentNode.parentNode.querySelector('.increase');
-    const decreaseButton = deo.parentNode.parentNode.querySelector('.decrease');
+    const increaseButton = deo.querySelector('.increase');
+    const decreaseButton = deo.querySelector('.decrease');
     attachListenersToButtons(increaseButton);
-    attachListenersToButtons(decreaseButton);
+    if (decreaseButton) attachListenersToButtons(decreaseButton);
     function attachListenersToButtons(button) {
-        button.onmousedown = sendButtonEvent(button.innerHTML.toLocaleLowerCase(), true);
-        button.onmouseup = sendButtonEvent(button.innerHTML.toLocaleLowerCase(), false);
+        button.onmousedown = sendButtonEvent(button, true);
+        button.onmouseup = sendButtonEvent(button, false);
     }
-    function sendButtonEvent(buttonAction, pressed) {
+    function sendButtonEvent(button, pressed) {
+        const buttonAction = button.innerHTML.toLowerCase();
         return () => {
             window.dispatchEvent(new CustomEvent('app-event.custom_input_event', {
                 detail: {
