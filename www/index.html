@@ -181,43 +181,46 @@
         </div>
       </div>
       <ul>
-        <li><div id="feature-advance" class="feature-hotkeys"><button class="increase">W</button>, <button class="decrease">S</button></div><div class="feature-explanation">back and forth.</div></li>
-        <li><div id="feature-strafe" class="feature-hotkeys"><button class="increase">A</button>, <button class="decrease">D</button></div><div class="feature-explanation">left and right.</div></li>
-        <li><div id="feature-climb" class="feature-hotkeys"><button class="increase">Q</button>, <button class="decrease">E</button></div><div class="feature-explanation">up and down.</div></li>
-        <li><div id="feature-turn" class="feature-hotkeys">Arrow keys</div><div class="feature-explanation">turn camera up, down, left and right.</div></li>
-        <li><div id="feature-kb-rotate" class="feature-hotkeys"><button class="increase">+</button>, <button class="decrease">-</button></div><div class="feature-explanation">rotate camera.</div></li>
-        <li><div id="feature-mouse-rotate" class="feature-hotkeys">Hold left click mouse button</div><div class="feature-explanation">to control the camera with the mouse.</div></li>
+        <li><div class="feature-hotkeys">Translation</div></br><div id="feature-camera-movements">
+          <div><button class="activate-button feature-movement-keys key-up-center">W</button><button class="activate-button feature-movement-keys key-up-far-right">Q</button> ↑</div><br/>
+          <div><button class="activate-button feature-movement-keys">A</button><button class="activate-button feature-movement-keys">S</button><button class="activate-button feature-movement-keys">D</button><button class="activate-button feature-movement-keys key-down-far-right">E</button> ↓</div>
+        </div></li>
+        <li><div class="feature-hotkeys">Rotation</div></br><div id="feature-camera-turns">
+          <div><button class="activate-button feature-movement-keys key-up-center">↑</button><button class="activate-button feature-movement-keys key-up-far-right">+</button> ⟳</div><br/>
+          <div><button class="activate-button feature-movement-keys">←</button><button class="activate-button feature-movement-keys">↓</button><button class="activate-button feature-movement-keys">→</button><button class="activate-button feature-movement-keys key-down-far-right">-</button> ⟲</div>
+        </div></li>
+        <li><div id="feature-mouse-rotate" class="feature-hotkeys">Mouse</div><div class="feature-explanation">to drag the camera.</div></li>
       </ul>
     </div>
     <div class="info-category">
       <h5>Pixel manipulation</h5>
       <ul>
-        <li><div id="feature-size-x" class="feature-hotkeys"><button class="increase">J</button>, <button class="decrease">K</button></div><div class="feature-explanation">to change horizontal gap.</div><div class="feature-value"><input id="pixel-horizontal-gap" class="feature-number-input" type="number" placeholder="0" step="0.05" min="0" max="10" value="0"></div></li>
-        <li><div id="feature-size-y" class="feature-hotkeys"><button class="increase">U</button>, <button class="decrease">I</button></div><div class="feature-explanation">to change vertical gap.</div><div class="feature-value"><input id="pixel-vertical-gap" class="feature-number-input" type="number" placeholder="0" step="0.05" min="0" max="10" value="0"></div></li>
-        <li><div id="feature-width" class="feature-hotkeys"><button class="increase">N</button>, <button class="decrease">M</button></div><div class="feature-explanation">to change pixel width.</div><div class="feature-value"><input id="pixel-width" class="feature-number-input" type="number" placeholder="0" step="0.05" min="0" max="10" value="0"></div></li>
-        <li class="display-none"><div id="feature-gap" class="feature-hotkeys"><button class="increase">Shift+N</button>, <button class="decrease">Shift+M</button></div><div class="feature-explanation">spread pixels.</div><div class="feature-value"><input id="pixel-spread" class="feature-number-input" type="number" placeholder="0" step="0.05" min="0" max="10" value="0"></div></li>
-        <li><div id="feature-blur" class="feature-hotkeys"><button class="increase">B</button>, <button class="decrease">V</button></div><div class="feature-explanation">to change the blur level.</div><div class="feature-value"><input id="blur-level" class="feature-number-input" type="number" placeholder="0" step="1" min="0" max="100" value="0"></div></li>
+        <li><div id="feature-size-x" class="feature-hotkeys"><button class="activate-button">J</button>, <button class="activate-button">K</button></div><div class="feature-explanation">to change horizontal gap.</div><div class="feature-value"><input id="pixel-horizontal-gap" class="feature-number-input" type="number" placeholder="0" step="0.05" min="0" max="10" value="0"></div></li>
+        <li><div id="feature-size-y" class="feature-hotkeys"><button class="activate-button">U</button>, <button class="activate-button">I</button></div><div class="feature-explanation">to change vertical gap.</div><div class="feature-value"><input id="pixel-vertical-gap" class="feature-number-input" type="number" placeholder="0" step="0.05" min="0" max="10" value="0"></div></li>
+        <li><div id="feature-width" class="feature-hotkeys"><button class="activate-button">N</button>, <button class="activate-button">M</button></div><div class="feature-explanation">to change pixel width.</div><div class="feature-value"><input id="pixel-width" class="feature-number-input" type="number" placeholder="0" step="0.05" min="0" max="10" value="0"></div></li>
+        <li class="display-none"><div id="feature-gap" class="feature-hotkeys"><button class="activate-button">Shift+N</button>, <button class="activate-button">Shift+M</button></div><div class="feature-explanation">spread pixels.</div><div class="feature-value"><input id="pixel-spread" class="feature-number-input" type="number" placeholder="0" step="0.05" min="0" max="10" value="0"></div></li>
+        <li><div id="feature-blur" class="feature-hotkeys"><button class="activate-button">B</button>, <button class="activate-button">V</button></div><div class="feature-explanation">to change the blur level.</div><div class="feature-value"><input id="blur-level" class="feature-number-input" type="number" placeholder="0" step="1" min="0" max="100" value="0"></div></li>
         <li><div id="feature-light-color" class="feature-hotkeys">Click <input id="light-color" type="color" value="#ffffff"></div><div class="feature-explanation">to pick source light color.</div></li>
-        <li><div id="feature-brightness-intensity" class="feature-hotkeys"><button class="increase">C</button>, <button class="decrease">X</button></div><div class="feature-explanation">to change brightness.</div><div class="feature-value"><input id="pixel-brightness" class="feature-number-input" type="number" placeholder="0" step="0.05" min="-1" max="1" value="0"></div></li>
+        <li><div id="feature-brightness-intensity" class="feature-hotkeys"><button class="activate-button">C</button>, <button class="activate-button">X</button></div><div class="feature-explanation">to change brightness.</div><div class="feature-value"><input id="pixel-brightness" class="feature-number-input" type="number" placeholder="0" step="0.05" min="-1" max="1" value="0"></div></li>
         <li class="display-none"><div id="feature-brightness-color" class="feature-hotkeys">Click <input id="brightness-color" type="color" value="#ffffff"></div><div class="feature-explanation">to pick brightness color.</div></li>
-        <li><div id="feature-change-color-representation" class="feature-hotkeys"><button class="increase">Y</button></div><div class="feature-explanation">to show color channels.</div></li>
-        <li><div id="feature-change-pixel-shape" class="feature-hotkeys"><button class="increase">O</button></div><div class="feature-explanation">to change pixel geometry.</div></li>
-        <li><div id="feature-pulsation" class="feature-hotkeys"><button class="increase">P</button></div><div class="feature-explanation">to activate a wave on the screen.</div></li>
+        <li><div id="feature-change-color-representation" class="feature-hotkeys"><button class="activate-button">Y</button></div><div class="feature-explanation">to show color channels.</div></li>
+        <li><div id="feature-change-pixel-shape" class="feature-hotkeys"><button class="activate-button">O</button></div><div class="feature-explanation">to change pixel geometry.</div></li>
+        <li><div id="feature-pulsation" class="feature-hotkeys"><button class="activate-button">P</button></div><div class="feature-explanation">to activate a wave on the screen.</div></li>
       </ul>
     </div>
     <div class="info-category">
       <h5>Velocity</h5>
       <ul>
-        <li><div id="feature-change-move-speed" class="feature-hotkeys"><button class="increase">F</button>, <button class="decrease">R</button></div><div class="feature-explanation">changes the translation speed.</div></li>
-        <li><div id="feature-change-turn-speed" class="feature-hotkeys"><button class="increase">Alt+F</button>, <button class="decrease">Alt+R</button></div><div class="feature-explanation">changes the turn speed.</div></li>
-        <li><div id="feature-change-pixel-speed" class="feature-hotkeys"><button class="increase">Shift+F</button>, <button class="decrease">Shift+R</button></div><div class="feature-explanation">changes the pixel speed.</div></li>
+        <li><div id="feature-change-move-speed" class="feature-hotkeys"><button class="activate-button">F</button>, <button class="activate-button">R</button></div><div class="feature-explanation">changes the translation speed.</div></li>
+        <li><div id="feature-change-turn-speed" class="feature-hotkeys"><button class="activate-button">Alt+F</button>, <button class="activate-button">Alt+R</button></div><div class="feature-explanation">changes the turn speed.</div></li>
+        <li><div id="feature-change-pixel-speed" class="feature-hotkeys"><button class="activate-button">Shift+F</button>, <button class="activate-button">Shift+R</button></div><div class="feature-explanation">changes the pixel speed.</div></li>
       </ul>
     </div>
     <div class="info-category">
       <h5>Others</h5>
       <ul>
-        <li><div id="feature-quit" class="feature-hotkeys"><button class="increase">ESC</button></div><div class="feature-explanation">to quit the simulation.</div></li>
-        <li><div id="feature-info-panel" class="feature-hotkeys"><button class="increase">SPACE</button></div><div class="feature-explanation">to toggle visibility of this panel.</div></li>
+        <li><div id="feature-quit" class="feature-hotkeys"><button class="activate-button">ESC</button></div><div class="feature-explanation">to quit the simulation.</div></li>
+        <li><div id="feature-info-panel" class="feature-hotkeys"><button class="activate-button">SPACE</button></div><div class="feature-explanation">to toggle visibility of this panel.</div></li>
       </ul>
     </div>
     <div class="info-button">

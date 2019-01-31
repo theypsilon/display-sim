@@ -158,6 +158,21 @@ body {
     text-align: center;
 }
 
+.feature-movement-keys {
+    width: 2em;
+}
+
+.key-up-center {
+    margin-left: 2em;
+}
+
+.key-up-far-right {
+    margin-left: 2.5em;
+}
+.key-down-far-right {
+    margin-left: 0.5em;
+}
+
 .feature-hotkeys {
     padding: 2px 5px;
     border-right: 2px solid #0b2a2f;

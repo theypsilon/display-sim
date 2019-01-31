@@ -62,10 +62,8 @@ const featureInfoPanelDeo = document.getElementById('feature-info-panel');
 const featureChangeMoveSpeedDeo = document.getElementById('feature-change-move-speed');
 const featureChangeTurnSpeedDeo = document.getElementById('feature-change-turn-speed');
 const featureChangePixelSpeedDeo = document.getElementById('feature-change-pixel-speed');
-const featureAdvanceDeo = document.getElementById('feature-advance');
-const featureStrafeDeo = document.getElementById('feature-strafe');
-const featureClimbDeo = document.getElementById('feature-climb');
-const featureKbRotateDeo = document.getElementById('feature-kb-rotate');
+const featureCameraMovementsDeo = document.getElementById('feature-camera-movements');
+const featureCameraTurnsDeo = document.getElementById('feature-camera-turns');
 
 const getGlCanvasDeo = () => document.getElementById(glCanvasHtmlId);
 const getPreviewDeo = () => document.getElementById(previewHtmlId);
@@ -163,10 +161,8 @@ function updateInnerHtmlWithEventNumber(deo, eventId) {
     }, false);
 }
 
-customEventOnButtonPressed(featureAdvanceDeo);
-customEventOnButtonPressed(featureStrafeDeo);
-customEventOnButtonPressed(featureClimbDeo);
-customEventOnButtonPressed(featureKbRotateDeo);
+customEventOnButtonPressed(featureCameraMovementsDeo);
+customEventOnButtonPressed(featureCameraTurnsDeo);
 
 customEventOnButtonPressed(pixelHorizontalGapDeo.parentNode.parentNode);
 customEventOnButtonPressed(pixelVerticalGapDeo.parentNode.parentNode);
@@ -186,10 +182,7 @@ customEventOnButtonPressed(featureChangePixelSpeedDeo);
 customEventOnButtonPressed(featureQuitDeo);
 customEventOnButtonPressed(featureInfoPanelDeo);
 function customEventOnButtonPressed(deo) {
-    const increaseButton = deo.querySelector('.increase');
-    const decreaseButton = deo.querySelector('.decrease');
-    attachListenersToButtons(increaseButton);
-    if (decreaseButton) attachListenersToButtons(decreaseButton);
+    deo.querySelectorAll('.activate-button').forEach(attachListenersToButtons);
     function attachListenersToButtons(button) {
         button.onmousedown = sendButtonEvent(button, true);
         button.onmouseup = sendButtonEvent(button, false);
