@@ -403,6 +403,60 @@ fn update_view_and_perspective(dt: f32, res: &mut Resources, input: &Input) -> W
             res.camera_zoom = 45.0;
         }
     }
+
+    // @Refactor too much code for too little stuff done in this match.
+    match input.custom_event.kind.as_ref() {
+        "event_kind:camera_pos_x" => {
+            let mut position = res.camera.get_position();
+            position.x = input.custom_event.value.as_f64().ok_or("Wrong number")? as f32;
+            res.camera.set_position(position);
+        },
+        "event_kind:camera_pos_y" => {
+            let mut position = res.camera.get_position();
+            position.y = input.custom_event.value.as_f64().ok_or("Wrong number")? as f32;
+            res.camera.set_position(position);
+        },
+        "event_kind:camera_pos_z" => {
+            let mut position = res.camera.get_position();
+            position.z = input.custom_event.value.as_f64().ok_or("Wrong number")? as f32;
+            res.camera.set_position(position);
+        },
+
+        "event_kind:camera_axis_up_x" => {
+            let mut axis_up = res.camera.get_axis_up();
+            axis_up.x = input.custom_event.value.as_f64().ok_or("Wrong number")? as f32;
+            res.camera.set_axis_up(axis_up);
+        },
+        "event_kind:camera_axis_up_y" => {
+            let mut axis_up = res.camera.get_axis_up();
+            axis_up.y = input.custom_event.value.as_f64().ok_or("Wrong number")? as f32;
+            res.camera.set_axis_up(axis_up);
+        },
+        "event_kind:camera_axis_up_z" => {
+            let mut axis_up = res.camera.get_axis_up();
+            axis_up.z = input.custom_event.value.as_f64().ok_or("Wrong number")? as f32;
+            res.camera.set_axis_up(axis_up);
+        },
+
+        "event_kind:camera_direction_x" => {
+            let mut direction = res.camera.get_direction();
+            direction.x = input.custom_event.value.as_f64().ok_or("Wrong number")? as f32;
+            res.camera.set_direction(direction);
+        },
+        "event_kind:camera_direction_y" => {
+            let mut direction = res.camera.get_direction();
+            direction.y = input.custom_event.value.as_f64().ok_or("Wrong number")? as f32;
+            res.camera.set_direction(direction);
+        },
+        "event_kind:camera_direction_z" => {
+            let mut direction = res.camera.get_direction();
+            direction.z = input.custom_event.value.as_f64().ok_or("Wrong number")? as f32;
+            res.camera.set_direction(direction);
+        },
+
+        _ => {}
+    }
+
     res.camera.update_view()
 }
 

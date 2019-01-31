@@ -46,6 +46,22 @@ impl Camera {
         self.position_delta + self.position
     }
 
+    pub fn get_axis_up(&self) -> glm::Vec3 {
+        self.axis_up
+    }
+
+    pub fn set_axis_up(&mut self, new_axis_up: glm::Vec3) {
+        self.axis_up = new_axis_up;
+    }
+
+    pub fn get_direction(&self) -> glm::Vec3 {
+        self.direction
+    }
+
+    pub fn set_direction(&mut self, new_direction: glm::Vec3) {
+        self.direction = new_direction;
+    }
+
     pub fn advance(&mut self, direction: CameraDirection, dt: f32) {
         let velocity = self.movement_speed * dt;
         self.position_delta += match direction {

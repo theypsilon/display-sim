@@ -207,6 +207,16 @@ function customEventOnButtonPressed(deo) {
     }
 }
 
+customEventOnChange(cameraPosXDeo, "camera_pos_x", a => +a);
+customEventOnChange(cameraPosYDeo, "camera_pos_y", a => +a);
+customEventOnChange(cameraPosZDeo, "camera_pos_z", a => +a);
+customEventOnChange(cameraAxisUpXDeo, "camera_axis_up_x", a => +a);
+customEventOnChange(cameraAxisUpYDeo, "camera_axis_up_y", a => +a);
+customEventOnChange(cameraAxisUpZDeo, "camera_axis_up_z", a => +a);
+customEventOnChange(cameraDirXDeo, "camera_direction_x", a => +a);
+customEventOnChange(cameraDirYDeo, "camera_direction_y", a => +a);
+customEventOnChange(cameraDirZDeo, "camera_direction_z", a => +a);
+
 customEventOnChange(pixelWidthDeo, "pixel_width", a => +a);
 customEventOnChange(pixelSpreadDeo, "pixel_spread", a => +a);
 customEventOnChange(pixelHorizontalGapDeo, "pixel_horizontal_gap", a => +a);
