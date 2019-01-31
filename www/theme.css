@@ -96,7 +96,11 @@ section > footer {
   border-color: #ffffff;
 }
 
-.btn-white:hover {
+input[disabled] {
+  opacity: .8;
+}
+
+input.btn-white:not([disabled]):hover {
   background-color: #247E8F;
   color: #ffffff
 }
