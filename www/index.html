@@ -158,7 +158,7 @@
     <div id="fps-counter-holder"><div id="fps-counter"></div><span>FPS</span></div>
     <h3>Info Panel</h3>
     <div class="info-category">
-      <h5>Camera Movements</h5>
+      <h5>Camera Movements <button id="reset-movements" class="reset-button" title="All camera parameters will be reset.">Reset</button></h5>
       <div id="camera-movement-indicator">
         <div class="camera-field-header"><div class="camera-coordinate">X</div><div class="camera-coordinate">Y</div><div class="camera-coordinate">Z</div></div>
         <div id="camera-pos" class="camera-field-group">
@@ -183,17 +183,16 @@
       <ul>
         <li><div class="feature-hotkeys">Translation</div></br><div id="feature-camera-movements" class="camera-movements-arrows">
           <div><button class="activate-button feature-movement-keys key-up-center">W</button><button class="activate-button feature-movement-keys key-up-far-right">Q</button> ↑</div><br/>
-          <div><button class="activate-button feature-movement-keys">A</button><button class="activate-button feature-movement-keys">S</button><button class="activate-button feature-movement-keys">D</button><button class="activate-button feature-movement-keys key-down-far-right">E</button> ↓</div>
+          <div><button class="activate-button feature-movement-keys">A</button><button class="activate-button feature-movement-keys key-down-center">S</button><button class="activate-button feature-movement-keys">D</button><button class="activate-button feature-movement-keys key-down-far-right">E</button> ↓</div>
         </div></li>
-        <li><div class="feature-hotkeys">Rotation</div></br><div id="feature-camera-turns" class="camera-movements-arrows">
+        <li style="height: 50"><div class="feature-hotkeys">Rotation</div></br><div id="feature-camera-turns" class="camera-movements-arrows">
           <div><button class="activate-button feature-movement-keys key-up-center">↑</button><button class="activate-button feature-movement-keys key-up-far-right">+</button> ⟳</div><br/>
-          <div><button class="activate-button feature-movement-keys">←</button><button class="activate-button feature-movement-keys">↓</button><button class="activate-button feature-movement-keys">→</button><button class="activate-button feature-movement-keys key-down-far-right">-</button> ⟲</div>
+          <div><button class="activate-button feature-movement-keys">←</button><button class="activate-button feature-movement-keys key-down-center">↓</button><button class="activate-button feature-movement-keys">→</button><button class="activate-button feature-movement-keys key-down-far-right">-</button> ⟲</div>
         </div></li>
-        <li><div id="feature-mouse-rotate" class="feature-hotkeys">Mouse</div><div class="feature-explanation">to drag the camera.</div></li>
       </ul>
     </div>
     <div class="info-category">
-      <h5>Pixel manipulation</h5>
+      <h5>Pixel manipulation <button id="reset-pixels" class="reset-button" title="All pixel parameters will be reset.">Reset</button></h5>
       <ul>
         <li><div id="feature-size-x" class="feature-hotkeys"><button class="activate-button">J</button>, <button class="activate-button">K</button></div><div class="feature-explanation">to change horizontal gap.</div><div class="feature-value"><input id="pixel-horizontal-gap" class="feature-number-input" type="number" placeholder="0" step="0.05" min="0" max="10" value="0"></div></li>
         <li><div id="feature-size-y" class="feature-hotkeys"><button class="activate-button">U</button>, <button class="activate-button">I</button></div><div class="feature-explanation">to change vertical gap.</div><div class="feature-value"><input id="pixel-vertical-gap" class="feature-number-input" type="number" placeholder="0" step="0.05" min="0" max="10" value="0"></div></li>
@@ -220,7 +219,6 @@
       <h5>Others</h5>
       <ul>
         <li><div id="feature-quit" class="feature-hotkeys"><button class="activate-button">ESC</button></div><div class="feature-explanation">to quit the simulation.</div></li>
-        <li><div id="feature-info-panel" class="feature-hotkeys"><button class="activate-button">SPACE</button></div><div class="feature-explanation">to toggle visibility of this panel.</div></li>
       </ul>
     </div>
     <div class="info-button">

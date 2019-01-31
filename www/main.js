@@ -58,7 +58,6 @@ const featureChangeColorRepresentationDeo = document.getElementById('feature-cha
 const featureChangePixelShapeDeo = document.getElementById('feature-change-pixel-shape');
 const featurePulsationDeo = document.getElementById('feature-pulsation');
 const featureQuitDeo = document.getElementById('feature-quit');
-const featureInfoPanelDeo = document.getElementById('feature-info-panel');
 const featureChangeMoveSpeedDeo = document.getElementById('feature-change-move-speed');
 const featureChangeTurnSpeedDeo = document.getElementById('feature-change-turn-speed');
 const featureChangePixelSpeedDeo = document.getElementById('feature-change-pixel-speed');
@@ -180,7 +179,6 @@ customEventOnButtonPressed(featureChangeTurnSpeedDeo);
 customEventOnButtonPressed(featureChangePixelSpeedDeo);
 
 customEventOnButtonPressed(featureQuitDeo);
-customEventOnButtonPressed(featureInfoPanelDeo);
 function customEventOnButtonPressed(deo) {
     deo.querySelectorAll('.activate-button').forEach(attachListenersToButtons);
     function attachListenersToButtons(button) {

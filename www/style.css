@@ -127,6 +127,14 @@ body {
     width: 335px;
 }
 
+#info-panel:hover {
+    cursor: auto;
+}
+
+canvas:hover {
+    cursor: move;
+}
+
 #info-panel h3 {
     margin: 0px;
     font-weight: 500;
@@ -168,15 +176,27 @@ body {
     left: 4.5em;
 }
 
+#mouse-icon {
+    position: relative;
+    width: 30px;
+    top: -15px;
+    left: 30px;
+}
+
 .key-up-center {
-    margin-left: 2em;
+    margin-left: 2.1em;
+    margin-bottom: 0.1em;
 }
 
 .key-up-far-right {
-    margin-left: 2.5em;
+    margin-left: 2.6em;
 }
 .key-down-far-right {
     margin-left: 0.5em;
+}
+.key-down-center {
+    margin-left: 0.1em;
+    margin-right: 0.1em;
 }
 
 .feature-hotkeys {
@@ -236,6 +256,12 @@ body {
 
 #fps-counter-holder div {
     display: inline-block;
+}
+
+.reset-button {
+    float: right;
+    margin-right: 5px;
+    width: 55px;
 }
 
 #camera-movement-indicator {
