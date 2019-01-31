@@ -162,6 +162,12 @@ body {
     width: 2em;
 }
 
+.camera-movements-arrows {
+    position: relative;
+    top: -1em;
+    left: 4.5em;
+}
+
 .key-up-center {
     margin-left: 2em;
 }
