@@ -350,21 +350,20 @@ fn update_speeds(res: &mut Resources, input: &Input) -> WasmResult<()> {
     res.buttons.speed_up.track(input.speed_up);
     res.buttons.speed_down.track(input.speed_down);
     if input.alt {
-        change_speed(&res.buttons, &mut res.camera.turning_speed, TURNING_BASE_SPEED, "app-event.pixelturning_speed_manipulation_speed", "Turning camera speed: ")?;
+        change_speed(&res.buttons, &mut res.camera.turning_speed, TURNING_BASE_SPEED, "Turning camera speed: ")?;
     } else if input.shift {
-        change_speed(&res.buttons, &mut res.crt_filters.change_speed, PIXEL_MANIPULATION_BASE_SPEED, "app-event.pixel_manipulation_speed", "Pixel manipulation speed: ")?;
+        change_speed(&res.buttons, &mut res.crt_filters.change_speed, PIXEL_MANIPULATION_BASE_SPEED, "Pixel manipulation speed: ")?;
     } else {
-        change_speed(&res.buttons, &mut res.camera.movement_speed, res.initial_parameters.initial_movement_speed, "app-event.translation_speed", "Translation camera speed: ")?;
+        change_speed(&res.buttons, &mut res.camera.movement_speed, res.initial_parameters.initial_movement_speed, "Translation camera speed: ")?;
     }
 
-    fn change_speed(buttons: &Buttons, cur_speed: &mut f32, base_speed: f32, event_id: &str, top_message: &str) -> WasmResult<()> {
+    fn change_speed(buttons: &Buttons, cur_speed: &mut f32, base_speed: f32, top_message: &str) -> WasmResult<()> {
         if buttons.speed_up.is_just_pressed() && *cur_speed < 10000.0 { *cur_speed *= 2.0; }
         if buttons.speed_down.is_just_pressed() && *cur_speed > 0.01 { *cur_speed /= 2.0; }
         if buttons.speed_up.is_just_pressed() || buttons.speed_down.is_just_pressed() {
             let speed = (*cur_speed / base_speed * 1000.0).round() / 1000.0;
             let message = top_message.to_string() + &speed.to_string() + &"x".to_string();
             dispatch_event_with("app-event.top_message", &message.into())?;
-            dispatch_event_with(event_id, &speed.into())?;
         }
         Ok(())
     }
