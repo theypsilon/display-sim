@@ -170,9 +170,9 @@ fn update_simulation(res: &mut Resources, input: &Input) -> WasmResult<bool> {
     }
 
     update_pixel_pulse(dt, res, input)?;
-    update_pixel_characteristics(dt, res, input)?;
+    update_crt_filters(dt, res, input)?;
     update_speeds(res, input)?;
-    update_view_and_perspective(dt, res, input)?;
+    update_camera(dt, res, input)?;
 
     Ok(true)
 }
@@ -281,7 +281,7 @@ fn update_pixel_pulse(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
     Ok(())
 }
 
-fn update_pixel_characteristics(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> {
+fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> {
 
     if input.reset_filters {
         res.crt_filters = CrtFilters::new(PIXEL_MANIPULATION_BASE_SPEED);
@@ -373,7 +373,7 @@ fn update_speeds(res: &mut Resources, input: &Input) -> WasmResult<()> {
     Ok(())
 }
 
-fn update_view_and_perspective(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> {
+fn update_camera(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> {
     if input.walk_left { res.camera.advance(CameraDirection::Left, dt); }
     if input.walk_right { res.camera.advance(CameraDirection::Right, dt); }
     if input.walk_up { res.camera.advance(CameraDirection::Up, dt); }
