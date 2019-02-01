@@ -89,7 +89,7 @@ window.addEventListener('app-event.toggle_info_panel', () => {
     } else {
         visibility.hideInfoPanel();
         window.dispatchEvent(new CustomEvent('app-event.top_message', {
-            detail: 'Toggle the Info Panel by pressing SPACE.'
+            detail: 'Toggle the Sim Panel by pressing SPACE.'
         }));
     }
 }, false);
@@ -237,7 +237,7 @@ infoHideDeo.onclick = () => {
     }
     visibility.hideInfoPanel();
     window.dispatchEvent(new CustomEvent('app-event.top_message', {
-        detail: 'Show the Info Panel again by pressing SPACE.'
+        detail: 'Show the Sim Panel again by pressing SPACE.'
     }));
 };
 inputFileUploadDeo.onchange = () => {
