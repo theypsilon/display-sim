@@ -14,7 +14,7 @@ use web_utils::{now, window};
 use pixels_render::{PixelsRender, PixelsRenderKind, PixelsUniform};
 use blur_render::BlurRender;
 use event_listeners::{set_event_listeners, on_button_action};
-use simulation_state::{StateOwner, Resources, Input, AnimationData, Buttons};
+use simulation_state::{StateOwner, Resources, CrtFilters, Input, AnimationData, Buttons};
 
 const PIXEL_MANIPULATION_BASE_SPEED: f32 = 20.0;
 const TURNING_BASE_SPEED: f32 = 3.0;
@@ -68,31 +68,22 @@ fn load_resources(gl: &WebGl2RenderingContext, animation: AnimationData) -> Wasm
     let initial_position_z = calculate_far_away_position(&animation);
     let mut camera = Camera::new(MOVEMENT_BASE_SPEED * initial_position_z / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED);
     camera.set_position(glm::vec3(0.0, 0.0, initial_position_z));
+    let mut crt_filters = CrtFilters::new();
+    crt_filters.cur_pixel_width = animation.scale_x;
     let now = now()?;
     let res = Resources {
         initial_position_z,
         initial_pixel_width: animation.scale_x,
         pixels_render: PixelsRender::new(&gl, animation.image_width as usize, animation.image_height as usize)?,
         blur_render: BlurRender::new(&gl, animation.viewport_width as i32, animation.viewport_height as i32)?,
-        light_color: 0x00FF_FFFF,
-        brightness_color: 0x00FF_FFFF,
-        extra_bright: 0.0,
         frame_count: 0,
         translation_base_speed: camera.movement_speed,
         last_time: now,
         last_second: now,
-        blur_passes: 0,
         pixel_manipulation_speed: PIXEL_MANIPULATION_BASE_SPEED,
-        showing_split_colors: false,
-        cur_pixel_scale_x: 0.0,
-        cur_pixel_scale_y: 0.0,
-        cur_pixel_gap: 0.0,
-        pixels_render_kind: PixelsRenderKind::Squares,
-        pixels_pulse: 0.0,
-        showing_pixels_pulse: false,
         animation,
         camera,
-        camera_zoom: 45.0,
+        crt_filters,
         buttons: Buttons::new()
     };
     change_frontend_input_values(&res)?;
@@ -100,14 +91,14 @@ fn load_resources(gl: &WebGl2RenderingContext, animation: AnimationData) -> Wasm
 }
 
 fn change_frontend_input_values(res: &Resources) -> WasmResult<()> {
-    dispatch_event_with("app-event.change_pixel_horizontal_gap", &res.cur_pixel_scale_x.into())?;
-    dispatch_event_with("app-event.change_pixel_vertical_gap", &res.cur_pixel_scale_y.into())?;
-    dispatch_event_with("app-event.change_pixel_width", &res.animation.scale_x.into())?;
-    dispatch_event_with("app-event.change_pixel_spread", &res.cur_pixel_gap.into())?;
-    dispatch_event_with("app-event.change_pixel_brightness", &res.extra_bright.into())?;
-    dispatch_event_with("app-event.change_light_color", &res.light_color.into())?;
-    dispatch_event_with("app-event.change_brightness_color", &res.brightness_color.into())?;
-    dispatch_event_with("app-event.change_camera_zoom", &res.camera_zoom.into())?;
+    dispatch_event_with("app-event.change_pixel_horizontal_gap", &res.crt_filters.cur_pixel_scale_x.into())?;
+    dispatch_event_with("app-event.change_pixel_vertical_gap", &res.crt_filters.cur_pixel_scale_y.into())?;
+    dispatch_event_with("app-event.change_pixel_width", &res.crt_filters.cur_pixel_width.into())?;
+    dispatch_event_with("app-event.change_pixel_spread", &res.crt_filters.cur_pixel_gap.into())?;
+    dispatch_event_with("app-event.change_pixel_brightness", &res.crt_filters.extra_bright.into())?;
+    dispatch_event_with("app-event.change_light_color", &res.crt_filters.light_color.into())?;
+    dispatch_event_with("app-event.change_brightness_color", &res.crt_filters.brightness_color.into())?;
+    dispatch_event_with("app-event.change_camera_zoom", &res.camera.zoom.into())?;
     Ok(())
 }
 
@@ -221,27 +212,27 @@ fn update_animation_buffer(res: &mut Resources, input: &Input) {
 
 fn update_colors(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> {
     if input.increase_bright {
-        res.extra_bright += 0.01 * dt * res.pixel_manipulation_speed;
+        res.crt_filters.extra_bright += 0.01 * dt * res.pixel_manipulation_speed;
     }
     if input.decrease_bright {
-        res.extra_bright -= 0.01 * dt * res.pixel_manipulation_speed;
+        res.crt_filters.extra_bright -= 0.01 * dt * res.pixel_manipulation_speed;
     }
     if input.increase_bright || input.decrease_bright {
-        if res.extra_bright < -1.0 {
-            res.extra_bright = -1.0;
-        } else if res.extra_bright > 1.0 {
-            res.extra_bright = 1.0;
+        if res.crt_filters.extra_bright < -1.0 {
+            res.crt_filters.extra_bright = -1.0;
+        } else if res.crt_filters.extra_bright > 1.0 {
+            res.crt_filters.extra_bright = 1.0;
         } else {
-            dispatch_event_with("app-event.change_pixel_brightness", &res.extra_bright.into())?;
+            dispatch_event_with("app-event.change_pixel_brightness", &res.crt_filters.extra_bright.into())?;
         }
     }
     if input.custom_event.kind.as_ref() as &str == "event_kind:pixel_brightness" {
-        res.extra_bright = input.custom_event.value.as_f64().ok_or("it should be a number")? as f32;
+        res.crt_filters.extra_bright = input.custom_event.value.as_f64().ok_or("it should be a number")? as f32;
     }
 
     let color_variable = match input.custom_event.kind.as_ref() {
-        "event_kind:light_color" => &mut res.light_color,
-        "event_kind:brightness_color" => &mut res.brightness_color,
+        "event_kind:light_color" => &mut res.crt_filters.light_color,
+        "event_kind:brightness_color" => &mut res.crt_filters.brightness_color,
         _ => return Ok(()),
     };
 
@@ -255,22 +246,22 @@ fn update_colors(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> 
 }
 
 fn update_blur(res: &mut Resources, input: &Input) -> WasmResult<()> {
-    let last_blur_passes = res.blur_passes;
+    let last_blur_passes = res.crt_filters.blur_passes;
     res.buttons.increase_blur.track(input.increase_blur);
     res.buttons.decrease_blur.track(input.decrease_blur);
     if res.buttons.increase_blur.is_just_pressed() {
-        res.blur_passes += 1;
+        res.crt_filters.blur_passes += 1;
     }
-    if res.buttons.decrease_blur.is_just_pressed() && res.blur_passes > 0 {
-        res.blur_passes -= 1;
+    if res.buttons.decrease_blur.is_just_pressed() && res.crt_filters.blur_passes > 0 {
+        res.crt_filters.blur_passes -= 1;
     }
     if input.custom_event.kind.as_ref() as &str == "event_kind:blur_level" {
-        res.blur_passes = input.custom_event.value.as_f64().ok_or("it should be a number")? as usize;
+        res.crt_filters.blur_passes = input.custom_event.value.as_f64().ok_or("it should be a number")? as usize;
     }
 
-    if last_blur_passes != res.blur_passes {
-        dispatch_event_with("app-event.top_message", &("Blur level: ".to_string() + &res.blur_passes.to_string()).into())?;
-        dispatch_event_with("app-event.change_blur_level", &(res.blur_passes as i32).into())?;
+    if last_blur_passes != res.crt_filters.blur_passes {
+        dispatch_event_with("app-event.top_message", &("Blur level: ".to_string() + &res.crt_filters.blur_passes.to_string()).into())?;
+        dispatch_event_with("app-event.change_blur_level", &(res.crt_filters.blur_passes as i32).into())?;
     }
     Ok(())
 }
@@ -278,15 +269,15 @@ fn update_blur(res: &mut Resources, input: &Input) -> WasmResult<()> {
 fn update_pixel_pulse(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> {
     res.buttons.showing_pixels_pulse.track(input.showing_pixels_pulse);
     if res.buttons.showing_pixels_pulse.is_just_pressed() {
-        res.showing_pixels_pulse = !res.showing_pixels_pulse;
-        dispatch_event_with("app-event.top_message", &(if res.showing_pixels_pulse {"Screen wave ON."} else {"Screen wave OFF."}).into())?;
-        dispatch_event_with("app-event.showing_pixels_pulse", &res.showing_pixels_pulse.into())?;
+        res.crt_filters.showing_pixels_pulse = !res.crt_filters.showing_pixels_pulse;
+        dispatch_event_with("app-event.top_message", &(if res.crt_filters.showing_pixels_pulse {"Screen wave ON."} else {"Screen wave OFF."}).into())?;
+        dispatch_event_with("app-event.showing_pixels_pulse", &res.crt_filters.showing_pixels_pulse.into())?;
     }
 
-    if res.showing_pixels_pulse {
-        res.pixels_pulse += dt * 0.3;
+    if res.crt_filters.showing_pixels_pulse {
+        res.crt_filters.pixels_pulse += dt * 0.3;
     } else {
-        res.pixels_pulse = 0.0;
+        res.crt_filters.pixels_pulse = 0.0;
     }
     Ok(())
 }
@@ -294,36 +285,26 @@ fn update_pixel_pulse(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
 fn update_pixel_characteristics(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> {
 
     if input.reset_filters {
-        res.animation.scale_x = res.initial_pixel_width;
-        res.light_color = 0x00FF_FFFF;
-        res.brightness_color = 0x00FF_FFFF;
-        res.extra_bright = 0.0;
-        res.blur_passes = 0;
-        res.showing_split_colors = false;
-        res.cur_pixel_scale_x = 0.0;
-        res.cur_pixel_scale_y = 0.0;
-        res.cur_pixel_gap = 0.0;
-        res.pixels_render_kind = PixelsRenderKind::Squares;
-        res.pixels_pulse = 0.0;
-        res.showing_pixels_pulse = false;
+        res.crt_filters = CrtFilters::new();
+        res.crt_filters.cur_pixel_width = res.initial_pixel_width;
         change_frontend_input_values(res)?;
         return Ok(());
     }
 
     res.buttons.toggle_split_colors.track(input.toggle_split_colors);
     if res.buttons.toggle_split_colors.is_just_pressed() {
-        res.showing_split_colors = !res.showing_split_colors;
-        let message = if res.showing_split_colors { "Individually" } else { "Combined" };
+        res.crt_filters.showing_split_colors = !res.crt_filters.showing_split_colors;
+        let message = if res.crt_filters.showing_split_colors { "Individually" } else { "Combined" };
         dispatch_event_with("app-event.top_message", &("Showing color channels ".to_string() + message + ".").into())?;
     }
 
     res.buttons.toggle_pixels_render_kind.track(input.toggle_pixels_render_kind);
     if res.buttons.toggle_pixels_render_kind.is_just_released() {
-        res.pixels_render_kind = match res.pixels_render_kind {
+        res.crt_filters.pixels_render_kind = match res.crt_filters.pixels_render_kind {
             PixelsRenderKind::Squares => PixelsRenderKind::Cubes,
             PixelsRenderKind::Cubes => PixelsRenderKind::Squares
         };
-        let message = match res.pixels_render_kind {
+        let message = match res.crt_filters.pixels_render_kind {
             PixelsRenderKind::Squares => "squares",
             PixelsRenderKind::Cubes => "cubes"
         };
@@ -332,10 +313,10 @@ fn update_pixel_characteristics(dt: f32, res: &mut Resources, input: &Input) -> 
     }
 
     let pixel_velocity = dt * res.pixel_manipulation_speed;
-    change_pixel_sizes(&input, input.increase_pixel_scale_x, input.decrease_pixel_scale_x, &mut res.cur_pixel_scale_x, pixel_velocity * 0.00125, "app-event.change_pixel_vertical_gap", "event_kind:pixel_vertical_gap")?;
-    change_pixel_sizes(&input, input.increase_pixel_scale_y, input.decrease_pixel_scale_y, &mut res.cur_pixel_scale_y, pixel_velocity * 0.00125, "app-event.change_pixel_horizontal_gap", "event_kind:pixel_horizontal_gap")?;
-    change_pixel_sizes(&input, input.increase_pixel_gap && !input.shift, input.decrease_pixel_gap && !input.shift, &mut res.animation.scale_x, pixel_velocity * 0.005, "app-event.change_pixel_width", "event_kind:pixel_width")?;
-    change_pixel_sizes(&input, input.increase_pixel_gap && input.shift, input.decrease_pixel_gap && input.shift, &mut res.cur_pixel_gap, pixel_velocity * 0.005, "app-event.change_pixel_spread", "event_kind:pixel_spread")?;
+    change_pixel_sizes(&input, input.increase_pixel_scale_x, input.decrease_pixel_scale_x, &mut res.crt_filters.cur_pixel_scale_x, pixel_velocity * 0.00125, "app-event.change_pixel_vertical_gap", "event_kind:pixel_vertical_gap")?;
+    change_pixel_sizes(&input, input.increase_pixel_scale_y, input.decrease_pixel_scale_y, &mut res.crt_filters.cur_pixel_scale_y, pixel_velocity * 0.00125, "app-event.change_pixel_horizontal_gap", "event_kind:pixel_horizontal_gap")?;
+    change_pixel_sizes(&input, input.increase_pixel_gap && !input.shift, input.decrease_pixel_gap && !input.shift, &mut res.crt_filters.cur_pixel_width, pixel_velocity * 0.005, "app-event.change_pixel_width", "event_kind:pixel_width")?;
+    change_pixel_sizes(&input, input.increase_pixel_gap && input.shift, input.decrease_pixel_gap && input.shift, &mut res.crt_filters.cur_pixel_gap, pixel_velocity * 0.005, "app-event.change_pixel_spread", "event_kind:pixel_spread")?;
 
     fn change_pixel_sizes(input: &Input, increase: bool, decrease: bool, cur_size: &mut f32, velocity: f32, event_id: &str, event_kind: &str) -> WasmResult<()> {
         let before_size = *cur_size;
@@ -419,23 +400,14 @@ fn update_view_and_perspective(dt: f32, res: &mut Resources, input: &Input) -> W
     }
 
     if input.mouse_scroll_y != 0.0 {
-        if res.camera_zoom >= 1.0 && res.camera_zoom <= 45.0 {
-            res.camera_zoom -= input.mouse_scroll_y * 0.1;
-        }
-        if res.camera_zoom <= 1.0 {
-            res.camera_zoom = 1.0;
-        }
-        if res.camera_zoom >= 45.0 {
-            res.camera_zoom = 45.0;
-        }
-        dispatch_event_with("app-event.change_camera_zoom", &res.camera_zoom.into())?;
+        res.camera.change_zoom(input.mouse_scroll_y)?;
     }
 
     // @Refactor too much code for too little stuff done in this match.
     match input.custom_event.kind.as_ref() {
 
         "event_kind:camera_zoom" => {
-            res.camera_zoom = input.custom_event.value.as_f64().ok_or("Wrong number")? as f32;
+            res.camera.zoom = input.custom_event.value.as_f64().ok_or("Wrong number")? as f32;
         },
 
         "event_kind:camera_pos_x" => {
@@ -493,8 +465,8 @@ fn update_view_and_perspective(dt: f32, res: &mut Resources, input: &Input) -> W
         res.camera.set_position(glm::vec3(0.0, 0.0, res.initial_position_z));
         res.camera.set_direction(glm::vec3(0.0, 0.0, -1.0));
         res.camera.set_axis_up(glm::vec3(0.0, 1.0, 0.0));
-        res.camera_zoom = 45.0;
-        dispatch_event_with("app-event.change_camera_zoom", &res.camera_zoom.into())?;
+        res.camera.zoom = 45.0;
+        dispatch_event_with("app-event.change_camera_zoom", &res.camera.zoom.into())?;
     }
 
     res.camera.update_view()
@@ -506,71 +478,64 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
     }
 
     gl.clear_color(0.05, 0.05, 0.05, 0.0);
-    if res.blur_passes > 0 {
+    if res.crt_filters.blur_passes > 0 {
         res.blur_render.pre_render(&gl);
     }
     gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
     gl.blend_func(WebGl2RenderingContext::SRC_ALPHA, WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA);
 
-    let mut extra_light = get_3_f32color_from_int(res.brightness_color);
+    let mut extra_light = get_3_f32color_from_int(res.crt_filters.brightness_color);
     for light in extra_light.iter_mut() {
-        *light *= res.extra_bright;
+        *light *= res.crt_filters.extra_bright;
     }
 
-    let color_splits = if res.showing_split_colors {3} else {1};
+    let color_splits = if res.crt_filters.showing_split_colors {3} else {1};
     for i in 0..color_splits {
-        let mut light_color = get_3_f32color_from_int(res.light_color);
+        let mut light_color = get_3_f32color_from_int(res.crt_filters.light_color);
         let mut pixel_offset = 0.0;
-        if res.showing_split_colors {
+        if res.crt_filters.showing_split_colors {
             light_color[(i + 0) % 3] *= 1.5;
             light_color[(i + 1) % 3] = 0.0;
             light_color[(i + 2) % 3] = 0.0;
-            pixel_offset = (i as f32 - 1.0) * res.animation.scale_x * (1.0 / 3.0) + match i % 3 {
-                0 => res.cur_pixel_scale_x * (1.0 / 3.0),
+            pixel_offset = (i as f32 - 1.0) * res.crt_filters.cur_pixel_width * (1.0 / 3.0) + match i % 3 {
+                0 => res.crt_filters.cur_pixel_scale_x * (1.0 / 3.0),
                 1 => 0.0,
-                2 => - res.cur_pixel_scale_x * (1.0 / 3.0),
+                2 => - res.crt_filters.cur_pixel_scale_x * (1.0 / 3.0),
                 _ => unreachable!(),
             };
         }
-        res.pixels_render.render(gl, &res.pixels_render_kind, PixelsUniform {
+        res.pixels_render.render(gl, &res.crt_filters.pixels_render_kind, PixelsUniform {
             view: res.camera.get_view().as_mut_slice(),
-            projection: glm::perspective::<f32>(
-                res.animation.viewport_width as f32 / res.animation.viewport_height as f32,
-                radians(res.camera_zoom),
-                0.01,
-                10000.0
+            projection: res.camera.get_projection(
+                res.animation.viewport_width as f32,
+                res.animation.viewport_height as f32,
             ).as_mut_slice(),
-            ambient_strength: match res.pixels_render_kind { PixelsRenderKind::Squares => 1.0, PixelsRenderKind::Cubes => 0.5},
+            ambient_strength: match res.crt_filters.pixels_render_kind { PixelsRenderKind::Squares => 1.0, PixelsRenderKind::Cubes => 0.5},
             light_color: &mut light_color,
             extra_light: &mut extra_light,
             light_pos: res.camera.get_position().as_mut_slice(),
             pixel_gap: &mut [
-                (1.0 + res.cur_pixel_gap) * res.animation.scale_x,
-                1.0 + res.cur_pixel_gap,
+                (1.0 + res.crt_filters.cur_pixel_gap) * res.crt_filters.cur_pixel_width,
+                1.0 + res.crt_filters.cur_pixel_gap,
             ],
             pixel_scale: &mut [
-                (res.cur_pixel_scale_x + 1.0) / (res.animation.scale_x / color_splits as f32),
-                res.cur_pixel_scale_y + 1.0,
-                (res.cur_pixel_scale_x + res.cur_pixel_scale_x) * 0.5 + 1.0,
+                (res.crt_filters.cur_pixel_scale_x + 1.0) / (res.crt_filters.cur_pixel_width / color_splits as f32),
+                res.crt_filters.cur_pixel_scale_y + 1.0,
+                (res.crt_filters.cur_pixel_scale_x + res.crt_filters.cur_pixel_scale_x) * 0.5 + 1.0,
             ],
-            pixel_pulse: res.pixels_pulse,
+            pixel_pulse: res.crt_filters.pixels_pulse,
             pixel_offset,
         });
     }
 
-    if res.blur_passes > 0 {
+    if res.crt_filters.blur_passes > 0 {
         gl.blend_func(WebGl2RenderingContext::ONE, WebGl2RenderingContext::ZERO);
-        res.blur_render.render(&gl, res.blur_passes);
+        res.blur_render.render(&gl, res.crt_filters.blur_passes);
     }
 
     check_error(&gl, line!())?;
 
     Ok(())
-}
-
-pub fn radians(grad: f32) -> f32 {
-    let pi: f32 = glm::pi();
-    grad * pi / 180.0
 }
 
 pub fn check_error(gl: &WebGl2RenderingContext, line: u32) -> WasmResult<()> {

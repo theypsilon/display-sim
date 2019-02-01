@@ -48,28 +48,51 @@ impl StateOwner {
 pub struct Resources {
     pub animation: AnimationData,
     pub camera: Camera,
-    pub camera_zoom: f32,
+    pub crt_filters: CrtFilters,
     pub pixels_render: PixelsRender,
     pub blur_render: BlurRender,
-    pub blur_passes: usize,
-    pub light_color: i32,
-    pub brightness_color: i32,
-    pub extra_bright: f32,
     pub frame_count: u32,
     pub last_time: f64,
     pub last_second: f64,
     pub translation_base_speed: f32,
+    pub pixel_manipulation_speed: f32,
+    pub initial_position_z: f32,
+    pub initial_pixel_width: f32,
+    pub buttons: Buttons,
+}
+
+pub struct CrtFilters {
+    pub blur_passes: usize,
+    pub light_color: i32,
+    pub brightness_color: i32,
+    pub extra_bright: f32,
+    pub cur_pixel_width: f32,
     pub cur_pixel_scale_x: f32,
     pub cur_pixel_scale_y: f32,
     pub cur_pixel_gap: f32,
     pub pixels_pulse: f32,
-    pub pixel_manipulation_speed: f32,
     pub pixels_render_kind: PixelsRenderKind,
     pub showing_split_colors: bool,
     pub showing_pixels_pulse: bool,
-    pub initial_position_z: f32,
-    pub initial_pixel_width: f32,
-    pub buttons: Buttons,
+}
+
+impl CrtFilters {
+    pub fn new() -> CrtFilters {
+        CrtFilters {
+            blur_passes: 0,
+            light_color: 0x00FF_FFFF,
+            brightness_color: 0x00FF_FFFF,
+            extra_bright: 0.0,
+            cur_pixel_width: 1.0,
+            cur_pixel_scale_x: 0.0,
+            cur_pixel_scale_y: 0.0,
+            cur_pixel_gap: 0.0,
+            pixels_pulse: 0.0,
+            pixels_render_kind: PixelsRenderKind::Squares,
+            showing_split_colors: false,
+            showing_pixels_pulse: false,
+        }
+    }
 }
 
 pub struct Buttons {

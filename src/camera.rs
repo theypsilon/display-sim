@@ -16,6 +16,7 @@ pub struct Camera {
     pitch: f32,
     heading: f32,
     rotate: f32,
+    pub zoom: f32,
     pub movement_speed: f32,
     pub turning_speed: f32,
     sending_camera_update_event: bool,
@@ -32,6 +33,7 @@ impl Camera {
             pitch: 0.0,
             heading: 0.0,
             rotate: 0.0,
+            zoom: 45.0,
             movement_speed,
             turning_speed,
             sending_camera_update_event: true,
@@ -99,6 +101,23 @@ impl Camera {
         self.heading -= yoffset as f32 * 0.0003;
     }
 
+    pub fn change_zoom(&mut self, change: f32) -> WasmResult<()> {
+        let last_zoom = self.zoom;
+        if self.zoom >= 1.0 && self.zoom <= 45.0 {
+            self.zoom -= change * 0.1;
+        }
+        if self.zoom <= 1.0 {
+            self.zoom = 1.0;
+        }
+        if self.zoom >= 45.0 {
+            self.zoom = 45.0;
+        }
+        if self.zoom != last_zoom {
+            dispatch_event_with("app-event.change_camera_zoom", &self.zoom.into())?;
+        }
+        Ok(())
+    }
+
     pub fn update_view(&mut self) -> WasmResult<()> {
         if self.pitch == 0.0 && self.heading == 0.0 && self.rotate == 0.0 && self.position_delta == glm::vec3 (0.0, 0.0, 0.0) {
             return Ok(());
@@ -140,4 +159,13 @@ impl Camera {
     pub fn get_view(&self) -> glm::TMat4<f32> {
         glm::look_at(&self.position, &(self.position + self.direction), &self.axis_up)
     }
+
+    pub fn get_projection(&self, width: f32, height: f32) -> glm::TMat4<f32> {
+        glm::perspective::<f32>(width / height, radians(self.zoom), 0.01, 10000.0)
+    }
+}
+
+pub fn radians(grad: f32) -> f32 {
+    let pi: f32 = glm::pi();
+    grad * pi / 180.0
 }
