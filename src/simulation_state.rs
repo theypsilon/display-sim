@@ -51,13 +51,21 @@ pub struct Resources {
     pub crt_filters: CrtFilters,
     pub pixels_render: PixelsRender,
     pub blur_render: BlurRender,
+    pub timers: SimulationTimers,
+    pub initial_parameters: InitialParameters,
+    pub buttons: Buttons,
+}
+
+pub struct SimulationTimers {
     pub frame_count: u32,
     pub last_time: f64,
     pub last_second: f64,
+}
+
+pub struct InitialParameters {
     pub initial_movement_speed: f32,
     pub initial_position_z: f32,
     pub initial_pixel_width: f32,
-    pub buttons: Buttons,
 }
 
 pub struct CrtFilters {

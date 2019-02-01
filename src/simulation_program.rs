@@ -14,7 +14,9 @@ use web_utils::{now, window};
 use pixels_render::{PixelsRender, PixelsRenderKind, PixelsUniform};
 use blur_render::BlurRender;
 use event_listeners::{set_event_listeners, on_button_action};
-use simulation_state::{StateOwner, Resources, CrtFilters, Input, AnimationData, Buttons};
+use simulation_state::{
+    StateOwner, Resources, CrtFilters, SimulationTimers, InitialParameters, Input, AnimationData, Buttons
+};
 
 const PIXEL_MANIPULATION_BASE_SPEED: f32 = 20.0;
 const TURNING_BASE_SPEED: f32 = 3.0;
@@ -72,14 +74,18 @@ fn load_resources(gl: &WebGl2RenderingContext, animation: AnimationData) -> Wasm
     crt_filters.cur_pixel_width = animation.pixel_width;
     let now = now()?;
     let res = Resources {
-        initial_position_z,
-        initial_pixel_width: animation.pixel_width,
+        initial_parameters: InitialParameters {
+            initial_position_z,
+            initial_pixel_width: animation.pixel_width,
+            initial_movement_speed: camera.movement_speed,
+        },
+        timers: SimulationTimers {
+            frame_count: 0,
+            last_time: now,
+            last_second: now,
+        },
         pixels_render: PixelsRender::new(&gl, animation.image_width as usize, animation.image_height as usize)?,
         blur_render: BlurRender::new(&gl, animation.viewport_width as i32, animation.viewport_height as i32)?,
-        frame_count: 0,
-        initial_movement_speed: camera.movement_speed,
-        last_time: now,
-        last_second: now,
         animation,
         camera,
         crt_filters,
@@ -128,7 +134,7 @@ fn calculate_far_away_position(animation: &AnimationData) -> f32 {
 }
 
 fn pre_process_input(input: &mut Input, resources: &Resources) -> WasmResult<()> {
-    input.now = now().unwrap_or(resources.last_time);
+    input.now = now().unwrap_or(resources.timers.last_time);
     match input.custom_event.kind.as_ref() {
         "button_down" => {
             let button = input.custom_event.value.as_string().ok_or("invalid-botton-down")?;
@@ -178,17 +184,17 @@ fn update_simulation(res: &mut Resources, input: &Input) -> WasmResult<bool> {
 }
 
 fn update_timers_and_dt(res: &mut Resources, input: &Input) -> WasmResult<f32> {
-    let dt: f32 = ((input.now - res.last_time) / 1000.0) as f32;
-    let ellapsed = input.now - res.last_second;
-    res.last_time = input.now;
+    let dt: f32 = ((input.now - res.timers.last_time) / 1000.0) as f32;
+    let ellapsed = input.now - res.timers.last_second;
+    res.timers.last_time = input.now;
 
     if ellapsed >= 1_000.0 {
-        let fps = res.frame_count as f32;
+        let fps = res.timers.frame_count as f32;
         dispatch_event_with("app-event.fps", &fps.into())?;
-        res.last_second = input.now;
-        res.frame_count = 0;
+        res.timers.last_second = input.now;
+        res.timers.frame_count = 0;
     } else {
-        res.frame_count += 1;
+        res.timers.frame_count += 1;
     }
     Ok(dt)
 }
@@ -285,7 +291,7 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
 
     if input.reset_filters {
         res.crt_filters = CrtFilters::new(PIXEL_MANIPULATION_BASE_SPEED);
-        res.crt_filters.cur_pixel_width = res.initial_pixel_width;
+        res.crt_filters.cur_pixel_width = res.initial_parameters.initial_pixel_width;
         change_frontend_input_values(res)?;
         return Ok(());
     }
@@ -348,7 +354,7 @@ fn update_speeds(res: &mut Resources, input: &Input) -> WasmResult<()> {
     } else if input.shift {
         change_speed(&res.buttons, &mut res.crt_filters.change_speed, PIXEL_MANIPULATION_BASE_SPEED, "app-event.pixel_manipulation_speed", "Pixel manipulation speed: ")?;
     } else {
-        change_speed(&res.buttons, &mut res.camera.movement_speed, res.initial_movement_speed, "app-event.translation_speed", "Translation camera speed: ")?;
+        change_speed(&res.buttons, &mut res.camera.movement_speed, res.initial_parameters.initial_movement_speed, "app-event.translation_speed", "Translation camera speed: ")?;
     }
 
     fn change_speed(buttons: &Buttons, cur_speed: &mut f32, base_speed: f32, event_id: &str, top_message: &str) -> WasmResult<()> {
@@ -365,7 +371,7 @@ fn update_speeds(res: &mut Resources, input: &Input) -> WasmResult<()> {
 
     if input.reset_speeds {
         res.camera.turning_speed = TURNING_BASE_SPEED;
-        res.camera.movement_speed = res.initial_movement_speed;
+        res.camera.movement_speed = res.initial_parameters.initial_movement_speed;
         res.crt_filters.change_speed = PIXEL_MANIPULATION_BASE_SPEED;
         dispatch_event_with("app-event.top_message", &"All speeds have been reset.".into())?;
         dispatch_event("app-event.speed_reset")?;
@@ -461,7 +467,7 @@ fn update_camera(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> 
     }
 
     if input.reset_position {
-        res.camera.set_position(glm::vec3(0.0, 0.0, res.initial_position_z));
+        res.camera.set_position(glm::vec3(0.0, 0.0, res.initial_parameters.initial_position_z));
         res.camera.set_direction(glm::vec3(0.0, 0.0, -1.0));
         res.camera.set_axis_up(glm::vec3(0.0, 1.0, 0.0));
         res.camera.zoom = 45.0;
