@@ -261,7 +261,6 @@ canvas:hover {
 .reset-button {
     float: right;
     margin-right: 5px;
-    width: 55px;
 }
 
 #camera-movement-indicator {

@@ -63,6 +63,8 @@ const featureChangeTurnSpeedDeo = document.getElementById('feature-change-turn-s
 const featureChangePixelSpeedDeo = document.getElementById('feature-change-pixel-speed');
 const featureCameraMovementsDeo = document.getElementById('feature-camera-movements');
 const featureCameraTurnsDeo = document.getElementById('feature-camera-turns');
+const resetCameraDeo = document.getElementById('reset-camera');
+const resetPixelsDeo = document.getElementById('reset-pixels');
 
 const getGlCanvasDeo = () => document.getElementById(glCanvasHtmlId);
 const getPreviewDeo = () => document.getElementById(previewHtmlId);
@@ -153,10 +155,27 @@ updateInnerHtmlWithEventNumber(pixelVerticalGapDeo, 'app-event.change_pixel_vert
 updateInnerHtmlWithEventNumber(pixelSpreadDeo, 'app-event.change_pixel_spread');
 updateInnerHtmlWithEventNumber(pixelBrigthnessDeo, 'app-event.change_pixel_brightness');
 updateInnerHtmlWithEventNumber(blurLevelDeo, 'app-event.change_blur_level');
+updateInnerHtmlWithEventNumber(lightColorDeo, 'app-event.change_light_color');
+updateInnerHtmlWithEventNumber(brightnessColorDeo, 'app-event.change_brightness_color');
 function updateInnerHtmlWithEventNumber(deo, eventId) {
     if (!deo) throw new Error("Wrong deo on defining: " + eventId);
     window.addEventListener(eventId, event => {
-        deo.value = Math.round(event.detail * 1000.0) / 1000.0;
+        switch (eventId) {
+            case 'app-event.change_pixel_width':
+            case 'app-event.change_pixel_horizontal_gap':
+            case 'app-event.change_pixel_vertical_gap':
+            case 'app-event.change_pixel_spread':
+            case 'app-event.change_blur_level':
+                deo.value = Math.round(event.detail * 1000.0) / 1000.0;
+                break;
+            case 'app-event.change_pixel_brightness':
+                deo.value = Math.round(event.detail * 100.0) / 100.0;
+                break;
+            case 'app-event.change_light_color':
+            case 'app-event.change_brightness_color':
+                deo.value = '#' + event.detail.toString(16);
+                break;
+        }
     }, false);
 }
 
@@ -170,6 +189,8 @@ customEventOnButtonPressed(blurLevelDeo.parentNode.parentNode);
 customEventOnButtonPressed(pixelBrigthnessDeo.parentNode.parentNode);
 customEventOnButtonPressed(pixelSpreadDeo.parentNode.parentNode);
 
+customEventOnButtonPressed(resetCameraDeo);
+customEventOnButtonPressed(resetPixelsDeo);
 customEventOnButtonPressed(featureChangeColorRepresentationDeo);
 customEventOnButtonPressed(featureChangePixelShapeDeo);
 customEventOnButtonPressed(featurePulsationDeo);

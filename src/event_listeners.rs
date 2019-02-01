@@ -158,6 +158,8 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
         "alt" => input.alt = pressed,
         " " | "space" => input.space = pressed,
         "escape" | "esc" => input.esc = pressed,
+        "reset position" => input.reset_position = pressed,
+        "reset filters" => input.reset_filters = pressed,
         _ => {
             if button_action.contains("+") {
                 for button_fraction in button_action.split("+") {

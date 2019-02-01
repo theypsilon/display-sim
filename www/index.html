@@ -158,7 +158,7 @@
     <div id="fps-counter-holder"><div id="fps-counter"></div><span>FPS</span></div>
     <h3>Sim Panel</h3>
     <div class="info-category">
-      <h5>Camera Movements <button id="reset-movements" class="reset-button" title="All camera parameters will be reset.">Reset</button></h5>
+      <h5>Camera Movements <div id="reset-camera" class="reset-button"><button class="activate-button" title="All camera parameters will be reset.">Reset Position</button></div></h5>
       <div id="camera-movement-indicator">
         <div class="camera-field-header"><div class="camera-coordinate">X</div><div class="camera-coordinate">Y</div><div class="camera-coordinate">Z</div></div>
         <div id="camera-pos" class="camera-field-group">
@@ -192,7 +192,7 @@
       </ul>
     </div>
     <div class="info-category">
-      <h5>Pixel manipulation <button id="reset-pixels" class="reset-button" title="All pixel parameters will be reset.">Reset</button></h5>
+      <h5>Pixel Filters <div id="reset-pixels" class="reset-button"><button class="activate-button" title="All pixel parameters will be reset.">Reset Filters</button></div></h5>
       <ul>
         <li><div id="feature-size-x" class="feature-hotkeys"><button class="activate-button">J</button>, <button class="activate-button">K</button></div><div class="feature-explanation">to change horizontal gap.</div><div class="feature-value"><input id="pixel-horizontal-gap" class="feature-number-input" type="number" placeholder="0" step="0.05" min="0" max="10" value="0"></div></li>
         <li><div id="feature-size-y" class="feature-hotkeys"><button class="activate-button">U</button>, <button class="activate-button">I</button></div><div class="feature-explanation">to change vertical gap.</div><div class="feature-value"><input id="pixel-vertical-gap" class="feature-number-input" type="number" placeholder="0" step="0.05" min="0" max="10" value="0"></div></li>

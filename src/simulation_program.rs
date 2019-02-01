@@ -65,19 +65,13 @@ fn program_iteration(owned_state: &StateOwner, gl: &WebGl2RenderingContext, wind
 }
 
 fn load_resources(gl: &WebGl2RenderingContext, animation: AnimationData) -> WasmResult<Resources> {
-    let far_away_position = calculate_far_away_position(&animation);
-    let mut camera = Camera::new(MOVEMENT_BASE_SPEED * far_away_position / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED);
-    camera.set_position(glm::vec3(0.0, 0.0, far_away_position));
-
-    dispatch_event_with("app-event.change_pixel_horizontal_gap", &0.0.into())?;
-    dispatch_event_with("app-event.change_pixel_vertical_gap", &0.0.into())?;
-    dispatch_event_with("app-event.change_pixel_width", &animation.scale_x.into())?;
-    dispatch_event_with("app-event.change_pixel_spread", &0.0.into())?;
-    dispatch_event_with("app-event.change_pixel_brightness", &0.0.into())?;
-
+    let initial_position_z = calculate_far_away_position(&animation);
+    let mut camera = Camera::new(MOVEMENT_BASE_SPEED * initial_position_z / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED);
+    camera.set_position(glm::vec3(0.0, 0.0, initial_position_z));
     let now = now()?;
-
-    Ok(Resources {
+    let res = Resources {
+        initial_position_z,
+        initial_pixel_width: animation.scale_x,
         pixels_render: PixelsRender::new(&gl, animation.image_width as usize, animation.image_height as usize)?,
         blur_render: BlurRender::new(&gl, animation.viewport_width as i32, animation.viewport_height as i32)?,
         light_color: 0x00FF_FFFF,
@@ -100,7 +94,20 @@ fn load_resources(gl: &WebGl2RenderingContext, animation: AnimationData) -> Wasm
         camera,
         camera_zoom: 45.0,
         buttons: Buttons::new()
-    })
+    };
+    change_frontend_input_values(&res)?;
+    Ok(res)
+}
+
+fn change_frontend_input_values(res: &Resources) -> WasmResult<()> {
+    dispatch_event_with("app-event.change_pixel_horizontal_gap", &res.cur_pixel_scale_x.into())?;
+    dispatch_event_with("app-event.change_pixel_vertical_gap", &res.cur_pixel_scale_y.into())?;
+    dispatch_event_with("app-event.change_pixel_width", &res.animation.scale_x.into())?;
+    dispatch_event_with("app-event.change_pixel_spread", &res.cur_pixel_gap.into())?;
+    dispatch_event_with("app-event.change_pixel_brightness", &res.extra_bright.into())?;
+    dispatch_event_with("app-event.change_light_color", &res.light_color.into())?;
+    dispatch_event_with("app-event.change_brightness_color", &res.brightness_color.into())?;
+    Ok(())
 }
 
 fn calculate_far_away_position(animation: &AnimationData) -> f32 {
@@ -284,6 +291,24 @@ fn update_pixel_pulse(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
 }
 
 fn update_pixel_characteristics(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> {
+
+    if input.reset_filters {
+        res.animation.scale_x = res.initial_pixel_width;
+        res.light_color = 0x00FF_FFFF;
+        res.brightness_color = 0x00FF_FFFF;
+        res.extra_bright = 0.0;
+        res.blur_passes = 0;
+        res.showing_split_colors = false;
+        res.cur_pixel_scale_x = 0.0;
+        res.cur_pixel_scale_y = 0.0;
+        res.cur_pixel_gap = 0.0;
+        res.pixels_render_kind = PixelsRenderKind::Squares;
+        res.pixels_pulse = 0.0;
+        res.showing_pixels_pulse = false;
+        change_frontend_input_values(res)?;
+        return Ok(());
+    }
+
     res.buttons.toggle_split_colors.track(input.toggle_split_colors);
     if res.buttons.toggle_split_colors.is_just_pressed() {
         res.showing_split_colors = !res.showing_split_colors;
@@ -455,6 +480,12 @@ fn update_view_and_perspective(dt: f32, res: &mut Resources, input: &Input) -> W
         },
 
         _ => {}
+    }
+
+    if input.reset_position {
+        res.camera.set_position(glm::vec3(0.0, 0.0, res.initial_position_z));
+        res.camera.set_direction(glm::vec3(0.0, 0.0, -1.0));
+        res.camera.set_axis_up(glm::vec3(0.0, 1.0, 0.0));
     }
 
     res.camera.update_view()
