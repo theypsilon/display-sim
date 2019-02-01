@@ -47,6 +47,7 @@ const cameraDirZDeo = document.getElementById('camera-dir-z');
 const cameraAxisUpXDeo = document.getElementById('camera-axis-up-x');
 const cameraAxisUpYDeo = document.getElementById('camera-axis-up-y');
 const cameraAxisUpZDeo = document.getElementById('camera-axis-up-z');
+const cameraZoomDeo = document.getElementById('camera-zoom');
 
 const pixelWidthDeo = document.getElementById('pixel-width');
 const pixelHorizontalGapDeo = document.getElementById('pixel-horizontal-gap');
@@ -149,6 +150,7 @@ window.addEventListener('app-event.camera_update', event => {
     cameraAxisUpZDeo.value = Math.round(event.detail[8] * 100) / 100;
 }, false);
 
+updateInnerHtmlWithEventNumber(cameraZoomDeo, 'app-event.change_camera_zoom');
 updateInnerHtmlWithEventNumber(pixelWidthDeo, 'app-event.change_pixel_width');
 updateInnerHtmlWithEventNumber(pixelHorizontalGapDeo, 'app-event.change_pixel_horizontal_gap');
 updateInnerHtmlWithEventNumber(pixelVerticalGapDeo, 'app-event.change_pixel_vertical_gap');
@@ -161,6 +163,7 @@ function updateInnerHtmlWithEventNumber(deo, eventId) {
     if (!deo) throw new Error("Wrong deo on defining: " + eventId);
     window.addEventListener(eventId, event => {
         switch (eventId) {
+            case 'app-event.change_camera_zoom':
             case 'app-event.change_pixel_width':
             case 'app-event.change_pixel_horizontal_gap':
             case 'app-event.change_pixel_vertical_gap':
@@ -175,6 +178,7 @@ function updateInnerHtmlWithEventNumber(deo, eventId) {
             case 'app-event.change_brightness_color':
                 deo.value = '#' + event.detail.toString(16);
                 break;
+            default: throw new Error("Unreachable!");
         }
     }, false);
 }
@@ -228,6 +232,7 @@ customEventOnChange(cameraAxisUpZDeo, "camera_axis_up_z", a => +a);
 customEventOnChange(cameraDirXDeo, "camera_direction_x", a => +a);
 customEventOnChange(cameraDirYDeo, "camera_direction_y", a => +a);
 customEventOnChange(cameraDirZDeo, "camera_direction_z", a => +a);
+customEventOnChange(cameraZoomDeo, "camera_zoom", a => +a);
 
 customEventOnChange(pixelWidthDeo, "pixel_width", a => +a);
 customEventOnChange(pixelSpreadDeo, "pixel_spread", a => +a);

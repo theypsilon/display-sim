@@ -107,6 +107,7 @@ fn change_frontend_input_values(res: &Resources) -> WasmResult<()> {
     dispatch_event_with("app-event.change_pixel_brightness", &res.extra_bright.into())?;
     dispatch_event_with("app-event.change_light_color", &res.light_color.into())?;
     dispatch_event_with("app-event.change_brightness_color", &res.brightness_color.into())?;
+    dispatch_event_with("app-event.change_camera_zoom", &res.camera_zoom.into())?;
     Ok(())
 }
 
@@ -427,10 +428,16 @@ fn update_view_and_perspective(dt: f32, res: &mut Resources, input: &Input) -> W
         if res.camera_zoom >= 45.0 {
             res.camera_zoom = 45.0;
         }
+        dispatch_event_with("app-event.change_camera_zoom", &res.camera_zoom.into())?;
     }
 
     // @Refactor too much code for too little stuff done in this match.
     match input.custom_event.kind.as_ref() {
+
+        "event_kind:camera_zoom" => {
+            res.camera_zoom = input.custom_event.value.as_f64().ok_or("Wrong number")? as f32;
+        },
+
         "event_kind:camera_pos_x" => {
             let mut position = res.camera.get_position();
             position.x = input.custom_event.value.as_f64().ok_or("Wrong number")? as f32;
@@ -487,6 +494,7 @@ fn update_view_and_perspective(dt: f32, res: &mut Resources, input: &Input) -> W
         res.camera.set_direction(glm::vec3(0.0, 0.0, -1.0));
         res.camera.set_axis_up(glm::vec3(0.0, 1.0, 0.0));
         res.camera_zoom = 45.0;
+        dispatch_event_with("app-event.change_camera_zoom", &res.camera_zoom.into())?;
     }
 
     res.camera.update_view()
