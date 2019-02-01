@@ -68,19 +68,18 @@ fn load_resources(gl: &WebGl2RenderingContext, animation: AnimationData) -> Wasm
     let initial_position_z = calculate_far_away_position(&animation);
     let mut camera = Camera::new(MOVEMENT_BASE_SPEED * initial_position_z / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED);
     camera.set_position(glm::vec3(0.0, 0.0, initial_position_z));
-    let mut crt_filters = CrtFilters::new();
-    crt_filters.cur_pixel_width = animation.scale_x;
+    let mut crt_filters = CrtFilters::new(PIXEL_MANIPULATION_BASE_SPEED);
+    crt_filters.cur_pixel_width = animation.pixel_width;
     let now = now()?;
     let res = Resources {
         initial_position_z,
-        initial_pixel_width: animation.scale_x,
+        initial_pixel_width: animation.pixel_width,
         pixels_render: PixelsRender::new(&gl, animation.image_width as usize, animation.image_height as usize)?,
         blur_render: BlurRender::new(&gl, animation.viewport_width as i32, animation.viewport_height as i32)?,
         frame_count: 0,
-        translation_base_speed: camera.movement_speed,
+        initial_movement_speed: camera.movement_speed,
         last_time: now,
         last_second: now,
-        pixel_manipulation_speed: PIXEL_MANIPULATION_BASE_SPEED,
         animation,
         camera,
         crt_filters,
@@ -105,7 +104,7 @@ fn change_frontend_input_values(res: &Resources) -> WasmResult<()> {
 fn calculate_far_away_position(animation: &AnimationData) -> f32 {
     let width = animation.background_width as f32;
     let height = animation.background_height as f32;
-    let viewport_width_scaled = (animation.viewport_width as f32 / animation.scale_x) as u32;
+    let viewport_width_scaled = (animation.viewport_width as f32 / animation.pixel_width) as u32;
     let width_ratio = viewport_width_scaled as f32 / width;
     let height_ratio = animation.viewport_height as f32 / height;
     let is_height_bounded = width_ratio > height_ratio;
@@ -125,7 +124,7 @@ fn calculate_far_away_position(animation: &AnimationData) -> f32 {
         };
         bound_ratio = divisor as f32;
     }
-    0.5 + (resolution as f32 / bound_ratio) * if is_height_bounded {1.2076} else {0.68 * animation.scale_x}
+    0.5 + (resolution as f32 / bound_ratio) * if is_height_bounded {1.2076} else {0.68 * animation.pixel_width}
 }
 
 fn pre_process_input(input: &mut Input, resources: &Resources) -> WasmResult<()> {
@@ -212,10 +211,10 @@ fn update_animation_buffer(res: &mut Resources, input: &Input) {
 
 fn update_colors(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> {
     if input.increase_bright {
-        res.crt_filters.extra_bright += 0.01 * dt * res.pixel_manipulation_speed;
+        res.crt_filters.extra_bright += 0.01 * dt * res.crt_filters.change_speed;
     }
     if input.decrease_bright {
-        res.crt_filters.extra_bright -= 0.01 * dt * res.pixel_manipulation_speed;
+        res.crt_filters.extra_bright -= 0.01 * dt * res.crt_filters.change_speed;
     }
     if input.increase_bright || input.decrease_bright {
         if res.crt_filters.extra_bright < -1.0 {
@@ -285,7 +284,7 @@ fn update_pixel_pulse(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
 fn update_pixel_characteristics(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> {
 
     if input.reset_filters {
-        res.crt_filters = CrtFilters::new();
+        res.crt_filters = CrtFilters::new(PIXEL_MANIPULATION_BASE_SPEED);
         res.crt_filters.cur_pixel_width = res.initial_pixel_width;
         change_frontend_input_values(res)?;
         return Ok(());
@@ -312,7 +311,7 @@ fn update_pixel_characteristics(dt: f32, res: &mut Resources, input: &Input) -> 
         dispatch_event_with("app-event.showing_pixels_as", &message.into())?;
     }
 
-    let pixel_velocity = dt * res.pixel_manipulation_speed;
+    let pixel_velocity = dt * res.crt_filters.change_speed;
     change_pixel_sizes(&input, input.increase_pixel_scale_x, input.decrease_pixel_scale_x, &mut res.crt_filters.cur_pixel_scale_x, pixel_velocity * 0.00125, "app-event.change_pixel_vertical_gap", "event_kind:pixel_vertical_gap")?;
     change_pixel_sizes(&input, input.increase_pixel_scale_y, input.decrease_pixel_scale_y, &mut res.crt_filters.cur_pixel_scale_y, pixel_velocity * 0.00125, "app-event.change_pixel_horizontal_gap", "event_kind:pixel_horizontal_gap")?;
     change_pixel_sizes(&input, input.increase_pixel_gap && !input.shift, input.decrease_pixel_gap && !input.shift, &mut res.crt_filters.cur_pixel_width, pixel_velocity * 0.005, "app-event.change_pixel_width", "event_kind:pixel_width")?;
@@ -347,9 +346,9 @@ fn update_speeds(res: &mut Resources, input: &Input) -> WasmResult<()> {
     if input.alt {
         change_speed(&res.buttons, &mut res.camera.turning_speed, TURNING_BASE_SPEED, "app-event.pixelturning_speed_manipulation_speed", "Turning camera speed: ")?;
     } else if input.shift {
-        change_speed(&res.buttons, &mut res.pixel_manipulation_speed, PIXEL_MANIPULATION_BASE_SPEED, "app-event.pixel_manipulation_speed", "Pixel manipulation speed: ")?;
+        change_speed(&res.buttons, &mut res.crt_filters.change_speed, PIXEL_MANIPULATION_BASE_SPEED, "app-event.pixel_manipulation_speed", "Pixel manipulation speed: ")?;
     } else {
-        change_speed(&res.buttons, &mut res.camera.movement_speed, res.translation_base_speed, "app-event.translation_speed", "Translation camera speed: ")?;
+        change_speed(&res.buttons, &mut res.camera.movement_speed, res.initial_movement_speed, "app-event.translation_speed", "Translation camera speed: ")?;
     }
 
     fn change_speed(buttons: &Buttons, cur_speed: &mut f32, base_speed: f32, event_id: &str, top_message: &str) -> WasmResult<()> {
@@ -366,8 +365,8 @@ fn update_speeds(res: &mut Resources, input: &Input) -> WasmResult<()> {
 
     if input.reset_speeds {
         res.camera.turning_speed = TURNING_BASE_SPEED;
-        res.camera.movement_speed = res.translation_base_speed;
-        res.pixel_manipulation_speed = PIXEL_MANIPULATION_BASE_SPEED;
+        res.camera.movement_speed = res.initial_movement_speed;
+        res.crt_filters.change_speed = PIXEL_MANIPULATION_BASE_SPEED;
         dispatch_event_with("app-event.top_message", &"All speeds have been reset.".into())?;
         dispatch_event("app-event.speed_reset")?;
     }

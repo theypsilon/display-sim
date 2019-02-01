@@ -19,7 +19,7 @@ pub struct AnimationData {
     pub background_height: u32,
     pub viewport_width: u32,
     pub viewport_height: u32,
-    pub scale_x: f32,
+    pub pixel_width: f32,
     pub stretch: bool,
     pub frame_length: f32,
     pub current_frame: usize,
@@ -54,8 +54,7 @@ pub struct Resources {
     pub frame_count: u32,
     pub last_time: f64,
     pub last_second: f64,
-    pub translation_base_speed: f32,
-    pub pixel_manipulation_speed: f32,
+    pub initial_movement_speed: f32,
     pub initial_position_z: f32,
     pub initial_pixel_width: f32,
     pub buttons: Buttons,
@@ -70,6 +69,7 @@ pub struct CrtFilters {
     pub cur_pixel_scale_x: f32,
     pub cur_pixel_scale_y: f32,
     pub cur_pixel_gap: f32,
+    pub change_speed: f32,
     pub pixels_pulse: f32,
     pub pixels_render_kind: PixelsRenderKind,
     pub showing_split_colors: bool,
@@ -77,7 +77,7 @@ pub struct CrtFilters {
 }
 
 impl CrtFilters {
-    pub fn new() -> CrtFilters {
+    pub fn new(change_speed: f32) -> CrtFilters {
         CrtFilters {
             blur_passes: 0,
             light_color: 0x00FF_FFFF,
@@ -87,6 +87,7 @@ impl CrtFilters {
             cur_pixel_scale_x: 0.0,
             cur_pixel_scale_y: 0.0,
             cur_pixel_gap: 0.0,
+            change_speed: change_speed,
             pixels_pulse: 0.0,
             pixels_render_kind: PixelsRenderKind::Squares,
             showing_split_colors: false,

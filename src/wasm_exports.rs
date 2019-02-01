@@ -28,7 +28,7 @@ impl AnimationWasm {
     pub fn new(image_width: u32, image_height: u32,
         background_width: u32, background_height: u32,
         canvas_width: u32, canvas_height: u32,
-        frame_length: f32, scale_x: f32, stretch: bool) -> AnimationWasm 
+        frame_length: f32, pixel_width: f32, stretch: bool) -> AnimationWasm
     {
         AnimationWasm{ data: AnimationData {
             image_width, image_height,
@@ -36,7 +36,7 @@ impl AnimationWasm {
             viewport_width: canvas_width, viewport_height: canvas_height,
             steps: Vec::new(),
             frame_length,
-            scale_x,
+            pixel_width,
             stretch,
             current_frame: 1,
             last_frame_change: -100.0,
