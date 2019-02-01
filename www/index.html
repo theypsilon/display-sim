@@ -159,26 +159,29 @@
     <h3>Sim Panel</h3>
     <div class="info-category">
       <div><h5>Camera Movements <div id="reset-camera" class="reset-button"><button class="activate-button" title="All camera parameters will be reset.">Reset Position</button></div></h5>
-      <div id="camera-movement-indicator">
-        <div class="camera-field-header"><div class="camera-coordinate">X</div><div class="camera-coordinate">Y</div><div class="camera-coordinate">Z</div></div>
-        <div id="camera-pos" class="camera-field-group">
-          <div class="camera-field-name">pos:</div>
-          <input id="camera-pos-x" class="camera-field camera-field-left" type="number"/>
-          <input id="camera-pos-y" class="camera-field camera-field-center" type="number"/>
-          <input id="camera-pos-z" class="camera-field camera-field-right" type="number"/>
+        <div id="camera-right-panel">
+          <div id="camera-movement-indicator">
+          <div class="camera-field-header"><div class="camera-coordinate">X</div><div class="camera-coordinate">Y</div><div class="camera-coordinate">Z</div></div>
+          <div id="camera-pos" class="camera-field-group">
+            <div class="camera-field-name">pos:</div>
+            <input id="camera-pos-x" class="camera-field camera-field-left" type="number"/>
+            <input id="camera-pos-y" class="camera-field camera-field-center" type="number"/>
+            <input id="camera-pos-z" class="camera-field camera-field-right" type="number"/>
+          </div>
+          <div id="camera-dir" class="camera-field-group">
+            <div class="camera-field-name">dir:</div>
+            <input id="camera-dir-x" class="camera-field camera-field-left camera-field-mid" type="number"/>
+            <input id="camera-dir-y" class="camera-field camera-field-center camera-field-mid" type="number"/>
+            <input id="camera-dir-z" class="camera-field camera-field-right camera-field-mid" type="number"/>
+          </div>
+          <div id="camera-axis-up" class="camera-field-group">
+            <div class="camera-field-name">axis:</div>
+            <input id="camera-axis-up-x" class="camera-field camera-field-left" type="number"/>
+            <input id="camera-axis-up-y" class="camera-field camera-field-center" type="number"/>
+            <input id="camera-axis-up-z" class="camera-field camera-field-right" type="number"/>
+          </div>
         </div>
-        <div id="camera-dir" class="camera-field-group">
-          <div class="camera-field-name">dir:</div>
-          <input id="camera-dir-x" class="camera-field camera-field-left camera-field-mid" type="number"/>
-          <input id="camera-dir-y" class="camera-field camera-field-center camera-field-mid" type="number"/>
-          <input id="camera-dir-z" class="camera-field camera-field-right camera-field-mid" type="number"/>
-        </div>
-        <div id="camera-axis-up" class="camera-field-group">
-          <div class="camera-field-name">axis:</div>
-          <input id="camera-axis-up-x" class="camera-field camera-field-left" type="number"/>
-          <input id="camera-axis-up-y" class="camera-field camera-field-center" type="number"/>
-          <input id="camera-axis-up-z" class="camera-field camera-field-right" type="number"/>
-        </div>
+        <ul><li><div id="feature-camera-zoom" class="feature-hotkeys">Zoom</div><br /><div class="feature-value"><input id="camera-zoom" class="feature-number-input" type="number" placeholder="0" step="1" min="1" max="45" value="0"></div></li></ul>
       </div>
       <ul>
         <li><div class="feature-hotkeys">Translation</div></br><div id="feature-camera-movements" class="camera-movements-arrows">
@@ -189,7 +192,6 @@
           <div><button class="activate-button feature-movement-keys key-up-center">↑</button><button class="activate-button feature-movement-keys key-up-far-right">+</button> ⟳</div><br/>
           <div><button class="activate-button feature-movement-keys">←</button><button class="activate-button feature-movement-keys key-down-center">↓</button><button class="activate-button feature-movement-keys">→</button><button class="activate-button feature-movement-keys key-down-far-right">-</button> ⟲</div>
         </div></li>
-        <li><div id="feature-camera-zoom" class="feature-hotkeys">Zoom</div><div class="feature-value"><input id="camera-zoom" class="feature-number-input" type="number" placeholder="0" step="1" min="1" max="45" value="0"></div></li>
       </ul>
     </div>
     <div class="info-category">

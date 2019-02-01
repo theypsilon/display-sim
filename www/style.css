@@ -263,9 +263,13 @@ canvas:hover {
     margin-right: 5px;
 }
 
+#camera-right-panel {
+    float: right;  
+}
+
 #camera-movement-indicator {
-    float: right;
     margin-top: 10px;
+    margin-bottom: 14px;  
 }
 
 .camera-field-header {
