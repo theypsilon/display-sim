@@ -486,6 +486,7 @@ fn update_view_and_perspective(dt: f32, res: &mut Resources, input: &Input) -> W
         res.camera.set_position(glm::vec3(0.0, 0.0, res.initial_position_z));
         res.camera.set_direction(glm::vec3(0.0, 0.0, -1.0));
         res.camera.set_axis_up(glm::vec3(0.0, 1.0, 0.0));
+        res.camera_zoom = 45.0;
     }
 
     res.camera.update_view()
