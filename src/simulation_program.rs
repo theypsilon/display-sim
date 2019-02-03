@@ -15,7 +15,8 @@ use pixels_render::{PixelsRender, PixelsRenderKind, PixelsUniform};
 use blur_render::BlurRender;
 use event_listeners::{set_event_listeners, on_button_action};
 use simulation_state::{
-    StateOwner, Resources, CrtFilters, SimulationTimers, InitialParameters, Input, AnimationData, Buttons
+    StateOwner, Resources, CrtFilters, SimulationTimers, InitialParameters, ColorChannels,
+    Input, AnimationData, Buttons
 };
 
 const PIXEL_MANIPULATION_BASE_SPEED: f32 = 20.0;
@@ -101,6 +102,7 @@ fn change_frontend_input_values(res: &Resources) -> WasmResult<()> {
     dispatch_event_with("app-event.change_pixel_width", &res.crt_filters.cur_pixel_width.into())?;
     dispatch_event_with("app-event.change_pixel_spread", &res.crt_filters.cur_pixel_gap.into())?;
     dispatch_event_with("app-event.change_pixel_brightness", &res.crt_filters.extra_bright.into())?;
+    dispatch_event_with("app-event.change_pixel_contrast", &res.crt_filters.extra_contrast.into())?;
     dispatch_event_with("app-event.change_light_color", &res.crt_filters.light_color.into())?;
     dispatch_event_with("app-event.change_brightness_color", &res.crt_filters.brightness_color.into())?;
     dispatch_event_with("app-event.change_camera_zoom", &res.camera.zoom.into())?;
@@ -231,11 +233,30 @@ fn update_colors(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> 
             dispatch_event_with("app-event.change_pixel_brightness", &res.crt_filters.extra_bright.into())?;
         }
     }
-    if input.custom_event.kind.as_ref() as &str == "event_kind:pixel_brightness" {
-        res.crt_filters.extra_bright = input.custom_event.value.as_f64().ok_or("it should be a number")? as f32;
+    if input.increase_contrast {
+        res.crt_filters.extra_contrast += 0.01 * dt * res.crt_filters.change_speed;
     }
-
+    if input.decrease_contrast {
+        res.crt_filters.extra_contrast -= 0.01 * dt * res.crt_filters.change_speed;
+    }
+    if input.increase_contrast || input.decrease_contrast {
+        if res.crt_filters.extra_contrast < 0.0 {
+            res.crt_filters.extra_contrast = 0.0;
+        } else if res.crt_filters.extra_contrast > 20.0 {
+            res.crt_filters.extra_contrast = 20.0;
+        } else {
+            dispatch_event_with("app-event.change_pixel_contrast", &res.crt_filters.extra_contrast.into())?;
+        }
+    }
     let color_variable = match input.custom_event.kind.as_ref() {
+        "event_kind:pixel_brightness" => {
+            res.crt_filters.extra_bright = input.custom_event.value.as_f64().ok_or("it should be a number")? as f32;
+            return Ok(());
+        },
+        "event_kind:pixel_contrast" => {
+            res.crt_filters.extra_contrast = input.custom_event.value.as_f64().ok_or("it should be a number")? as f32;
+            return Ok(());
+        },
         "event_kind:light_color" => &mut res.crt_filters.light_color,
         "event_kind:brightness_color" => &mut res.crt_filters.brightness_color,
         _ => return Ok(()),
@@ -298,8 +319,16 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
 
     res.buttons.toggle_split_colors.track(input.toggle_split_colors);
     if res.buttons.toggle_split_colors.is_just_pressed() {
-        res.crt_filters.showing_split_colors = !res.crt_filters.showing_split_colors;
-        let message = if res.crt_filters.showing_split_colors { "Individually" } else { "Combined" };
+        res.crt_filters.color_channels = match res.crt_filters.color_channels {
+            ColorChannels::Combined => ColorChannels::SplitHorizontal,
+            ColorChannels::SplitHorizontal => ColorChannels::SplitVertical,
+            ColorChannels::SplitVertical => ColorChannels::Combined,
+        };
+        let message = match res.crt_filters.color_channels {
+            ColorChannels::Combined => "Combined",
+            ColorChannels::SplitHorizontal => "Split Horizontally",
+            ColorChannels::SplitVertical => "Split Vertically",
+        };
         dispatch_event_with("app-event.top_message", &("Showing color channels ".to_string() + message + ".").into())?;
     }
 
@@ -493,20 +522,43 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
         *light *= res.crt_filters.extra_bright;
     }
 
-    let color_splits = if res.crt_filters.showing_split_colors {3} else {1};
+    let color_splits = match res.crt_filters.color_channels {ColorChannels::Combined => 1, _ => 3};
     for i in 0..color_splits {
         let mut light_color = get_3_f32color_from_int(res.crt_filters.light_color);
-        let mut pixel_offset = 0.0;
-        if res.crt_filters.showing_split_colors {
-            light_color[(i + 0) % 3] *= 1.5;
-            light_color[(i + 1) % 3] = 0.0;
-            light_color[(i + 2) % 3] = 0.0;
-            pixel_offset = (i as f32 - 1.0) * res.crt_filters.cur_pixel_width * (1.0 / 3.0) + match i % 3 {
-                0 => res.crt_filters.cur_pixel_scale_x * (1.0 / 3.0),
-                1 => 0.0,
-                2 => - res.crt_filters.cur_pixel_scale_x * (1.0 / 3.0),
-                _ => unreachable!(),
-            };
+        let mut pixel_offset = &mut [0.0, 0.0];
+        let mut pixel_scale = &mut [
+            (res.crt_filters.cur_pixel_scale_x + 1.0) / res.crt_filters.cur_pixel_width,
+            res.crt_filters.cur_pixel_scale_y + 1.0,
+            (res.crt_filters.cur_pixel_scale_x + res.crt_filters.cur_pixel_scale_x) * 0.5 + 1.0,
+        ];
+        match res.crt_filters.color_channels {
+            ColorChannels::Combined => {},
+            _ => {
+                light_color[(i + 0) % 3] *= 1.0;
+                light_color[(i + 1) % 3] = 0.0;
+                light_color[(i + 2) % 3] = 0.0;
+                match res.crt_filters.color_channels {
+                    ColorChannels::SplitHorizontal => {
+                        pixel_offset[0] = (i as f32 - 1.0) * res.crt_filters.cur_pixel_width * (1.0 / 3.0) + match i % 3 {
+                            0 => res.crt_filters.cur_pixel_scale_x * (1.0 / 3.0),
+                            1 => 0.0,
+                            2 => - res.crt_filters.cur_pixel_scale_x * (1.0 / 3.0),
+                            _ => unreachable!(),
+                        };
+                        pixel_scale[0] = (res.crt_filters.cur_pixel_scale_x + 1.0) / (res.crt_filters.cur_pixel_width / color_splits as f32);
+                    },
+                    ColorChannels::SplitVertical => {
+                        pixel_offset[1] = (i as f32 - 1.0) * (1.0 / 3.0) + match i % 3 {
+                            0 => res.crt_filters.cur_pixel_scale_y * (1.0 / 3.0),
+                            1 => 0.0,
+                            2 => - res.crt_filters.cur_pixel_scale_y * (1.0 / 3.0),
+                            _ => unreachable!(),
+                        };
+                        pixel_scale[1] = (res.crt_filters.cur_pixel_scale_y + 1.0) / (1.0 / color_splits as f32);
+                    }
+                    _ => unreachable!(),
+                }
+            }
         }
         res.pixels_render.render(gl, &res.crt_filters.pixels_render_kind, PixelsUniform {
             view: res.camera.get_view().as_mut_slice(),
@@ -515,6 +567,7 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
                 res.animation.viewport_height as f32,
             ).as_mut_slice(),
             ambient_strength: match res.crt_filters.pixels_render_kind { PixelsRenderKind::Squares => 1.0, PixelsRenderKind::Cubes => 0.5},
+            contrast_factor: res.crt_filters.extra_contrast,
             light_color: &mut light_color,
             extra_light: &mut extra_light,
             light_pos: res.camera.get_position().as_mut_slice(),
@@ -522,11 +575,7 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
                 (1.0 + res.crt_filters.cur_pixel_gap) * res.crt_filters.cur_pixel_width,
                 1.0 + res.crt_filters.cur_pixel_gap,
             ],
-            pixel_scale: &mut [
-                (res.crt_filters.cur_pixel_scale_x + 1.0) / (res.crt_filters.cur_pixel_width / color_splits as f32),
-                res.crt_filters.cur_pixel_scale_y + 1.0,
-                (res.crt_filters.cur_pixel_scale_x + res.crt_filters.cur_pixel_scale_x) * 0.5 + 1.0,
-            ],
+            pixel_scale,
             pixel_pulse: res.crt_filters.pixels_pulse,
             pixel_offset,
         });

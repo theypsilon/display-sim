@@ -73,6 +73,7 @@ pub struct CrtFilters {
     pub light_color: i32,
     pub brightness_color: i32,
     pub extra_bright: f32,
+    pub extra_contrast: f32,
     pub cur_pixel_width: f32,
     pub cur_pixel_scale_x: f32,
     pub cur_pixel_scale_y: f32,
@@ -80,8 +81,14 @@ pub struct CrtFilters {
     pub change_speed: f32,
     pub pixels_pulse: f32,
     pub pixels_render_kind: PixelsRenderKind,
-    pub showing_split_colors: bool,
+    pub color_channels: ColorChannels,
     pub showing_pixels_pulse: bool,
+}
+
+pub enum ColorChannels {
+    Combined,
+    SplitHorizontal,
+    SplitVertical,
 }
 
 impl CrtFilters {
@@ -91,6 +98,7 @@ impl CrtFilters {
             light_color: 0x00FF_FFFF,
             brightness_color: 0x00FF_FFFF,
             extra_bright: 0.0,
+            extra_contrast: 1.0,
             cur_pixel_width: 1.0,
             cur_pixel_scale_x: 0.0,
             cur_pixel_scale_y: 0.0,
@@ -98,7 +106,7 @@ impl CrtFilters {
             change_speed: change_speed,
             pixels_pulse: 0.0,
             pixels_render_kind: PixelsRenderKind::Squares,
-            showing_split_colors: false,
+            color_channels: ColorChannels::Combined,
             showing_pixels_pulse: false,
         }
     }
@@ -186,6 +194,8 @@ pub struct Input {
     pub decrease_pixel_gap: bool,
     pub increase_bright: bool,
     pub decrease_bright: bool,
+    pub increase_contrast: bool,
+    pub decrease_contrast: bool,
     pub toggle_split_colors: bool,
     pub toggle_pixels_render_kind: bool,
     pub showing_pixels_pulse: bool,
@@ -231,6 +241,8 @@ impl Input {
             decrease_pixel_gap: false,
             increase_bright: false,
             decrease_bright: false,
+            increase_contrast: false,
+            decrease_contrast: false,
             toggle_split_colors: false,
             toggle_pixels_render_kind: false,
             showing_pixels_pulse: false,

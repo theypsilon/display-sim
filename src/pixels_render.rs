@@ -31,9 +31,10 @@ pub struct PixelsUniform<'a> {
     pub light_color: &'a mut [f32],
     pub extra_light: &'a mut [f32],
     pub ambient_strength: f32,
+    pub contrast_factor: f32,
     pub pixel_gap: &'a mut [f32],
     pub pixel_scale: &'a mut [f32],
-    pub pixel_offset: f32,
+    pub pixel_offset: &'a mut [f32],
     pub pixel_pulse: f32,
 }
 
@@ -107,9 +108,10 @@ impl PixelsRender {
         gl.uniform3fv_with_f32_array(gl.get_uniform_location(&self.shader, "lightColor").as_ref(), uniforms.light_color);
         gl.uniform3fv_with_f32_array(gl.get_uniform_location(&self.shader, "extraLight").as_ref(), uniforms.extra_light);
         gl.uniform1f(gl.get_uniform_location(&self.shader, "ambientStrength").as_ref(), uniforms.ambient_strength);
+        gl.uniform1f(gl.get_uniform_location(&self.shader, "contrastFactor").as_ref(), uniforms.contrast_factor);
         gl.uniform2fv_with_f32_array(gl.get_uniform_location(&self.shader, "pixel_gap").as_ref(), uniforms.pixel_gap);
         gl.uniform3fv_with_f32_array(gl.get_uniform_location(&self.shader, "pixel_scale").as_ref(), uniforms.pixel_scale);
-        gl.uniform1f(gl.get_uniform_location(&self.shader, "pixel_offset").as_ref(), uniforms.pixel_offset);
+        gl.uniform2fv_with_f32_array(gl.get_uniform_location(&self.shader, "pixel_offset").as_ref(), uniforms.pixel_offset);
         gl.uniform1f(gl.get_uniform_location(&self.shader, "pixel_pulse").as_ref(), uniforms.pixel_pulse);
 
         gl.bind_vertex_array(self.vao.as_ref());
@@ -206,7 +208,7 @@ uniform mat4 projection;
 uniform vec2 pixel_gap;
 uniform vec3 pixel_scale;
 uniform float pixel_pulse;
-uniform float pixel_offset;
+uniform vec2 pixel_offset;
 
 const float COLOR_FACTOR = 1.0/255.0;
 const uint hex_FF = uint(0xFF);
@@ -218,8 +220,8 @@ void main()
         float radius = length(aOffset);
         pos += vec3(0, 0, sin(pixel_pulse + sin(pixel_pulse / 10.0) * radius / 4.0) * 2.0);
     }
-    if (pixel_offset != 0.0) {
-        pos.x += pixel_offset;
+    if (pixel_offset.x != 0.0 || pixel_offset.y != 0.0) {
+        pos += vec3(pixel_offset, 0.0);
     }
     FragPos = pos;
     Normal = aNormal;
@@ -249,6 +251,7 @@ uniform vec3 lightColor;
 uniform vec3 extraLight;
 uniform vec3 lightPos;
 uniform float ambientStrength;
+uniform float contrastFactor;
 
 void main()
 {
@@ -259,6 +262,10 @@ void main()
     vec4 result;
     if (ambientStrength == 1.0) {
         result = ObjectColor * vec4(lightColor, 1.0);
+        float contrastUmbral = 0.5;
+        result.r = (result.r - contrastUmbral) * contrastFactor + contrastFactor * contrastUmbral;
+        result.g = (result.g - contrastUmbral) * contrastFactor + contrastFactor * contrastUmbral;
+        result.b = (result.b - contrastUmbral) * contrastFactor + contrastFactor * contrastUmbral;
     } else {
         vec3 norm = normalize(Normal);
         vec3 lightDir = normalize(lightPos - FragPos);

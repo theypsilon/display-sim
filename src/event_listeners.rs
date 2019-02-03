@@ -149,6 +149,8 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
         "m" => input.decrease_pixel_gap = pressed,
         "b" => input.increase_blur = pressed,
         "v" => input.decrease_blur = pressed,
+        "<" | "&lt;" => input.increase_contrast = pressed,
+        "z" => input.decrease_contrast = pressed,
         "c" => input.increase_bright = pressed,
         "x" => input.decrease_bright = pressed,
         "y" => input.toggle_split_colors = pressed,

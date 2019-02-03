@@ -54,6 +54,7 @@ const pixelHorizontalGapDeo = document.getElementById('pixel-horizontal-gap');
 const pixelVerticalGapDeo = document.getElementById('pixel-vertical-gap');
 const pixelSpreadDeo = document.getElementById('pixel-spread');
 const pixelBrigthnessDeo = document.getElementById('pixel-brightness');
+const pixelContrastDeo = document.getElementById('pixel-contrast');
 const blurLevelDeo = document.getElementById('blur-level');
 const featureChangeColorRepresentationDeo = document.getElementById('feature-change-color-representation');
 const featureChangePixelShapeDeo = document.getElementById('feature-change-pixel-shape');
@@ -156,6 +157,7 @@ updateInnerHtmlWithEventNumber(pixelHorizontalGapDeo, 'app-event.change_pixel_ho
 updateInnerHtmlWithEventNumber(pixelVerticalGapDeo, 'app-event.change_pixel_vertical_gap');
 updateInnerHtmlWithEventNumber(pixelSpreadDeo, 'app-event.change_pixel_spread');
 updateInnerHtmlWithEventNumber(pixelBrigthnessDeo, 'app-event.change_pixel_brightness');
+updateInnerHtmlWithEventNumber(pixelContrastDeo, 'app-event.change_pixel_contrast');
 updateInnerHtmlWithEventNumber(blurLevelDeo, 'app-event.change_blur_level');
 updateInnerHtmlWithEventNumber(lightColorDeo, 'app-event.change_light_color');
 updateInnerHtmlWithEventNumber(brightnessColorDeo, 'app-event.change_brightness_color');
@@ -169,6 +171,7 @@ function updateInnerHtmlWithEventNumber(deo, eventId) {
             case 'app-event.change_pixel_vertical_gap':
             case 'app-event.change_pixel_spread':
             case 'app-event.change_blur_level':
+            case 'app-event.change_pixel_contrast':
                 deo.value = Math.round(event.detail * 1000.0) / 1000.0;
                 break;
             case 'app-event.change_pixel_brightness':
@@ -191,6 +194,7 @@ customEventOnButtonPressed(pixelVerticalGapDeo.parentNode.parentNode);
 customEventOnButtonPressed(pixelWidthDeo.parentNode.parentNode);
 customEventOnButtonPressed(blurLevelDeo.parentNode.parentNode);
 customEventOnButtonPressed(pixelBrigthnessDeo.parentNode.parentNode);
+customEventOnButtonPressed(pixelContrastDeo.parentNode.parentNode);
 customEventOnButtonPressed(pixelSpreadDeo.parentNode.parentNode);
 
 customEventOnButtonPressed(resetCameraDeo);
@@ -240,6 +244,7 @@ customEventOnChange(pixelHorizontalGapDeo, "pixel_horizontal_gap", a => +a);
 customEventOnChange(pixelVerticalGapDeo, "pixel_vertical_gap", a => +a);
 customEventOnChange(blurLevelDeo, "blur_level", a => +a);
 customEventOnChange(pixelBrigthnessDeo, "pixel_brightness", a => +a);
+customEventOnChange(pixelContrastDeo, "pixel_brightness", a => +a);
 
 const parseColor = (value) => parseInt('0x' +value.substring(1));
 customEventOnChange(lightColorDeo, "light_color", parseColor);
