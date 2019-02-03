@@ -85,7 +85,7 @@ fn load_resources(gl: &WebGl2RenderingContext, animation: AnimationData) -> Wasm
             last_second: now,
         },
         pixels_render: PixelsRender::new(&gl, animation.image_width as usize, animation.image_height as usize)?,
-        blur_render: BlurRender::new(&gl, animation.viewport_width as i32, animation.viewport_height as i32)?,
+        blur_render: BlurRender::new(&gl, animation.viewport_width as i32, animation.viewport_height as i32, 2)?,
         animation,
         camera,
         crt_filters,

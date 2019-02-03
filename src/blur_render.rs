@@ -15,10 +15,13 @@ pub struct BlurRender {
     vao: Option<WebGlVertexArrayObject>,
     framebuffers: [Option<WebGlFramebuffer>; 2],
     textures: [Option<WebGlTexture>; 2],
+    internal_resolution_multiplier: i32,
+    width: i32,
+    height: i32,
 }
 
 impl BlurRender {
-    pub fn new(gl: &WebGl2RenderingContext, width: i32, height: i32) -> WasmResult<BlurRender> {
+    pub fn new(gl: &WebGl2RenderingContext, width: i32, height: i32, internal_resolution_multiplier: i32) -> WasmResult<BlurRender> {
             
         let framebuffers = [
             gl.create_framebuffer(),
@@ -34,7 +37,15 @@ impl BlurRender {
             gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, framebuffers[i].as_ref());
             gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, textures[i].as_ref());
             gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
-                WebGl2RenderingContext::TEXTURE_2D, 0, WebGl2RenderingContext::RGBA as i32, width, height, 0, WebGl2RenderingContext::RGBA, WebGl2RenderingContext::UNSIGNED_BYTE, None
+                WebGl2RenderingContext::TEXTURE_2D,
+                0,
+                WebGl2RenderingContext::RGBA as i32,
+                width * internal_resolution_multiplier,
+                height * internal_resolution_multiplier,
+                0,
+                WebGl2RenderingContext::RGBA,
+                WebGl2RenderingContext::UNSIGNED_BYTE,
+                None
             )?;
             gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MIN_FILTER, WebGl2RenderingContext::LINEAR as i32);
             gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MAG_FILTER, WebGl2RenderingContext::LINEAR as i32);
@@ -73,10 +84,11 @@ impl BlurRender {
         gl.vertex_attrib_pointer_with_i32(q_pos_position, 3, WebGl2RenderingContext::FLOAT, false, 5 * size_of::<f32>() as i32, 0);
         gl.vertex_attrib_pointer_with_i32(q_texture_position, 2, WebGl2RenderingContext::FLOAT, false, 5 * size_of::<f32>() as i32, 3 * size_of::<f32>() as i32);
 
-        Ok(BlurRender {shader, vao, framebuffers, textures})
+        Ok(BlurRender {shader, vao, framebuffers, textures, width, height, internal_resolution_multiplier})
     }
 
     pub fn pre_render(&self, gl: &WebGl2RenderingContext) {
+        gl.viewport(0, 0, self.width * self.internal_resolution_multiplier, self.height * self.internal_resolution_multiplier);
         for i in 0..=1 {
             gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, self.framebuffers[i].as_ref());
             gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
@@ -92,6 +104,7 @@ impl BlurRender {
 
             gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, if i < passes { self.framebuffers[buffer_index].as_ref() } else { None });
             if i == passes {
+                gl.viewport(0, 0, self.width, self.height);
                 gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
             }
             gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, self.textures[texture_index].as_ref());
