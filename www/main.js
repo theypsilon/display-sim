@@ -462,7 +462,7 @@ function prepareUi() {
             window.dispatchEvent(new CustomEvent('app-event.top_message', {
                 detail: 'WebGL is not working on your browser, try restarting it! And remember, this works only on a PC with updated browser and graphics drivers.'
             }));
-            alert("WebGL not working!");
+            alert("Error! WebGL context could not be created!");
             console.error(new Error('Could not get webgl context.'));
             canvas.remove();
             prepareUi();
