@@ -160,6 +160,7 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
         "alt" => input.alt = pressed,
         " " | "space" => input.space = pressed,
         "escape" | "esc" => input.esc = pressed,
+        "f4" => input.screenshot = pressed,
         "reset position" => input.reset_position = pressed,
         "reset filters" => input.reset_filters = pressed,
         _ => {

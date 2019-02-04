@@ -15,7 +15,7 @@ pub struct BlurRender {
     vao: Option<WebGlVertexArrayObject>,
     framebuffers: [Option<WebGlFramebuffer>; 2],
     textures: [Option<WebGlTexture>; 2],
-    internal_resolution_multiplier: i32,
+    pub internal_resolution_multiplier: i32,
     width: i32,
     height: i32,
 }
@@ -96,21 +96,28 @@ impl BlurRender {
     }
 
     pub fn render(&self, gl: &WebGl2RenderingContext, passes: usize) {
+        gl.blend_func(WebGl2RenderingContext::ONE, WebGl2RenderingContext::ZERO);
         gl.use_program(Some(&self.shader));
         gl.bind_vertex_array(self.vao.as_ref());
-        for i in 0 ..= passes {
+        for i in 0 .. passes {
             let buffer_index = i % 2;
             let texture_index = (i + 1) % 2;
 
-            gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, if i < passes { self.framebuffers[buffer_index].as_ref() } else { None });
-            if i == passes {
-                gl.viewport(0, 0, self.width, self.height);
-                gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
-            }
+            gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, self.framebuffers[buffer_index].as_ref());
             gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, self.textures[texture_index].as_ref());
             gl.uniform1i(gl.get_uniform_location(&self.shader, "horizontal").as_ref(), buffer_index as i32);
             gl.draw_elements_with_i32(WebGl2RenderingContext::TRIANGLES, 6, WebGl2RenderingContext::UNSIGNED_INT, 0);
         }
+    }
+
+    pub fn post_render(&self, gl: &WebGl2RenderingContext, passes: usize) {
+        let buffer_index = passes % 2;
+        let texture_index = (passes + 1) % 2;
+        gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, None);
+        gl.viewport(0, 0, self.width, self.height);
+        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, self.textures[texture_index].as_ref());
+        gl.uniform1i(gl.get_uniform_location(&self.shader, "horizontal").as_ref(), buffer_index as i32);
+        gl.draw_elements_with_i32(WebGl2RenderingContext::TRIANGLES, 6, WebGl2RenderingContext::UNSIGNED_INT, 0);
         gl.bind_vertex_array(None);
         gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, None);
     }

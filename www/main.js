@@ -108,6 +108,36 @@ window.addEventListener('app-event.exiting_session', () => {
     visibility.hideInfoPanel();
 }, false);
 
+window.addEventListener('app-event.screenshot', event => {
+    const arrayBuffer = event.detail[0];
+    const multiplier = event.detail[1];
+
+    const width = 1920 * 2 * multiplier;
+    const height = 1080 * 2 * multiplier;
+    var canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    var ctx = canvas.getContext('2d');
+
+    var imageData = ctx.createImageData(width, height);
+    imageData.data.set(arrayBuffer);
+    ctx.putImageData(imageData, 0, 0);
+    ctx.globalCompositeOperation = 'copy';
+    ctx.scale(1,-1); // Y flip
+    ctx.translate(0, -imageData.height);
+    ctx.drawImage(canvas, 0,0);
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.globalCompositeOperation = 'source-over';
+
+    const a = document.createElement('a');
+    document.body.appendChild(a);
+    a.classList.add('no-display');
+    a.href = canvas.toDataURL();
+    a.download = 'CRT-3D-Sim_' + new Date().toISOString() + '.png';
+    a.click();
+    setTimeout(() => a.remove(), 1000);
+}, false);
+
 window.addEventListener('app-event.fps', event => {
     fpsCounterDeo.innerHTML = Math.round(event.detail);
 }, false);

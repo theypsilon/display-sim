@@ -86,7 +86,7 @@ fn load_resources(gl: &WebGl2RenderingContext, animation: AnimationData) -> Wasm
             last_second: now,
         },
         pixels_render: PixelsRender::new(&gl, animation.image_width as usize, animation.image_height as usize)?,
-        blur_render: BlurRender::new(&gl, animation.viewport_width as i32, animation.viewport_height as i32, 2)?,
+        blur_render: BlurRender::new(&gl, animation.viewport_width as i32, animation.viewport_height as i32, 4)?,
         animation,
         camera,
         crt_filters,
@@ -106,6 +106,7 @@ fn change_frontend_input_values(res: &Resources) -> WasmResult<()> {
     dispatch_event_with("app-event.change_light_color", &res.crt_filters.light_color.into())?;
     dispatch_event_with("app-event.change_brightness_color", &res.crt_filters.brightness_color.into())?;
     dispatch_event_with("app-event.change_camera_zoom", &res.camera.zoom.into())?;
+    dispatch_event_with("app-event.change_blur_level", &(res.crt_filters.blur_passes as i32).into())?;
     Ok(())
 }
 
@@ -176,6 +177,8 @@ fn update_simulation(res: &mut Resources, input: &Input) -> WasmResult<bool> {
     if res.buttons.space.is_just_pressed() {
         dispatch_event("app-event.toggle_info_panel")?;
     }
+
+    res.buttons.screenshot.track(input.screenshot);
 
     update_pixel_pulse(dt, res, input)?;
     update_crt_filters(dt, res, input)?;
@@ -506,6 +509,7 @@ fn update_camera(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> 
 }
 
 pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
+
     if res.animation.needs_buffer_data_load {
         res.pixels_render.apply_colors(gl, &res.animation.steps[res.animation.current_frame]);
     }
@@ -582,8 +586,23 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
     }
 
     if res.crt_filters.blur_passes > 0 {
-        gl.blend_func(WebGl2RenderingContext::ONE, WebGl2RenderingContext::ZERO);
         res.blur_render.render(&gl, res.crt_filters.blur_passes);
+    }
+
+    if res.buttons.screenshot.is_just_released() {
+        let multiplier : i32 = if res.crt_filters.blur_passes > 0 {res.blur_render.internal_resolution_multiplier} else {1};
+        let width = res.animation.viewport_width as i32 * multiplier;
+        let height = res.animation.viewport_height as i32 * multiplier;
+        let pixels = js_sys::Uint8Array::new(&(width * height * 4).into());
+        gl.read_pixels_with_opt_array_buffer_view(0, 0, width, height, WebGl2RenderingContext::RGBA, WebGl2RenderingContext::UNSIGNED_BYTE, Some(&pixels))?;
+        let array = js_sys::Array::new();
+        array.push(&pixels);
+        array.push(&multiplier.into());
+        dispatch_event_with("app-event.screenshot", &array)?;
+    }
+
+    if res.crt_filters.blur_passes > 0 {
+        res.blur_render.post_render(&gl, res.crt_filters.blur_passes);
     }
 
     check_error(&gl, line!())?;

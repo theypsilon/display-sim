@@ -123,6 +123,7 @@ pub struct Buttons {
     pub showing_pixels_pulse: BooleanButton,
     pub esc: BooleanButton,
     pub space: BooleanButton,
+    pub screenshot: BooleanButton,
 }
 
 impl Buttons {
@@ -138,6 +139,7 @@ impl Buttons {
             showing_pixels_pulse: BooleanButton::new(),
             esc: BooleanButton::new(),
             space: BooleanButton::new(),
+            screenshot: BooleanButton::new(),
         }
     }
 }
@@ -199,6 +201,7 @@ pub struct Input {
     pub toggle_split_colors: bool,
     pub toggle_pixels_render_kind: bool,
     pub showing_pixels_pulse: bool,
+    pub screenshot: bool,
 }
 
 impl Input {
@@ -246,6 +249,7 @@ impl Input {
             toggle_split_colors: false,
             toggle_pixels_render_kind: false,
             showing_pixels_pulse: false,
+            screenshot: false,
         })
     }
 }
