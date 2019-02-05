@@ -1,19 +1,19 @@
 use wasm_bindgen::prelude::{JsValue, Closure};
 use wasm_bindgen::JsCast;
 use web_sys::{
-    console,
     KeyboardEvent, MouseEvent, WheelEvent, EventTarget, CustomEvent
 };
 use std::rc::Rc;
 
-use wasm_error::{WasmResult};
-use web_utils::{window};
-use simulation_state::{OwnedClosure, StateOwner, Input};
+use crate::wasm_error::{WasmResult};
+use crate::web_utils::{window};
+use crate::simulation_state::{OwnedClosure, StateOwner, Input};
+use crate::action_bindings::on_button_action;
 
 pub fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<OwnedClosure>> {
 
     let onblur: Closure<FnMut(JsValue)> = {
-        let mut state_owner = Rc::clone(&state_owner);
+        let state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |_: JsValue| {
             let mut input = state_owner.input.borrow_mut();
             *input = Input::new().ok().unwrap();
@@ -21,7 +21,7 @@ pub fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<Owned
     };
 
     let onkeydown: Closure<FnMut(JsValue)> = {
-        let mut state_owner = Rc::clone(&state_owner);
+        let state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |event: JsValue| {
             if let Ok(e) = event.dyn_into::<KeyboardEvent>() {
                 let mut input = state_owner.input.borrow_mut();
@@ -31,7 +31,7 @@ pub fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<Owned
     };
 
     let onkeyup: Closure<FnMut(JsValue)> = {
-        let mut state_owner = Rc::clone(&state_owner);
+        let state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |event: JsValue| {
             if let Ok(e) = event.dyn_into::<KeyboardEvent>() {
                 let mut input = state_owner.input.borrow_mut();
@@ -41,7 +41,7 @@ pub fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<Owned
     };
 
     let onmousedown: Closure<FnMut(JsValue)> = {
-        let mut state_owner = Rc::clone(&state_owner);
+        let state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |event: JsValue| {
             if let Ok(e) = event.dyn_into::<MouseEvent>() {
                 let mut input = state_owner.input.borrow_mut();
@@ -51,7 +51,7 @@ pub fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<Owned
     };
 
     let onmouseup: Closure<FnMut(JsValue)> = {
-        let mut state_owner = Rc::clone(&state_owner);
+        let state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |event: JsValue| {
             if event.dyn_into::<MouseEvent>().is_ok() {
                 let mut input = state_owner.input.borrow_mut();
@@ -61,7 +61,7 @@ pub fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<Owned
     };
 
     let onmousemove: Closure<FnMut(JsValue)> = {
-        let mut state_owner = Rc::clone(&state_owner);
+        let state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |event: JsValue| {
             if let Ok(e) = event.dyn_into::<MouseEvent>() {
                 let mut input = state_owner.input.borrow_mut();
@@ -72,7 +72,7 @@ pub fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<Owned
     };
 
     let onmousewheel: Closure<FnMut(JsValue)> = {
-        let mut state_owner = Rc::clone(&state_owner);
+        let state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |event: JsValue| {
             if let Ok(e) = event.dyn_into::<WheelEvent>() {
                 let mut input = state_owner.input.borrow_mut();
@@ -82,7 +82,7 @@ pub fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<Owned
     };
 
     let oncustominputevent: Closure<FnMut(JsValue)> = {
-        let mut state_owner = Rc::clone(&state_owner);
+        let state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |event: JsValue| {
             if let Ok(e) = event.dyn_into::<CustomEvent>() {
                 let mut input = state_owner.input.borrow_mut();
@@ -122,55 +122,4 @@ pub fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<Owned
     closures.push(Some(oncustominputevent));
 
     Ok(closures)
-}
-
-pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
-    match button_action {
-        "a" => input.walk_left = pressed,
-        "d" => input.walk_right = pressed,
-        "w" => input.walk_forward = pressed,
-        "s" => input.walk_backward = pressed,
-        "q" => input.walk_up = pressed,
-        "e" => input.walk_down = pressed,
-        "arrowleft" | "←" | "◀" => input.turn_left = pressed,
-        "arrowright" | "→" | "▶" => input.turn_right = pressed,
-        "arrowup" | "↑" | "▲" => input.turn_up = pressed,
-        "arrowdown" | "↓" | "▼" => input.turn_down = pressed,
-        "+" => input.rotate_left = pressed,
-        "-" => input.rotate_right = pressed,
-        "f" => input.speed_up = pressed,
-        "r" => input.speed_down = pressed,
-        "t" => input.reset_speeds = pressed,
-        "u" => input.increase_pixel_scale_x = pressed,
-        "i" => input.decrease_pixel_scale_x = pressed,
-        "j" => input.increase_pixel_scale_y = pressed,
-        "k" => input.decrease_pixel_scale_y = pressed,
-        "n" => input.increase_pixel_gap = pressed,
-        "m" => input.decrease_pixel_gap = pressed,
-        "b" => input.increase_blur = pressed,
-        "v" => input.decrease_blur = pressed,
-        "<" | "&lt;" => input.increase_contrast = pressed,
-        "z" => input.decrease_contrast = pressed,
-        "c" => input.increase_bright = pressed,
-        "x" => input.decrease_bright = pressed,
-        "y" => input.toggle_split_colors = pressed,
-        "o" => input.toggle_pixels_render_kind = pressed,
-        "p" => input.showing_pixels_pulse = pressed,
-        "shift" => input.shift = pressed,
-        "alt" => input.alt = pressed,
-        " " | "space" => input.space = pressed,
-        "escape" | "esc" => input.esc = pressed,
-        "f4" => input.screenshot = pressed,
-        "reset position" => input.reset_position = pressed,
-        "reset filters" => input.reset_filters = pressed,
-        _ => {
-            if button_action.contains("+") {
-                for button_fraction in button_action.split("+") {
-                    on_button_action(input, button_fraction, pressed);
-                }
-            } else if pressed {
-                console::log_2(&"Ignored key: ".into(), &button_action.into());
-            }
-        }
-    }
 }

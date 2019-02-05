@@ -1,8 +1,8 @@
 use web_sys::{Event, EventTarget, CustomEvent, CustomEventInit};
 
 use wasm_bindgen::{JsValue, JsCast};
-use wasm_error::{WasmError, WasmResult};
-use web_utils::{window};
+use crate::wasm_error::{WasmError, WasmResult};
+use crate::web_utils::{window};
 
 pub fn dispatch_event(kind: &str) -> WasmResult<()> {
     dispatch_event_internal(&Event::new(kind)?)

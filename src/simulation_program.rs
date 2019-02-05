@@ -5,19 +5,19 @@ use web_sys::{
     WebGl2RenderingContext,
 };
 use std::rc::Rc;
-use super::glm;
 
-use wasm_error::{WasmResult, WasmError};
-use camera::{CameraDirection, Camera};
-use dispatch_event::{dispatch_event, dispatch_event_with};
-use web_utils::{now, window};
-use pixels_render::{PixelsRender, PixelsRenderKind, PixelsUniform};
-use blur_render::BlurRender;
-use event_listeners::{set_event_listeners, on_button_action};
-use simulation_state::{
+use crate::wasm_error::{WasmResult, WasmError};
+use crate::camera::{CameraDirection, Camera};
+use crate::dispatch_event::{dispatch_event, dispatch_event_with};
+use crate::web_utils::{now, window};
+use crate::pixels_render::{PixelsRender, PixelsRenderKind, PixelsUniform};
+use crate::blur_render::BlurRender;
+use crate::event_listeners::{set_event_listeners};
+use crate::simulation_state::{
     StateOwner, Resources, CrtFilters, SimulationTimers, InitialParameters, ColorChannels,
     Input, AnimationData, Buttons
 };
+use crate::action_bindings::on_button_action;
 
 const PIXEL_MANIPULATION_BASE_SPEED: f32 = 20.0;
 const TURNING_BASE_SPEED: f32 = 3.0;
@@ -529,8 +529,8 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
     let color_splits = match res.crt_filters.color_channels {ColorChannels::Combined => 1, _ => 3};
     for i in 0..color_splits {
         let mut light_color = get_3_f32color_from_int(res.crt_filters.light_color);
-        let mut pixel_offset = &mut [0.0, 0.0];
-        let mut pixel_scale = &mut [
+        let pixel_offset = &mut [0.0, 0.0];
+        let pixel_scale = &mut [
             (res.crt_filters.cur_pixel_scale_x + 1.0) / res.crt_filters.cur_pixel_width,
             res.crt_filters.cur_pixel_scale_y + 1.0,
             (res.crt_filters.cur_pixel_scale_x + res.crt_filters.cur_pixel_scale_x) * 0.5 + 1.0,

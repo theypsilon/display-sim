@@ -3,7 +3,7 @@ use web_sys::{
     WebGlShader,
 };
 
-use wasm_error::{WasmError, WasmResult};
+use crate::wasm_error::{WasmError, WasmResult};
 
 pub fn make_shader(gl: &WebGl2RenderingContext, vertex_shader: &str, fragment_shader: &str) -> WasmResult<WebGlProgram> {
     let vert_shader = compile_shader(

@@ -4,9 +4,9 @@ use wasm_bindgen::prelude::{JsValue, wasm_bindgen};
 use web_sys::console;
 use js_sys::ArrayBuffer;
 
-use simulation_program::program;
-use simulation_state::AnimationData;
-use wasm_error::WasmError;
+use crate::simulation_program::program;
+use crate::simulation_state::AnimationData;
+use crate::wasm_error::WasmError;
 
 #[wasm_bindgen]
 pub fn main(gl: JsValue, animation: AnimationWasm) {

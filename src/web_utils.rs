@@ -1,4 +1,4 @@
-use wasm_error::WasmResult;
+use crate::wasm_error::WasmResult;
 use web_sys::Window;
 use js_sys::{Float32Array, Int32Array};
 

@@ -4,12 +4,12 @@ use std::cell::RefCell;
 use wasm_bindgen::prelude::{Closure, JsValue};
 use js_sys::{ArrayBuffer};
 
-use wasm_error::{WasmResult};
-use boolean_button::BooleanButton;
-use camera::{Camera};
-use web_utils::{now};
-use pixels_render::{PixelsRender, PixelsRenderKind};
-use blur_render::BlurRender;
+use crate::wasm_error::{WasmResult};
+use crate::boolean_button::BooleanButton;
+use crate::camera::{Camera};
+use crate::web_utils::{now};
+use crate::pixels_render::{PixelsRender, PixelsRenderKind};
+use crate::blur_render::BlurRender;
 
 pub struct AnimationData {
     pub steps: Vec<ArrayBuffer>,

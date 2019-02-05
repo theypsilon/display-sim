@@ -3,11 +3,11 @@ use web_sys::{
     WebGl2RenderingContext, WebGlVertexArrayObject, WebGlProgram, WebGlFramebuffer, WebGlTexture,
 };
 
-use wasm_error::WasmResult;
-use shaders::{
+use crate::wasm_error::WasmResult;
+use crate::shaders::{
     make_shader,
 };
-use web_utils::{js_f32_array, js_i32_array};
+use crate::web_utils::{js_f32_array, js_i32_array};
 
 
 pub struct BlurRender {

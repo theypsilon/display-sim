@@ -1,9 +1,7 @@
-extern crate nalgebra_glm as glm;
-
 use js_sys::{Float32Array};
 
-use wasm_error::WasmResult;
-use dispatch_event::{dispatch_event_with};
+use crate::wasm_error::WasmResult;
+use crate::dispatch_event::{dispatch_event_with};
 
 pub enum CameraDirection{Down, Up, Left, Right, Forward, Backward}
 
