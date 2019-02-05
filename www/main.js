@@ -343,10 +343,10 @@ prepareUi();
 
 function prepareUi() {
     loadInputValuesFromStorage();
-    
+
     visibility.showUi();
     visibility.hideLoading();
-    
+
     const startPromise = new Promise((startResolve, startReject) => {
         startCustomDeo.onclick = () => {
             visibility.hideUi();
@@ -359,7 +359,7 @@ function prepareUi() {
                 canvas.height = preview.height;
                 ctx.drawImage(preview, 0, 0);
                 var rawImg = ctx.getImageData(0, 0, preview.width, preview.height);
-    
+
                 startResolve([rawImg])
             }, 50);
         }
@@ -396,7 +396,7 @@ function prepareUi() {
         const dpi = window.devicePixelRatio;
         const width = window.screen.width;
         const height = window.screen.height;
-    
+
         const checkedScalingInput = formDeo.querySelector('input[name=\''+scalingHtmlName+'\']:checked');
         let scaleX = 1;
         let stretch = false;
@@ -439,44 +439,44 @@ function prepareUi() {
 
         lightColorDeo.value = '#FFFFFF';
         brightnessColorDeo.value = '#FFFFFF';
-    
+
         const canvas = document.createElement('canvas');
-    
+
         canvas.id = glCanvasHtmlId;
 
         canvas.width = Math.floor(width * dpi / 80) * 80;
         canvas.height = Math.floor(height * dpi / 60) * 60;
-    
+
         canvas.style.width = width;
         canvas.style.height = height;
 
         infoPanelDeo.style.setProperty('max-height', height - 36);
-    
+
         document.body.appendChild(canvas);
-    
+
         const checkedPowerPreferenceInput = formDeo.querySelector('input[name=\''+powerPreferenceHtmlName+'\']:checked');
-    
-        const ctxOptions = { 
+
+        const ctxOptions = {
             alpha: false,
-            antialias: antialiasDeo.checked, 
-            depth: true, 
-            failIfMajorPerformanceCaveat: false, 
+            antialias: antialiasDeo.checked,
+            depth: true,
+            failIfMajorPerformanceCaveat: false,
             powerPreference: checkedPowerPreferenceInput.value,
-            premultipliedAlpha: false, 
-            preserveDrawingBuffer: false, 
-            stencil: false 
+            premultipliedAlpha: false,
+            preserveDrawingBuffer: false,
+            stencil: false
         };
         storage.setAntiAliasing(ctxOptions.antialias);
         storage.setPowerPreference(checkedPowerPreferenceInput.id);
         console.log('gl context form', ctxOptions);
         const gl = canvas.getContext('webgl2', ctxOptions);
-    
+
         var documentElement = document.documentElement;
         documentElement.requestFullscreen = documentElement.requestFullscreen
-            || documentElement.webkitRequestFullScreen 
-            || documentElement['mozRequestFullScreen'] 
+            || documentElement.webkitRequestFullScreen
+            || documentElement['mozRequestFullScreen']
             || documentElement.msRequestFullscreen;
-    
+
         canvas.onmousedown = (e) => {
             if (e.buttons != 1) return;
             canvas.requestPointerLock();
@@ -484,10 +484,10 @@ function prepareUi() {
                 documentElement.requestFullscreen();
             }
         };
-    
+
         canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock;
         document.exitPointerLock = document.exitPointerLock || document.mozExitPointerLock;
-    
+
         if (!gl) {
             window.dispatchEvent(new CustomEvent('app-event.top_message', {
                 detail: 'WebGL is not working on your browser, try restarting it! And remember, this works only on a PC with updated browser and graphics drivers.'
@@ -510,11 +510,11 @@ function prepareUi() {
                 const rawImg = rawImgs[i];
                 animation.add(rawImg.data.buffer);
             }
-    
+
             console.log(new Date().toISOString(), 'calling wasm main');
             wasm.main(gl, animation);
             console.log(new Date().toISOString(), 'wasm main done');
-        
+
             visibility.hideLoading();
             visibility.showInfoPanel();
         });
@@ -553,7 +553,7 @@ async function processFileToUpload(url) {
     img.src = previewUrl;
 
     await new Promise(resolve => img.onload = () => resolve());
-    
+
     const preview = getPreviewDeo();
     if (preview) {
         preview.remove();
@@ -573,7 +573,7 @@ async function processFileToUpload(url) {
     };
     previewWidthDeo.innerHTML = width;
     previewHeightDeo.innerHTML = height;
-    dropZoneTextDeo.innerHTML = '';
+    dropZoneTextDeo.remove();
     dropZoneDeo.insertBefore(img, previewSizeElementsDeo);
     visibility.showPreviewSizeElements();
     visibility.showScalingCustomResButton();
