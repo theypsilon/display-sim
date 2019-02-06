@@ -11,3 +11,4 @@ mod blur_render;
 mod event_listeners;
 mod simulation_state;
 mod action_bindings;
+mod console;

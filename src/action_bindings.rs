@@ -1,7 +1,5 @@
 use crate::simulation_state::{Input};
-use web_sys::{
-    console
-};
+use crate::console;
 
 pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
     match button_action {
@@ -48,7 +46,7 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
                     on_button_action(input, button_fraction, pressed);
                 }
             } else if pressed {
-                console::log_2(&"Ignored key: ".into(), &button_action.into());
+                console!(log "Ignored key: ", button_action);
             }
         }
     }

@@ -1,20 +1,20 @@
 use console_error_panic_hook::set_once as set_panic_hook;
 
 use wasm_bindgen::prelude::{JsValue, wasm_bindgen};
-use web_sys::console;
 use js_sys::ArrayBuffer;
 
 use crate::simulation_program::program;
 use crate::simulation_state::AnimationData;
 use crate::wasm_error::WasmError;
+use crate::console;
 
 #[wasm_bindgen]
 pub fn main(gl: JsValue, animation: AnimationWasm) {
     set_panic_hook();
     if let Err(e) = program(gl, animation.into_animation_data()) {
         match e {
-            WasmError::Js(o) => console::error_2(&"An unexpected error ocurred.".into(), &o),
-            WasmError::Str(s) => console::error_2(&"An unexpected error ocurred.".into(), &s.into()),
+            WasmError::Js(o) => console!(error "An unexpected error ocurred.", o),
+            WasmError::Str(s) => console!(error "An unexpected error ocurred.", s),
         };
     }
 }
