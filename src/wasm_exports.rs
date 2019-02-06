@@ -13,8 +13,8 @@ pub fn main(gl: JsValue, animation: AnimationWasm) {
     set_panic_hook();
     if let Err(e) = program(gl, animation.into_animation_data()) {
         match e {
-            WasmError::Js(o) => console!(error "An unexpected error ocurred.", o),
-            WasmError::Str(s) => console!(error "An unexpected error ocurred.", s),
+            WasmError::Js(o) => console!(error. "An unexpected error ocurred.", o),
+            WasmError::Str(s) => console!(error. "An unexpected error ocurred.", s),
         };
     }
 }

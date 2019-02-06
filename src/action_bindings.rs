@@ -46,7 +46,7 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
                     on_button_action(input, button_fraction, pressed);
                 }
             } else if pressed {
-                console!(log "Ignored key: ", button_action);
+                console!(log. "Ignored key: ", button_action);
             }
         }
     }

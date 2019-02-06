@@ -35,7 +35,7 @@ pub fn program(gl: JsValue, animation: AnimationData) -> WasmResult<()> {
         let window = window()?;
         Closure::wrap(Box::new(move |_| {
             if let Err(e) = program_iteration(&owned_state, &gl, &window) {
-                console!(error "An unexpected error happened during program_iteration.", e.to_js());
+                console!(error. "An unexpected error happened during program_iteration.", e.to_js());
             }
         }))
     };
@@ -55,7 +55,7 @@ fn program_iteration(owned_state: &StateOwner, gl: &WebGl2RenderingContext, wind
     let closures = owned_state.closures.borrow();
     pre_process_input(&mut input, &resources)?;
     if !update_simulation(&mut resources, &input)? { 
-        console!(log "User closed the simulation.");
+        console!(log. "User closed the simulation.");
         return Ok(());
     }
     post_process_input(&mut input)?;
