@@ -3,7 +3,7 @@
 /bin
 /pkg
 /www/dist
-/www/crt_3d_sim*
+/www/resources/js/crt_3d_sim*
 wasm-pack.log
 **/*.rs.bk
 /www/node_modules

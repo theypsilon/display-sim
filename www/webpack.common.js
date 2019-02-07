@@ -3,7 +3,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const webpack = require('webpack');
 
 module.exports = {
-    entry: './entrypoint.js',
+    entry: './resources/js/entrypoint.js',
     plugins: [
         new HtmlWebpackPlugin({
             inject: "body",
@@ -14,7 +14,7 @@ module.exports = {
         }),
     ],
     output: {
-        path: path.resolve(__dirname, 'dist'),
-        filename: 'entrypoint.js',
+        path: path.resolve(__dirname, '/dist'),
+        filename: './resources/js/entrypoint.js',
     }
 };
