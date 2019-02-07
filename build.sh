@@ -17,10 +17,10 @@ else
 fi
 wasm-pack build ${build_type}
 
-cp pkg/crt_3d_sim* www/
+cp pkg/crt_3d_sim* www/resources/js/
 
 if ${release} ; then
-    wasm-opt -O3 -o www/crt_3d_sim_bg.wasm www/crt_3d_sim_bg.wasm
+    wasm-opt -O3 -o www/resources/js/crt_3d_sim_bg.wasm www/resources/js/crt_3d_sim_bg.wasm
     pushd www
     npm install --dev
     npm run build
@@ -34,4 +34,3 @@ else
         npm install --dev
     fi
 fi
-
