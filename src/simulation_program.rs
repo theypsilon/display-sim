@@ -525,64 +525,61 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
     for light in extra_light.iter_mut() {
         *light *= res.crt_filters.extra_bright;
     }
-
-    let color_splits = match res.crt_filters.color_channels {ColorChannels::Combined => 1, _ => 3};
-    for i in 0..color_splits {
-        let mut light_color = get_3_f32color_from_int(res.crt_filters.light_color);
-        let pixel_offset = &mut [0.0, 0.0];
-        let pixel_scale = &mut [
-            (res.crt_filters.cur_pixel_scale_x + 1.0) / res.crt_filters.cur_pixel_width,
-            res.crt_filters.cur_pixel_scale_y + 1.0,
-            (res.crt_filters.cur_pixel_scale_x + res.crt_filters.cur_pixel_scale_x) * 0.5 + 1.0,
-        ];
-        match res.crt_filters.color_channels {
-            ColorChannels::Combined => {},
-            _ => {
-                light_color[(i + 0) % 3] *= 1.0;
-                light_color[(i + 1) % 3] = 0.0;
-                light_color[(i + 2) % 3] = 0.0;
-                match res.crt_filters.color_channels {
-                    ColorChannels::SplitHorizontal => {
-                        pixel_offset[0] = (i as f32 - 1.0) * res.crt_filters.cur_pixel_width * (1.0 / 3.0) + match i % 3 {
-                            0 => res.crt_filters.cur_pixel_scale_x * (1.0 / 3.0),
-                            1 => 0.0,
-                            2 => - res.crt_filters.cur_pixel_scale_x * (1.0 / 3.0),
-                            _ => unreachable!(),
-                        };
-                        pixel_scale[0] = (res.crt_filters.cur_pixel_scale_x + 1.0) / (res.crt_filters.cur_pixel_width / color_splits as f32);
-                    },
-                    ColorChannels::SplitVertical => {
-                        pixel_offset[1] = (i as f32 - 1.0) * (1.0 / 3.0) + match i % 3 {
-                            0 => res.crt_filters.cur_pixel_scale_y * (1.0 / 3.0),
-                            1 => 0.0,
-                            2 => - res.crt_filters.cur_pixel_scale_y * (1.0 / 3.0),
-                            _ => unreachable!(),
-                        };
-                        pixel_scale[1] = (res.crt_filters.cur_pixel_scale_y + 1.0) / (1.0 / color_splits as f32);
+    let vertical_lines_ratio = 1;
+    for j in 0..vertical_lines_ratio {
+        let color_splits = match res.crt_filters.color_channels {ColorChannels::Combined => 1, _ => 3};
+        for i in 0..color_splits {
+            let mut light_color = get_3_f32color_from_int(res.crt_filters.light_color);
+            let pixel_offset = &mut [0.0, 0.0];
+            let pixel_scale = &mut [
+                (res.crt_filters.cur_pixel_scale_x + 1.0) / res.crt_filters.cur_pixel_width,
+                res.crt_filters.cur_pixel_scale_y + 1.0,
+                (res.crt_filters.cur_pixel_scale_x + res.crt_filters.cur_pixel_scale_x) * 0.5 + 1.0,
+            ];
+            match res.crt_filters.color_channels {
+                ColorChannels::Combined => {},
+                _ => {
+                    light_color[(i + 0) % 3] *= 1.0;
+                    light_color[(i + 1) % 3] = 0.0;
+                    light_color[(i + 2) % 3] = 0.0;
+                    match res.crt_filters.color_channels {
+                        ColorChannels::SplitHorizontal => {
+                            pixel_offset[0] = (i as f32 - 1.0) * (1.0 / 3.0) * (res.crt_filters.cur_pixel_width - res.crt_filters.cur_pixel_scale_x);
+                            pixel_scale[0] *= color_splits as f32;
+                        },
+                        ColorChannels::SplitVertical => {
+                            pixel_offset[1] = (i as f32 - 1.0) * (1.0 / 3.0) * (1.0 - res.crt_filters.cur_pixel_scale_y);
+                            pixel_scale[1] *= color_splits as f32;
+                        }
+                        _ => unreachable!(),
                     }
-                    _ => unreachable!(),
                 }
             }
+            if vertical_lines_ratio > 1 {
+                pixel_offset[0] /= vertical_lines_ratio as f32;
+                pixel_offset[0] += (j as f32 / vertical_lines_ratio as f32) * (res.crt_filters.cur_pixel_width - res.crt_filters.cur_pixel_scale_x);
+                pixel_scale[0] *= vertical_lines_ratio as f32;
+            }
+            res.pixels_render.render(gl, &res.crt_filters.pixels_render_kind, PixelsUniform {
+                view: res.camera.get_view().as_mut_slice(),
+                projection: res.camera.get_projection(
+                    res.animation.viewport_width as f32,
+                    res.animation.viewport_height as f32,
+                ).as_mut_slice(),
+                ambient_strength: match res.crt_filters.pixels_render_kind { PixelsRenderKind::Squares => 1.0, PixelsRenderKind::Cubes => 0.5},
+                contrast_factor: res.crt_filters.extra_contrast,
+                light_color: &mut light_color,
+                extra_light: &mut extra_light,
+                light_pos: res.camera.get_position().as_mut_slice(),
+                pixel_gap: &mut [
+                    (1.0 + res.crt_filters.cur_pixel_gap) * res.crt_filters.cur_pixel_width,
+                    1.0 + res.crt_filters.cur_pixel_gap,
+                ],
+                pixel_scale,
+                pixel_pulse: res.crt_filters.pixels_pulse,
+                pixel_offset,
+            });
         }
-        res.pixels_render.render(gl, &res.crt_filters.pixels_render_kind, PixelsUniform {
-            view: res.camera.get_view().as_mut_slice(),
-            projection: res.camera.get_projection(
-                res.animation.viewport_width as f32,
-                res.animation.viewport_height as f32,
-            ).as_mut_slice(),
-            ambient_strength: match res.crt_filters.pixels_render_kind { PixelsRenderKind::Squares => 1.0, PixelsRenderKind::Cubes => 0.5},
-            contrast_factor: res.crt_filters.extra_contrast,
-            light_color: &mut light_color,
-            extra_light: &mut extra_light,
-            light_pos: res.camera.get_position().as_mut_slice(),
-            pixel_gap: &mut [
-                (1.0 + res.crt_filters.cur_pixel_gap) * res.crt_filters.cur_pixel_width,
-                1.0 + res.crt_filters.cur_pixel_gap,
-            ],
-            pixel_scale,
-            pixel_pulse: res.crt_filters.pixels_pulse,
-            pixel_offset,
-        });
     }
 
     if res.crt_filters.blur_passes > 0 {
