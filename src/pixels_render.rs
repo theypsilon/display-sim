@@ -1,7 +1,7 @@
 use js_sys::{Float32Array, ArrayBuffer};
 use std::mem::size_of;
 use web_sys::{
-    WebGl2RenderingContext, WebGlVertexArrayObject, WebGlProgram, WebGlBuffer,
+    WebGl2RenderingContext, WebGlVertexArrayObject, WebGlProgram, WebGlBuffer, WebGlTexture
 };
 
 use crate::wasm_error::WasmResult;
@@ -9,6 +9,7 @@ use crate::shaders::{
     make_shader,
 };
 use crate::web_utils::{js_f32_array};
+use crate::console;
 
 pub enum PixelsRenderKind {
     Squares,
@@ -22,6 +23,7 @@ pub struct PixelsRender {
     offset_vbo: WebGlBuffer,
     width: usize,
     height: usize,
+    pixel_texture: Option<WebGlTexture>,
 }
 
 pub struct PixelsUniform<'a> {
@@ -85,8 +87,74 @@ impl PixelsRender {
         gl.enable_vertex_attrib_array(a_offset_position);
         gl.vertex_attrib_pointer_with_i32(a_offset_position, 2, WebGl2RenderingContext::FLOAT, false, 2 * size_of::<f32>() as i32, 0);
         gl.vertex_attrib_divisor(a_offset_position, 1);
+
+
+        const TEXTURE_SIZE: usize = 256;
+        let mut texture: [u8; 4 * TEXTURE_SIZE * TEXTURE_SIZE] = [0; TEXTURE_SIZE * TEXTURE_SIZE * 4];
+        {
+            for i in TEXTURE_SIZE / 2 .. TEXTURE_SIZE {
+                for j in TEXTURE_SIZE / 2 .. TEXTURE_SIZE {
+                    let value = (0.9 * calc_value(i) + 0.1 * calc_value(j)) as u8;
+                    //let value = 255;
+                    texture[(i * TEXTURE_SIZE + j) * 4 + 0] = value;
+                    texture[(i * TEXTURE_SIZE + j) * 4 + 1] = value;
+                    texture[(i * TEXTURE_SIZE + j) * 4 + 2] = value;
+                    texture[(i * TEXTURE_SIZE + j) * 4 + 3] = 255;
+                    texture[((i + 1) * TEXTURE_SIZE - j - 1) * 4 + 0] = value;
+                    texture[((i + 1) * TEXTURE_SIZE - j - 1) * 4 + 1] = value;
+                    texture[((i + 1) * TEXTURE_SIZE - j - 1) * 4 + 2] = value;
+                    texture[((i + 1) * TEXTURE_SIZE - j - 1) * 4 + 3] = 255;
+                    texture[((TEXTURE_SIZE - i - 1) * TEXTURE_SIZE + j) * 4 + 0] = value;
+                    texture[((TEXTURE_SIZE - i - 1) * TEXTURE_SIZE + j) * 4 + 1] = value;
+                    texture[((TEXTURE_SIZE - i - 1) * TEXTURE_SIZE + j) * 4 + 2] = value;
+                    texture[((TEXTURE_SIZE - i - 1) * TEXTURE_SIZE + j) * 4 + 3] = 255;
+                    texture[((TEXTURE_SIZE - i) * TEXTURE_SIZE - j - 1) * 4 + 0] = value;
+                    texture[((TEXTURE_SIZE - i) * TEXTURE_SIZE - j - 1) * 4 + 1] = value;
+                    texture[((TEXTURE_SIZE - i) * TEXTURE_SIZE - j - 1) * 4 + 2] = value;
+                    texture[((TEXTURE_SIZE - i) * TEXTURE_SIZE - j - 1) * 4 + 3] = 255;
+                }
+            }
+            fn calc_value(number: usize) -> f64 {
+                let result = log(TEXTURE_SIZE - number) * 255.0;
+                if result > 255.0 {255.0} else {result}
+            }
+            fn log(number: usize) -> f64 {
+                let result = f64::log(number as f64, (TEXTURE_SIZE / 2) as f64) + 0.05;
+                result * result
+            }
+        }
         
-        Ok(PixelsRender {vao, shader, offset_vbo, colors_vbo, width, height})
+        for i in 0 .. TEXTURE_SIZE {
+            let mut line = "".to_string();
+            for j in 0 .. TEXTURE_SIZE {
+                let weight = texture[i * TEXTURE_SIZE * 4 + j * 4 + 0] as i32 +
+                    texture[i * TEXTURE_SIZE * 4 + j * 4 + 1] as i32 +
+                    texture[i * TEXTURE_SIZE * 4 + j * 4 + 2] as i32;
+                line += &format!("{} ", (weight / 3));
+            }
+            console!(log. line);
+        }
+
+        let pixel_texture = gl.create_texture();
+        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, pixel_texture.as_ref());
+        gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
+            WebGl2RenderingContext::TEXTURE_2D,
+            0,
+            WebGl2RenderingContext::RGBA as i32,
+            TEXTURE_SIZE as i32,
+            TEXTURE_SIZE as i32,
+            0,
+            WebGl2RenderingContext::RGBA,
+            WebGl2RenderingContext::UNSIGNED_BYTE,
+            Some(&mut texture)
+        )?;
+        gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MIN_FILTER, WebGl2RenderingContext::NEAREST as i32);
+        gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MAG_FILTER, WebGl2RenderingContext::NEAREST as i32);
+        gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_WRAP_S, WebGl2RenderingContext::CLAMP_TO_EDGE as i32);
+        gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_WRAP_T, WebGl2RenderingContext::CLAMP_TO_EDGE as i32);
+        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, None);
+
+        Ok(PixelsRender {vao, shader, offset_vbo, colors_vbo, width, height, pixel_texture})
     }
 
     pub fn apply_colors(&self, gl: &WebGl2RenderingContext, buffer: &ArrayBuffer) {
@@ -102,6 +170,7 @@ impl PixelsRender {
 
     pub fn render(&self, gl: &WebGl2RenderingContext, pixels_render_kind: &PixelsRenderKind, uniforms: PixelsUniform) {
         gl.use_program(Some(&self.shader));
+        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, self.pixel_texture.as_ref());
         gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&self.shader, "view").as_ref(), false, uniforms.view);
         gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&self.shader, "projection").as_ref(), false, uniforms.projection);
         gl.uniform3fv_with_f32_array(gl.get_uniform_location(&self.shader, "lightPos").as_ref(), uniforms.light_pos);
@@ -201,6 +270,7 @@ in vec2 aOffset;
 out vec3 FragPos;
 out vec3 Normal;
 out vec4 ObjectColor;
+out vec2 ImagePos;
 
 uniform mat4 view;
 uniform mat4 projection;
@@ -235,6 +305,8 @@ void main()
     ObjectColor = vec4(r * COLOR_FACTOR, g * COLOR_FACTOR, b * COLOR_FACTOR, a * COLOR_FACTOR);
     
     gl_Position = projection * view * vec4(FragPos, 1.0);
+
+    ImagePos = aPos.xy + 0.5;
 }
 "#;
 
@@ -246,12 +318,15 @@ out vec4 FragColor;
 in vec3 Normal;  
 in vec3 FragPos;
 in vec4 ObjectColor;
+in vec2 ImagePos;
 
 uniform vec3 lightColor;
 uniform vec3 extraLight;
 uniform vec3 lightPos;
 uniform float ambientStrength;
 uniform float contrastFactor;
+
+uniform sampler2D image;
 
 void main()
 {
@@ -261,7 +336,7 @@ void main()
 
     vec4 result;
     if (ambientStrength == 1.0) {
-        result = ObjectColor * vec4(lightColor, 1.0);
+        result = ObjectColor * vec4(lightColor, 1.0) * texture(image, ImagePos);
         float contrastUmbral = 0.5;
         result.r = (result.r - contrastUmbral) * contrastFactor + contrastFactor * contrastUmbral;
         result.g = (result.g - contrastUmbral) * contrastFactor + contrastFactor * contrastUmbral;
@@ -275,7 +350,7 @@ void main()
         float diff = max(dot(norm, lightDir), 0.0);
         vec3 diffuse = diff * lightColor;
         
-        result = ObjectColor * vec4(ambient + diffuse * (1.0 - ambientStrength), 1.0);
+        result = ObjectColor * vec4(ambient + diffuse * (1.0 - ambientStrength), 1.0) * texture(image, ImagePos);
     }
     FragColor = result + vec4(extraLight, 0.0);
 } 
