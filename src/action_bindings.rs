@@ -33,6 +33,8 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
         "y" => input.toggle_split_colors = pressed,
         "o" => input.toggle_pixels_render_kind = pressed,
         "p" => input.showing_pixels_pulse = pressed,
+        "g" => input.increase_lpp = pressed,
+        "h" => input.decrease_lpp = pressed,
         "shift" => input.shift = pressed,
         "alt" => input.alt = pressed,
         " " | "space" => input.space = pressed,

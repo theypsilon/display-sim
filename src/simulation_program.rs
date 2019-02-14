@@ -166,6 +166,7 @@ fn update_simulation(res: &mut Resources, input: &Input) -> WasmResult<bool> {
     update_animation_buffer(res, input);
     update_colors(dt, res, input)?;
     update_blur(res, input)?;
+    update_lpp(res, input)?;
 
     res.buttons.esc.track(input.esc);
     if res.buttons.esc.is_just_pressed() {
@@ -294,6 +295,32 @@ fn update_blur(res: &mut Resources, input: &Input) -> WasmResult<()> {
     }
     Ok(())
 }
+
+// lines per pixel
+fn update_lpp(res: &mut Resources, input: &Input) -> WasmResult<()> {
+    let last_lpp = res.crt_filters.lines_per_pixel;
+    res.buttons.increase_lpp.track(input.increase_lpp);
+    res.buttons.decrease_lpp.track(input.decrease_lpp);
+    if res.buttons.increase_lpp.is_just_pressed() {
+        res.crt_filters.lines_per_pixel += 1;
+    }
+    if res.buttons.decrease_lpp.is_just_pressed() && res.crt_filters.lines_per_pixel > 0 {
+        res.crt_filters.lines_per_pixel -= 1;
+    }
+    if res.crt_filters.lines_per_pixel < 1 {
+        res.crt_filters.lines_per_pixel = 1;
+    }
+    if input.custom_event.kind.as_ref() as &str == "event_kind:lines_per_pixel" {
+        res.crt_filters.lines_per_pixel = input.custom_event.value.as_f64().ok_or("it should be a number")? as usize;
+    }
+
+    if last_lpp != res.crt_filters.lines_per_pixel {
+        dispatch_event_with("app-event.top_message", &("Lines per pixel: ".to_string() + &res.crt_filters.lines_per_pixel.to_string()).into())?;
+        dispatch_event_with("app-event.change_lines_per_pixel", &(res.crt_filters.lines_per_pixel as i32).into())?;
+    }
+    Ok(())
+}
+
 
 fn update_pixel_pulse(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> {
     res.buttons.showing_pixels_pulse.track(input.showing_pixels_pulse);
@@ -525,7 +552,7 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
     for light in extra_light.iter_mut() {
         *light *= res.crt_filters.extra_bright;
     }
-    let vertical_lines_ratio = 1;
+    let vertical_lines_ratio = res.crt_filters.lines_per_pixel;
     for j in 0..vertical_lines_ratio {
         let color_splits = match res.crt_filters.color_channels {ColorChannels::Combined => 1, _ => 3};
         for i in 0..color_splits {

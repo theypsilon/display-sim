@@ -70,6 +70,7 @@ pub struct InitialParameters {
 
 pub struct CrtFilters {
     pub blur_passes: usize,
+    pub lines_per_pixel: usize,
     pub light_color: i32,
     pub brightness_color: i32,
     pub extra_bright: f32,
@@ -95,6 +96,7 @@ impl CrtFilters {
     pub fn new(change_speed: f32) -> CrtFilters {
         CrtFilters {
             blur_passes: 0,
+            lines_per_pixel: 1,
             light_color: 0x00FF_FFFF,
             brightness_color: 0x00FF_FFFF,
             extra_bright: 0.0,
@@ -118,6 +120,8 @@ pub struct Buttons {
     pub mouse_click: BooleanButton,
     pub increase_blur: BooleanButton,
     pub decrease_blur: BooleanButton,
+    pub increase_lpp: BooleanButton, // lines per pixel
+    pub decrease_lpp: BooleanButton, // lines per pixel
     pub toggle_split_colors: BooleanButton,
     pub toggle_pixels_render_kind: BooleanButton,
     pub showing_pixels_pulse: BooleanButton,
@@ -134,6 +138,8 @@ impl Buttons {
             mouse_click: BooleanButton::new(),
             increase_blur: BooleanButton::new(),
             decrease_blur: BooleanButton::new(),
+            increase_lpp: BooleanButton::new(),
+            decrease_lpp: BooleanButton::new(),
             toggle_split_colors: BooleanButton::new(),
             toggle_pixels_render_kind: BooleanButton::new(),
             showing_pixels_pulse: BooleanButton::new(),
@@ -180,6 +186,8 @@ pub struct Input {
     pub reset_filters: bool,
     pub increase_blur: bool,
     pub decrease_blur: bool,
+    pub increase_lpp: bool, // lines per pixel
+    pub decrease_lpp: bool, // lines per pixel
     pub shift: bool,
     pub alt: bool,
     pub space: bool,
@@ -228,6 +236,8 @@ impl Input {
             reset_filters: false,
             increase_blur: false,
             decrease_blur: false,
+            increase_lpp: false, // lines per pixel
+            decrease_lpp: false, // lines per pixel
             shift: false,
             alt: false,
             space: false,
