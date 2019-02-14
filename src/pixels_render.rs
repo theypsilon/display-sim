@@ -94,8 +94,8 @@ impl PixelsRender {
         {
             for i in TEXTURE_SIZE / 2 .. TEXTURE_SIZE {
                 for j in TEXTURE_SIZE / 2 .. TEXTURE_SIZE {
-                    let value = (0.9 * calc_value(i) + 0.1 * calc_value(j)) as u8;
-                    //let value = 255;
+                    //let value = (0.9 * calc_value(i) + 0.1 * calc_value(j)) as u8;
+                    let value = 255;
                     texture[(i * TEXTURE_SIZE + j) * 4 + 0] = value;
                     texture[(i * TEXTURE_SIZE + j) * 4 + 1] = value;
                     texture[(i * TEXTURE_SIZE + j) * 4 + 2] = value;
@@ -123,7 +123,7 @@ impl PixelsRender {
                 result * result
             }
         }
-        
+        /*
         for i in 0 .. TEXTURE_SIZE {
             let mut line = "".to_string();
             for j in 0 .. TEXTURE_SIZE {
@@ -133,7 +133,7 @@ impl PixelsRender {
                 line += &format!("{} ", (weight / 3));
             }
             console!(log. line);
-        }
+        }*/
 
         let pixel_texture = gl.create_texture();
         gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, pixel_texture.as_ref());

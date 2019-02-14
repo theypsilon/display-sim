@@ -571,7 +571,7 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
                     light_color[(i + 2) % 3] = 0.0;
                     match res.crt_filters.color_channels {
                         ColorChannels::SplitHorizontal => {
-                            pixel_offset[0] = (i as f32 - 1.0) * (1.0 / 3.0) * (res.crt_filters.cur_pixel_width - res.crt_filters.cur_pixel_scale_x);
+                            pixel_offset[0] = (i as f32 - 1.0) * (1.0 / 3.0) * res.crt_filters.cur_pixel_width / (res.crt_filters.cur_pixel_scale_x + 1.0);
                             pixel_scale[0] *= color_splits as f32;
                         },
                         ColorChannels::SplitVertical => {
@@ -584,7 +584,7 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
             }
             if vertical_lines_ratio > 1 {
                 pixel_offset[0] /= vertical_lines_ratio as f32;
-                pixel_offset[0] += (j as f32 / vertical_lines_ratio as f32) * (res.crt_filters.cur_pixel_width - res.crt_filters.cur_pixel_scale_x);
+                pixel_offset[0] += (j as f32 / vertical_lines_ratio as f32) * res.crt_filters.cur_pixel_width / (res.crt_filters.cur_pixel_scale_x + 1.0);
                 pixel_scale[0] *= vertical_lines_ratio as f32;
             }
             res.pixels_render.render(gl, &res.crt_filters.pixels_render_kind, PixelsUniform {
