@@ -584,7 +584,7 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
             }
             if vertical_lines_ratio > 1 {
                 pixel_offset[0] /= vertical_lines_ratio as f32;
-                pixel_offset[0] += (j as f32 / vertical_lines_ratio as f32) * res.crt_filters.cur_pixel_width / (res.crt_filters.cur_pixel_scale_x + 1.0);
+                pixel_offset[0] += (j as f32 / vertical_lines_ratio as f32 - calc_stupid_not_extrapoled_function(vertical_lines_ratio)) * res.crt_filters.cur_pixel_width / (res.crt_filters.cur_pixel_scale_x + 1.0);
                 pixel_scale[0] *= vertical_lines_ratio as f32;
             }
             res.pixels_render.render(gl, &res.crt_filters.pixels_render_kind, PixelsUniform {
@@ -647,6 +647,45 @@ pub fn get_3_f32color_from_int(color: i32) -> [f32; 3] {[
     ((color >> 8) & 0xFF) as f32 / 255.0,
     (color & 0xFF) as f32 / 255.0,
 ]}
+
+fn calc_stupid_not_extrapoled_function(y: usize) -> f32 {
+    match y {
+        1 => (0.0),
+        2 => (0.25),
+        3 => (1.0 / 3.0),
+        4 => (0.375),
+        5 => (0.4),
+        6 => (0.4 + 0.1 / 6.0),
+        7 => (0.4 + 0.1 / 6.0 + 0.1 / 8.4),
+        8 => (0.4 + 0.1 / 6.0 + 0.1 / 8.4 + 0.00892575),
+        9 => (0.4 + 0.1 / 6.0 + 0.1 / 8.4 + 0.00892575 + 0.006945),
+        _ => (0.45) // originalmente: 0.4 + 0.1 / 6.0 + 0.1 / 8.4 + 0.00892575 + 0.006945 + 0.0055555555
+    }
+/*
+Let's consider this was a function where we find the following points:
+f(1) = 0
+0.25
+f(2) = 0.25
+0.08333333333 | 0.33333
+f(3) = 0.33333333333
+0.0416666666 | 0.5
+f(4) = 0.375
+0.025 | 0.6
+f(5) = 0.4
+0.0166666666666 | 0.6666666666
+f(6) = 0.41666666666
+0.01190476190475190476190 | 0.71428571424028571
+f(7) = 0.42857142857
+0.00892575 | 0.749763
+f(8) = 0.43749717857142857142857142857143
+0.006945 | 0.77808587513
+f(9) = 0.444442178571428571428
+0.00555555555555555555555 | 0.79999
+f(10) = 0.45
+
+It looks like this function is growing less than a logarithmic one
+*/
+}
 
 #[cfg(test)]
 mod tests { mod get_3_f32color_from_int { mod gives_good {
