@@ -1,7 +1,7 @@
 use js_sys::{Float32Array, ArrayBuffer};
 use std::mem::size_of;
 use web_sys::{
-    WebGl2RenderingContext, WebGlVertexArrayObject, WebGlProgram, WebGlBuffer, WebGlTexture
+    WebGl2RenderingContext, WebGlVertexArrayObject, WebGlProgram, WebGlBuffer, WebGlTexture, WebGlFramebuffer
 };
 
 use crate::wasm_error::WasmResult;
@@ -23,7 +23,8 @@ pub struct PixelsRender {
     offset_vbo: WebGlBuffer,
     width: usize,
     height: usize,
-    pixel_texture: Option<WebGlTexture>,
+    pixel_shadow_texture: Option<WebGlTexture>,
+    pub active_framebuffer: Option<WebGlFramebuffer>,
 }
 
 pub struct PixelsUniform<'a> {
@@ -94,8 +95,8 @@ impl PixelsRender {
         {
             for i in TEXTURE_SIZE / 2 .. TEXTURE_SIZE {
                 for j in TEXTURE_SIZE / 2 .. TEXTURE_SIZE {
-                    //let value = (0.9 * calc_value(i) + 0.1 * calc_value(j)) as u8;
-                    let value = 255;
+                    let value = (0.05 * calc_value(i) + 0.95 * calc_value(j)) as u8;
+                    //let value = 255;
                     texture[(i * TEXTURE_SIZE + j) * 4 + 0] = value;
                     texture[(i * TEXTURE_SIZE + j) * 4 + 1] = value;
                     texture[(i * TEXTURE_SIZE + j) * 4 + 2] = value;
@@ -135,8 +136,8 @@ impl PixelsRender {
             console!(log. line);
         }*/
 
-        let pixel_texture = gl.create_texture();
-        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, pixel_texture.as_ref());
+        let pixel_shadow_texture = gl.create_texture();
+        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, pixel_shadow_texture.as_ref());
         gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
             WebGl2RenderingContext::TEXTURE_2D,
             0,
@@ -154,7 +155,16 @@ impl PixelsRender {
         gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_WRAP_T, WebGl2RenderingContext::CLAMP_TO_EDGE as i32);
         gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, None);
 
-        Ok(PixelsRender {vao, shader, offset_vbo, colors_vbo, width, height, pixel_texture})
+        Ok(PixelsRender {
+            vao,
+            shader,
+            offset_vbo,
+            colors_vbo,
+            width,
+            height,
+            pixel_shadow_texture,
+            active_framebuffer: None,
+        })
     }
 
     pub fn apply_colors(&self, gl: &WebGl2RenderingContext, buffer: &ArrayBuffer) {
@@ -170,7 +180,7 @@ impl PixelsRender {
 
     pub fn render(&self, gl: &WebGl2RenderingContext, pixels_render_kind: &PixelsRenderKind, uniforms: PixelsUniform) {
         gl.use_program(Some(&self.shader));
-        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, self.pixel_texture.as_ref());
+        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, self.pixel_shadow_texture.as_ref());
         gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&self.shader, "view").as_ref(), false, uniforms.view);
         gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&self.shader, "projection").as_ref(), false, uniforms.projection);
         gl.uniform3fv_with_f32_array(gl.get_uniform_location(&self.shader, "lightPos").as_ref(), uniforms.light_pos);

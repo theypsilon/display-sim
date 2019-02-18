@@ -10,6 +10,8 @@ use crate::camera::{Camera};
 use crate::web_utils::{now};
 use crate::pixels_render::{PixelsRender, PixelsRenderKind};
 use crate::blur_render::BlurRender;
+use crate::internal_resolution_render::InternalResolutionRender;
+use crate::rgb_render::RgbRender;
 
 pub struct AnimationData {
     pub steps: Vec<ArrayBuffer>,
@@ -51,6 +53,8 @@ pub struct Resources {
     pub crt_filters: CrtFilters,
     pub pixels_render: PixelsRender,
     pub blur_render: BlurRender,
+    pub internal_resolution_render: InternalResolutionRender,
+    pub rgb_render: RgbRender,
     pub timers: SimulationTimers,
     pub initial_parameters: InitialParameters,
     pub buttons: Buttons,
@@ -88,6 +92,7 @@ pub struct CrtFilters {
 
 pub enum ColorChannels {
     Combined,
+    Overlapping,
     SplitHorizontal,
     SplitVertical,
 }

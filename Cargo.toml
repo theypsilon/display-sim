@@ -41,4 +41,5 @@ features = [
   'WebGlUniformLocation',
   'WebGlTexture',
   'WebGlFramebuffer',
+  'WebGlRenderbuffer',
 ]

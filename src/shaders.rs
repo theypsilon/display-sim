@@ -55,3 +55,45 @@ fn link_shader<'a, T: IntoIterator<Item = &'a WebGlShader>>(gl: &WebGl2Rendering
         Err(WasmError::Str(gl.get_program_info_log(&program).ok_or("cannot get program info log")?))
     }
 }
+
+pub const QUAD_GEOMETRY : [f32; 20] = [
+    1.0,  1.0, 0.0,   1.0, 1.0,
+    1.0, -1.0, 0.0,   1.0, 0.0,
+    -1.0, -1.0, 0.0,   0.0, 0.0,
+    -1.0,  1.0, 0.0,   0.0, 1.0
+];
+
+pub const QUAD_INDICES: [i32; 6] = [
+    0, 1, 3,
+    1, 2, 3,
+];
+
+
+pub const TEXTURE_VERTEX_SHADER: &str = r#"#version 300 es
+precision highp float;
+
+layout (location = 0) in vec3 qPos;
+layout (location = 1) in vec2 qTexCoords;
+
+out vec2 TexCoord;
+
+void main()
+{
+    TexCoord = qTexCoords;
+    gl_Position = vec4(qPos, 1.0);
+}
+"#;
+
+pub const TEXTURE_FRAGMENT_SHADER: &str = r#"#version 300 es
+precision highp float;
+
+out vec4 FragColor;
+in vec2 TexCoord;
+
+uniform sampler2D image;
+
+void main()
+{
+    FragColor = texture(image, TexCoord);
+} 
+"#;

@@ -2,6 +2,7 @@ use wasm_bindgen::{JsCast, JsValue, prelude::Closure};
 use web_sys::{
     Window,
     WebGl2RenderingContext,
+    WebGlFramebuffer,
 };
 use std::rc::Rc;
 
@@ -10,7 +11,9 @@ use crate::camera::{CameraDirection, Camera};
 use crate::dispatch_event::{dispatch_event, dispatch_event_with};
 use crate::web_utils::{now, window};
 use crate::pixels_render::{PixelsRender, PixelsRenderKind, PixelsUniform};
-use crate::blur_render::BlurRender;
+use crate::blur_render::{BlurRender};
+use crate::internal_resolution_render::InternalResolutionRender;
+use crate::rgb_render::RgbRender;
 use crate::event_listeners::{set_event_listeners};
 use crate::simulation_state::{
     StateOwner, Resources, CrtFilters, SimulationTimers, InitialParameters, ColorChannels,
@@ -26,9 +29,6 @@ const MOVEMENT_SPEED_FACTOR: f32 = 50.0;
 
 pub fn program(gl: JsValue, animation: AnimationData) -> WasmResult<()> {
     let gl = gl.dyn_into::<WebGl2RenderingContext>()?;
-    gl.viewport(0, 0, animation.viewport_width as i32, animation.viewport_height as i32);
-    gl.enable(WebGl2RenderingContext::DEPTH_TEST);
-    gl.enable(WebGl2RenderingContext::BLEND);
     let owned_state = StateOwner::new_rc(load_resources(&gl, animation)?, Input::new()?);
     let frame_closure: Closure<FnMut(JsValue)> = {
         let owned_state = Rc::clone(&owned_state);
@@ -73,6 +73,11 @@ fn load_resources(gl: &WebGl2RenderingContext, animation: AnimationData) -> Wasm
     camera.set_position(glm::vec3(0.0, 0.0, initial_position_z));
     let mut crt_filters = CrtFilters::new(PIXEL_MANIPULATION_BASE_SPEED);
     crt_filters.cur_pixel_width = animation.pixel_width;
+
+    let internal_resolution_multiplier : i32 = 1;
+    let internal_width = animation.viewport_width as i32 * internal_resolution_multiplier;
+    let internal_height = animation.viewport_height as i32 * internal_resolution_multiplier;
+
     let now = now()?;
     let res = Resources {
         initial_parameters: InitialParameters {
@@ -86,7 +91,9 @@ fn load_resources(gl: &WebGl2RenderingContext, animation: AnimationData) -> Wasm
             last_second: now,
         },
         pixels_render: PixelsRender::new(&gl, animation.image_width as usize, animation.image_height as usize)?,
-        blur_render: BlurRender::new(&gl, animation.viewport_width as i32, animation.viewport_height as i32, 4)?,
+        blur_render: BlurRender::new(&gl, internal_width, internal_height)?,
+        internal_resolution_render: InternalResolutionRender::new(gl, internal_width, internal_height)?,
+        rgb_render: RgbRender::new(gl, internal_width, internal_height)?,
         animation,
         camera,
         crt_filters,
@@ -350,12 +357,14 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
     res.buttons.toggle_split_colors.track(input.toggle_split_colors);
     if res.buttons.toggle_split_colors.is_just_pressed() {
         res.crt_filters.color_channels = match res.crt_filters.color_channels {
-            ColorChannels::Combined => ColorChannels::SplitHorizontal,
+            ColorChannels::Combined => ColorChannels::Overlapping,
+            ColorChannels::Overlapping => ColorChannels::SplitHorizontal,
             ColorChannels::SplitHorizontal => ColorChannels::SplitVertical,
             ColorChannels::SplitVertical => ColorChannels::Combined,
         };
         let message = match res.crt_filters.color_channels {
             ColorChannels::Combined => "Combined",
+            ColorChannels::Overlapping => "Overlapping Horizontally",
             ColorChannels::SplitHorizontal => "Split Horizontally",
             ColorChannels::SplitVertical => "Split Vertically",
         };
@@ -540,13 +549,9 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
     if res.animation.needs_buffer_data_load {
         res.pixels_render.apply_colors(gl, &res.animation.steps[res.animation.current_frame]);
     }
+    let active_framebuffer: Option<&WebGlFramebuffer> = res.internal_resolution_render.texture_buffer.framebuffer();
 
-    gl.clear_color(0.05, 0.05, 0.05, 0.0);
-    if res.crt_filters.blur_passes > 0 {
-        res.blur_render.pre_render(&gl);
-    }
-    gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
-    gl.blend_func(WebGl2RenderingContext::SRC_ALPHA, WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA);
+    res.internal_resolution_render.bind_framebuffer(gl);
 
     let mut extra_light = get_3_f32color_from_int(res.crt_filters.brightness_color);
     for light in extra_light.iter_mut() {
@@ -574,6 +579,10 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
                             pixel_offset[0] = (i as f32 - 1.0) * (1.0 / 3.0) * res.crt_filters.cur_pixel_width / (res.crt_filters.cur_pixel_scale_x + 1.0);
                             pixel_scale[0] *= color_splits as f32;
                         },
+                        ColorChannels::Overlapping => {
+                            pixel_offset[0] = (i as f32 - 1.0) * (1.0 / 3.0) * res.crt_filters.cur_pixel_width / (res.crt_filters.cur_pixel_scale_x + 1.0);
+                            pixel_scale[0] *= 1.0;
+                        },
                         ColorChannels::SplitVertical => {
                             pixel_offset[1] = (i as f32 - 1.0) * (1.0 / 3.0) * (1.0 - res.crt_filters.cur_pixel_scale_y);
                             pixel_scale[1] *= color_splits as f32;
@@ -586,6 +595,9 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
                 pixel_offset[0] /= vertical_lines_ratio as f32;
                 pixel_offset[0] += (j as f32 / vertical_lines_ratio as f32 - calc_stupid_not_extrapoled_function(vertical_lines_ratio)) * res.crt_filters.cur_pixel_width / (res.crt_filters.cur_pixel_scale_x + 1.0);
                 pixel_scale[0] *= vertical_lines_ratio as f32;
+            }
+            if let ColorChannels::Overlapping = res.crt_filters.color_channels {
+                res.rgb_render.bind_framebuffer_for_color(gl, i);
             }
             res.pixels_render.render(gl, &res.crt_filters.pixels_render_kind, PixelsUniform {
                 view: res.camera.get_view().as_mut_slice(),
@@ -609,12 +621,17 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
         }
     }
 
+    if let ColorChannels::Overlapping = res.crt_filters.color_channels {
+        gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, active_framebuffer);
+        res.rgb_render.render(gl);
+    }
+
     if res.crt_filters.blur_passes > 0 {
-        res.blur_render.render(&gl, res.crt_filters.blur_passes);
+        res.blur_render.render(&gl, res.crt_filters.blur_passes, &res.internal_resolution_render.texture_buffer);
     }
 
     if res.buttons.screenshot.is_just_released() {
-        let multiplier : i32 = if res.crt_filters.blur_passes > 0 {res.blur_render.internal_resolution_multiplier} else {1};
+        let multiplier : i32 = 1;
         let width = res.animation.viewport_width as i32 * multiplier;
         let height = res.animation.viewport_height as i32 * multiplier;
         let pixels = js_sys::Uint8Array::new(&(width * height * 4).into());
@@ -625,9 +642,7 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
         dispatch_event_with("app-event.screenshot", &array)?;
     }
 
-    if res.crt_filters.blur_passes > 0 {
-        res.blur_render.post_render(&gl, res.crt_filters.blur_passes);
-    }
+    res.internal_resolution_render.render(gl, res.animation.viewport_width as i32, res.animation.viewport_height as i32);
 
     check_error(&gl, line!())?;
 
