@@ -20,7 +20,6 @@ pub struct PixelsRender {
     shader: WebGlProgram,
     vao: Option<WebGlVertexArrayObject>,
     colors_vbo: WebGlBuffer,
-    offset_vbo: WebGlBuffer,
     width: usize,
     height: usize,
     pixel_shadow_texture: Option<WebGlTexture>,
@@ -158,7 +157,6 @@ impl PixelsRender {
         Ok(PixelsRender {
             vao,
             shader,
-            offset_vbo,
             colors_vbo,
             width,
             height,
