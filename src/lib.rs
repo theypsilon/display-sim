@@ -10,6 +10,7 @@ mod pixels_render;
 mod blur_render;
 mod internal_resolution_render;
 mod rgb_render;
+mod background_render;
 mod event_listeners;
 mod simulation_state;
 mod action_bindings;

@@ -1,9 +1,11 @@
 use web_sys::{
     WebGlProgram, WebGl2RenderingContext, 
-    WebGlShader,
+    WebGlShader, WebGlVertexArrayObject
 };
 
+use crate::web_utils::{js_f32_array, js_i32_array};
 use crate::wasm_error::{WasmError, WasmResult};
+use std::mem::size_of;
 
 pub fn make_shader(gl: &WebGl2RenderingContext, vertex_shader: &str, fragment_shader: &str) -> WasmResult<WebGlProgram> {
     let vert_shader = compile_shader(
@@ -54,6 +56,32 @@ fn link_shader<'a, T: IntoIterator<Item = &'a WebGlShader>>(gl: &WebGl2Rendering
     } else {
         Err(WasmError::Str(gl.get_program_info_log(&program).ok_or("cannot get program info log")?))
     }
+}
+
+pub fn make_quad_vao(gl: &WebGl2RenderingContext, shader: &WebGlProgram) -> WasmResult<Option<WebGlVertexArrayObject>> {
+    let vao = gl.create_vertex_array();
+    gl.bind_vertex_array(vao.as_ref());
+
+    let quad_vbo = gl.create_buffer().ok_or("cannot create quad_vbo")?;
+    let quad_ebo = gl.create_buffer().ok_or("cannot create quad_ebo")?;
+    gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&quad_vbo));
+    gl.buffer_data_with_opt_array_buffer(
+        WebGl2RenderingContext::ARRAY_BUFFER,
+        Some(&js_f32_array(&QUAD_GEOMETRY).buffer()),
+        WebGl2RenderingContext::STATIC_DRAW,
+    );
+    gl.bind_buffer(WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER, Some(&quad_ebo));
+    gl.buffer_data_with_opt_array_buffer(WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER, Some(&js_i32_array(&QUAD_INDICES).buffer()), WebGl2RenderingContext::STATIC_DRAW);
+
+    let q_pos_position = gl.get_attrib_location(shader, "qPos") as u32;
+    let q_texture_position = gl.get_attrib_location(shader, "qTexCoords") as u32;
+
+    gl.enable_vertex_attrib_array(q_pos_position);
+    gl.enable_vertex_attrib_array(q_texture_position);
+
+    gl.vertex_attrib_pointer_with_i32(q_pos_position, 3, WebGl2RenderingContext::FLOAT, false, 5 * size_of::<f32>() as i32, 0);
+    gl.vertex_attrib_pointer_with_i32(q_texture_position, 2, WebGl2RenderingContext::FLOAT, false, 5 * size_of::<f32>() as i32, 3 * size_of::<f32>() as i32);
+    Ok(vao)
 }
 
 pub const QUAD_GEOMETRY : [f32; 20] = [

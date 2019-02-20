@@ -10,15 +10,17 @@ use crate::wasm_error::{WasmResult, WasmError};
 use crate::camera::{CameraDirection, Camera};
 use crate::dispatch_event::{dispatch_event, dispatch_event_with};
 use crate::web_utils::{now, window};
-use crate::pixels_render::{PixelsRender, PixelsRenderKind, PixelsUniform};
+use crate::pixels_render::{PixelsRender, PixelsGeometryKind, PixelsShadowKind, PixelsUniform};
 use crate::blur_render::{BlurRender};
 use crate::internal_resolution_render::InternalResolutionRender;
 use crate::rgb_render::RgbRender;
+use crate::background_render::BackgroundRender;
 use crate::event_listeners::{set_event_listeners};
 use crate::simulation_state::{
     StateOwner, Resources, CrtFilters, SimulationTimers, InitialParameters, ColorChannels,
     Input, AnimationData, Buttons
 };
+use crate::render_types::{TextureBufferStack};
 use crate::action_bindings::on_button_action;
 use crate::console;
 
@@ -74,12 +76,13 @@ fn load_resources(gl: &WebGl2RenderingContext, animation: AnimationData) -> Wasm
     let mut crt_filters = CrtFilters::new(PIXEL_MANIPULATION_BASE_SPEED);
     crt_filters.cur_pixel_width = animation.pixel_width;
 
-    let internal_resolution_multiplier : i32 = 1;
+    let internal_resolution_multiplier : i32 = 2;
     let internal_width = animation.viewport_width as i32 * internal_resolution_multiplier;
     let internal_height = animation.viewport_height as i32 * internal_resolution_multiplier;
 
     let now = now()?;
     let res = Resources {
+        internal_resolution_multiplier,
         initial_parameters: InitialParameters {
             initial_position_z,
             initial_pixel_width: animation.pixel_width,
@@ -91,9 +94,11 @@ fn load_resources(gl: &WebGl2RenderingContext, animation: AnimationData) -> Wasm
             last_second: now,
         },
         pixels_render: PixelsRender::new(&gl, animation.image_width as usize, animation.image_height as usize)?,
-        blur_render: BlurRender::new(&gl, internal_width, internal_height)?,
-        internal_resolution_render: InternalResolutionRender::new(gl, internal_width, internal_height)?,
-        rgb_render: RgbRender::new(gl, internal_width, internal_height)?,
+        blur_render: BlurRender::new(&gl)?,
+        internal_resolution_render: InternalResolutionRender::new(gl)?,
+        rgb_render: RgbRender::new(gl)?,
+        background_render: BackgroundRender::new(gl)?,
+        texture_buffer_stack: std::cell::RefCell::new(TextureBufferStack::new(internal_width, internal_height)),
         animation,
         camera,
         crt_filters,
@@ -371,15 +376,15 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
         dispatch_event_with("app-event.top_message", &("Showing color channels ".to_string() + message + ".").into())?;
     }
 
-    res.buttons.toggle_pixels_render_kind.track(input.toggle_pixels_render_kind);
-    if res.buttons.toggle_pixels_render_kind.is_just_released() {
-        res.crt_filters.pixels_render_kind = match res.crt_filters.pixels_render_kind {
-            PixelsRenderKind::Squares => PixelsRenderKind::Cubes,
-            PixelsRenderKind::Cubes => PixelsRenderKind::Squares
+    res.buttons.toggle_pixels_geometry_kind.track(input.toggle_pixels_geometry_kind);
+    if res.buttons.toggle_pixels_geometry_kind.is_just_released() {
+        res.crt_filters.pixels_geometry_kind = match res.crt_filters.pixels_geometry_kind {
+            PixelsGeometryKind::Squares => PixelsGeometryKind::Cubes,
+            PixelsGeometryKind::Cubes => PixelsGeometryKind::Squares
         };
-        let message = match res.crt_filters.pixels_render_kind {
-            PixelsRenderKind::Squares => "squares",
-            PixelsRenderKind::Cubes => "cubes"
+        let message = match res.crt_filters.pixels_geometry_kind {
+            PixelsGeometryKind::Squares => "squares",
+            PixelsGeometryKind::Cubes => "cubes"
         };
         dispatch_event_with("app-event.top_message", &("Showing pixels as ".to_string() + message + ".").into())?;
         dispatch_event_with("app-event.showing_pixels_as", &message.into())?;
@@ -546,12 +551,21 @@ fn update_camera(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> 
 
 pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
 
+    gl.enable(WebGl2RenderingContext::DEPTH_TEST);
+    gl.clear_color(0.0, 0.0, 0.0, 0.0);
+
+    //gl.enable(WebGl2RenderingContext::BLEND);
+    //gl.blend_func(WebGl2RenderingContext::SRC_ALPHA, WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA);
+
     if res.animation.needs_buffer_data_load {
         res.pixels_render.apply_colors(gl, &res.animation.steps[res.animation.current_frame]);
     }
-    let active_framebuffer: Option<&WebGlFramebuffer> = res.internal_resolution_render.texture_buffer.framebuffer();
 
-    res.internal_resolution_render.bind_framebuffer(gl);
+    let mut buffer_stack = res.texture_buffer_stack.borrow_mut();
+    buffer_stack.push(gl)?;
+    buffer_stack.push(gl)?;
+    buffer_stack.bind_current(gl)?;
+    gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
 
     let mut extra_light = get_3_f32color_from_int(res.crt_filters.brightness_color);
     for light in extra_light.iter_mut() {
@@ -562,7 +576,7 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
         let color_splits = match res.crt_filters.color_channels {ColorChannels::Combined => 1, _ => 3};
         for i in 0..color_splits {
             let mut light_color = get_3_f32color_from_int(res.crt_filters.light_color);
-            let pixel_offset = &mut [0.0, 0.0];
+            let pixel_offset = &mut [0.0, 0.0, 0.0];
             let pixel_scale = &mut [
                 (res.crt_filters.cur_pixel_scale_x + 1.0) / res.crt_filters.cur_pixel_width,
                 res.crt_filters.cur_pixel_scale_y + 1.0,
@@ -597,15 +611,20 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
                 pixel_scale[0] *= vertical_lines_ratio as f32;
             }
             if let ColorChannels::Overlapping = res.crt_filters.color_channels {
-                res.rgb_render.bind_framebuffer_for_color(gl, i);
+                buffer_stack.push(gl)?;
+                buffer_stack.bind_current(gl)?;
+                gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
             }
-            res.pixels_render.render(gl, &res.crt_filters.pixels_render_kind, PixelsUniform {
+            //gl.blend_func(WebGl2RenderingContext::SRC_ALPHA, WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA);
+            res.pixels_render.render(gl, PixelsUniform {
+                shadow_kind: PixelsShadowKind::Diffuse,
+                geometry_kind: res.crt_filters.pixels_geometry_kind,
                 view: res.camera.get_view().as_mut_slice(),
                 projection: res.camera.get_projection(
                     res.animation.viewport_width as f32,
                     res.animation.viewport_height as f32,
                 ).as_mut_slice(),
-                ambient_strength: match res.crt_filters.pixels_render_kind { PixelsRenderKind::Squares => 1.0, PixelsRenderKind::Cubes => 0.5},
+                ambient_strength: match res.crt_filters.pixels_geometry_kind { PixelsGeometryKind::Squares => 1.0, PixelsGeometryKind::Cubes => 0.5},
                 contrast_factor: res.crt_filters.extra_contrast,
                 light_color: &mut light_color,
                 extra_light: &mut extra_light,
@@ -617,21 +636,78 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
                 pixel_scale,
                 pixel_pulse: res.crt_filters.pixels_pulse,
                 pixel_offset,
+                height_modifier_factor: 1.0,
             });
         }
     }
 
     if let ColorChannels::Overlapping = res.crt_filters.color_channels {
-        gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, active_framebuffer);
+        buffer_stack.pop()?;
+        buffer_stack.pop()?;
+        buffer_stack.pop()?;
+        buffer_stack.bind_current(gl)?;
+        gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 0);
+        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, buffer_stack.get_nth(1)?.texture());
+        gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 1);
+        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, buffer_stack.get_nth(2)?.texture());
+        gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 2);
+        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, buffer_stack.get_nth(3)?.texture());
+
         res.rgb_render.render(gl);
+
+        gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 0);
     }
 
+    buffer_stack.push(gl)?;
+    buffer_stack.bind_current(gl)?;
+    gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
+
+    if res.crt_filters.showing_solid_background {
+        res.pixels_render.render(gl, PixelsUniform {
+            shadow_kind: PixelsShadowKind::Solid,
+            geometry_kind: res.crt_filters.pixels_geometry_kind,
+            view: res.camera.get_view().as_mut_slice(),
+            projection: res.camera.get_projection(
+                res.animation.viewport_width as f32,
+                res.animation.viewport_height as f32,
+            ).as_mut_slice(),
+            ambient_strength: match res.crt_filters.pixels_geometry_kind { PixelsGeometryKind::Squares => 1.0, PixelsGeometryKind::Cubes => 0.5},
+            contrast_factor: res.crt_filters.extra_contrast,
+            light_color: &mut [0.5, 0.5, 0.5],
+            extra_light: &mut [0.0, 0.0, 0.0],
+            light_pos: res.camera.get_position().as_mut_slice(),
+            pixel_gap: &mut [
+                (1.0 + res.crt_filters.cur_pixel_gap) * res.crt_filters.cur_pixel_width,
+                1.0 + res.crt_filters.cur_pixel_gap,
+            ],
+            pixel_scale: &mut [
+                (res.crt_filters.cur_pixel_scale_x + 1.0) / res.crt_filters.cur_pixel_width,
+                res.crt_filters.cur_pixel_scale_y + 1.0,
+                (res.crt_filters.cur_pixel_scale_x + res.crt_filters.cur_pixel_scale_x) * 0.5 + 1.0,
+            ],
+            pixel_pulse: res.crt_filters.pixels_pulse,
+            pixel_offset: &mut [0.0, 0.0, 0.0],
+            height_modifier_factor: 0.0,
+        });
+    }
+    buffer_stack.pop()?;
+    buffer_stack.pop()?;
+    buffer_stack.bind_current(gl);
+    gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
+
+    gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 0);
+    gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, buffer_stack.get_nth(1)?.texture());
+    gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 1);
+    gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, buffer_stack.get_nth(2)?.texture());
+    res.background_render.render(gl);
+    gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 0);
+
     if res.crt_filters.blur_passes > 0 {
-        res.blur_render.render(&gl, res.crt_filters.blur_passes, &res.internal_resolution_render.texture_buffer);
+        res.blur_render.render(&gl, res.crt_filters.blur_passes, &mut buffer_stack)?;
     }
 
     if res.buttons.screenshot.is_just_released() {
-        let multiplier : i32 = 1;
+        let multiplier : i32 = res.internal_resolution_multiplier;
         let width = res.animation.viewport_width as i32 * multiplier;
         let height = res.animation.viewport_height as i32 * multiplier;
         let pixels = js_sys::Uint8Array::new(&(width * height * 4).into());
@@ -642,7 +718,16 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
         dispatch_event_with("app-event.screenshot", &array)?;
     }
 
-    res.internal_resolution_render.render(gl, res.animation.viewport_width as i32, res.animation.viewport_height as i32);
+    buffer_stack.pop()?;
+    buffer_stack.assert_no_stack()?;
+    //gl.blend_func(WebGl2RenderingContext::SRC_ALPHA, WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA);
+
+    gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, None);
+    gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
+    gl.viewport(0, 0, res.animation.viewport_width as i32, res.animation.viewport_height as i32);
+
+
+    res.internal_resolution_render.render(gl, buffer_stack.get_nth(1)?.texture());
 
     check_error(&gl, line!())?;
 

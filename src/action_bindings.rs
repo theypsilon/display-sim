@@ -31,7 +31,7 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
         "c" => input.increase_bright = pressed,
         "x" => input.decrease_bright = pressed,
         "y" => input.toggle_split_colors = pressed,
-        "o" => input.toggle_pixels_render_kind = pressed,
+        "o" => input.toggle_pixels_geometry_kind = pressed,
         "p" => input.showing_pixels_pulse = pressed,
         "g" => input.increase_lpp = pressed,
         "h" => input.decrease_lpp = pressed,

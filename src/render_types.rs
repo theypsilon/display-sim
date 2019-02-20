@@ -2,6 +2,7 @@ use web_sys::{
     WebGl2RenderingContext, WebGlTexture, WebGlFramebuffer
 };
 use crate::wasm_error::{WasmResult};
+use crate::console;
 
 pub struct TextureBuffer {
     texture: Option<WebGlTexture>,
@@ -52,3 +53,79 @@ impl TextureBuffer {
         self.framebuffer.as_ref()
     }
 }
+
+pub struct TextureBufferStack {
+    pub stack: Vec<TextureBuffer>,
+    width: i32,
+    height: i32,
+    cursor: usize,
+    max_cursor: usize,
+}
+
+impl TextureBufferStack {
+    pub fn new(width: i32, height: i32) -> TextureBufferStack {
+        TextureBufferStack {stack: Vec::new(), width, height, cursor: 0, max_cursor: 0}
+    }
+
+    pub fn push(&mut self, gl: &WebGl2RenderingContext) -> WasmResult<()> {
+        if self.stack.len() == self.cursor {
+            console!(log. "creating new texture buffer!", (self.stack.len() as f32));
+            self.stack.push(TextureBuffer::new_with_depthbuffer(gl, self.width, self.height)?);
+        }
+        self.cursor += 1;
+        if self.cursor > self.max_cursor {
+            self.max_cursor = self.cursor;
+        }
+        Ok(())
+    }
+
+    pub fn pop(&mut self) -> WasmResult<()> {
+        self.get_current()?;
+        self.cursor -= 1;
+        Ok(())
+    }
+
+    pub fn bind_current(&self, gl: &WebGl2RenderingContext) -> WasmResult<()> {
+        let current = self.get_current()?;
+        gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, current.framebuffer());
+        gl.viewport(0, 0, self.width, self.height);
+        //console!(log. "current binding = ", (self.cursor as f32 - 1.0));
+        Ok(())
+    }
+
+    pub fn get_current(&self) -> WasmResult<&TextureBuffer> {
+        if self.cursor == 0 {
+            return Err("Bad texture buffer stack access on cursor == 0.".into());
+        }
+        Ok(&self.stack[self.cursor - 1])
+    }
+
+    pub fn get_nth(&self, n: i32) -> WasmResult<&TextureBuffer> {
+        let index = self.cursor as i32 + n - 1;
+        if index < 0 || index >= self.stack.len() as i32 {
+            return Err(format!("Bad texture buffer sttack access on index == {}", index).into());
+        }
+        Ok(&self.stack[index as usize])
+    }
+
+    pub fn len(&self) -> usize {
+        self.stack.len()
+    }
+
+    pub fn get_cursor(&self) -> usize {
+        self.cursor
+    }
+
+    pub fn get_max_cursor(&self) -> usize {
+        self.max_cursor
+    }
+
+    pub fn assert_no_stack(&self) -> WasmResult<()> {
+        if self.cursor != 0 {
+            return Err(format!("Texture buffer stack cursor not zero, '{}' instead.", self.cursor).into());
+        }
+        Ok(())
+    }
+
+}
+

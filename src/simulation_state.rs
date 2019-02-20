@@ -8,10 +8,12 @@ use crate::wasm_error::{WasmResult};
 use crate::boolean_button::BooleanButton;
 use crate::camera::{Camera};
 use crate::web_utils::{now};
-use crate::pixels_render::{PixelsRender, PixelsRenderKind};
+use crate::pixels_render::{PixelsRender, PixelsGeometryKind};
 use crate::blur_render::BlurRender;
 use crate::internal_resolution_render::InternalResolutionRender;
 use crate::rgb_render::RgbRender;
+use crate::background_render::BackgroundRender;
+use crate::render_types::{TextureBufferStack};
 
 pub struct AnimationData {
     pub steps: Vec<ArrayBuffer>,
@@ -53,8 +55,11 @@ pub struct Resources {
     pub crt_filters: CrtFilters,
     pub pixels_render: PixelsRender,
     pub blur_render: BlurRender,
+    pub background_render: BackgroundRender,
     pub internal_resolution_render: InternalResolutionRender,
+    pub internal_resolution_multiplier: i32,
     pub rgb_render: RgbRender,
+    pub texture_buffer_stack: std::cell::RefCell<TextureBufferStack>,
     pub timers: SimulationTimers,
     pub initial_parameters: InitialParameters,
     pub buttons: Buttons,
@@ -85,9 +90,10 @@ pub struct CrtFilters {
     pub cur_pixel_gap: f32,
     pub change_speed: f32,
     pub pixels_pulse: f32,
-    pub pixels_render_kind: PixelsRenderKind,
+    pub pixels_geometry_kind: PixelsGeometryKind,
     pub color_channels: ColorChannels,
     pub showing_pixels_pulse: bool,
+    pub showing_solid_background: bool,
 }
 
 pub enum ColorChannels {
@@ -112,9 +118,10 @@ impl CrtFilters {
             cur_pixel_gap: 0.0,
             change_speed: change_speed,
             pixels_pulse: 0.0,
-            pixels_render_kind: PixelsRenderKind::Squares,
+            pixels_geometry_kind: PixelsGeometryKind::Squares,
             color_channels: ColorChannels::Combined,
             showing_pixels_pulse: false,
+            showing_solid_background: true,
         }
     }
 }
@@ -128,7 +135,7 @@ pub struct Buttons {
     pub increase_lpp: BooleanButton, // lines per pixel
     pub decrease_lpp: BooleanButton, // lines per pixel
     pub toggle_split_colors: BooleanButton,
-    pub toggle_pixels_render_kind: BooleanButton,
+    pub toggle_pixels_geometry_kind: BooleanButton,
     pub showing_pixels_pulse: BooleanButton,
     pub esc: BooleanButton,
     pub space: BooleanButton,
@@ -146,7 +153,7 @@ impl Buttons {
             increase_lpp: BooleanButton::new(),
             decrease_lpp: BooleanButton::new(),
             toggle_split_colors: BooleanButton::new(),
-            toggle_pixels_render_kind: BooleanButton::new(),
+            toggle_pixels_geometry_kind: BooleanButton::new(),
             showing_pixels_pulse: BooleanButton::new(),
             esc: BooleanButton::new(),
             space: BooleanButton::new(),
@@ -212,7 +219,7 @@ pub struct Input {
     pub increase_contrast: bool,
     pub decrease_contrast: bool,
     pub toggle_split_colors: bool,
-    pub toggle_pixels_render_kind: bool,
+    pub toggle_pixels_geometry_kind: bool,
     pub showing_pixels_pulse: bool,
     pub screenshot: bool,
 }
@@ -262,7 +269,7 @@ impl Input {
             increase_contrast: false,
             decrease_contrast: false,
             toggle_split_colors: false,
-            toggle_pixels_render_kind: false,
+            toggle_pixels_geometry_kind: false,
             showing_pixels_pulse: false,
             screenshot: false,
         })
