@@ -101,12 +101,12 @@ impl PixelsRender {
         gl.vertex_attrib_divisor(a_offset_position, 1);
 
         fn calc_value(number: usize) -> f64 {
-            let result = 255.0 - ((number - TEXTURE_SIZE / 2) as f64 / (TEXTURE_SIZE as f64 / 2.0)) * 255.0;
-            if result > 255.0 {255.0} else {result}
+            let result = log(TEXTURE_SIZE - number);//1.0 - ((number - TEXTURE_SIZE / 2) as f64 / (TEXTURE_SIZE as f64 / 2.0));
+            1.0 * if result > 1.0 {1.0} else {result}
         }
         fn log(number: usize) -> f64 {
             let result = f64::log(number as f64, (TEXTURE_SIZE / 2) as f64) + 0.05;
-            result * result * result * result
+            result * result
         }
         
         Ok(PixelsRender {
@@ -115,7 +115,7 @@ impl PixelsRender {
             colors_vbo,
             width,
             height,
-            pixel_shadow_texture: Self::create_shadow_texture(gl, |i, j| (0.5 * calc_value(i) + 0.5 * calc_value(j)) as u8)?,
+            pixel_shadow_texture: Self::create_shadow_texture(gl, |i, j| (calc_value(i) * calc_value(j) * 255.0) as u8)?,
             pixel_solid_texture: Self::create_shadow_texture(gl, |_i, _j| 255)?,
         })
     }
@@ -148,14 +148,13 @@ impl PixelsRender {
             }
 
         }
+
         /*
         for i in 0 .. TEXTURE_SIZE {
             let mut line = "".to_string();
             for j in 0 .. TEXTURE_SIZE {
-                let weight = texture[i * TEXTURE_SIZE * 4 + j * 4 + 0] as i32 +
-                    texture[i * TEXTURE_SIZE * 4 + j * 4 + 1] as i32 +
-                    texture[i * TEXTURE_SIZE * 4 + j * 4 + 2] as i32;
-                line += &format!("{} ", (weight / 3));
+                let weight = texture[i * TEXTURE_SIZE * 4 + j * 4 + 3] as i32;
+                line += &format!("{} ", (weight));
             }
             console!(log. line);
         }*/
@@ -324,7 +323,7 @@ void main()
 
     vec4 vecColor = vec4(r * COLOR_FACTOR, g * COLOR_FACTOR, b * COLOR_FACTOR, a * COLOR_FACTOR);
 
-    float height_mod = (vecColor.r + vecColor.g + vecColor.b) / 4.0 + 0.25;
+    float height_mod = 0.5 * ((vecColor.r + vecColor.g + vecColor.b) / 4.0 + 0.25) + 0.5 * (max(max(vecColor.r, vecColor.g), vecColor.b) / 1.33 + 0.25);
 
     ObjectColor = (1.0 - heightModifierFactor) * vecColor + heightModifierFactor * (vecColor * 0.5 +  0.5 * (vecColor / height_mod));
 

@@ -94,6 +94,7 @@ pub struct CrtFilters {
     pub color_channels: ColorChannels,
     pub showing_pixels_pulse: bool,
     pub showing_solid_background: bool,
+    pub showing_diffuse_foreground: bool,
 }
 
 pub enum ColorChannels {
@@ -121,6 +122,7 @@ impl CrtFilters {
             pixels_geometry_kind: PixelsGeometryKind::Squares,
             color_channels: ColorChannels::Combined,
             showing_pixels_pulse: false,
+            showing_diffuse_foreground: true,
             showing_solid_background: true,
         }
     }
@@ -136,6 +138,8 @@ pub struct Buttons {
     pub decrease_lpp: BooleanButton, // lines per pixel
     pub toggle_split_colors: BooleanButton,
     pub toggle_pixels_geometry_kind: BooleanButton,
+    pub toggle_diffuse_foreground: BooleanButton,
+    pub toggle_solid_background: BooleanButton,
     pub showing_pixels_pulse: BooleanButton,
     pub esc: BooleanButton,
     pub space: BooleanButton,
@@ -154,6 +158,8 @@ impl Buttons {
             decrease_lpp: BooleanButton::new(),
             toggle_split_colors: BooleanButton::new(),
             toggle_pixels_geometry_kind: BooleanButton::new(),
+            toggle_diffuse_foreground: BooleanButton::new(),
+            toggle_solid_background: BooleanButton::new(),
             showing_pixels_pulse: BooleanButton::new(),
             esc: BooleanButton::new(),
             space: BooleanButton::new(),
@@ -220,6 +226,8 @@ pub struct Input {
     pub decrease_contrast: bool,
     pub toggle_split_colors: bool,
     pub toggle_pixels_geometry_kind: bool,
+    pub toggle_diffuse_foreground: bool,
+    pub toggle_solid_background: bool,
     pub showing_pixels_pulse: bool,
     pub screenshot: bool,
 }
@@ -270,6 +278,8 @@ impl Input {
             decrease_contrast: false,
             toggle_split_colors: false,
             toggle_pixels_geometry_kind: false,
+            toggle_diffuse_foreground: false,
+            toggle_solid_background: false,
             showing_pixels_pulse: false,
             screenshot: false,
         })

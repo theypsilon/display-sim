@@ -359,6 +359,20 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
         return Ok(());
     }
 
+    res.buttons.toggle_diffuse_foreground.track(input.toggle_diffuse_foreground);
+    if res.buttons.toggle_diffuse_foreground.is_just_pressed() {
+        res.crt_filters.showing_diffuse_foreground = !res.crt_filters.showing_diffuse_foreground;
+        let message = if res.crt_filters.showing_diffuse_foreground { "Activated" } else { "Deactivated"};
+        dispatch_event_with("app-event.top_message", &format!("{} diffuse foreground.", message).into())?;
+    }
+
+    res.buttons.toggle_solid_background.track(input.toggle_solid_background);
+    if res.buttons.toggle_solid_background.is_just_pressed() {
+        res.crt_filters.showing_solid_background = !res.crt_filters.showing_solid_background;
+        let message = if res.crt_filters.showing_solid_background { "Activated" } else { "Deactivated"};
+        dispatch_event_with("app-event.top_message", &format!("{} solid background.", message).into())?;
+    }
+
     res.buttons.toggle_split_colors.track(input.toggle_split_colors);
     if res.buttons.toggle_split_colors.is_just_pressed() {
         res.crt_filters.color_channels = match res.crt_filters.color_channels {
@@ -567,95 +581,101 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
     buffer_stack.bind_current(gl)?;
     gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
 
-    let mut extra_light = get_3_f32color_from_int(res.crt_filters.brightness_color);
-    for light in extra_light.iter_mut() {
-        *light *= res.crt_filters.extra_bright;
-    }
-    let vertical_lines_ratio = res.crt_filters.lines_per_pixel;
-    for j in 0..vertical_lines_ratio {
-        let color_splits = match res.crt_filters.color_channels {ColorChannels::Combined => 1, _ => 3};
-        for i in 0..color_splits {
-            let mut light_color = get_3_f32color_from_int(res.crt_filters.light_color);
-            let pixel_offset = &mut [0.0, 0.0, 0.0];
-            let pixel_scale = &mut [
-                (res.crt_filters.cur_pixel_scale_x + 1.0) / res.crt_filters.cur_pixel_width,
-                res.crt_filters.cur_pixel_scale_y + 1.0,
-                (res.crt_filters.cur_pixel_scale_x + res.crt_filters.cur_pixel_scale_x) * 0.5 + 1.0,
-            ];
-            match res.crt_filters.color_channels {
-                ColorChannels::Combined => {},
-                _ => {
-                    light_color[(i + 0) % 3] *= 1.0;
-                    light_color[(i + 1) % 3] = 0.0;
-                    light_color[(i + 2) % 3] = 0.0;
-                    match res.crt_filters.color_channels {
-                        ColorChannels::SplitHorizontal => {
-                            pixel_offset[0] = (i as f32 - 1.0) * (1.0 / 3.0) * res.crt_filters.cur_pixel_width / (res.crt_filters.cur_pixel_scale_x + 1.0);
-                            pixel_scale[0] *= color_splits as f32;
-                        },
-                        ColorChannels::Overlapping => {
-                            pixel_offset[0] = (i as f32 - 1.0) * (1.0 / 3.0) * res.crt_filters.cur_pixel_width / (res.crt_filters.cur_pixel_scale_x + 1.0);
-                            pixel_scale[0] *= 1.0;
-                        },
-                        ColorChannels::SplitVertical => {
-                            pixel_offset[1] = (i as f32 - 1.0) * (1.0 / 3.0) * (1.0 - res.crt_filters.cur_pixel_scale_y);
-                            pixel_scale[1] *= color_splits as f32;
+    if res.crt_filters.showing_diffuse_foreground {
+        let mut extra_light = get_3_f32color_from_int(res.crt_filters.brightness_color);
+        for light in extra_light.iter_mut() {
+            *light *= res.crt_filters.extra_bright;
+        }
+        let vertical_lines_ratio = res.crt_filters.lines_per_pixel;
+        for j in 0..vertical_lines_ratio {
+            let color_splits = match res.crt_filters.color_channels {ColorChannels::Combined => 1, _ => 3};
+            for i in 0..color_splits {
+                let mut light_color = get_3_f32color_from_int(res.crt_filters.light_color);
+                let pixel_offset = &mut [0.0, 0.0, 0.0];
+                let pixel_scale = &mut [
+                    (res.crt_filters.cur_pixel_scale_x + 1.0) / res.crt_filters.cur_pixel_width,
+                    res.crt_filters.cur_pixel_scale_y + 1.0,
+                    (res.crt_filters.cur_pixel_scale_x + res.crt_filters.cur_pixel_scale_x) * 0.5 + 1.0,
+                ];
+                match res.crt_filters.color_channels {
+                    ColorChannels::Combined => {},
+                    _ => {
+                        light_color[(i + 0) % 3] *= 1.0;
+                        light_color[(i + 1) % 3] = 0.0;
+                        light_color[(i + 2) % 3] = 0.0;
+                        match res.crt_filters.color_channels {
+                            ColorChannels::SplitHorizontal => {
+                                pixel_offset[0] = (i as f32 - 1.0) * (1.0 / 3.0) * res.crt_filters.cur_pixel_width / (res.crt_filters.cur_pixel_scale_x + 1.0);
+                                pixel_scale[0] *= color_splits as f32;
+                            },
+                            ColorChannels::Overlapping => {
+                                pixel_offset[0] = (i as f32 - 1.0) * (1.0 / 3.0) * res.crt_filters.cur_pixel_width / (res.crt_filters.cur_pixel_scale_x + 1.0);
+                                pixel_scale[0] *= 1.5;
+                            },
+                            ColorChannels::SplitVertical => {
+                                pixel_offset[1] = (i as f32 - 1.0) * (1.0 / 3.0) * (1.0 - res.crt_filters.cur_pixel_scale_y);
+                                pixel_scale[1] *= color_splits as f32;
+                            }
+                            _ => unreachable!(),
                         }
-                        _ => unreachable!(),
                     }
                 }
-            }
-            if vertical_lines_ratio > 1 {
-                pixel_offset[0] /= vertical_lines_ratio as f32;
-                pixel_offset[0] += (j as f32 / vertical_lines_ratio as f32 - calc_stupid_not_extrapoled_function(vertical_lines_ratio)) * res.crt_filters.cur_pixel_width / (res.crt_filters.cur_pixel_scale_x + 1.0);
-                pixel_scale[0] *= vertical_lines_ratio as f32;
+                if vertical_lines_ratio > 1 {
+                    pixel_offset[0] /= vertical_lines_ratio as f32;
+                    pixel_offset[0] += (j as f32 / vertical_lines_ratio as f32 - calc_stupid_not_extrapoled_function(vertical_lines_ratio)) * res.crt_filters.cur_pixel_width / (res.crt_filters.cur_pixel_scale_x + 1.0);
+                    pixel_scale[0] *= vertical_lines_ratio as f32;
+                }
+                if let ColorChannels::Overlapping = res.crt_filters.color_channels {
+                    buffer_stack.push(gl)?;
+                    buffer_stack.bind_current(gl)?;
+                    if j == 0 {
+                        gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
+                    }
+                }
+                //gl.blend_func(WebGl2RenderingContext::SRC_ALPHA, WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA);
+                res.pixels_render.render(gl, PixelsUniform {
+                    shadow_kind: PixelsShadowKind::Diffuse,
+                    geometry_kind: res.crt_filters.pixels_geometry_kind,
+                    view: res.camera.get_view().as_mut_slice(),
+                    projection: res.camera.get_projection(
+                        res.animation.viewport_width as f32,
+                        res.animation.viewport_height as f32,
+                    ).as_mut_slice(),
+                    ambient_strength: match res.crt_filters.pixels_geometry_kind { PixelsGeometryKind::Squares => 1.0, PixelsGeometryKind::Cubes => 0.5},
+                    contrast_factor: res.crt_filters.extra_contrast,
+                    light_color: &mut light_color,
+                    extra_light: &mut extra_light,
+                    light_pos: res.camera.get_position().as_mut_slice(),
+                    pixel_gap: &mut [
+                        (1.0 + res.crt_filters.cur_pixel_gap) * res.crt_filters.cur_pixel_width,
+                        1.0 + res.crt_filters.cur_pixel_gap,
+                    ],
+                    pixel_scale,
+                    pixel_pulse: res.crt_filters.pixels_pulse,
+                    pixel_offset,
+                    height_modifier_factor: 1.0,
+                });
             }
             if let ColorChannels::Overlapping = res.crt_filters.color_channels {
-                buffer_stack.push(gl)?;
-                buffer_stack.bind_current(gl)?;
-                gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
+                buffer_stack.pop()?;
+                buffer_stack.pop()?;
+                buffer_stack.pop()?;
             }
-            //gl.blend_func(WebGl2RenderingContext::SRC_ALPHA, WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA);
-            res.pixels_render.render(gl, PixelsUniform {
-                shadow_kind: PixelsShadowKind::Diffuse,
-                geometry_kind: res.crt_filters.pixels_geometry_kind,
-                view: res.camera.get_view().as_mut_slice(),
-                projection: res.camera.get_projection(
-                    res.animation.viewport_width as f32,
-                    res.animation.viewport_height as f32,
-                ).as_mut_slice(),
-                ambient_strength: match res.crt_filters.pixels_geometry_kind { PixelsGeometryKind::Squares => 1.0, PixelsGeometryKind::Cubes => 0.5},
-                contrast_factor: res.crt_filters.extra_contrast,
-                light_color: &mut light_color,
-                extra_light: &mut extra_light,
-                light_pos: res.camera.get_position().as_mut_slice(),
-                pixel_gap: &mut [
-                    (1.0 + res.crt_filters.cur_pixel_gap) * res.crt_filters.cur_pixel_width,
-                    1.0 + res.crt_filters.cur_pixel_gap,
-                ],
-                pixel_scale,
-                pixel_pulse: res.crt_filters.pixels_pulse,
-                pixel_offset,
-                height_modifier_factor: 1.0,
-            });
         }
-    }
 
-    if let ColorChannels::Overlapping = res.crt_filters.color_channels {
-        buffer_stack.pop()?;
-        buffer_stack.pop()?;
-        buffer_stack.pop()?;
-        buffer_stack.bind_current(gl)?;
-        gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 0);
-        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, buffer_stack.get_nth(1)?.texture());
-        gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 1);
-        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, buffer_stack.get_nth(2)?.texture());
-        gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 2);
-        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, buffer_stack.get_nth(3)?.texture());
+        if let ColorChannels::Overlapping = res.crt_filters.color_channels {
+            buffer_stack.bind_current(gl)?;
+            gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 0);
+            gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, buffer_stack.get_nth(1)?.texture());
+            gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 1);
+            gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, buffer_stack.get_nth(2)?.texture());
+            gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 2);
+            gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, buffer_stack.get_nth(3)?.texture());
 
-        res.rgb_render.render(gl);
+            res.rgb_render.render(gl);
 
-        gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 0);
+            gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 0);
+        }
     }
 
     buffer_stack.push(gl)?;
@@ -673,7 +693,7 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
             ).as_mut_slice(),
             ambient_strength: match res.crt_filters.pixels_geometry_kind { PixelsGeometryKind::Squares => 1.0, PixelsGeometryKind::Cubes => 0.5},
             contrast_factor: res.crt_filters.extra_contrast,
-            light_color: &mut [0.5, 0.5, 0.5],
+            light_color: &mut if res.crt_filters.showing_diffuse_foreground {[0.3, 0.3, 0.3]} else {[1.0, 1.0, 1.0]},
             extra_light: &mut [0.0, 0.0, 0.0],
             light_pos: res.camera.get_position().as_mut_slice(),
             pixel_gap: &mut [

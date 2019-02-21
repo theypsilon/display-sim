@@ -69,7 +69,7 @@ impl TextureBufferStack {
 
     pub fn push(&mut self, gl: &WebGl2RenderingContext) -> WasmResult<()> {
         if self.stack.len() == self.cursor {
-            console!(log. "creating new texture buffer!", (self.stack.len() as f32));
+            //console!(log. "creating new texture buffer!", (self.stack.len() as f32));
             self.stack.push(TextureBuffer::new_with_depthbuffer(gl, self.width, self.height)?);
         }
         self.cursor += 1;

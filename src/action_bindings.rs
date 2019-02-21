@@ -3,6 +3,8 @@ use crate::console;
 
 pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
     match button_action {
+        "," => input.toggle_diffuse_foreground = pressed,
+        "." => input.toggle_solid_background = pressed,
         "a" => input.walk_left = pressed,
         "d" => input.walk_right = pressed,
         "w" => input.walk_forward = pressed,
