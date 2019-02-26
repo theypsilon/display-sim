@@ -301,6 +301,19 @@ infoHideDeo.onclick = () => {
         detail: 'Show the Sim Panel again by pressing SPACE.'
     }));
 };
+
+document.querySelectorAll('.feature-number-input').forEach(deo => {
+    [{button_text: "↑", mode: "inc", placement: "before"}, {button_text: "↓", mode: "dec", placement: "after"}].forEach(o => {
+        const button = document.createElement('button');
+        button.innerText = o.button_text;
+        button.classList.add("button-inc-dec");
+        const eventOptions = {key: deo.id + "-" + o.mode};
+        button.onmousedown = () => document.dispatchEvent(new KeyboardEvent('keydown', eventOptions));
+        button.onmouseup = () => document.dispatchEvent(new KeyboardEvent('keyup', eventOptions));
+        deo.parentNode.insertBefore(button, o.placement === "before" ? deo : deo.nextSibling);
+    });
+});
+
 inputFileUploadDeo.onchange = () => {
   const file = inputFileUploadDeo.files[0];
   const url = (window.URL || window.webkitURL).createObjectURL(file);

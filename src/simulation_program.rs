@@ -243,8 +243,10 @@ fn update_colors(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> 
     if input.increase_bright || input.decrease_bright {
         if res.crt_filters.extra_bright < -1.0 {
             res.crt_filters.extra_bright = -1.0;
+            dispatch_event_with("app-event.top_message", &"Minimum value is -1.0".into())?;
         } else if res.crt_filters.extra_bright > 1.0 {
             res.crt_filters.extra_bright = 1.0;
+            dispatch_event_with("app-event.top_message", &"Maximum value is +1.0".into())?;
         } else {
             dispatch_event_with("app-event.change_pixel_brightness", &res.crt_filters.extra_bright.into())?;
         }
@@ -258,8 +260,10 @@ fn update_colors(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> 
     if input.increase_contrast || input.decrease_contrast {
         if res.crt_filters.extra_contrast < 0.0 {
             res.crt_filters.extra_contrast = 0.0;
+            dispatch_event_with("app-event.top_message", &"Minimum value is 0.0".into())?;
         } else if res.crt_filters.extra_contrast > 20.0 {
             res.crt_filters.extra_contrast = 20.0;
+            dispatch_event_with("app-event.top_message", &"Maximum value is 20.0".into())?;
         } else {
             dispatch_event_with("app-event.change_pixel_contrast", &res.crt_filters.extra_contrast.into())?;
         }
@@ -424,6 +428,7 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
         if *cur_size != before_size {
             if *cur_size < 0.0 {
                 *cur_size = 0.0;
+                dispatch_event_with("app-event.top_message", &"Minimum value is 0.0".into())?;
             }
             let size = *cur_size;
             dispatch_event_with(event_id, &size.into())?;
@@ -490,7 +495,11 @@ fn update_camera(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> 
         dispatch_event("app-event.exit_pointer_lock")?;
     }
 
-    if input.mouse_scroll_y != 0.0 {
+    if input.increase_camera_zoom {
+        res.camera.change_zoom(dt * -100.0)?;
+    } else if input.decrease_camera_zoom {
+        res.camera.change_zoom(dt * 100.0)?;
+    } else if input.mouse_scroll_y != 0.0 {
         res.camera.change_zoom(input.mouse_scroll_y)?;
     }
 

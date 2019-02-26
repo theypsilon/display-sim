@@ -106,9 +106,11 @@ impl Camera {
         }
         if self.zoom <= 1.0 {
             self.zoom = 1.0;
+            dispatch_event_with("app-event.top_message", &"Minimum value is 1.0".into())?;
         }
         if self.zoom >= 45.0 {
             self.zoom = 45.0;
+            dispatch_event_with("app-event.top_message", &"Maximum value is 45.0".into())?;
         }
         if self.zoom != last_zoom {
             dispatch_event_with("app-event.change_camera_zoom", &self.zoom.into())?;

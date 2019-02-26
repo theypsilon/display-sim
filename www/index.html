@@ -164,21 +164,21 @@
           <div class="camera-field-header"><div class="camera-coordinate">X</div><div class="camera-coordinate">Y</div><div class="camera-coordinate">Z</div></div>
           <div id="camera-pos" class="camera-field-group">
             <div class="camera-field-name">pos:</div>
-            <input id="camera-pos-x" class="camera-field camera-field-left" type="number"/>
-            <input id="camera-pos-y" class="camera-field camera-field-center" type="number"/>
-            <input id="camera-pos-z" class="camera-field camera-field-right" type="number"/>
+            <input id="camera-pos-x" class="camera-field camera-field-left" type="number" step="0.01"/>
+            <input id="camera-pos-y" class="camera-field camera-field-center" type="number" step="0.01"/>
+            <input id="camera-pos-z" class="camera-field camera-field-right" type="number" step="0.01"/>
           </div>
           <div id="camera-dir" class="camera-field-group">
             <div class="camera-field-name">dir:</div>
-            <input id="camera-dir-x" class="camera-field camera-field-left camera-field-mid" type="number"/>
-            <input id="camera-dir-y" class="camera-field camera-field-center camera-field-mid" type="number"/>
-            <input id="camera-dir-z" class="camera-field camera-field-right camera-field-mid" type="number"/>
+            <input id="camera-dir-x" class="camera-field camera-field-left camera-field-mid" type="number" step="0.01"/>
+            <input id="camera-dir-y" class="camera-field camera-field-center camera-field-mid" type="number" step="0.01"/>
+            <input id="camera-dir-z" class="camera-field camera-field-right camera-field-mid" type="number" step="0.01"/>
           </div>
           <div id="camera-axis-up" class="camera-field-group">
             <div class="camera-field-name">axis:</div>
-            <input id="camera-axis-up-x" class="camera-field camera-field-left" type="number"/>
-            <input id="camera-axis-up-y" class="camera-field camera-field-center" type="number"/>
-            <input id="camera-axis-up-z" class="camera-field camera-field-right" type="number"/>
+            <input id="camera-axis-up-x" class="camera-field camera-field-left" type="number" step="0.01"/>
+            <input id="camera-axis-up-y" class="camera-field camera-field-center" type="number" step="0.01"/>
+            <input id="camera-axis-up-z" class="camera-field camera-field-right" type="number" step="0.01"/>
           </div>
         </div>
         <ul><li><div id="feature-camera-zoom" class="feature-hotkeys">· Zoom:</div><br /><div class="feature-value"><input id="camera-zoom" class="feature-number-input" type="number" placeholder="0" step="1" min="1" max="45" value="0"></div></li></ul>
@@ -197,14 +197,14 @@
     <div class="info-category">
       <h5>Pixel Filters <div id="reset-pixels" class="reset-button"><button class="activate-button" title="All pixel parameters will be reset.">Reset Filters</button></div></h5>
       <ul>
-        <li><div id="feature-size-x" class="feature-hotkeys">· <button class="activate-button">J</button> & <button class="activate-button">K</button></div><div class="feature-explanation">to change horizontal gap.</div><div class="feature-value"><input id="pixel-horizontal-gap" class="feature-number-input" type="number" placeholder="0" step="0.05" min="0" max="10" value="0"></div></li>
-        <li><div id="feature-size-y" class="feature-hotkeys">· <button class="activate-button">U</button> & <button class="activate-button">I</button></div><div class="feature-explanation">to change vertical gap.</div><div class="feature-value"><input id="pixel-vertical-gap" class="feature-number-input" type="number" placeholder="0" step="0.05" min="0" max="10" value="0"></div></li>
-        <li><div id="feature-width" class="feature-hotkeys">· <button class="activate-button">N</button> & <button class="activate-button">M</button></div><div class="feature-explanation">to change pixel width.</div><div class="feature-value"><input id="pixel-width" class="feature-number-input" type="number" placeholder="0" step="0.05" min="0" max="10" value="0"></div></li>
-        <li class="display-none"><div id="feature-gap" class="feature-hotkeys">· <button class="activate-button">Shift+N</button> & <button class="activate-button">Shift+M</button></div><div class="feature-explanation">spread pixels.</div><div class="feature-value"><input id="pixel-spread" class="feature-number-input" type="number" placeholder="0" step="0.05" min="0" max="10" value="0"></div></li>
+        <li><div id="feature-size-x" class="feature-hotkeys">· <button class="activate-button">J</button> & <button class="activate-button">K</button></div><div class="feature-explanation">to change horizontal gap.</div><div class="feature-value"><input id="pixel-horizontal-gap" class="feature-number-input" type="number" placeholder="0" step="0.01" min="0" max="10" value="0"></div></li>
+        <li><div id="feature-size-y" class="feature-hotkeys">· <button class="activate-button">U</button> & <button class="activate-button">I</button></div><div class="feature-explanation">to change vertical gap.</div><div class="feature-value"><input id="pixel-vertical-gap" class="feature-number-input" type="number" placeholder="0" step="0.01" min="0" max="10" value="0"></div></li>
+        <li><div id="feature-width" class="feature-hotkeys">· <button class="activate-button">N</button> & <button class="activate-button">M</button></div><div class="feature-explanation">to change pixel width.</div><div class="feature-value"><input id="pixel-width" class="feature-number-input" type="number" placeholder="0" step="0.01" min="0" max="10" value="0"></div></li>
+        <li class="display-none"><div id="feature-gap" class="feature-hotkeys">· <button class="activate-button">Shift+N</button> & <button class="activate-button">Shift+M</button></div><div class="feature-explanation">spread pixels.</div><div class="feature-value"><input id="pixel-spread" class="feature-number-input" type="number" placeholder="0" step="0.01" min="0" max="10" value="0"></div></li>
         <li><div id="feature-blur" class="feature-hotkeys">· <button class="activate-button">B</button> & <button class="activate-button">V</button></div><div class="feature-explanation">to change the blur level.</div><div class="feature-value"><input id="blur-level" class="feature-number-input" type="number" placeholder="0" step="1" min="0" max="100" value="0"></div></li>
         <li><div id="feature-light-color" class="feature-hotkeys">· Click <input id="light-color" type="color" value="#ffffff"></div><div class="feature-explanation">to change source light color.</div></li>
-        <li><div id="feature-brightness-intensity" class="feature-hotkeys">· <button class="activate-button">C</button> & <button class="activate-button">X</button></div><div class="feature-explanation">to change brightness.</div><div class="feature-value"><input id="pixel-brightness" class="feature-number-input" type="number" placeholder="0" step="0.05" min="-1" max="1" value="0"></div></li>
-        <li><div id="feature-contrast-intensity" class="feature-hotkeys">· <button class="activate-button">&lt;</button> & <button class="activate-button">Z</button></div><div class="feature-explanation">to change contrast.</div><div class="feature-value"><input id="pixel-contrast" class="feature-number-input" type="number" placeholder="0" step="0.05" min="0" max="20" value="1"></div></li>
+        <li><div id="feature-brightness-intensity" class="feature-hotkeys">· <button class="activate-button">C</button> & <button class="activate-button">X</button></div><div class="feature-explanation">to change brightness.</div><div class="feature-value"><input id="pixel-brightness" class="feature-number-input" type="number" placeholder="0" step="0.01" min="-1" max="1" value="0"></div></li>
+        <li><div id="feature-contrast-intensity" class="feature-hotkeys">· <button class="activate-button">&lt;</button> & <button class="activate-button">Z</button></div><div class="feature-explanation">to change contrast.</div><div class="feature-value"><input id="pixel-contrast" class="feature-number-input" type="number" placeholder="0" step="0.01" min="0" max="20" value="1"></div></li>
         <li class="display-none"><div id="feature-brightness-color" class="feature-hotkeys">· Click <input id="brightness-color" type="color" value="#ffffff"></div><div class="feature-explanation">to pick brightness color.</div></li>
         <li><div id="feature-change-color-representation" class="feature-hotkeys">· <button class="activate-button">Y</button></div><div class="feature-explanation">to show color channels.</div></li>
         <li><div id="feature-change-pixel-shape" class="feature-hotkeys">· <button class="activate-button">O</button></div><div class="feature-explanation">to change pixel geometry.</div></li>
