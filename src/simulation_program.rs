@@ -386,12 +386,12 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
             ColorChannels::SplitVertical => ColorChannels::Combined,
         };
         let message = match res.crt_filters.color_channels {
-            ColorChannels::Combined => "Combined",
-            ColorChannels::Overlapping => "Overlapping Horizontally",
-            ColorChannels::SplitHorizontal => "Split Horizontally",
-            ColorChannels::SplitVertical => "Split Vertically",
+            ColorChannels::Combined => "combined",
+            ColorChannels::Overlapping => "horizontal overlapping",
+            ColorChannels::SplitHorizontal => "horizontal split",
+            ColorChannels::SplitVertical => "vertical split",
         };
-        dispatch_event_with("app-event.top_message", &("Showing color channels ".to_string() + message + ".").into())?;
+        dispatch_event_with("app-event.top_message", &("Pixel color representation: ".to_string() + message + ".").into())?;
     }
 
     res.buttons.toggle_pixels_geometry_kind.track(input.toggle_pixels_geometry_kind);
