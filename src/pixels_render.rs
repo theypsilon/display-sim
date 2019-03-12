@@ -17,24 +17,17 @@ pub enum PixelsGeometryKind {
     Cubes
 }
 
-#[derive(Clone, Copy)]
-pub enum PixelsShadowKind {
-    Solid,
-    Diffuse
-}
-
 pub struct PixelsRender {
     shader: WebGlProgram,
     vao: Option<WebGlVertexArrayObject>,
     colors_vbo: WebGlBuffer,
     width: usize,
     height: usize,
-    pixel_shadow_texture: Option<WebGlTexture>,
-    pixel_solid_texture: Option<WebGlTexture>,
+    shadows: Vec<Option<WebGlTexture>>,
 }
 
 pub struct PixelsUniform<'a> {
-    pub shadow_kind:  PixelsShadowKind,
+    pub shadow_kind: usize,
     pub geometry_kind: PixelsGeometryKind,
     pub view: &'a mut [f32],
     pub projection: &'a mut [f32],
@@ -100,24 +93,53 @@ impl PixelsRender {
         gl.vertex_attrib_pointer_with_i32(a_offset_position, 2, WebGl2RenderingContext::FLOAT, false, 2 * size_of::<f32>() as i32, 0);
         gl.vertex_attrib_divisor(a_offset_position, 1);
 
-        fn calc_value(number: usize) -> f64 {
-            let result = log(TEXTURE_SIZE - number);//1.0 - ((number - TEXTURE_SIZE / 2) as f64 / (TEXTURE_SIZE as f64 / 2.0));
-            1.0 * if result > 1.0 {1.0} else {result}
+        fn calc_with_log(number: usize, count: usize) -> f64 {
+            let mut result = log(TEXTURE_SIZE - number);
+            for i in 0..count {
+                result *= result;
+            }
+            result
         }
         fn log(number: usize) -> f64 {
-            let result = f64::log(number as f64, (TEXTURE_SIZE / 2) as f64) + 0.05;
-            result * result
+            f64::log(number as f64, (TEXTURE_SIZE / 2) as f64)
         }
-        
+        fn calc_diamond(number: usize, count: usize) -> f64 {
+            let mut result = 1.0 - ((number - TEXTURE_SIZE / 2) as f64 / (TEXTURE_SIZE as f64 / 2.0));
+            for i in 0..count {
+                result *= result;
+            }
+            result
+        }
+
+        let mut shadows = Vec::new();
+        shadows.push(Self::create_shadow_texture(gl, |_i, _j| 255)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 0) * calc_with_log(j, 0) * 255.0) as u8)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 1) * calc_with_log(j, 1) * 255.0) as u8)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 2) * calc_with_log(j, 2) * 255.0) as u8)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 3) * calc_with_log(j, 3) * 255.0) as u8)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 0) * 255.0) as u8)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 1) * 255.0) as u8)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 2) * 255.0) as u8)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 3) * 255.0) as u8)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 4) * 255.0) as u8)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_diamond(i, 0) * calc_diamond(j, 0) * 255.0) as u8)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_diamond(i, 1) * calc_diamond(j, 1) * 255.0) as u8)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_diamond(i, 2) * calc_diamond(j, 2) * 255.0) as u8)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_diamond(i, 0) * 255.0) as u8)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_diamond(i, 1) * 255.0) as u8)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_diamond(i, 2) * 255.0) as u8)?);
         Ok(PixelsRender {
             vao,
             shader,
             colors_vbo,
             width,
             height,
-            pixel_shadow_texture: Self::create_shadow_texture(gl, |i, j| (calc_value(i) * calc_value(j) * 255.0) as u8)?,
-            pixel_solid_texture: Self::create_shadow_texture(gl, |_i, _j| 255)?,
+            shadows,
         })
+    }
+
+    pub fn shadows_len(&self) -> usize {
+        self.shadows.len()
     }
 
     fn create_shadow_texture(gl: &WebGl2RenderingContext, weight: impl Fn(usize, usize) -> u8) -> WasmResult<Option<WebGlTexture>> {
@@ -194,11 +216,8 @@ impl PixelsRender {
 
     pub fn render(&self, gl: &WebGl2RenderingContext, uniforms: PixelsUniform) {
         gl.use_program(Some(&self.shader));
-        let pixel_shadow = match uniforms.shadow_kind {
-            PixelsShadowKind::Diffuse => self.pixel_shadow_texture.as_ref(),
-            PixelsShadowKind::Solid => self.pixel_solid_texture.as_ref(),
-        };
-        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, pixel_shadow);
+        if uniforms.shadow_kind >= self.shadows.len() {panic!("Bug on shadow_kind!")}
+        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, self.shadows[uniforms.shadow_kind].as_ref());
         gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&self.shader, "view").as_ref(), false, uniforms.view);
         gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&self.shader, "projection").as_ref(), false, uniforms.projection);
         gl.uniform3fv_with_f32_array(gl.get_uniform_location(&self.shader, "lightPos").as_ref(), uniforms.light_pos);
@@ -374,10 +393,6 @@ void main()
     vec4 result;
     if (ambientStrength == 1.0) {
         result = ObjectColor * vec4(lightColor, 1.0) * texture(image, ImagePos);
-        float contrastUmbral = 0.5;
-        result.r = (result.r - contrastUmbral) * contrastFactor + contrastFactor * contrastUmbral;
-        result.g = (result.g - contrastUmbral) * contrastFactor + contrastFactor * contrastUmbral;
-        result.b = (result.b - contrastUmbral) * contrastFactor + contrastFactor * contrastUmbral;
     } else {
         vec3 norm = normalize(Normal);
         vec3 lightDir = normalize(lightPos - FragPos);
@@ -389,6 +404,10 @@ void main()
         
         result = ObjectColor * vec4(ambient + diffuse * (1.0 - ambientStrength), 1.0) * texture(image, ImagePos);
     }
+    float contrastUmbral = 0.5;
+    result.r = (result.r - contrastUmbral) * contrastFactor + contrastFactor * contrastUmbral;
+    result.g = (result.g - contrastUmbral) * contrastFactor + contrastFactor * contrastUmbral;
+    result.b = (result.b - contrastUmbral) * contrastFactor + contrastFactor * contrastUmbral;
     FragColor = result + vec4(extraLight, 0.0);
 } 
 "#;

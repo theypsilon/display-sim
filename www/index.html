@@ -181,52 +181,52 @@
             <input id="camera-axis-up-z" class="camera-field camera-field-right" type="number" step="0.01"/>
           </div>
         </div>
-        <ul><li><div id="feature-camera-zoom" class="feature-hotkeys">· Zoom:</div><br /><div class="feature-value"><input id="camera-zoom" class="feature-number-input" type="number" placeholder="0" step="1" min="1" max="45" value="0"></div></li></ul>
+        <ul title="Zoom Hotkeys: Mouse wheel up & down"><li><div class="feature-name">· Zoom:</div><br /><div id="camera-zoom-parent" class="feature-value"><input id="camera-zoom" class="feature-number-input" type="number" placeholder="0" step="1" min="1" max="45" value="0"></div></li></ul>
       </div>
       <ul>
-        <li><div class="feature-hotkeys">· Translation:</div></br><div id="feature-camera-movements" class="camera-movements-arrows">
+        <li><div class="feature-name">· Translation:</div></br><div id="feature-camera-movements" class="camera-movements-arrows">
           <div><button class="activate-button feature-movement-keys key-up-center">W</button><button class="activate-button feature-movement-keys key-up-far-right">Q</button> ↑</div><br/>
           <div><button class="activate-button feature-movement-keys">A</button><button class="activate-button feature-movement-keys key-down-center">S</button><button class="activate-button feature-movement-keys">D</button><button class="activate-button feature-movement-keys key-down-far-right">E</button> ↓</div>
         </div></li>
-        <li style="height: 65"><div class="feature-hotkeys">· Rotation:</div></br><div id="feature-camera-turns" class="camera-movements-arrows">
+        <li style="height: 65"><div class="feature-name">· Rotation:</div></br><div id="feature-camera-turns" class="camera-movements-arrows">
           <div><button class="activate-button feature-movement-keys key-up-center">↑</button><button class="activate-button feature-movement-keys key-up-far-right">+</button> ⟳</div><br/>
           <div><button class="activate-button feature-movement-keys">←</button><button class="activate-button feature-movement-keys key-down-center">↓</button><button class="activate-button feature-movement-keys">→</button><button class="activate-button feature-movement-keys key-down-far-right">-</button> ⟲</div>
         </div></li>
       </ul>
     </div>
     <div class="info-category">
-      <h5>Pixel Filters <div id="reset-pixels" class="reset-button"><button class="activate-button" title="All pixel parameters will be reset.">Reset Filters</button></div></h5>
-      <ul>
-        <li><div id="feature-size-x" class="feature-hotkeys">· <button class="activate-button">J</button> & <button class="activate-button">K</button></div><div class="feature-explanation">to change horizontal gap.</div><div class="feature-value"><input id="pixel-horizontal-gap" class="feature-number-input" type="number" placeholder="0" step="0.01" min="0" max="10" value="0"></div></li>
-        <li><div id="feature-size-y" class="feature-hotkeys">· <button class="activate-button">U</button> & <button class="activate-button">I</button></div><div class="feature-explanation">to change vertical gap.</div><div class="feature-value"><input id="pixel-vertical-gap" class="feature-number-input" type="number" placeholder="0" step="0.01" min="0" max="10" value="0"></div></li>
-        <li><div id="feature-width" class="feature-hotkeys">· <button class="activate-button">N</button> & <button class="activate-button">M</button></div><div class="feature-explanation">to change pixel width.</div><div class="feature-value"><input id="pixel-width" class="feature-number-input" type="number" placeholder="0" step="0.01" min="0" max="10" value="0"></div></li>
-        <li class="display-none"><div id="feature-gap" class="feature-hotkeys">· <button class="activate-button">Shift+N</button> & <button class="activate-button">Shift+M</button></div><div class="feature-explanation">spread pixels.</div><div class="feature-value"><input id="pixel-spread" class="feature-number-input" type="number" placeholder="0" step="0.01" min="0" max="10" value="0"></div></li>
-        <li><div id="feature-blur" class="feature-hotkeys">· <button class="activate-button">B</button> & <button class="activate-button">V</button></div><div class="feature-explanation">to change the blur level.</div><div class="feature-value"><input id="blur-level" class="feature-number-input" type="number" placeholder="0" step="1" min="0" max="100" value="0"></div></li>
-        <li><div id="feature-light-color" class="feature-hotkeys">· Click <input id="light-color" type="color" value="#ffffff"></div><div class="feature-explanation">to change source light color.</div></li>
-        <li><div id="feature-brightness-intensity" class="feature-hotkeys">· <button class="activate-button">C</button> & <button class="activate-button">X</button></div><div class="feature-explanation">to change brightness.</div><div class="feature-value"><input id="pixel-brightness" class="feature-number-input" type="number" placeholder="0" step="0.01" min="-1" max="1" value="0"></div></li>
-        <li><div id="feature-contrast-intensity" class="feature-hotkeys">· <button class="activate-button">&lt;</button> & <button class="activate-button">Z</button></div><div class="feature-explanation">to change contrast.</div><div class="feature-value"><input id="pixel-contrast" class="feature-number-input" type="number" placeholder="0" step="0.01" min="0" max="20" value="1"></div></li>
-        <li class="display-none"><div id="feature-brightness-color" class="feature-hotkeys">· Click <input id="brightness-color" type="color" value="#ffffff"></div><div class="feature-explanation">to pick brightness color.</div></li>
-        <li><div id="feature-change-color-representation" class="feature-hotkeys">· <button class="activate-button">Y</button></div><div class="feature-explanation">to change pixel color representation.</div></li>
-        <li><div id="feature-change-pixel-shape" class="feature-hotkeys">· <button class="activate-button">O</button></div><div class="feature-explanation">to change pixel geometry.</div></li>
-        <li class="display-none"><div id="feature-pulsation" class="feature-hotkeys">· <button class="activate-button">P</button></div><div class="feature-explanation">to activate a wave on the screen.</div></li>
+      <h5>Screen Filter Options <div id="reset-filters" class="reset-button"><button class="activate-button" title="All screen filter options will be reset.">Reset Filters</button></div></h5>
+      <ul class="info-options">
+        <li title="Horizontal gap Hotkeys: J & K"><div><div class="feature-name">Horizontal gap</div><sup class="feature-hotkeys">(J, K)</sup></div><div class="feature-value"><input id="pixel-horizontal-gap" class="feature-number-input" type="number" placeholder="0" step="0.01" min="0" max="10" value="0"></div></li>
+        <li title="Vertical gap Hotkeys: U & I"><div><div class="feature-name">Vertical gap</div><sup class="feature-hotkeys">(U, I)</sup></div><div class="feature-value"><input id="pixel-vertical-gap" class="feature-number-input" type="number" placeholder="0" step="0.01" min="0" max="10" value="0"></div></li>
+        <li title="Width Hotkeys: N & M"><div><div class="feature-name">Pixel width</div><sup class="feature-hotkeys">(N, M)</sup></div><div class="feature-value"><input id="pixel-width" class="feature-number-input" type="number" placeholder="0" step="0.01" min="0" max="10" value="0"></div></li>
+        <li title="Lines per Pixel Hotkeys: G & H"><div><div class="feature-name">Lines per Pixel</div><sup class="feature-hotkeys">(G, H)</sup></div><div class="feature-value"><input id="lines-per-pixel" class="feature-number-input" type="number" placeholder="0" step="1" min="0" max="100" value="0"></div></li>
+        <li title="Blur Level Hotkeys: B & V"><div><div class="feature-name">Blur level</div><sup class="feature-hotkeys">(B, V)</sup></div><div class="feature-value"><input id="blur-level" class="feature-number-input" type="number" placeholder="0" step="1" min="0" max="100" value="0"></div></li>
+        <li><div class="feature-name">Source light color  </div><div><input class="feature-button" id="light-color" type="color" value="#ffffff"></div></li>
+        <li title="Brightness Hotkeys: C & X"><div><div class="feature-name">Brigthness</div><sup class="feature-hotkeys">(C, X)</sup></div><div class="feature-value"><input id="pixel-brightness" class="feature-number-input" type="number" placeholder="0" step="0.01" min="-1" max="1" value="0"></div></li>
+        <li title="Contrast Hotkeys: &lt; & Z"><div><div class="feature-name">Contrast</div><sup class="feature-hotkeys">(&lt;, Z)</sup></div><div class="feature-value"><input id="pixel-contrast" class="feature-number-input" type="number" placeholder="0" step="0.01" min="0" max="20" value="1"></div></li>
+        <li title="Color representation Hotkeys: Y"><div><div class="feature-name">Color representation type</div><sup class="feature-hotkeys">(Y)</sup></div><div><input class="feature-button" id="feature-change-color-representation" type="button" value="Next"></div></li>
+        <li title="Pixel geometry Hotkeys: O"><div><div class="feature-name">Pixel geometry type</div><sup class="feature-hotkeys">(O)</sup></div><div><input class="feature-button" id="feature-change-pixel-geometry" type="button" value="Next"></div></li>
+        <li title="Pixel shadow Hotkeys: "><div><div class="feature-name">Pixel shadow type</div><sup class="feature-hotkeys">()</sup></div><div><input class="feature-button" id="feature-change-pixel-shadow" type="button" value="Next"></div></li>
+        <li title="Screen waving Hotkeys: P" class="display-none"><div><div class="feature-name">Screen waving</div><sup class="feature-hotkeys">(P)</sup></div><div><input class="feature-button" id="feature-pulsation" type="button" value="Next"></div></li>
+        <li title="Pixel spread Hotkeys: Shift+N & Shift+M" class="display-none"><div><div class="feature-name">Pixel Spread</div><sup class="feature-hotkeys">(Shift+N, Shift+M)</sup><div class="feature-value"><input id="pixel-spread" class="feature-number-input" type="number" placeholder="0" step="0.01" min="0" max="10" value="0"></div></li>
+        <li class="display-none"><div><div class="feature-name">Brightness color</div></div><div><input class="feature-button" id="brightness-color" type="color" value="#ffffff"></div></li>
       </ul>
     </div>
     <div class="info-category">
-      <h5>Velocity</h5>
-      <ul>
-        <li><div id="feature-change-move-speed" class="feature-hotkeys">· <button class="activate-button">F</button> & <button class="activate-button">R</button></div><div class="feature-explanation">changes the translation speed.</div></li>
-        <li><div id="feature-change-turn-speed" class="feature-hotkeys">· <button class="activate-button">Alt+F</button> & <button class="activate-button">Alt+R</button></div><div class="feature-explanation">changes the turn speed.</div></li>
-        <li><div id="feature-change-pixel-speed" class="feature-hotkeys">· <button class="activate-button">Shift+F</button> & <button class="activate-button">Shift+R</button></div><div class="feature-explanation">changes the pixel speed.</div></li>
-      </ul>
-    </div>
-    <div class="info-category">
-      <h5>Others</h5>
-      <ul>
-        <li><div id="feature-quit" class="feature-hotkeys">· <button class="activate-button">ESC</button></div><div class="feature-explanation">to quit the simulation.</div></li>
+      <h5>Velocity <div id="reset-speeds" class="reset-button"><button class="activate-button" title="All speed parameters will be reset. Hotkey: T">Reset Speeds</button></div></h5>
+      <ul class="info-options">
+        <li title="Camera speed Hotkeys: F & R"><div><div class="feature-name">Camera speed</div><sup class="feature-hotkeys">(F, R)</sup></div><div class="feature-value"><input id="feature-change-move-speed" class="feature-number-input" type="number" placeholder="0" step="0.01" min="0" max="10" value="0"></div></li>
+        <li title="Filter speed Hotkeys: Shift+F & Shift+R"><div><div class="feature-name">Filter speed</div><sup class="feature-hotkeys">(Shift+F, Shift+R)</sup></div><div class="feature-value"><input id="feature-change-pixel-speed" class="feature-number-input" type="number" placeholder="0" step="0.01" min="0" max="10" value="0"></div></li>
+        <li title="Turn speed Hotkeys: Alt+F & Alt+R" class="display-none"><div><div class="feature-name">Turn speed</div><sup class="feature-hotkeys">(Alt+F, Alt+R)</sup></div><div class="feature-value"><input id="feature-change-turn-speed" class="feature-number-input" type="number" placeholder="0" step="0.01" min="0" max="10" value="0"></div></li>
       </ul>
     </div>
     <div class="info-button">
-      <input class="btn btn-crt btn-green text-white" id="info-hide" type="button" value="Hide this panel">
+        <input title="Hotkey: ESC" class="btn btn-crt btn-green text-white" id="feature-quit" type="button" value="Quit simulation">
+    </div>
+    </br>
+    <div class="info-button">
+      <input title="Hotkey: SPACE" class="btn btn-crt btn-green text-white" id="info-hide" type="button" value="Hide this panel">
     </div>
   </section>
 </body>

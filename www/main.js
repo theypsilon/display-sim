@@ -56,17 +56,22 @@ const pixelSpreadDeo = document.getElementById('pixel-spread');
 const pixelBrigthnessDeo = document.getElementById('pixel-brightness');
 const pixelContrastDeo = document.getElementById('pixel-contrast');
 const blurLevelDeo = document.getElementById('blur-level');
-const featureChangeColorRepresentationDeo = document.getElementById('feature-change-color-representation');
-const featureChangePixelShapeDeo = document.getElementById('feature-change-pixel-shape');
-const featurePulsationDeo = document.getElementById('feature-pulsation');
+const lppDeo = document.getElementById('lines-per-pixel');
 const featureQuitDeo = document.getElementById('feature-quit');
+
+const featureChangeColorRepresentationDeo = document.getElementById('feature-change-color-representation');
+const featureChangePixelGeometryDeo = document.getElementById('feature-change-pixel-geometry');
+const featureChangePixelShadowDeo = document.getElementById('feature-change-pixel-shadow');
+const featurePulsationDeo = document.getElementById('feature-pulsation');
+
 const featureChangeMoveSpeedDeo = document.getElementById('feature-change-move-speed');
 const featureChangeTurnSpeedDeo = document.getElementById('feature-change-turn-speed');
 const featureChangePixelSpeedDeo = document.getElementById('feature-change-pixel-speed');
 const featureCameraMovementsDeo = document.getElementById('feature-camera-movements');
 const featureCameraTurnsDeo = document.getElementById('feature-camera-turns');
 const resetCameraDeo = document.getElementById('reset-camera');
-const resetPixelsDeo = document.getElementById('reset-pixels');
+const resetFiltersDeo = document.getElementById('reset-filters');
+const resetSpeedsDeo = document.getElementById('reset-speeds');
 
 const getGlCanvasDeo = () => document.getElementById(glCanvasHtmlId);
 const getPreviewDeo = () => document.getElementById(previewHtmlId);
@@ -189,8 +194,12 @@ updateInnerHtmlWithEventNumber(pixelSpreadDeo, 'app-event.change_pixel_spread');
 updateInnerHtmlWithEventNumber(pixelBrigthnessDeo, 'app-event.change_pixel_brightness');
 updateInnerHtmlWithEventNumber(pixelContrastDeo, 'app-event.change_pixel_contrast');
 updateInnerHtmlWithEventNumber(blurLevelDeo, 'app-event.change_blur_level');
+updateInnerHtmlWithEventNumber(lppDeo, 'app-event.change_lines_per_pixel');
 updateInnerHtmlWithEventNumber(lightColorDeo, 'app-event.change_light_color');
 updateInnerHtmlWithEventNumber(brightnessColorDeo, 'app-event.change_brightness_color');
+updateInnerHtmlWithEventNumber(featureChangeMoveSpeedDeo, 'app-event.change_movement_speed');
+updateInnerHtmlWithEventNumber(featureChangePixelSpeedDeo, 'app-event.change_pixel_speed');
+updateInnerHtmlWithEventNumber(featureChangeTurnSpeedDeo, 'app-event.change_turning_speed');
 function updateInnerHtmlWithEventNumber(deo, eventId) {
     if (!deo) throw new Error("Wrong deo on defining: " + eventId);
     window.addEventListener(eventId, event => {
@@ -201,7 +210,11 @@ function updateInnerHtmlWithEventNumber(deo, eventId) {
             case 'app-event.change_pixel_vertical_gap':
             case 'app-event.change_pixel_spread':
             case 'app-event.change_blur_level':
+            case 'app-event.change_lines_per_pixel':
             case 'app-event.change_pixel_contrast':
+            case 'app-event.change_movement_speed':
+            case 'app-event.change_pixel_speed':
+            case 'app-event.change_turning_speed':
                 deo.value = Math.round(event.detail * 1000.0) / 1000.0;
                 break;
             case 'app-event.change_pixel_brightness':
@@ -218,43 +231,12 @@ function updateInnerHtmlWithEventNumber(deo, eventId) {
 
 customEventOnButtonPressed(featureCameraMovementsDeo);
 customEventOnButtonPressed(featureCameraTurnsDeo);
-
-customEventOnButtonPressed(pixelHorizontalGapDeo.parentNode.parentNode);
-customEventOnButtonPressed(pixelVerticalGapDeo.parentNode.parentNode);
-customEventOnButtonPressed(pixelWidthDeo.parentNode.parentNode);
-customEventOnButtonPressed(blurLevelDeo.parentNode.parentNode);
-customEventOnButtonPressed(pixelBrigthnessDeo.parentNode.parentNode);
-customEventOnButtonPressed(pixelContrastDeo.parentNode.parentNode);
-customEventOnButtonPressed(pixelSpreadDeo.parentNode.parentNode);
-
-customEventOnButtonPressed(resetCameraDeo);
-customEventOnButtonPressed(resetPixelsDeo);
-customEventOnButtonPressed(featureChangeColorRepresentationDeo);
-customEventOnButtonPressed(featureChangePixelShapeDeo);
-customEventOnButtonPressed(featurePulsationDeo);
-
-customEventOnButtonPressed(featureChangeMoveSpeedDeo);
-customEventOnButtonPressed(featureChangeTurnSpeedDeo);
-customEventOnButtonPressed(featureChangePixelSpeedDeo);
-
-customEventOnButtonPressed(featureQuitDeo);
 function customEventOnButtonPressed(deo) {
-    deo.querySelectorAll('.activate-button').forEach(attachListenersToButtons);
-    function attachListenersToButtons(button) {
-        button.onmousedown = sendButtonEvent(button, true);
-        button.onmouseup = sendButtonEvent(button, false);
-    }
-    function sendButtonEvent(button, pressed) {
-        const buttonAction = button.innerHTML.toLowerCase();
-        return () => {
-            window.dispatchEvent(new CustomEvent('app-event.custom_input_event', {
-                detail: {
-                    value: buttonAction,
-                    kind: pressed ? "button_down" : "button_up",
-                },
-            }));
-        };
-    }
+    deo.querySelectorAll('.activate-button').forEach((button) => {
+        const eventOptions = {key: button.innerHTML.toLowerCase()};
+        button.onmousedown = () => document.dispatchEvent(new KeyboardEvent('keydown', eventOptions));
+        button.onmouseup = () => document.dispatchEvent(new KeyboardEvent('keyup', eventOptions));
+    });
 }
 
 customEventOnChange(cameraPosXDeo, "camera_pos_x", a => +a);
@@ -273,6 +255,7 @@ customEventOnChange(pixelSpreadDeo, "pixel_spread", a => +a);
 customEventOnChange(pixelHorizontalGapDeo, "pixel_horizontal_gap", a => +a);
 customEventOnChange(pixelVerticalGapDeo, "pixel_vertical_gap", a => +a);
 customEventOnChange(blurLevelDeo, "blur_level", a => +a);
+customEventOnChange(lppDeo, "lines_per_pixel", a => +a);
 customEventOnChange(pixelBrigthnessDeo, "pixel_brightness", a => +a);
 customEventOnChange(pixelContrastDeo, "pixel_brightness", a => +a);
 
@@ -292,15 +275,19 @@ function customEventOnChange(deo, kind, parse) {
     deo.onchange = changed;
 }
 
-infoHideDeo.onclick = () => {
-    if (!getGlCanvasDeo()) {
-        return;
-    }
-    visibility.hideInfoPanel();
-    window.dispatchEvent(new CustomEvent('app-event.top_message', {
-        detail: 'Show the Sim Panel again by pressing SPACE.'
-    }));
-};
+[
+    featureChangeColorRepresentationDeo,
+    featureChangePixelGeometryDeo,
+    featureChangePixelShadowDeo,
+    featurePulsationDeo,
+    featureQuitDeo,
+    resetCameraDeo,
+    resetSpeedsDeo,
+    resetFiltersDeo,
+].forEach(deo => {
+    deo.onmousedown = () => document.dispatchEvent(new KeyboardEvent('keydown', {key: deo.id}));
+    deo.onmouseup = () => document.dispatchEvent(new KeyboardEvent('keyup', {key: deo.id}));
+});
 
 document.querySelectorAll('.feature-number-input').forEach(deo => {
     [{button_text: "↑", mode: "inc", placement: "before"}, {button_text: "↓", mode: "dec", placement: "after"}].forEach(o => {
@@ -313,6 +300,16 @@ document.querySelectorAll('.feature-number-input').forEach(deo => {
         deo.parentNode.insertBefore(button, o.placement === "before" ? deo : deo.nextSibling);
     });
 });
+
+infoHideDeo.onclick = () => {
+    if (!getGlCanvasDeo()) {
+        return;
+    }
+    visibility.hideInfoPanel();
+    window.dispatchEvent(new CustomEvent('app-event.top_message', {
+        detail: 'Show the Sim Panel again by pressing SPACE.'
+    }));
+};
 
 inputFileUploadDeo.onchange = () => {
   const file = inputFileUploadDeo.files[0];

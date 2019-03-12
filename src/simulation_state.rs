@@ -62,7 +62,7 @@ pub struct Resources {
     pub texture_buffer_stack: std::cell::RefCell<TextureBufferStack>,
     pub timers: SimulationTimers,
     pub initial_parameters: InitialParameters,
-    pub buttons: Buttons,
+    pub launch_screenshot: bool,
 }
 
 pub struct SimulationTimers {
@@ -95,6 +95,7 @@ pub struct CrtFilters {
     pub showing_pixels_pulse: bool,
     pub showing_solid_background: bool,
     pub showing_diffuse_foreground: bool,
+    pub pixel_shadow_kind: usize,
 }
 
 pub enum ColorChannels {
@@ -120,50 +121,11 @@ impl CrtFilters {
             change_speed: change_speed,
             pixels_pulse: 0.0,
             pixels_geometry_kind: PixelsGeometryKind::Squares,
+            pixel_shadow_kind: 1,
             color_channels: ColorChannels::Combined,
             showing_pixels_pulse: false,
             showing_diffuse_foreground: true,
             showing_solid_background: true,
-        }
-    }
-}
-
-pub struct Buttons {
-    pub speed_up: BooleanButton,
-    pub speed_down: BooleanButton,
-    pub mouse_click: BooleanButton,
-    pub increase_blur: BooleanButton,
-    pub decrease_blur: BooleanButton,
-    pub increase_lpp: BooleanButton, // lines per pixel
-    pub decrease_lpp: BooleanButton, // lines per pixel
-    pub toggle_split_colors: BooleanButton,
-    pub toggle_pixels_geometry_kind: BooleanButton,
-    pub toggle_diffuse_foreground: BooleanButton,
-    pub toggle_solid_background: BooleanButton,
-    pub showing_pixels_pulse: BooleanButton,
-    pub esc: BooleanButton,
-    pub space: BooleanButton,
-    pub screenshot: BooleanButton,
-}
-
-impl Buttons {
-    pub fn new() -> Buttons {
-        Buttons {
-            speed_up: BooleanButton::new(),
-            speed_down: BooleanButton::new(),
-            mouse_click: BooleanButton::new(),
-            increase_blur: BooleanButton::new(),
-            decrease_blur: BooleanButton::new(),
-            increase_lpp: BooleanButton::new(),
-            decrease_lpp: BooleanButton::new(),
-            toggle_split_colors: BooleanButton::new(),
-            toggle_pixels_geometry_kind: BooleanButton::new(),
-            toggle_diffuse_foreground: BooleanButton::new(),
-            toggle_solid_background: BooleanButton::new(),
-            showing_pixels_pulse: BooleanButton::new(),
-            esc: BooleanButton::new(),
-            space: BooleanButton::new(),
-            screenshot: BooleanButton::new(),
         }
     }
 }
@@ -199,19 +161,11 @@ pub struct Input {
     pub rotate_right: bool,
     pub increase_camera_zoom: bool,
     pub decrease_camera_zoom: bool,
-    pub speed_up: bool,
-    pub speed_down: bool,
     pub reset_speeds: bool,
     pub reset_position: bool,
     pub reset_filters: bool,
-    pub increase_blur: bool,
-    pub decrease_blur: bool,
-    pub increase_lpp: bool, // lines per pixel
-    pub decrease_lpp: bool, // lines per pixel
     pub shift: bool,
     pub alt: bool,
-    pub space: bool,
-    pub esc: bool,
     pub mouse_left_click: bool,
     pub mouse_position_x: i32,
     pub mouse_position_y: i32,
@@ -226,12 +180,22 @@ pub struct Input {
     pub decrease_bright: bool,
     pub increase_contrast: bool,
     pub decrease_contrast: bool,
-    pub toggle_split_colors: bool,
-    pub toggle_pixels_geometry_kind: bool,
-    pub toggle_diffuse_foreground: bool,
-    pub toggle_solid_background: bool,
-    pub showing_pixels_pulse: bool,
-    pub screenshot: bool,
+    pub toggle_pixels_shadow_kind: BooleanButton,
+    pub speed_up: BooleanButton,
+    pub speed_down: BooleanButton,
+    pub mouse_click: BooleanButton,
+    pub increase_blur: BooleanButton,
+    pub decrease_blur: BooleanButton,
+    pub increase_lpp: BooleanButton, // lines per pixel
+    pub decrease_lpp: BooleanButton, // lines per pixel
+    pub toggle_split_colors: BooleanButton,
+    pub toggle_pixels_geometry_kind: BooleanButton,
+    pub toggle_diffuse_foreground: BooleanButton,
+    pub toggle_solid_background: BooleanButton,
+    pub showing_pixels_pulse: BooleanButton,
+    pub esc: BooleanButton,
+    pub space: BooleanButton,
+    pub screenshot: BooleanButton,
 }
 
 impl Input {
@@ -253,19 +217,11 @@ impl Input {
             turn_down: false,
             rotate_left: false,
             rotate_right: false,
-            speed_up: false,
-            speed_down: false,
             reset_speeds: false,
             reset_position: false,
             reset_filters: false,
-            increase_blur: false,
-            decrease_blur: false,
-            increase_lpp: false, // lines per pixel
-            decrease_lpp: false, // lines per pixel
             shift: false,
             alt: false,
-            space: false,
-            esc: false,
             mouse_left_click: false,
             mouse_position_x: -1,
             mouse_position_y: -1,
@@ -280,12 +236,22 @@ impl Input {
             decrease_bright: false,
             increase_contrast: false,
             decrease_contrast: false,
-            toggle_split_colors: false,
-            toggle_pixels_geometry_kind: false,
-            toggle_diffuse_foreground: false,
-            toggle_solid_background: false,
-            showing_pixels_pulse: false,
-            screenshot: false,
+            toggle_pixels_shadow_kind: BooleanButton::new(),
+            speed_up: BooleanButton::new(),
+            speed_down: BooleanButton::new(),
+            mouse_click: BooleanButton::new(),
+            increase_blur: BooleanButton::new(),
+            decrease_blur: BooleanButton::new(),
+            increase_lpp: BooleanButton::new(),
+            decrease_lpp: BooleanButton::new(),
+            toggle_split_colors: BooleanButton::new(),
+            toggle_pixels_geometry_kind: BooleanButton::new(),
+            toggle_diffuse_foreground: BooleanButton::new(),
+            toggle_solid_background: BooleanButton::new(),
+            showing_pixels_pulse: BooleanButton::new(),
+            esc: BooleanButton::new(),
+            space: BooleanButton::new(),
+            screenshot: BooleanButton::new(),
         })
     }
 }

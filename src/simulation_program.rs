@@ -10,7 +10,7 @@ use crate::wasm_error::{WasmResult, WasmError};
 use crate::camera::{CameraDirection, Camera};
 use crate::dispatch_event::{dispatch_event, dispatch_event_with};
 use crate::web_utils::{now, window};
-use crate::pixels_render::{PixelsRender, PixelsGeometryKind, PixelsShadowKind, PixelsUniform};
+use crate::pixels_render::{PixelsRender, PixelsGeometryKind, PixelsUniform};
 use crate::blur_render::{BlurRender};
 use crate::internal_resolution_render::InternalResolutionRender;
 use crate::rgb_render::RgbRender;
@@ -18,7 +18,7 @@ use crate::background_render::BackgroundRender;
 use crate::event_listeners::{set_event_listeners};
 use crate::simulation_state::{
     StateOwner, Resources, CrtFilters, SimulationTimers, InitialParameters, ColorChannels,
-    Input, AnimationData, Buttons
+    Input, AnimationData
 };
 use crate::render_types::{TextureBufferStack};
 use crate::action_bindings::on_button_action;
@@ -102,7 +102,7 @@ fn load_resources(gl: &WebGl2RenderingContext, animation: AnimationData) -> Wasm
         animation,
         camera,
         crt_filters,
-        buttons: Buttons::new()
+        launch_screenshot: false,
     };
     change_frontend_input_values(&res)?;
     Ok(res)
@@ -119,6 +119,10 @@ fn change_frontend_input_values(res: &Resources) -> WasmResult<()> {
     dispatch_event_with("app-event.change_brightness_color", &res.crt_filters.brightness_color.into())?;
     dispatch_event_with("app-event.change_camera_zoom", &res.camera.zoom.into())?;
     dispatch_event_with("app-event.change_blur_level", &(res.crt_filters.blur_passes as i32).into())?;
+    dispatch_event_with("app-event.change_lines_per_pixel", &(res.crt_filters.lines_per_pixel as i32).into())?;
+    dispatch_event_with("app-event.change_movement_speed", &((res.camera.movement_speed / res.initial_parameters.initial_movement_speed) as i32).into())?;
+    dispatch_event_with("app-event.change_pixel_speed", &((res.crt_filters.change_speed / PIXEL_MANIPULATION_BASE_SPEED) as i32).into())?;
+    dispatch_event_with("app-event.change_turning_speed", &((res.camera.turning_speed / TURNING_BASE_SPEED) as i32).into())?;
     Ok(())
 }
 
@@ -150,17 +154,22 @@ fn calculate_far_away_position(animation: &AnimationData) -> f32 {
 
 fn pre_process_input(input: &mut Input, resources: &Resources) -> WasmResult<()> {
     input.now = now().unwrap_or(resources.timers.last_time);
-    match input.custom_event.kind.as_ref() {
-        "button_down" => {
-            let button = input.custom_event.value.as_string().ok_or("invalid-botton-down")?;
-            on_button_action(input, button.as_ref(), true);
-        },
-        "button_up" => {
-            let button = input.custom_event.value.as_string().ok_or("invalid-botton-up")?;
-            on_button_action(input, button.as_ref(), false);
-        },
-        _ => {}
-    }
+    input.toggle_pixels_shadow_kind.track_input();
+    input.speed_up.track_input();
+    input.speed_down.track_input();
+    input.mouse_click.track_input();
+    input.increase_blur.track_input();
+    input.decrease_blur.track_input();
+    input.increase_lpp.track_input();
+    input.decrease_lpp.track_input();
+    input.toggle_split_colors.track_input();
+    input.toggle_pixels_geometry_kind.track_input();
+    input.toggle_diffuse_foreground.track_input();
+    input.toggle_solid_background.track_input();
+    input.showing_pixels_pulse.track_input();
+    input.esc.track_input();
+    input.space.track_input();
+    input.screenshot.track_input();
     Ok(())
 }
 
@@ -180,23 +189,21 @@ fn update_simulation(res: &mut Resources, input: &Input) -> WasmResult<bool> {
     update_blur(res, input)?;
     update_lpp(res, input)?;
 
-    res.buttons.esc.track(input.esc);
-    if res.buttons.esc.is_just_pressed() {
+    if input.esc.is_just_pressed() {
         dispatch_event("app-event.exiting_session")?;
         return Ok(false);
     }
 
-    res.buttons.space.track(input.space);
-    if res.buttons.space.is_just_pressed() {
+    if input.space.is_just_pressed() {
         dispatch_event("app-event.toggle_info_panel")?;
     }
 
-    res.buttons.screenshot.track(input.screenshot);
 
     update_pixel_pulse(dt, res, input)?;
     update_crt_filters(dt, res, input)?;
     update_speeds(res, input)?;
     update_camera(dt, res, input)?;
+    res.launch_screenshot = input.screenshot.is_just_released();
 
     Ok(true)
 }
@@ -293,19 +300,26 @@ fn update_colors(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> 
 
 fn update_blur(res: &mut Resources, input: &Input) -> WasmResult<()> {
     let last_blur_passes = res.crt_filters.blur_passes;
-    res.buttons.increase_blur.track(input.increase_blur);
-    res.buttons.decrease_blur.track(input.decrease_blur);
-    if res.buttons.increase_blur.is_just_pressed() {
+    if input.increase_blur.is_just_pressed() {
         res.crt_filters.blur_passes += 1;
     }
-    if res.buttons.decrease_blur.is_just_pressed() && res.crt_filters.blur_passes > 0 {
-        res.crt_filters.blur_passes -= 1;
+    if input.decrease_blur.is_just_pressed() {
+        if res.crt_filters.blur_passes > 0 {
+            res.crt_filters.blur_passes -= 1;
+        } else {
+            dispatch_event_with("app-event.top_message", &"Minimum value is 0".into())?;
+        }
     }
     if input.custom_event.kind.as_ref() as &str == "event_kind:blur_level" {
         res.crt_filters.blur_passes = input.custom_event.value.as_f64().ok_or("it should be a number")? as usize;
+        dispatch_event_with("app-event.change_blur_level", &(res.crt_filters.blur_passes as i32).into())?;
     }
-
+    if res.crt_filters.blur_passes > 100 {
+        res.crt_filters.blur_passes = 100;
+        dispatch_event_with("app-event.top_message", &"Maximum value is 100".into())?;
+    }
     if last_blur_passes != res.crt_filters.blur_passes {
+        console!(log. "blur_level changed!");
         dispatch_event_with("app-event.top_message", &("Blur level: ".to_string() + &res.crt_filters.blur_passes.to_string()).into())?;
         dispatch_event_with("app-event.change_blur_level", &(res.crt_filters.blur_passes as i32).into())?;
     }
@@ -315,21 +329,23 @@ fn update_blur(res: &mut Resources, input: &Input) -> WasmResult<()> {
 // lines per pixel
 fn update_lpp(res: &mut Resources, input: &Input) -> WasmResult<()> {
     let last_lpp = res.crt_filters.lines_per_pixel;
-    res.buttons.increase_lpp.track(input.increase_lpp);
-    res.buttons.decrease_lpp.track(input.decrease_lpp);
-    if res.buttons.increase_lpp.is_just_pressed() {
+    if input.increase_lpp.is_just_pressed() {
         res.crt_filters.lines_per_pixel += 1;
     }
-    if res.buttons.decrease_lpp.is_just_pressed() && res.crt_filters.lines_per_pixel > 0 {
+    if input.decrease_lpp.is_just_pressed() && res.crt_filters.lines_per_pixel > 0 {
         res.crt_filters.lines_per_pixel -= 1;
-    }
-    if res.crt_filters.lines_per_pixel < 1 {
-        res.crt_filters.lines_per_pixel = 1;
     }
     if input.custom_event.kind.as_ref() as &str == "event_kind:lines_per_pixel" {
         res.crt_filters.lines_per_pixel = input.custom_event.value.as_f64().ok_or("it should be a number")? as usize;
+        dispatch_event_with("app-event.change_lines_per_pixel", &(res.crt_filters.lines_per_pixel as i32).into())?;
     }
-
+    if res.crt_filters.lines_per_pixel < 1 {
+        res.crt_filters.lines_per_pixel = 1;
+        dispatch_event_with("app-event.top_message", &"Minimum value is 1".into())?;
+    } else if res.crt_filters.lines_per_pixel > 20 {
+        res.crt_filters.lines_per_pixel = 20;
+        dispatch_event_with("app-event.top_message", &"Maximum value is 20".into())?;
+    }
     if last_lpp != res.crt_filters.lines_per_pixel {
         dispatch_event_with("app-event.top_message", &("Lines per pixel: ".to_string() + &res.crt_filters.lines_per_pixel.to_string()).into())?;
         dispatch_event_with("app-event.change_lines_per_pixel", &(res.crt_filters.lines_per_pixel as i32).into())?;
@@ -339,8 +355,7 @@ fn update_lpp(res: &mut Resources, input: &Input) -> WasmResult<()> {
 
 
 fn update_pixel_pulse(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> {
-    res.buttons.showing_pixels_pulse.track(input.showing_pixels_pulse);
-    if res.buttons.showing_pixels_pulse.is_just_pressed() {
+    if input.showing_pixels_pulse.is_just_pressed() {
         res.crt_filters.showing_pixels_pulse = !res.crt_filters.showing_pixels_pulse;
         dispatch_event_with("app-event.top_message", &(if res.crt_filters.showing_pixels_pulse {"Screen wave ON."} else {"Screen wave OFF."}).into())?;
         dispatch_event_with("app-event.showing_pixels_pulse", &res.crt_filters.showing_pixels_pulse.into())?;
@@ -360,25 +375,23 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
         res.crt_filters = CrtFilters::new(PIXEL_MANIPULATION_BASE_SPEED);
         res.crt_filters.cur_pixel_width = res.initial_parameters.initial_pixel_width;
         change_frontend_input_values(res)?;
+        dispatch_event_with("app-event.top_message", &"All filter options have been reset.".into())?;
         return Ok(());
     }
 
-    res.buttons.toggle_diffuse_foreground.track(input.toggle_diffuse_foreground);
-    if res.buttons.toggle_diffuse_foreground.is_just_pressed() {
+    if input.toggle_diffuse_foreground.is_just_pressed() {
         res.crt_filters.showing_diffuse_foreground = !res.crt_filters.showing_diffuse_foreground;
         let message = if res.crt_filters.showing_diffuse_foreground { "Activated" } else { "Deactivated"};
         dispatch_event_with("app-event.top_message", &format!("{} diffuse foreground.", message).into())?;
     }
 
-    res.buttons.toggle_solid_background.track(input.toggle_solid_background);
-    if res.buttons.toggle_solid_background.is_just_pressed() {
+    if input.toggle_solid_background.is_just_pressed() {
         res.crt_filters.showing_solid_background = !res.crt_filters.showing_solid_background;
         let message = if res.crt_filters.showing_solid_background { "Activated" } else { "Deactivated"};
         dispatch_event_with("app-event.top_message", &format!("{} solid background.", message).into())?;
     }
 
-    res.buttons.toggle_split_colors.track(input.toggle_split_colors);
-    if res.buttons.toggle_split_colors.is_just_pressed() {
+    if input.toggle_split_colors.is_just_pressed() {
         res.crt_filters.color_channels = match res.crt_filters.color_channels {
             ColorChannels::Combined => ColorChannels::Overlapping,
             ColorChannels::Overlapping => ColorChannels::SplitHorizontal,
@@ -394,8 +407,7 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
         dispatch_event_with("app-event.top_message", &("Pixel color representation: ".to_string() + message + ".").into())?;
     }
 
-    res.buttons.toggle_pixels_geometry_kind.track(input.toggle_pixels_geometry_kind);
-    if res.buttons.toggle_pixels_geometry_kind.is_just_released() {
+    if input.toggle_pixels_geometry_kind.is_just_released() {
         res.crt_filters.pixels_geometry_kind = match res.crt_filters.pixels_geometry_kind {
             PixelsGeometryKind::Squares => PixelsGeometryKind::Cubes,
             PixelsGeometryKind::Cubes => PixelsGeometryKind::Squares
@@ -406,6 +418,14 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
         };
         dispatch_event_with("app-event.top_message", &("Showing pixels as ".to_string() + message + ".").into())?;
         dispatch_event_with("app-event.showing_pixels_as", &message.into())?;
+    }
+
+    if input.toggle_pixels_shadow_kind.is_just_released() {
+        res.crt_filters.pixel_shadow_kind += 1;
+        if res.crt_filters.pixel_shadow_kind >= res.pixels_render.shadows_len() {
+            res.crt_filters.pixel_shadow_kind = 0;
+        }
+        dispatch_event_with("app-event.top_message", &("Showing next pixel shadow: ".to_string() + &res.crt_filters.pixel_shadow_kind.to_string() + ".").into())?;
     }
 
     let pixel_velocity = dt * res.crt_filters.change_speed;
@@ -439,23 +459,24 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
 }
 
 fn update_speeds(res: &mut Resources, input: &Input) -> WasmResult<()> {
-    res.buttons.speed_up.track(input.speed_up);
-    res.buttons.speed_down.track(input.speed_down);
     if input.alt {
-        change_speed(&res.buttons, &mut res.camera.turning_speed, TURNING_BASE_SPEED, "Turning camera speed: ")?;
+        //change_speed(&input, &mut res.camera.turning_speed, TURNING_BASE_SPEED, "Turning camera speed: ")?;
     } else if input.shift {
-        change_speed(&res.buttons, &mut res.crt_filters.change_speed, PIXEL_MANIPULATION_BASE_SPEED, "Pixel manipulation speed: ")?;
+        change_speed(&input, &mut res.crt_filters.change_speed, PIXEL_MANIPULATION_BASE_SPEED, "Pixel manipulation speed: ", "app-event.change_pixel_speed")?;
     } else {
-        change_speed(&res.buttons, &mut res.camera.movement_speed, res.initial_parameters.initial_movement_speed, "Translation camera speed: ")?;
+        change_speed(&input, &mut res.camera.turning_speed, TURNING_BASE_SPEED, "Turning camera speed: ", "app-event.change_turning_speed")?;
+        change_speed(&input, &mut res.camera.movement_speed, res.initial_parameters.initial_movement_speed, "Translation camera speed: ", "app-event.change_movement_speed")?;
     }
 
-    fn change_speed(buttons: &Buttons, cur_speed: &mut f32, base_speed: f32, top_message: &str) -> WasmResult<()> {
-        if buttons.speed_up.is_just_pressed() && *cur_speed < 10000.0 { *cur_speed *= 2.0; }
-        if buttons.speed_down.is_just_pressed() && *cur_speed > 0.01 { *cur_speed /= 2.0; }
-        if buttons.speed_up.is_just_pressed() || buttons.speed_down.is_just_pressed() {
+    fn change_speed(input: &Input, cur_speed: &mut f32, base_speed: f32, top_message: &str, event_id: &str) -> WasmResult<()> {
+        let before_speed = *cur_speed;
+        if input.speed_up.is_just_pressed() && *cur_speed < 10000.0 { *cur_speed *= 2.0; }
+        if input.speed_down.is_just_pressed() && *cur_speed > 0.01 { *cur_speed /= 2.0; }
+        if *cur_speed != before_speed {
             let speed = (*cur_speed / base_speed * 1000.0).round() / 1000.0;
             let message = top_message.to_string() + &speed.to_string() + &"x".to_string();
             dispatch_event_with("app-event.top_message", &message.into())?;
+            dispatch_event_with(event_id, &speed.into())?;
         }
         Ok(())
     }
@@ -465,7 +486,7 @@ fn update_speeds(res: &mut Resources, input: &Input) -> WasmResult<()> {
         res.camera.movement_speed = res.initial_parameters.initial_movement_speed;
         res.crt_filters.change_speed = PIXEL_MANIPULATION_BASE_SPEED;
         dispatch_event_with("app-event.top_message", &"All speeds have been reset.".into())?;
-        dispatch_event("app-event.speed_reset")?;
+        change_frontend_input_values(res)?;
     }
     Ok(())
 }
@@ -486,12 +507,11 @@ fn update_camera(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> 
     if input.rotate_left { res.camera.rotate(CameraDirection::Left, dt); }
     if input.rotate_right { res.camera.rotate(CameraDirection::Right, dt); }
 
-    res.buttons.mouse_click.track(input.mouse_left_click);
-    if res.buttons.mouse_click.is_just_pressed() {
+    if input.mouse_click.is_just_pressed() {
         dispatch_event("app-event.request_pointer_lock")?;
-    } else if res.buttons.mouse_click.is_activated() {
+    } else if input.mouse_click.is_activated() {
         res.camera.drag(input.mouse_position_x, input.mouse_position_y);
-    } else if res.buttons.mouse_click.is_just_released() {
+    } else if input.mouse_click.is_just_released() {
         dispatch_event("app-event.exit_pointer_lock")?;
     }
 
@@ -567,6 +587,7 @@ fn update_camera(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> 
         res.camera.set_axis_up(glm::vec3(0.0, 1.0, 0.0));
         res.camera.zoom = 45.0;
         dispatch_event_with("app-event.change_camera_zoom", &res.camera.zoom.into())?;
+        dispatch_event_with("app-event.top_message", &"The camera have been reset.".into())?;
     }
 
     res.camera.update_view()
@@ -643,14 +664,14 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
                 }
                 //gl.blend_func(WebGl2RenderingContext::SRC_ALPHA, WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA);
                 res.pixels_render.render(gl, PixelsUniform {
-                    shadow_kind: PixelsShadowKind::Diffuse,
+                    shadow_kind: res.crt_filters.pixel_shadow_kind,
                     geometry_kind: res.crt_filters.pixels_geometry_kind,
                     view: res.camera.get_view().as_mut_slice(),
                     projection: res.camera.get_projection(
                         res.animation.viewport_width as f32,
                         res.animation.viewport_height as f32,
                     ).as_mut_slice(),
-                    ambient_strength: match res.crt_filters.pixels_geometry_kind { PixelsGeometryKind::Squares => 1.0, PixelsGeometryKind::Cubes => 0.5},
+                    ambient_strength: match res.crt_filters.pixels_geometry_kind { PixelsGeometryKind::Squares => 1.0   , PixelsGeometryKind::Cubes => 0.5},
                     contrast_factor: res.crt_filters.extra_contrast,
                     light_color: &mut light_color,
                     extra_light: &mut extra_light,
@@ -693,7 +714,7 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
 
     if res.crt_filters.showing_solid_background {
         res.pixels_render.render(gl, PixelsUniform {
-            shadow_kind: PixelsShadowKind::Solid,
+            shadow_kind: 0,
             geometry_kind: res.crt_filters.pixels_geometry_kind,
             view: res.camera.get_view().as_mut_slice(),
             projection: res.camera.get_projection(
@@ -735,7 +756,7 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
         res.blur_render.render(&gl, res.crt_filters.blur_passes, &mut buffer_stack)?;
     }
 
-    if res.buttons.screenshot.is_just_released() {
+    if res.launch_screenshot {
         let multiplier : i32 = res.internal_resolution_multiplier;
         let width = res.animation.viewport_width as i32 * multiplier;
         let height = res.animation.viewport_height as i32 * multiplier;

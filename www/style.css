@@ -169,12 +169,10 @@ canvas:hover {
 
 #info-panel li {
     text-align: left;
-    margin-bottom: 10px;
 }
 
 #info-panel li div {
     display: inline;
-    margin-right: 5px;
 }
 
 .info-button {
@@ -214,16 +212,42 @@ canvas:hover {
     margin-right: 0.1em;
 }
 
-.feature-hotkeys {
+.feature-name {
     font-weight: bold;
+    margin-left: 5px;
 }
 
-.feature-value {
-    float: right;
+.feature-hotkeys {
+    font-size: 70%;
+    margin-left: 3px;
+}
+
+#camera-zoom-parent {
+    margin-left: 30px;
+}
+
+.selected-feature {
+    border: 2px solid red;
+}
+
+.info-options > li {
+    margin-bottom: 0px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.info-options > li:nth-child(even) {
+    background: #EEE;
+    height: 100%;
 }
 
 .feature-number-input {
     width: 40px;
+}
+
+.feature-button {
+    width: 60px;
+    height: 26px;
 }
 
 .button-inc-dec {
