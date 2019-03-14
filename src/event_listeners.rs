@@ -45,7 +45,7 @@ pub fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<Owned
         Closure::wrap(Box::new(move |event: JsValue| {
             if let Ok(e) = event.dyn_into::<MouseEvent>() {
                 let mut input = state_owner.input.borrow_mut();
-                input.mouse_left_click = e.buttons() == 1;
+                input.mouse_click.input = e.buttons() == 1;
             }
         }))
     };
@@ -55,7 +55,7 @@ pub fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<Owned
         Closure::wrap(Box::new(move |event: JsValue| {
             if event.dyn_into::<MouseEvent>().is_ok() {
                 let mut input = state_owner.input.borrow_mut();
-                input.mouse_left_click = false;
+                input.mouse_click.input = false;
             }
         }))
     };
