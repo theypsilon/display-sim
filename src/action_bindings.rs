@@ -3,7 +3,11 @@ use crate::console;
 
 pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
     match button_action {
-        "," | "feature-change-screen-layering-type" => input.next_layering_kind.input = pressed,
+        "," | "feature-change-screen-layering-type" => if !input.input_focused { input.next_layering_kind.input = pressed},
+        "." | "feature-change-pixel-shadow" => if !input.input_focused { input.toggle_pixels_shadow_kind.input = pressed},
+        "+" => if !input.input_focused { input.rotate_left = pressed },
+        "-" => if !input.input_focused { input.rotate_right = pressed },
+        "input_focused" => input.input_focused = pressed,
         "a" => input.walk_left = pressed,
         "d" => input.walk_right = pressed,
         "w" => input.walk_forward = pressed,
@@ -14,8 +18,6 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
         "arrowright" | "→" | "▶" => input.turn_right = pressed,
         "arrowup" | "↑" | "▲" => input.turn_up = pressed,
         "arrowdown" | "↓" | "▼" => input.turn_down = pressed,
-        "+" => input.rotate_left = pressed,
-        "-" => input.rotate_right = pressed,
         "f" | "feature-change-move-speed-inc" => input.speed_up.input = pressed,
         "r" | "feature-change-move-speed-dec" => input.speed_down.input = pressed,
         "feature-change-pixel-speed-inc" => {
@@ -43,13 +45,11 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
         "x" | "pixel-brightness-dec" => input.decrease_bright = pressed,
         "y" | "feature-change-color-representation" => input.next_color_representation_kind.input = pressed,
         "o" | "feature-change-pixel-geometry" => input.next_pixel_geometry_kind.input = pressed,
-        "." | "feature-change-pixel-shadow" => input.toggle_pixels_shadow_kind.input = pressed,   
         "l" | "feature-change-screen-curvature" => input.showing_pixels_pulse.input = pressed,
         "g" | "lines-per-pixel-inc" => input.increase_lpp.input = pressed,
         "h" | "lines-per-pixel-dec" => input.decrease_lpp.input = pressed,
         "shift" => input.shift = pressed,
         "alt" => input.alt = pressed,
-        "input_focused" => input.input_focused = pressed,
         " " | "space" => input.space.input = pressed,
         "escape" | "esc" | "feature-quit" => input.esc.input = pressed,
         "f4" => input.screenshot.input = pressed,

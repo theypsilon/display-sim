@@ -378,7 +378,7 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
         return Ok(());
     }
 
-    if !input.input_focused && input.next_layering_kind.is_just_pressed() {
+    if input.next_layering_kind.is_just_pressed() {
         res.crt_filters.layering_kind = ((res.crt_filters.layering_kind as i32 + 1) % RenderLayers::LENGTH as i32).into();
         let mut message: &'static str;
         match res.crt_filters.layering_kind {
@@ -445,7 +445,7 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
         dispatch_event_with("app-event.showing_pixels_as", &message.into())?;
     }
 
-    if !input.input_focused && input.toggle_pixels_shadow_kind.is_just_released() {
+    if input.toggle_pixels_shadow_kind.is_just_released() {
         res.crt_filters.pixel_shadow_kind += 1;
         if res.crt_filters.pixel_shadow_kind >= res.pixels_render.shadows_len() {
             res.crt_filters.pixel_shadow_kind = 0;
@@ -529,10 +529,8 @@ fn update_camera(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> 
     if input.turn_up { res.camera.turn(CameraDirection::Up, dt); }
     if input.turn_down { res.camera.turn(CameraDirection::Down, dt); }
 
-    if input.input_focused == false { // Because it's hotkey '+' '-', writitng on fields can get messy.
-        if input.rotate_left { res.camera.rotate(CameraDirection::Left, dt); }
-        if input.rotate_right { res.camera.rotate(CameraDirection::Right, dt); }
-    }
+    if input.rotate_left { res.camera.rotate(CameraDirection::Left, dt); }
+    if input.rotate_right { res.camera.rotate(CameraDirection::Right, dt); }
 
     if input.mouse_click.is_just_pressed() {
         dispatch_event("app-event.request_pointer_lock")?;
