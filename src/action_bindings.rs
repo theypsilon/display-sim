@@ -50,6 +50,7 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
         "h" | "lines-per-pixel-dec" => input.decrease_lpp.input = pressed,
         "shift" => input.shift = pressed,
         "alt" => input.alt = pressed,
+        "input_focused" => input.input_focused = pressed,
         " " | "space" => input.space.input = pressed,
         "escape" | "esc" | "feature-quit" => input.esc.input = pressed,
         "f4" => input.screenshot.input = pressed,

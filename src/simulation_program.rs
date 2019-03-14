@@ -504,8 +504,10 @@ fn update_camera(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> 
     if input.turn_up { res.camera.turn(CameraDirection::Up, dt); }
     if input.turn_down { res.camera.turn(CameraDirection::Down, dt); }
 
-    if input.rotate_left { res.camera.rotate(CameraDirection::Left, dt); }
-    if input.rotate_right { res.camera.rotate(CameraDirection::Right, dt); }
+    if input.input_focused == false { // Because it's hotkey '+' '-', writitng on fields can get messy.
+        if input.rotate_left { res.camera.rotate(CameraDirection::Left, dt); }
+        if input.rotate_right { res.camera.rotate(CameraDirection::Right, dt); }
+    }
 
     if input.mouse_click.is_just_pressed() {
         dispatch_event("app-event.request_pointer_lock")?;

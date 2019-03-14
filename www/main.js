@@ -301,6 +301,12 @@ document.querySelectorAll('.feature-number-input').forEach(deo => {
     });
 });
 
+document.querySelectorAll('input').forEach(deo => {
+    const eventOptions = {key: 'input_focused'};
+    deo.addEventListener('focus', () => document.dispatchEvent(new KeyboardEvent('keydown', eventOptions)));
+    deo.addEventListener('blur', () => document.dispatchEvent(new KeyboardEvent('keyup', eventOptions)));
+});
+
 infoHideDeo.onclick = () => {
     if (!getGlCanvasDeo()) {
         return;
