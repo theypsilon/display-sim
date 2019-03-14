@@ -3,8 +3,10 @@ use crate::console;
 
 pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
     match button_action {
-        "," | "feature-change-screen-layering-type" => if !input.input_focused { input.next_layering_kind.input = pressed},
-        "." | "feature-change-pixel-shadow" => if !input.input_focused { input.toggle_pixels_shadow_kind.input = pressed},
+        "," => if !input.input_focused { input.next_layering_kind.input = pressed},
+        "." => if !input.input_focused { input.toggle_pixels_shadow_kind.input = pressed},
+        "feature-change-screen-layering-type" => input.next_layering_kind.input = pressed,
+        "feature-change-pixel-shadow" => input.toggle_pixels_shadow_kind.input = pressed,
         "+" => if !input.input_focused { input.rotate_left = pressed },
         "-" => if !input.input_focused { input.rotate_right = pressed },
         "input_focused" => input.input_focused = pressed,
