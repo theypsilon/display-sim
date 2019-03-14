@@ -94,21 +94,21 @@ impl PixelsRender {
         gl.vertex_attrib_divisor(a_offset_position, 1);
 
         fn calc_with_log(number: usize, count: usize) -> f64 {
-            let mut result = log(TEXTURE_SIZE - number);
-            for i in 0..count {
-                result *= result;
-            }
-            result
+            let result = log(TEXTURE_SIZE - number);
+            pow(result, count)
         }
         fn log(number: usize) -> f64 {
             f64::log(number as f64, (TEXTURE_SIZE / 2) as f64)
         }
         fn calc_diamond(number: usize, count: usize) -> f64 {
-            let mut result = 1.0 - ((number - TEXTURE_SIZE / 2) as f64 / (TEXTURE_SIZE as f64 / 2.0));
+            let result = 1.0 - ((number - TEXTURE_SIZE / 2) as f64 / (TEXTURE_SIZE as f64 / 2.0));
+            pow(result, count)
+        }
+        fn pow(mut number: f64, count: usize) -> f64 {
             for i in 0..count {
-                result *= result;
+                number *= number;
             }
-            result
+            number
         }
 
         let mut shadows = Vec::new();
@@ -117,6 +117,18 @@ impl PixelsRender {
         shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 1) * calc_with_log(j, 1) * 255.0) as u8)?);
         shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 2) * calc_with_log(j, 2) * 255.0) as u8)?);
         shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 3) * calc_with_log(j, 3) * 255.0) as u8)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| ((calc_with_log(i, 0) * 0.9 + calc_with_log(j, 0) * 0.1) * 255.0) as u8)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| ((calc_with_log(i, 1) * 0.9 + calc_with_log(j, 1) * 0.1) * 255.0) as u8)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| ((calc_with_log(i, 2) * 0.9 + calc_with_log(j, 2) * 0.1) * 255.0) as u8)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| ((calc_with_log(i, 3) * 0.9 + calc_with_log(j, 3) * 0.1) * 255.0) as u8)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| ((calc_with_log(i, 0) * 0.8 + calc_with_log(j, 0) * 0.2) * 255.0) as u8)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| ((calc_with_log(i, 1) * 0.8 + calc_with_log(j, 1) * 0.2) * 255.0) as u8)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| ((calc_with_log(i, 2) * 0.8 + calc_with_log(j, 2) * 0.2) * 255.0) as u8)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| ((calc_with_log(i, 3) * 0.8 + calc_with_log(j, 3) * 0.2) * 255.0) as u8)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| ((calc_with_log(i, 0) * 0.5 + calc_with_log(j, 0) * 0.5) * 255.0) as u8)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| ((calc_with_log(i, 1) * 0.5 + calc_with_log(j, 1) * 0.5) * 255.0) as u8)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| ((calc_with_log(i, 2) * 0.5 + calc_with_log(j, 2) * 0.5) * 255.0) as u8)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| ((calc_with_log(i, 3) * 0.5 + calc_with_log(j, 3) * 0.5) * 255.0) as u8)?);
         shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 0) * 255.0) as u8)?);
         shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 1) * 255.0) as u8)?);
         shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 2) * 255.0) as u8)?);
