@@ -3,8 +3,7 @@ use crate::console;
 
 pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
     match button_action {
-        "," => input.toggle_diffuse_foreground.input = pressed,
-        "." => input.toggle_solid_background.input = pressed,
+        "," | "feature-change-screen-layering-type" => input.next_layering_kind.input = pressed,
         "a" => input.walk_left = pressed,
         "d" => input.walk_right = pressed,
         "w" => input.walk_forward = pressed,
@@ -42,10 +41,10 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
         "z" | "pixel-contrast-dec" => input.decrease_contrast = pressed,
         "c" | "pixel-brightness-inc" => input.increase_bright = pressed,
         "x" | "pixel-brightness-dec" => input.decrease_bright = pressed,
-        "y" | "feature-change-color-representation" => input.toggle_split_colors.input = pressed,
-        "o" | "feature-change-pixel-geometry" => input.toggle_pixels_geometry_kind.input = pressed,
-        "feature-change-pixel-shadow" => input.toggle_pixels_shadow_kind.input = pressed,   
-        "p" | "feature-pulsation" => input.showing_pixels_pulse.input = pressed,
+        "y" | "feature-change-color-representation" => input.next_color_representation_kind.input = pressed,
+        "o" | "feature-change-pixel-geometry" => input.next_pixel_geometry_kind.input = pressed,
+        "." | "feature-change-pixel-shadow" => input.toggle_pixels_shadow_kind.input = pressed,   
+        "l" | "feature-change-screen-curvature" => input.showing_pixels_pulse.input = pressed,
         "g" | "lines-per-pixel-inc" => input.increase_lpp.input = pressed,
         "h" | "lines-per-pixel-dec" => input.decrease_lpp.input = pressed,
         "shift" => input.shift = pressed,

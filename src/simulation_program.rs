@@ -17,7 +17,7 @@ use crate::rgb_render::RgbRender;
 use crate::background_render::BackgroundRender;
 use crate::event_listeners::{set_event_listeners};
 use crate::simulation_state::{
-    StateOwner, Resources, CrtFilters, SimulationTimers, InitialParameters, ColorChannels,
+    StateOwner, Resources, CrtFilters, SimulationTimers, InitialParameters, ColorChannels, RenderLayers,
     Input, AnimationData
 };
 use crate::render_types::{TextureBufferStack};
@@ -162,10 +162,9 @@ fn pre_process_input(input: &mut Input, resources: &Resources) -> WasmResult<()>
     input.decrease_blur.track_input();
     input.increase_lpp.track_input();
     input.decrease_lpp.track_input();
-    input.toggle_split_colors.track_input();
-    input.toggle_pixels_geometry_kind.track_input();
-    input.toggle_diffuse_foreground.track_input();
-    input.toggle_solid_background.track_input();
+    input.next_color_representation_kind.track_input();
+    input.next_pixel_geometry_kind.track_input();
+    input.next_layering_kind.track_input();
     input.showing_pixels_pulse.track_input();
     input.esc.track_input();
     input.space.track_input();
@@ -379,19 +378,45 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
         return Ok(());
     }
 
-    if input.toggle_diffuse_foreground.is_just_pressed() {
-        res.crt_filters.showing_diffuse_foreground = !res.crt_filters.showing_diffuse_foreground;
-        let message = if res.crt_filters.showing_diffuse_foreground { "Activated" } else { "Deactivated"};
-        dispatch_event_with("app-event.top_message", &format!("{} diffuse foreground.", message).into())?;
+    if !input.input_focused && input.next_layering_kind.is_just_pressed() {
+        res.crt_filters.layering_kind = ((res.crt_filters.layering_kind as i32 + 1) % RenderLayers::LENGTH as i32).into();
+        let mut message: &'static str;
+        match res.crt_filters.layering_kind {
+            RenderLayers::ShadowOnly => {
+                res.crt_filters.showing_diffuse_foreground = true;
+                res.crt_filters.showing_solid_background = false;
+                message = "Shadow only";
+            },
+            RenderLayers::SolidOnly => {
+                res.crt_filters.showing_diffuse_foreground = false;
+                res.crt_filters.showing_solid_background = true;
+                res.crt_filters.solid_color_weight = 1.0;
+                message = "Solid only";
+            },
+            RenderLayers::ShadowWithSolidBackground75 => {
+                res.crt_filters.showing_diffuse_foreground = true;
+                res.crt_filters.showing_solid_background = true;
+                res.crt_filters.solid_color_weight = 0.75;
+                message = "Shadow with 75% Solid background";
+            },
+            RenderLayers::ShadowWithSolidBackground50 => {
+                res.crt_filters.showing_diffuse_foreground = true;
+                res.crt_filters.showing_solid_background = true;
+                res.crt_filters.solid_color_weight = 0.5;
+                message = "Shadow with 50% Solid background";
+            },
+            RenderLayers::ShadowWithSolidBackground25 => {
+                res.crt_filters.showing_diffuse_foreground = true;
+                res.crt_filters.showing_solid_background = true;
+                res.crt_filters.solid_color_weight = 0.25;
+                message = "Shadow with 25% Solid background";
+            },
+            RenderLayers::LENGTH => unreachable!(),
+        };
+        dispatch_event_with("app-event.top_message", &format!("Layering kind '{}' selected.", message).into())?;
     }
 
-    if input.toggle_solid_background.is_just_pressed() {
-        res.crt_filters.showing_solid_background = !res.crt_filters.showing_solid_background;
-        let message = if res.crt_filters.showing_solid_background { "Activated" } else { "Deactivated"};
-        dispatch_event_with("app-event.top_message", &format!("{} solid background.", message).into())?;
-    }
-
-    if input.toggle_split_colors.is_just_pressed() {
+    if input.next_color_representation_kind.is_just_pressed() {
         res.crt_filters.color_channels = match res.crt_filters.color_channels {
             ColorChannels::Combined => ColorChannels::Overlapping,
             ColorChannels::Overlapping => ColorChannels::SplitHorizontal,
@@ -407,7 +432,7 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
         dispatch_event_with("app-event.top_message", &("Pixel color representation: ".to_string() + message + ".").into())?;
     }
 
-    if input.toggle_pixels_geometry_kind.is_just_released() {
+    if input.next_pixel_geometry_kind.is_just_released() {
         res.crt_filters.pixels_geometry_kind = match res.crt_filters.pixels_geometry_kind {
             PixelsGeometryKind::Squares => PixelsGeometryKind::Cubes,
             PixelsGeometryKind::Cubes => PixelsGeometryKind::Squares
@@ -420,7 +445,7 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
         dispatch_event_with("app-event.showing_pixels_as", &message.into())?;
     }
 
-    if input.toggle_pixels_shadow_kind.is_just_released() {
+    if !input.input_focused && input.toggle_pixels_shadow_kind.is_just_released() {
         res.crt_filters.pixel_shadow_kind += 1;
         if res.crt_filters.pixel_shadow_kind >= res.pixels_render.shadows_len() {
             res.crt_filters.pixel_shadow_kind = 0;
@@ -725,7 +750,7 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
             ).as_mut_slice(),
             ambient_strength: match res.crt_filters.pixels_geometry_kind { PixelsGeometryKind::Squares => 1.0, PixelsGeometryKind::Cubes => 0.5},
             contrast_factor: res.crt_filters.extra_contrast,
-            light_color: &mut if res.crt_filters.showing_diffuse_foreground {[0.3, 0.3, 0.3]} else {[1.0, 1.0, 1.0]},
+            light_color: &mut [res.crt_filters.solid_color_weight, res.crt_filters.solid_color_weight, res.crt_filters.solid_color_weight],
             extra_light: &mut [0.0, 0.0, 0.0],
             light_pos: res.camera.get_position().as_mut_slice(),
             pixel_gap: &mut [
@@ -744,7 +769,7 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
     }
     buffer_stack.pop()?;
     buffer_stack.pop()?;
-    buffer_stack.bind_current(gl);
+    buffer_stack.bind_current(gl)?;
     gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
 
     gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 0);

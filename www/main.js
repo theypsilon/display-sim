@@ -62,7 +62,8 @@ const featureQuitDeo = document.getElementById('feature-quit');
 const featureChangeColorRepresentationDeo = document.getElementById('feature-change-color-representation');
 const featureChangePixelGeometryDeo = document.getElementById('feature-change-pixel-geometry');
 const featureChangePixelShadowDeo = document.getElementById('feature-change-pixel-shadow');
-const featurePulsationDeo = document.getElementById('feature-pulsation');
+const featureChangeScreenLayeringTypeDeo = document.getElementById('feature-change-screen-layering-type');
+const featureChangeScreenCurvatureDeo = document.getElementById('feature-change-screen-curvature');
 
 const featureChangeMoveSpeedDeo = document.getElementById('feature-change-move-speed');
 const featureChangeTurnSpeedDeo = document.getElementById('feature-change-turn-speed');
@@ -279,7 +280,8 @@ function customEventOnChange(deo, kind, parse) {
     featureChangeColorRepresentationDeo,
     featureChangePixelGeometryDeo,
     featureChangePixelShadowDeo,
-    featurePulsationDeo,
+    featureChangeScreenLayeringTypeDeo,
+    featureChangeScreenCurvatureDeo,
     featureQuitDeo,
     resetCameraDeo,
     resetSpeedsDeo,

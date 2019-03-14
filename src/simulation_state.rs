@@ -95,7 +95,33 @@ pub struct CrtFilters {
     pub showing_pixels_pulse: bool,
     pub showing_solid_background: bool,
     pub showing_diffuse_foreground: bool,
+    pub solid_color_weight: f32,
     pub pixel_shadow_kind: usize,
+    pub layering_kind: RenderLayers,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum RenderLayers {
+    ShadowOnly = 0,
+    SolidOnly = 1,
+    ShadowWithSolidBackground75 = 2,
+    ShadowWithSolidBackground50 = 3,
+    ShadowWithSolidBackground25 = 4,
+
+    LENGTH = 5,
+}
+
+impl From<i32> for RenderLayers {
+    fn from(item: i32) -> Self {
+        match item {
+            0 => RenderLayers::ShadowOnly,
+            1 => RenderLayers::SolidOnly,
+            2 => RenderLayers::ShadowWithSolidBackground75,
+            3 => RenderLayers::ShadowWithSolidBackground50,
+            4 => RenderLayers::ShadowWithSolidBackground25,
+            _ => panic!("Bad value for RenderLayers!"),
+        }
+    }
 }
 
 pub enum ColorChannels {
@@ -126,6 +152,8 @@ impl CrtFilters {
             showing_pixels_pulse: false,
             showing_diffuse_foreground: true,
             showing_solid_background: true,
+            solid_color_weight: 0.75,
+            layering_kind: RenderLayers::ShadowOnly,
         }
     }
 }
@@ -188,10 +216,9 @@ pub struct Input {
     pub decrease_blur: BooleanButton,
     pub increase_lpp: BooleanButton, // lines per pixel
     pub decrease_lpp: BooleanButton, // lines per pixel
-    pub toggle_split_colors: BooleanButton,
-    pub toggle_pixels_geometry_kind: BooleanButton,
-    pub toggle_diffuse_foreground: BooleanButton,
-    pub toggle_solid_background: BooleanButton,
+    pub next_color_representation_kind: BooleanButton,
+    pub next_pixel_geometry_kind: BooleanButton,
+    pub next_layering_kind: BooleanButton,
     pub showing_pixels_pulse: BooleanButton,
     pub esc: BooleanButton,
     pub space: BooleanButton,
@@ -244,10 +271,9 @@ impl Input {
             decrease_blur: BooleanButton::new(),
             increase_lpp: BooleanButton::new(),
             decrease_lpp: BooleanButton::new(),
-            toggle_split_colors: BooleanButton::new(),
-            toggle_pixels_geometry_kind: BooleanButton::new(),
-            toggle_diffuse_foreground: BooleanButton::new(),
-            toggle_solid_background: BooleanButton::new(),
+            next_color_representation_kind: BooleanButton::new(),
+            next_pixel_geometry_kind: BooleanButton::new(),
+            next_layering_kind: BooleanButton::new(),
             showing_pixels_pulse: BooleanButton::new(),
             esc: BooleanButton::new(),
             space: BooleanButton::new(),
