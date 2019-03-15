@@ -74,21 +74,21 @@
           <h3>Options</h3>
           <div class="options">
             <div class="option-inputs">
-              <label class="block" for="webgl-options">WebGl Context:</label>
+              <label class="block">WebGl Context:</label>
               <div class="option-inputs">
                 <label for="antialias">antialias:</label>
                 <input type="checkbox" id="antialias" value="antialias">
               </div>
 
               <div class="option-inputs">
-                <label class="margin-left" for="powerPreference">powerPreference:</label>
+                <label class="margin-left">powerPreference:</label>
                 <input type="radio" id="powerPreference-1" name="powerPreference" value="default" /><div class="option-text">default</div>
                 <input type="radio" id="powerPreference-2" name="powerPreference" value="high-performance" /><div class="option-text">high-performance</div>
                 <input type="radio" id="powerPreference-3" name="powerPreference" value="low-power" /><div class="option-text">low-power</div>
               </div>
             </div>
             <div class="option-inputs">
-              <label class="block" for="scaling">Scaling:</label>
+              <label class="block">Scaling:</label>
               <div class="scaling-radio" title="Auto detect">
                 <input type="radio" id="scaling-auto" name="scaling" value="0" />
                 <div class="option-text">auto detect</div>
@@ -101,20 +101,20 @@
               <div id="scaling-custom-inputs" class="option-inputs display-none">
                 <label for="scaling-custom">Custom Scaling:</label>
                 <div class="option-inputs">
-                  <label for="scaling-custom-resolution">background resolution:</label>
+                  <label>background resolution:</label>
                   <input class="custom-resolution" type="number" id="scaling-custom-resolution-width" value="256" min="1" max="99999">
                   <span>✕</span>
                   <input class="custom-resolution" type="number" id="scaling-custom-resolution-height" value="224" min="1" max="99999">
                   <input class="display-none" type="button" value="Set to " id="scaling-custom-resolution-button" title="Set it to fit the uploaded image">
                 </div>
                 <div class="option-inputs">
-                  <label for="scaling-custom-aspect-ratio">aspect ratio:</label>
+                  <label>aspect ratio:</label>
                   <input class="custom-aspect-ratio" type="number" id="scaling-custom-aspect-ratio-x" value="4" min="1" max="99">
                   <span>:</span>
                   <input class="custom-aspect-ratio" type="number" id="scaling-custom-aspect-ratio-y" value="3" min="1" max="99">
                 </div>
                 <div class="option-inputs">
-                  <label for="scaling-custom-aspect-ratio">stretch to nearest edge:</label>
+                  <label>stretch to nearest edge:</label>
                   <input class="custom-checkbox" type="checkbox" id="scaling-custom-stretch-nearest">
                 </div>
               </div>
@@ -141,13 +141,13 @@
         <h3>Credits</h3>
         <div class="row">
           <div class="col-sm-4 margin-sm-bottom">
-            <label>Concept + Implementation</label><p>José Manuel Barroso Galindo<br />&lt;theypsilon@gmail.com&gt;</p>
+            <label>Concept + Implementation</label><p>José Manuel Barroso Galindo<br>&lt;theypsilon@gmail.com&gt;</p>
           </div>
           <div class="col-sm-4 margin-sm-bottom">
-            <label>Test animation sprites</label><p>Ryoga<br />&lt;pig_saint@gmail.com&gt;</p>
+            <label>Test animation sprites</label><p>Ryoga<br>&lt;pig_saint@gmail.com&gt;</p>
           </div>
           <div class="col-sm-4 margin-sm-bottom">
-            <label>Front-end Designer</label><p>Ana Manosfrias<br />&lt;a.gilamor@gmail.com&gt;</p>
+            <label>Front-end Designer</label><p>Ana Manosfrias<br>&lt;a.gilamor@gmail.com&gt;</p>
           </div>
         </div>
       </div>
@@ -158,7 +158,7 @@
     <div id="fps-counter-holder"><div id="fps-counter"></div><span>FPS</span></div>
     <h3>Sim Panel</h3>
     <div class="info-category">
-      <div><h5>Camera Movements <div id="reset-camera" class="reset-button"><button class="activate-button" title="All camera parameters will be reset.">Reset Position</button></div></h5>
+      <div><h5>Camera Movements <div id="reset-camera" class="reset-button"><button class="activate-button" title="All camera parameters will be reset.">Reset Position</button></div></h5></div>
         <div id="camera-right-panel">
           <div id="camera-movement-indicator">
           <div class="camera-field-header"><div class="camera-coordinate">X</div><div class="camera-coordinate">Y</div><div class="camera-coordinate">Z</div></div>
@@ -181,14 +181,14 @@
             <input id="camera-axis-up-z" class="camera-field camera-field-right" type="number" step="0.01"/>
           </div>
         </div>
-        <ul title="Zoom Hotkeys: Mouse wheel up & down"><li><div class="feature-name">· Zoom:</div><br /><div id="camera-zoom-parent" class="feature-value"><input id="camera-zoom" class="feature-number-input" type="number" placeholder="0" step="1" min="1" max="45" value="0"></div></li></ul>
+        <ul title="Zoom Hotkeys: Mouse wheel up & down"><li><div class="feature-name">· Zoom:</div><br><div id="camera-zoom-parent" class="feature-value"><input id="camera-zoom" class="feature-number-input" type="number" placeholder="0" step="1" min="1" max="45" value="0"></div></li></ul>
       </div>
       <ul>
-        <li><div class="feature-name">· Translation:</div></br><div id="feature-camera-movements" class="camera-movements-arrows">
+        <li><div class="feature-name">· Translation:</div><br><div id="feature-camera-movements" class="camera-movements-arrows">
           <div><button class="activate-button feature-movement-keys key-up-center">W</button><button class="activate-button feature-movement-keys key-up-far-right">Q</button> ↑</div><br/>
           <div><button class="activate-button feature-movement-keys">A</button><button class="activate-button feature-movement-keys key-down-center">S</button><button class="activate-button feature-movement-keys">D</button><button class="activate-button feature-movement-keys key-down-far-right">E</button> ↓</div>
         </div></li>
-        <li style="height: 65"><div class="feature-name">· Rotation:</div></br><div id="feature-camera-turns" class="camera-movements-arrows">
+        <li style="height: 65px"><div class="feature-name">· Rotation:</div><br><div id="feature-camera-turns" class="camera-movements-arrows">
           <div><button class="activate-button feature-movement-keys key-up-center">↑</button><button class="activate-button feature-movement-keys key-up-far-right">+</button> ⟳</div><br/>
           <div><button class="activate-button feature-movement-keys">←</button><button class="activate-button feature-movement-keys key-down-center">↓</button><button class="activate-button feature-movement-keys">→</button><button class="activate-button feature-movement-keys key-down-far-right">-</button> ⟲</div>
         </div></li>
@@ -210,7 +210,7 @@
         <li title="Screen curvature type Hotkeys: L"><div><div class="feature-name">Screen curvature type</div><sup class="feature-hotkeys">(L)</sup></div><div><input class="feature-button" id="feature-change-screen-curvature" type="button" value="Next"></div></li>
         <li title="Pixel shadow Hotkeys: ."><div><div class="feature-name">Pixel shadow type</div><sup class="feature-hotkeys">(.)</sup></div><div><input class="feature-button" id="feature-change-pixel-shadow" type="button" value="Next"></div></li>
         <li title="Screen layering type Hotkeys: ,"><div><div class="feature-name">Screen layering type</div><sup class="feature-hotkeys">(,)</sup></div><div><input class="feature-button" id="feature-change-screen-layering-type" type="button" value="Next"></div></li>
-        <li title="Pixel spread Hotkeys: Shift+N & Shift+M" class="display-none"><div><div class="feature-name">Pixel Spread</div><sup class="feature-hotkeys">(Shift+N, Shift+M)</sup><div class="feature-value"><input id="pixel-spread" class="feature-number-input" type="number" placeholder="0" step="0.01" min="0" max="10" value="0"></div></li>
+        <li title="Pixel spread Hotkeys: Shift+N & Shift+M" class="display-none"><div><div class="feature-name">Pixel Spread</div><sup class="feature-hotkeys">(Shift+N, Shift+M)</sup><div class="feature-value"><input id="pixel-spread" class="feature-number-input" type="number" placeholder="0" step="0.01" min="0" max="10" value="0"></div></div></li>
         <li class="display-none"><div><div class="feature-name">Brightness color</div></div><div><input class="feature-button" id="brightness-color" type="color" value="#ffffff"></div></li>
       </ul>
     </div>
@@ -225,7 +225,7 @@
     <div class="info-button">
         <input title="Hotkey: ESC" class="btn btn-crt btn-green text-white" id="feature-quit" type="button" value="Quit simulation">
     </div>
-    </br>
+    <br>
     <div class="info-button">
       <input title="Hotkey: SPACE" class="btn btn-crt btn-green text-white" id="info-hide" type="button" value="Hide this panel">
     </div>

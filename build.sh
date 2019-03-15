@@ -6,6 +6,13 @@ cd "$(dirname $0)"
 
 echo
 
+cargo fmt
+
+new_hash="$(find src/ -type f -name *.rs -print0 | xargs -0 sha1sum | sha1sum)"
+old_hash="$(cat .build-hash || true)"
+
+if [[ "$new_hash" == "$old_hash" ]] ; then exit -1; fi
+
 release=false
 build_type="--debug"
 if [[ "$@" == "--release" ]]; then
@@ -15,6 +22,7 @@ if [[ "$@" == "--release" ]]; then
 else
     echo "  *** DEBUG BUILD ***"
 fi
+
 wasm-pack build ${build_type}
 
 cp pkg/crt_3d_sim* www/
@@ -35,3 +43,4 @@ else
     fi
 fi
 
+echo "$new_hash" > .build-hash
