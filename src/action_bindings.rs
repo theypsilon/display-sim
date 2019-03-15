@@ -58,8 +58,8 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
         "reset-camera" => input.reset_position = pressed,
         "reset-filters" => input.reset_filters = pressed,
         _ => {
-            if button_action.contains("+") {
-                for button_fraction in button_action.split("+") {
+            if button_action.contains('+') {
+                for button_fraction in button_action.split('+') {
                     on_button_action(input, button_fraction, pressed);
                 }
             } else if pressed {

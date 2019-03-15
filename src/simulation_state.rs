@@ -140,7 +140,7 @@ impl CrtFilters {
             cur_pixel_scale_x: 0.0,
             cur_pixel_scale_y: 0.0,
             cur_pixel_gap: 0.0,
-            change_speed: change_speed,
+            change_speed,
             pixels_pulse: 0.0,
             pixels_geometry_kind: PixelsGeometryKind::Squares,
             pixel_shadow_kind: 1,

@@ -30,8 +30,8 @@ impl BlurRender {
             stack.get_nth(-1)?,
         ];
 
-        for i in 0..=1 {
-            gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, texture_buffers[i].framebuffer());
+        for tb in &texture_buffers {
+            gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, tb.framebuffer());
             gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
         }
 
