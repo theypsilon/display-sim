@@ -45,7 +45,11 @@ pub fn make_quad_vao(gl: &WebGl2RenderingContext, shader: &WebGlProgram) -> Wasm
     gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&quad_vbo));
     gl.buffer_data_with_opt_array_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&js_f32_array(&QUAD_GEOMETRY).buffer()), WebGl2RenderingContext::STATIC_DRAW);
     gl.bind_buffer(WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER, Some(&quad_ebo));
-    gl.buffer_data_with_opt_array_buffer(WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER, Some(&js_i32_array(&QUAD_INDICES).buffer()), WebGl2RenderingContext::STATIC_DRAW);
+    gl.buffer_data_with_opt_array_buffer(
+        WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER,
+        Some(&js_i32_array(&QUAD_INDICES).buffer()),
+        WebGl2RenderingContext::STATIC_DRAW,
+    );
 
     let q_pos_position = gl.get_attrib_location(shader, "qPos") as u32;
     let q_texture_position = gl.get_attrib_location(shader, "qTexCoords") as u32;

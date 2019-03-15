@@ -110,7 +110,10 @@ fn change_frontend_input_values(res: &Resources) -> WasmResult<()> {
     dispatch_event_with("app-event.change_camera_zoom", &res.camera.zoom.into())?;
     dispatch_event_with("app-event.change_blur_level", &(res.crt_filters.blur_passes as i32).into())?;
     dispatch_event_with("app-event.change_lines_per_pixel", &(res.crt_filters.lines_per_pixel as i32).into())?;
-    dispatch_event_with("app-event.change_movement_speed", &((res.camera.movement_speed / res.initial_parameters.initial_movement_speed) as i32).into())?;
+    dispatch_event_with(
+        "app-event.change_movement_speed",
+        &((res.camera.movement_speed / res.initial_parameters.initial_movement_speed) as i32).into(),
+    )?;
     dispatch_event_with("app-event.change_pixel_speed", &((res.crt_filters.change_speed / PIXEL_MANIPULATION_BASE_SPEED) as i32).into())?;
     dispatch_event_with("app-event.change_turning_speed", &((res.camera.turning_speed / TURNING_BASE_SPEED) as i32).into())?;
     Ok(())
@@ -343,7 +346,8 @@ fn update_lpp(res: &mut Resources, input: &Input) -> WasmResult<()> {
 
 fn update_pixel_pulse(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> {
     if input.next_screen_curvature_type.is_just_pressed() {
-        res.crt_filters.screen_curvature_kind = FromPrimitive::from_i32((res.crt_filters.screen_curvature_kind as i32 + 1) % ScreenCurvatureKind::VARIANT_COUNT as i32).ok_or("Bad ScreenCurvatureKind::VARIANT_COUNT")?;
+        res.crt_filters.screen_curvature_kind =
+            FromPrimitive::from_i32((res.crt_filters.screen_curvature_kind as i32 + 1) % ScreenCurvatureKind::VARIANT_COUNT as i32).ok_or("Bad ScreenCurvatureKind::VARIANT_COUNT")?;
         let message = match res.crt_filters.screen_curvature_kind {
             ScreenCurvatureKind::Flat => "Flat",
             ScreenCurvatureKind::Curved => "Curved",
@@ -370,7 +374,8 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
     }
 
     if input.next_layering_kind.is_just_pressed() {
-        res.crt_filters.layering_kind = FromPrimitive::from_i32((res.crt_filters.layering_kind as i32 + 1) % ScreenLayeringKind::VARIANT_COUNT as i32).ok_or("Bad ScreenLayeringKind::VARIANT_COUNT.")?;
+        res.crt_filters.layering_kind =
+            FromPrimitive::from_i32((res.crt_filters.layering_kind as i32 + 1) % ScreenLayeringKind::VARIANT_COUNT as i32).ok_or("Bad ScreenLayeringKind::VARIANT_COUNT.")?;
         let message: &'static str;
         match res.crt_filters.layering_kind {
             ScreenLayeringKind::ShadowOnly => {
@@ -440,7 +445,10 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
         if res.crt_filters.pixel_shadow_kind >= res.pixels_render.shadows_len() {
             res.crt_filters.pixel_shadow_kind = 0;
         }
-        dispatch_event_with("app-event.top_message", &("Showing next pixel shadow: ".to_string() + &res.crt_filters.pixel_shadow_kind.to_string() + ".").into())?;
+        dispatch_event_with(
+            "app-event.top_message",
+            &("Showing next pixel shadow: ".to_string() + &res.crt_filters.pixel_shadow_kind.to_string() + ".").into(),
+        )?;
     }
 
     let pixel_velocity = dt * res.crt_filters.change_speed;
@@ -509,7 +517,13 @@ fn update_speeds(res: &mut Resources, input: &Input) -> WasmResult<()> {
     if input.alt {
         //change_speed(&input, &mut res.camera.turning_speed, TURNING_BASE_SPEED, "Turning camera speed: ")?;
     } else if input.shift {
-        change_speed(&input, &mut res.crt_filters.change_speed, PIXEL_MANIPULATION_BASE_SPEED, "Pixel manipulation speed: ", "app-event.change_pixel_speed")?;
+        change_speed(
+            &input,
+            &mut res.crt_filters.change_speed,
+            PIXEL_MANIPULATION_BASE_SPEED,
+            "Pixel manipulation speed: ",
+            "app-event.change_pixel_speed",
+        )?;
     } else {
         change_speed(&input, &mut res.camera.turning_speed, TURNING_BASE_SPEED, "Turning camera speed: ", "app-event.change_turning_speed")?;
         change_speed(
@@ -734,7 +748,8 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
                 }
                 if vertical_lines_ratio > 1 {
                     pixel_offset[0] /= vertical_lines_ratio as f32;
-                    pixel_offset[0] += (j as f32 / vertical_lines_ratio as f32 - calc_stupid_not_extrapoled_function(vertical_lines_ratio)) * res.crt_filters.cur_pixel_width / (res.crt_filters.cur_pixel_scale_x + 1.0);
+                    pixel_offset[0] += (j as f32 / vertical_lines_ratio as f32 - calc_stupid_not_extrapoled_function(vertical_lines_ratio)) * res.crt_filters.cur_pixel_width
+                        / (res.crt_filters.cur_pixel_scale_x + 1.0);
                     pixel_scale[0] *= vertical_lines_ratio as f32;
                 }
                 if let ColorChannels::Overlapping = res.crt_filters.color_channels {

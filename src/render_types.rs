@@ -28,7 +28,13 @@ impl TextureBuffer {
         gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MAG_FILTER, WebGl2RenderingContext::NEAREST as i32);
         gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_WRAP_S, WebGl2RenderingContext::CLAMP_TO_EDGE as i32);
         gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_WRAP_T, WebGl2RenderingContext::CLAMP_TO_EDGE as i32);
-        gl.framebuffer_texture_2d(WebGl2RenderingContext::FRAMEBUFFER, WebGl2RenderingContext::COLOR_ATTACHMENT0, WebGl2RenderingContext::TEXTURE_2D, texture.as_ref(), 0);
+        gl.framebuffer_texture_2d(
+            WebGl2RenderingContext::FRAMEBUFFER,
+            WebGl2RenderingContext::COLOR_ATTACHMENT0,
+            WebGl2RenderingContext::TEXTURE_2D,
+            texture.as_ref(),
+            0,
+        );
 
         Ok(TextureBuffer { texture, framebuffer })
     }
@@ -38,7 +44,12 @@ impl TextureBuffer {
         let texture_buffer = Self::new(gl, width, height)?;
         gl.bind_renderbuffer(WebGl2RenderingContext::RENDERBUFFER, depthbuffer.as_ref());
         gl.renderbuffer_storage(WebGl2RenderingContext::RENDERBUFFER, WebGl2RenderingContext::DEPTH_COMPONENT16, width, height);
-        gl.framebuffer_renderbuffer(WebGl2RenderingContext::FRAMEBUFFER, WebGl2RenderingContext::DEPTH_ATTACHMENT, WebGl2RenderingContext::RENDERBUFFER, depthbuffer.as_ref());
+        gl.framebuffer_renderbuffer(
+            WebGl2RenderingContext::FRAMEBUFFER,
+            WebGl2RenderingContext::DEPTH_ATTACHMENT,
+            WebGl2RenderingContext::RENDERBUFFER,
+            depthbuffer.as_ref(),
+        );
         Ok(texture_buffer)
     }
 

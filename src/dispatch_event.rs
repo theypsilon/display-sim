@@ -11,7 +11,9 @@ pub fn dispatch_event(kind: &str) -> WasmResult<()> {
 pub fn dispatch_event_with(kind: &str, value: &JsValue) -> WasmResult<()> {
     let mut parameters = CustomEventInit::new();
     parameters.detail(&value);
-    let event = CustomEvent::new_with_event_init_dict(kind, &parameters)?.dyn_into::<Event>().map_err(|_| "cannot make a custom event")?;
+    let event = CustomEvent::new_with_event_init_dict(kind, &parameters)?
+        .dyn_into::<Event>()
+        .map_err(|_| "cannot make a custom event")?;
     dispatch_event_internal(&event)
 }
 

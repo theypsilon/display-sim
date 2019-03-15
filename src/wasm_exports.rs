@@ -28,7 +28,17 @@ pub struct AnimationWasm {
 impl AnimationWasm {
     #[allow(clippy::too_many_arguments)]
     #[wasm_bindgen(constructor)]
-    pub fn new(image_width: u32, image_height: u32, background_width: u32, background_height: u32, canvas_width: u32, canvas_height: u32, frame_length: f32, pixel_width: f32, stretch: bool) -> AnimationWasm {
+    pub fn new(
+        image_width: u32,
+        image_height: u32,
+        background_width: u32,
+        background_height: u32,
+        canvas_width: u32,
+        canvas_height: u32,
+        frame_length: f32,
+        pixel_width: f32,
+        stretch: bool,
+    ) -> AnimationWasm {
         AnimationWasm {
             data: AnimationData {
                 image_width,
