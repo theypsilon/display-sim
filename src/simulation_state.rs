@@ -158,8 +158,8 @@ pub struct CustomInputEvent {
     pub kind: String,
 }
 
-impl CustomInputEvent {
-    pub fn new() -> CustomInputEvent {
+impl Default for CustomInputEvent {
+    fn default() -> Self {
         CustomInputEvent {
             value: JsValue::undefined(),
             kind: String::new(),
@@ -167,12 +167,24 @@ impl CustomInputEvent {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct IncDec<T> {
     pub increase: T,
     pub decrease: T,
 }
 
+pub trait DefaultReset {
+    fn reset(&mut self)
+    where
+        Self: std::marker::Sized + std::default::Default,
+    {
+        std::mem::swap(self, &mut Self::default());
+    }
+}
+
+impl<T> DefaultReset for IncDec<T> where T: std::marker::Sized + std::default::Default {}
+
+#[derive(Default)]
 pub struct Input {
     pub now: f64,
     pub custom_event: CustomInputEvent,
@@ -222,66 +234,8 @@ pub struct Input {
 
 impl Input {
     pub fn new() -> WasmResult<Input> {
-        Ok(Input {
-            now: now()?,
-            custom_event: CustomInputEvent::new(),
-            walk_left: false,
-            walk_right: false,
-            walk_up: false,
-            walk_down: false,
-            walk_forward: false,
-            walk_backward: false,
-            camera_zoom: IncDec { increase: false, decrease: false },
-            turn_left: false,
-            turn_right: false,
-            turn_up: false,
-            turn_down: false,
-            rotate_left: false,
-            rotate_right: false,
-            reset_speeds: false,
-            reset_position: false,
-            reset_filters: false,
-            shift: false,
-            alt: false,
-            input_focused: false,
-            mouse_position_x: -1,
-            mouse_position_y: -1,
-            mouse_scroll_y: 0.0,
-            pixel_scale_y: IncDec { increase: false, decrease: false },
-            pixel_scale_x: IncDec { increase: false, decrease: false },
-            pixel_width: IncDec { increase: false, decrease: false },
-            pixel_gap: IncDec { increase: false, decrease: false },
-            bright: IncDec { increase: false, decrease: false },
-            contrast: IncDec { increase: false, decrease: false },
-            toggle_pixels_shadow_kind: BooleanButton::new(),
-            translation_speed: IncDec {
-                increase: BooleanButton::new(),
-                decrease: BooleanButton::new(),
-            },
-            turn_speed: IncDec {
-                increase: BooleanButton::new(),
-                decrease: BooleanButton::new(),
-            },
-            filter_speed: IncDec {
-                increase: BooleanButton::new(),
-                decrease: BooleanButton::new(),
-            },
-            mouse_click: BooleanButton::new(),
-            blur: IncDec {
-                increase: BooleanButton::new(),
-                decrease: BooleanButton::new(),
-            },
-            lpp: IncDec {
-                increase: BooleanButton::new(),
-                decrease: BooleanButton::new(),
-            },
-            next_color_representation_kind: BooleanButton::new(),
-            next_pixel_geometry_kind: BooleanButton::new(),
-            next_layering_kind: BooleanButton::new(),
-            next_screen_curvature_type: BooleanButton::new(),
-            esc: BooleanButton::new(),
-            space: BooleanButton::new(),
-            screenshot: BooleanButton::new(),
-        })
+        let mut input: Input = Input::default();
+        input.now = now()?;
+        Ok(input)
     }
 }

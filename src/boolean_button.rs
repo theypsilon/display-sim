@@ -1,3 +1,4 @@
+#[derive(Default)]
 pub struct BooleanButton {
     pub input: bool,
     activated: bool,
@@ -6,15 +7,6 @@ pub struct BooleanButton {
 }
 
 impl BooleanButton {
-    pub fn new() -> BooleanButton {
-        BooleanButton {
-            activated: false,
-            just_pressed: false,
-            just_released: false,
-            input: false,
-        }
-    }
-
     pub fn track(&mut self, pushed: bool) {
         self.just_pressed = false;
         self.just_released = false;

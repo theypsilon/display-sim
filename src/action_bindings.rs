@@ -1,5 +1,5 @@
 use crate::console;
-use crate::simulation_state::Input;
+use crate::simulation_state::{DefaultReset, Input};
 
 pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
     match button_action {
@@ -63,16 +63,16 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
         "k" | "pixel-horizontal-gap-dec" => input.pixel_scale_y.decrease = pressed,
         "n" | "pixel-width-inc" => {
             if input.shift {
-                input.pixel_gap.increase = pressed
+                input.pixel_gap.increase = pressed;
             } else {
-                input.pixel_width.increase = pressed
+                input.pixel_width.increase = pressed;
             }
         }
         "m" | "pixel-width-dec" => {
             if input.shift {
-                input.pixel_gap.decrease = pressed
+                input.pixel_gap.decrease = pressed;
             } else {
-                input.pixel_width.decrease = pressed
+                input.pixel_width.decrease = pressed;
             }
         }
         "b" | "blur-level-inc" => input.blur.increase.input = pressed,
@@ -88,13 +88,8 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
         "h" | "lines-per-pixel-dec" => input.lpp.decrease.input = pressed,
         "shift" => {
             input.shift = pressed;
-            if input.shift {
-                input.pixel_width.increase = false;
-                input.pixel_width.decrease = false
-            } else {
-                input.pixel_gap.increase = false;
-                input.pixel_gap.decrease = false
-            }
+            input.pixel_width.reset();
+            input.pixel_gap.reset();
         }
         "alt" => input.alt = pressed,
         " " | "space" => input.space.input = pressed,
