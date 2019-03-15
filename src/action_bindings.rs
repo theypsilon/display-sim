@@ -47,7 +47,7 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
         "x" | "pixel-brightness-dec" => input.decrease_bright = pressed,
         "y" | "feature-change-color-representation" => input.next_color_representation_kind.input = pressed,
         "o" | "feature-change-pixel-geometry" => input.next_pixel_geometry_kind.input = pressed,
-        "l" | "feature-change-screen-curvature" => input.showing_pixels_pulse.input = pressed,
+        "l" | "feature-change-screen-curvature" => input.next_screen_curvature_type.input = pressed,
         "g" | "lines-per-pixel-inc" => input.increase_lpp.input = pressed,
         "h" | "lines-per-pixel-dec" => input.decrease_lpp.input = pressed,
         "shift" => input.shift = pressed,

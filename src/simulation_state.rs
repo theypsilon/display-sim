@@ -1,8 +1,11 @@
-use std::rc::Rc;
-use std::cell::RefCell;
-
 use wasm_bindgen::prelude::{Closure, JsValue};
 use js_sys::{ArrayBuffer};
+
+use num_derive::FromPrimitive;
+use variant_count::VariantCount;
+
+use std::rc::Rc;
+use std::cell::RefCell;
 
 use crate::wasm_error::{WasmResult};
 use crate::boolean_button::BooleanButton;
@@ -92,36 +95,29 @@ pub struct CrtFilters {
     pub pixels_pulse: f32,
     pub pixels_geometry_kind: PixelsGeometryKind,
     pub color_channels: ColorChannels,
-    pub showing_pixels_pulse: bool,
+    pub screen_curvature_kind: ScreenCurvatureKind,
     pub showing_solid_background: bool,
     pub showing_diffuse_foreground: bool,
     pub solid_color_weight: f32,
     pub pixel_shadow_kind: usize,
-    pub layering_kind: RenderLayers,
+    pub layering_kind: ScreenLayeringKind,
 }
 
-#[derive(Copy, Clone, Debug)]
-pub enum RenderLayers {
+#[derive(FromPrimitive, Copy, Clone, VariantCount)]
+pub enum ScreenLayeringKind {
     ShadowOnly = 0,
     SolidOnly = 1,
     ShadowWithSolidBackground75 = 2,
     ShadowWithSolidBackground50 = 3,
     ShadowWithSolidBackground25 = 4,
-
-    LENGTH = 5,
 }
 
-impl From<i32> for RenderLayers {
-    fn from(item: i32) -> Self {
-        match item {
-            0 => RenderLayers::ShadowOnly,
-            1 => RenderLayers::SolidOnly,
-            2 => RenderLayers::ShadowWithSolidBackground75,
-            3 => RenderLayers::ShadowWithSolidBackground50,
-            4 => RenderLayers::ShadowWithSolidBackground25,
-            _ => panic!("Bad value for RenderLayers!"),
-        }
-    }
+
+#[derive(FromPrimitive, Copy, Clone, VariantCount)]
+pub enum ScreenCurvatureKind {
+    Flat = 0,
+    Curved = 1,
+    Pulse = 2,
 }
 
 pub enum ColorChannels {
@@ -149,11 +145,11 @@ impl CrtFilters {
             pixels_geometry_kind: PixelsGeometryKind::Squares,
             pixel_shadow_kind: 1,
             color_channels: ColorChannels::Combined,
-            showing_pixels_pulse: false,
+            screen_curvature_kind: ScreenCurvatureKind::Curved,
             showing_diffuse_foreground: true,
             showing_solid_background: true,
             solid_color_weight: 0.75,
-            layering_kind: RenderLayers::ShadowOnly,
+            layering_kind: ScreenLayeringKind::ShadowOnly,
         }
     }
 }
@@ -219,7 +215,7 @@ pub struct Input {
     pub next_color_representation_kind: BooleanButton,
     pub next_pixel_geometry_kind: BooleanButton,
     pub next_layering_kind: BooleanButton,
-    pub showing_pixels_pulse: BooleanButton,
+    pub next_screen_curvature_type: BooleanButton,
     pub esc: BooleanButton,
     pub space: BooleanButton,
     pub screenshot: BooleanButton,
@@ -274,7 +270,7 @@ impl Input {
             next_color_representation_kind: BooleanButton::new(),
             next_pixel_geometry_kind: BooleanButton::new(),
             next_layering_kind: BooleanButton::new(),
-            showing_pixels_pulse: BooleanButton::new(),
+            next_screen_curvature_type: BooleanButton::new(),
             esc: BooleanButton::new(),
             space: BooleanButton::new(),
             screenshot: BooleanButton::new(),

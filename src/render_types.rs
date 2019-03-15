@@ -2,7 +2,6 @@ use web_sys::{
     WebGl2RenderingContext, WebGlTexture, WebGlFramebuffer
 };
 use crate::wasm_error::{WasmResult};
-use crate::console;
 
 pub struct TextureBuffer {
     texture: Option<WebGlTexture>,
@@ -106,18 +105,6 @@ impl TextureBufferStack {
             return Err(format!("Bad texture buffer sttack access on index == {}", index).into());
         }
         Ok(&self.stack[index as usize])
-    }
-
-    pub fn len(&self) -> usize {
-        self.stack.len()
-    }
-
-    pub fn get_cursor(&self) -> usize {
-        self.cursor
-    }
-
-    pub fn get_max_cursor(&self) -> usize {
-        self.max_cursor
     }
 
     pub fn assert_no_stack(&self) -> WasmResult<()> {

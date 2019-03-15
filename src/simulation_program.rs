@@ -2,8 +2,8 @@ use wasm_bindgen::{JsCast, JsValue, prelude::Closure};
 use web_sys::{
     Window,
     WebGl2RenderingContext,
-    WebGlFramebuffer,
 };
+use num_traits::FromPrimitive;
 use std::rc::Rc;
 
 use crate::wasm_error::{WasmResult, WasmError};
@@ -17,11 +17,10 @@ use crate::rgb_render::RgbRender;
 use crate::background_render::BackgroundRender;
 use crate::event_listeners::{set_event_listeners};
 use crate::simulation_state::{
-    StateOwner, Resources, CrtFilters, SimulationTimers, InitialParameters, ColorChannels, RenderLayers,
+    StateOwner, Resources, CrtFilters, SimulationTimers, InitialParameters, ColorChannels, ScreenLayeringKind, ScreenCurvatureKind,
     Input, AnimationData
 };
 use crate::render_types::{TextureBufferStack};
-use crate::action_bindings::on_button_action;
 use crate::console;
 
 const PIXEL_MANIPULATION_BASE_SPEED: f32 = 20.0;
@@ -165,7 +164,7 @@ fn pre_process_input(input: &mut Input, resources: &Resources) -> WasmResult<()>
     input.next_color_representation_kind.track_input();
     input.next_pixel_geometry_kind.track_input();
     input.next_layering_kind.track_input();
-    input.showing_pixels_pulse.track_input();
+    input.next_screen_curvature_type.track_input();
     input.esc.track_input();
     input.space.track_input();
     input.screenshot.track_input();
@@ -354,13 +353,17 @@ fn update_lpp(res: &mut Resources, input: &Input) -> WasmResult<()> {
 
 
 fn update_pixel_pulse(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> {
-    if input.showing_pixels_pulse.is_just_pressed() {
-        res.crt_filters.showing_pixels_pulse = !res.crt_filters.showing_pixels_pulse;
-        dispatch_event_with("app-event.top_message", &(if res.crt_filters.showing_pixels_pulse {"Screen wave ON."} else {"Screen wave OFF."}).into())?;
-        dispatch_event_with("app-event.showing_pixels_pulse", &res.crt_filters.showing_pixels_pulse.into())?;
+    if input.next_screen_curvature_type.is_just_pressed() {
+        res.crt_filters.screen_curvature_kind = FromPrimitive::from_i32((res.crt_filters.screen_curvature_kind as i32 + 1) % ScreenCurvatureKind::VARIANT_COUNT as i32).ok_or("Bad ScreenCurvatureKind::VARIANT_COUNT")?;
+        let message = match res.crt_filters.screen_curvature_kind {
+            ScreenCurvatureKind::Flat => "Flat",
+            ScreenCurvatureKind::Curved => "Curved",
+            ScreenCurvatureKind::Pulse => "Weaving pulse",
+        };
+        dispatch_event_with("app-event.top_message", &format!("Screen curvature: {}.", message).into())?;
     }
 
-    if res.crt_filters.showing_pixels_pulse {
+    if let ScreenCurvatureKind::Pulse = res.crt_filters.screen_curvature_kind {
         res.crt_filters.pixels_pulse += dt * 0.3;
     } else {
         res.crt_filters.pixels_pulse = 0.0;
@@ -379,39 +382,38 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
     }
 
     if input.next_layering_kind.is_just_pressed() {
-        res.crt_filters.layering_kind = ((res.crt_filters.layering_kind as i32 + 1) % RenderLayers::LENGTH as i32).into();
-        let mut message: &'static str;
+        res.crt_filters.layering_kind = FromPrimitive::from_i32((res.crt_filters.layering_kind as i32 + 1) % ScreenLayeringKind::VARIANT_COUNT as i32).ok_or("Bad ScreenLayeringKind::VARIANT_COUNT.")?;
+        let message: &'static str;
         match res.crt_filters.layering_kind {
-            RenderLayers::ShadowOnly => {
+            ScreenLayeringKind::ShadowOnly => {
                 res.crt_filters.showing_diffuse_foreground = true;
                 res.crt_filters.showing_solid_background = false;
                 message = "Shadow only";
             },
-            RenderLayers::SolidOnly => {
+            ScreenLayeringKind::SolidOnly => {
                 res.crt_filters.showing_diffuse_foreground = false;
                 res.crt_filters.showing_solid_background = true;
                 res.crt_filters.solid_color_weight = 1.0;
                 message = "Solid only";
             },
-            RenderLayers::ShadowWithSolidBackground75 => {
+            ScreenLayeringKind::ShadowWithSolidBackground75 => {
                 res.crt_filters.showing_diffuse_foreground = true;
                 res.crt_filters.showing_solid_background = true;
                 res.crt_filters.solid_color_weight = 0.75;
                 message = "Shadow with 75% Solid background";
             },
-            RenderLayers::ShadowWithSolidBackground50 => {
+            ScreenLayeringKind::ShadowWithSolidBackground50 => {
                 res.crt_filters.showing_diffuse_foreground = true;
                 res.crt_filters.showing_solid_background = true;
                 res.crt_filters.solid_color_weight = 0.5;
                 message = "Shadow with 50% Solid background";
             },
-            RenderLayers::ShadowWithSolidBackground25 => {
+            ScreenLayeringKind::ShadowWithSolidBackground25 => {
                 res.crt_filters.showing_diffuse_foreground = true;
                 res.crt_filters.showing_solid_background = true;
                 res.crt_filters.solid_color_weight = 0.25;
                 message = "Shadow with 25% Solid background";
             },
-            RenderLayers::LENGTH => unreachable!(),
         };
         dispatch_event_with("app-event.top_message", &format!("Layering kind '{}' selected.", message).into())?;
     }
