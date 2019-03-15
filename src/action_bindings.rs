@@ -36,16 +36,24 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
         "arrowright" | "→" | "▶" => input.turn_right = pressed,
         "arrowup" | "↑" | "▲" => input.turn_up = pressed,
         "arrowdown" | "↓" | "▼" => input.turn_down = pressed,
-        "f" | "feature-change-move-speed-inc" => input.speed_up.input = pressed,
-        "r" | "feature-change-move-speed-dec" => input.speed_down.input = pressed,
-        "feature-change-pixel-speed-inc" => {
-            input.speed_up.input = pressed;
-            input.shift = pressed;
+        "f" => {
+            if input.shift {
+                input.filter_speed_up.input = pressed
+            } else {
+                input.translation_speed_up.input = pressed
+            }
         }
-        "feature-change-pixel-speed-dec" => {
-            input.speed_down.input = pressed;
-            input.shift = pressed;
+        "r" => {
+            if input.shift {
+                input.filter_speed_down.input = pressed
+            } else {
+                input.translation_speed_down.input = pressed
+            }
         }
+        "feature-change-move-speed-inc" => input.translation_speed_up.input = pressed,
+        "feature-change-move-speed-dec" => input.translation_speed_down.input = pressed,
+        "feature-change-pixel-speed-inc" => input.filter_speed_up.input = pressed,
+        "feature-change-pixel-speed-dec" => input.filter_speed_down.input = pressed,
         "t" | "reset-speeds" => input.reset_speeds = pressed,
         "camera-zoom-inc" => input.increase_camera_zoom = pressed,
         "camera-zoom-dec" => input.decrease_camera_zoom = pressed,
@@ -53,8 +61,20 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
         "i" | "pixel-vertical-gap-dec" => input.decrease_pixel_scale_x = pressed,
         "j" | "pixel-horizontal-gap-inc" => input.increase_pixel_scale_y = pressed,
         "k" | "pixel-horizontal-gap-dec" => input.decrease_pixel_scale_y = pressed,
-        "n" | "pixel-width-inc" => input.increase_pixel_gap = pressed,
-        "m" | "pixel-width-dec" => input.decrease_pixel_gap = pressed,
+        "n" | "pixel-width-inc" => {
+            if input.shift {
+                input.increase_pixel_gap = pressed
+            } else {
+                input.increase_pixel_width = pressed
+            }
+        }
+        "m" | "pixel-width-dec" => {
+            if input.shift {
+                input.decrease_pixel_gap = pressed
+            } else {
+                input.decrease_pixel_width = pressed
+            }
+        }
         "b" | "blur-level-inc" => input.increase_blur.input = pressed,
         "v" | "bluer-level-dec" => input.decrease_blur.input = pressed,
         "<" | "&lt;" | "pixel-contrast-inc" => input.increase_contrast = pressed,
@@ -66,7 +86,16 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
         "l" | "feature-change-screen-curvature" => input.next_screen_curvature_type.input = pressed,
         "g" | "lines-per-pixel-inc" => input.increase_lpp.input = pressed,
         "h" | "lines-per-pixel-dec" => input.decrease_lpp.input = pressed,
-        "shift" => input.shift = pressed,
+        "shift" => {
+            input.shift = pressed;
+            if input.shift {
+                input.increase_pixel_width = false;
+                input.decrease_pixel_width = false
+            } else {
+                input.increase_pixel_gap = false;
+                input.decrease_pixel_gap = false
+            }
+        }
         "alt" => input.alt = pressed,
         " " | "space" => input.space.input = pressed,
         "escape" | "esc" | "feature-quit" => input.esc.input = pressed,

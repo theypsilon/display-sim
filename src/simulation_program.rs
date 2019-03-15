@@ -5,6 +5,7 @@ use web_sys::{WebGl2RenderingContext, Window};
 
 use crate::background_render::BackgroundRender;
 use crate::blur_render::BlurRender;
+use crate::boolean_button::BooleanButton;
 use crate::camera::{Camera, CameraDirection};
 use crate::console;
 use crate::dispatch_event::{dispatch_event, dispatch_event_with};
@@ -148,8 +149,12 @@ fn calculate_far_away_position(animation: &AnimationData) -> f32 {
 fn pre_process_input(input: &mut Input, resources: &Resources) -> WasmResult<()> {
     input.now = now().unwrap_or(resources.timers.last_time);
     input.toggle_pixels_shadow_kind.track_input();
-    input.speed_up.track_input();
-    input.speed_down.track_input();
+    input.translation_speed_up.track_input();
+    input.translation_speed_down.track_input();
+    input.filter_speed_up.track_input();
+    input.filter_speed_down.track_input();
+    input.turn_speed_up.track_input();
+    input.turn_speed_down.track_input();
     input.mouse_click.track_input();
     input.increase_blur.track_input();
     input.decrease_blur.track_input();
@@ -472,8 +477,8 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
     )?;
     change_pixel_sizes(
         &input,
-        input.increase_pixel_gap && !input.shift,
-        input.decrease_pixel_gap && !input.shift,
+        input.increase_pixel_width,
+        input.decrease_pixel_width,
         &mut res.crt_filters.cur_pixel_width,
         pixel_velocity * 0.005,
         "app-event.change_pixel_width",
@@ -481,8 +486,8 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
     )?;
     change_pixel_sizes(
         &input,
-        input.increase_pixel_gap && input.shift,
-        input.decrease_pixel_gap && input.shift,
+        input.increase_pixel_gap,
+        input.decrease_pixel_gap,
         &mut res.crt_filters.cur_pixel_gap,
         pixel_velocity * 0.005,
         "app-event.change_pixel_spread",
@@ -514,33 +519,47 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
 }
 
 fn update_speeds(res: &mut Resources, input: &Input) -> WasmResult<()> {
-    if input.alt {
-        //change_speed(&input, &mut res.camera.turning_speed, TURNING_BASE_SPEED, "Turning camera speed: ")?;
-    } else if input.shift {
-        change_speed(
-            &input,
-            &mut res.crt_filters.change_speed,
-            PIXEL_MANIPULATION_BASE_SPEED,
-            "Pixel manipulation speed: ",
-            "app-event.change_pixel_speed",
-        )?;
-    } else {
-        change_speed(&input, &mut res.camera.turning_speed, TURNING_BASE_SPEED, "Turning camera speed: ", "app-event.change_turning_speed")?;
-        change_speed(
-            &input,
-            &mut res.camera.movement_speed,
-            res.initial_parameters.initial_movement_speed,
-            "Translation camera speed: ",
-            "app-event.change_movement_speed",
-        )?;
-    }
+    change_speed(
+        &input.turn_speed_up,
+        &input.turn_speed_down,
+        &mut res.camera.turning_speed,
+        TURNING_BASE_SPEED,
+        "Turning camera speed: ",
+        "app-event.change_turning_speed",
+    )?;
 
-    fn change_speed(input: &Input, cur_speed: &mut f32, base_speed: f32, top_message: &str, event_id: &str) -> WasmResult<()> {
+    change_speed(
+        &input.filter_speed_up,
+        &input.filter_speed_down,
+        &mut res.crt_filters.change_speed,
+        PIXEL_MANIPULATION_BASE_SPEED,
+        "Pixel manipulation speed: ",
+        "app-event.change_pixel_speed",
+    )?;
+
+    change_speed(
+        &input.translation_speed_up,
+        &input.translation_speed_down,
+        &mut res.camera.turning_speed,
+        TURNING_BASE_SPEED,
+        "Turning camera speed: ",
+        "app-event.change_turning_speed",
+    )?;
+    change_speed(
+        &input.translation_speed_up,
+        &input.translation_speed_down,
+        &mut res.camera.movement_speed,
+        res.initial_parameters.initial_movement_speed,
+        "Translation camera speed: ",
+        "app-event.change_movement_speed",
+    )?;
+
+    fn change_speed(speed_up: &BooleanButton, speed_down: &BooleanButton, cur_speed: &mut f32, base_speed: f32, top_message: &str, event_id: &str) -> WasmResult<()> {
         let before_speed = *cur_speed;
-        if input.speed_up.is_just_pressed() && *cur_speed < 10000.0 {
+        if speed_up.is_just_pressed() && *cur_speed < 10000.0 {
             *cur_speed *= 2.0;
         }
-        if input.speed_down.is_just_pressed() && *cur_speed > 0.01 {
+        if speed_down.is_just_pressed() && *cur_speed > 0.01 {
             *cur_speed /= 2.0;
         }
         if *cur_speed != before_speed {
