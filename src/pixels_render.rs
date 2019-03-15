@@ -1,4 +1,5 @@
 use js_sys::{ArrayBuffer, Float32Array};
+use num_derive::{FromPrimitive, ToPrimitive};
 use std::mem::size_of;
 use web_sys::{WebGl2RenderingContext, WebGlBuffer, WebGlProgram, WebGlTexture, WebGlVertexArrayObject};
 
@@ -6,10 +7,19 @@ use crate::shaders::make_shader;
 use crate::wasm_error::WasmResult;
 use crate::web_utils::js_f32_array;
 
-#[derive(Clone, Copy)]
+#[derive(FromPrimitive, ToPrimitive, Clone, Copy)]
 pub enum PixelsGeometryKind {
     Squares,
     Cubes,
+}
+
+impl std::fmt::Display for PixelsGeometryKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match *self {
+            PixelsGeometryKind::Squares => write!(f, "Squares"),
+            PixelsGeometryKind::Cubes => write!(f, "Cubes"),
+        }
+    }
 }
 
 pub struct PixelsRender {

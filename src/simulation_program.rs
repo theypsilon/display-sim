@@ -1,4 +1,3 @@
-use num_traits::FromPrimitive;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
 use web_sys::{WebGl2RenderingContext, Window};
@@ -10,6 +9,7 @@ use crate::camera::{Camera, CameraDirection};
 use crate::console;
 use crate::dispatch_event::{dispatch_event, dispatch_event_with};
 use crate::event_listeners::set_event_listeners;
+use crate::general_types::NextEnumVariant;
 use crate::internal_resolution_render::InternalResolutionRender;
 use crate::pixels_render::{PixelsGeometryKind, PixelsRender, PixelsUniform};
 use crate::render_types::TextureBufferStack;
@@ -345,7 +345,7 @@ fn update_lpp(res: &mut Resources, input: &Input) -> WasmResult<()> {
         dispatch_event_with("app-event.top_message", &"Maximum value is 20".into())?;
     }
     if last_lpp != res.crt_filters.lines_per_pixel {
-        dispatch_event_with("app-event.top_message", &("Lines per pixel: ".to_string() + &res.crt_filters.lines_per_pixel.to_string()).into())?;
+        dispatch_event_with("app-event.top_message", &format!("Lines per pixel: {}.", res.crt_filters.lines_per_pixel).into())?;
         dispatch_event_with("app-event.change_lines_per_pixel", &(res.crt_filters.lines_per_pixel as i32).into())?;
     }
     Ok(())
@@ -353,14 +353,8 @@ fn update_lpp(res: &mut Resources, input: &Input) -> WasmResult<()> {
 
 fn update_pixel_pulse(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> {
     if input.next_screen_curvature_type.is_just_pressed() {
-        res.crt_filters.screen_curvature_kind =
-            FromPrimitive::from_i32((res.crt_filters.screen_curvature_kind as i32 + 1) % ScreenCurvatureKind::VARIANT_COUNT as i32).ok_or("Bad ScreenCurvatureKind::VARIANT_COUNT")?;
-        let message = match res.crt_filters.screen_curvature_kind {
-            ScreenCurvatureKind::Flat => "Flat",
-            ScreenCurvatureKind::Curved => "Curved",
-            ScreenCurvatureKind::Pulse => "Weaving pulse",
-        };
-        dispatch_event_with("app-event.top_message", &format!("Screen curvature: {}.", message).into())?;
+        res.crt_filters.screen_curvature_kind.next_enum_variant()?;
+        dispatch_event_with("app-event.top_message", &format!("Screen curvature: {}.", res.crt_filters.screen_curvature_kind).into())?;
     }
 
     if let ScreenCurvatureKind::Pulse = res.crt_filters.screen_curvature_kind {
@@ -381,70 +375,44 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
     }
 
     if input.next_layering_kind.is_just_pressed() {
-        res.crt_filters.layering_kind =
-            FromPrimitive::from_i32((res.crt_filters.layering_kind as i32 + 1) % ScreenLayeringKind::VARIANT_COUNT as i32).ok_or("Bad ScreenLayeringKind::VARIANT_COUNT.")?;
-        let message: &'static str;
+        res.crt_filters.layering_kind.next_enum_variant()?;
         match res.crt_filters.layering_kind {
             ScreenLayeringKind::ShadowOnly => {
                 res.crt_filters.showing_diffuse_foreground = true;
                 res.crt_filters.showing_solid_background = false;
-                message = "Shadow only";
             }
             ScreenLayeringKind::SolidOnly => {
                 res.crt_filters.showing_diffuse_foreground = false;
                 res.crt_filters.showing_solid_background = true;
                 res.crt_filters.solid_color_weight = 1.0;
-                message = "Solid only";
             }
             ScreenLayeringKind::ShadowWithSolidBackground75 => {
                 res.crt_filters.showing_diffuse_foreground = true;
                 res.crt_filters.showing_solid_background = true;
                 res.crt_filters.solid_color_weight = 0.75;
-                message = "Shadow with 75% Solid background";
             }
             ScreenLayeringKind::ShadowWithSolidBackground50 => {
                 res.crt_filters.showing_diffuse_foreground = true;
                 res.crt_filters.showing_solid_background = true;
                 res.crt_filters.solid_color_weight = 0.5;
-                message = "Shadow with 50% Solid background";
             }
             ScreenLayeringKind::ShadowWithSolidBackground25 => {
                 res.crt_filters.showing_diffuse_foreground = true;
                 res.crt_filters.showing_solid_background = true;
                 res.crt_filters.solid_color_weight = 0.25;
-                message = "Shadow with 25% Solid background";
             }
         };
-        dispatch_event_with("app-event.top_message", &format!("Layering kind '{}' selected.", message).into())?;
+        dispatch_event_with("app-event.top_message", &format!("Layering kind: {}.", res.crt_filters.layering_kind).into())?;
     }
 
     if input.next_color_representation_kind.is_just_pressed() {
-        res.crt_filters.color_channels = match res.crt_filters.color_channels {
-            ColorChannels::Combined => ColorChannels::Overlapping,
-            ColorChannels::Overlapping => ColorChannels::SplitHorizontal,
-            ColorChannels::SplitHorizontal => ColorChannels::SplitVertical,
-            ColorChannels::SplitVertical => ColorChannels::Combined,
-        };
-        let message = match res.crt_filters.color_channels {
-            ColorChannels::Combined => "combined",
-            ColorChannels::Overlapping => "horizontal overlapping",
-            ColorChannels::SplitHorizontal => "horizontal split",
-            ColorChannels::SplitVertical => "vertical split",
-        };
-        dispatch_event_with("app-event.top_message", &("Pixel color representation: ".to_string() + message + ".").into())?;
+        res.crt_filters.color_channels.next_enum_variant()?;
+        dispatch_event_with("app-event.top_message", &format!("Pixel color representation: {}.", res.crt_filters.color_channels).into())?;
     }
 
     if input.next_pixel_geometry_kind.is_just_released() {
-        res.crt_filters.pixels_geometry_kind = match res.crt_filters.pixels_geometry_kind {
-            PixelsGeometryKind::Squares => PixelsGeometryKind::Cubes,
-            PixelsGeometryKind::Cubes => PixelsGeometryKind::Squares,
-        };
-        let message = match res.crt_filters.pixels_geometry_kind {
-            PixelsGeometryKind::Squares => "squares",
-            PixelsGeometryKind::Cubes => "cubes",
-        };
-        dispatch_event_with("app-event.top_message", &("Showing pixels as ".to_string() + message + ".").into())?;
-        dispatch_event_with("app-event.showing_pixels_as", &message.into())?;
+        res.crt_filters.pixels_geometry_kind.next_enum_variant()?;
+        dispatch_event_with("app-event.top_message", &format!("Pixel geometry: {}.", res.crt_filters.pixels_geometry_kind).into())?;
     }
 
     if input.toggle_pixels_shadow_kind.is_just_released() {
@@ -454,7 +422,7 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
         }
         dispatch_event_with(
             "app-event.top_message",
-            &("Showing next pixel shadow: ".to_string() + &res.crt_filters.pixel_shadow_kind.to_string() + ".").into(),
+            &format!("Showing next pixel shadow: {}.", res.crt_filters.pixel_shadow_kind.to_string()).into(),
         )?;
     }
 

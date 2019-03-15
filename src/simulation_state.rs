@@ -1,8 +1,7 @@
 use js_sys::ArrayBuffer;
 use wasm_bindgen::prelude::{Closure, JsValue};
 
-use num_derive::FromPrimitive;
-use variant_count::VariantCount;
+use num_derive::{FromPrimitive, ToPrimitive};
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -103,27 +102,61 @@ pub struct CrtFilters {
     pub layering_kind: ScreenLayeringKind,
 }
 
-#[derive(FromPrimitive, Copy, Clone, VariantCount)]
+#[derive(FromPrimitive, ToPrimitive, Copy, Clone)]
 pub enum ScreenLayeringKind {
-    ShadowOnly = 0,
-    SolidOnly = 1,
-    ShadowWithSolidBackground75 = 2,
-    ShadowWithSolidBackground50 = 3,
-    ShadowWithSolidBackground25 = 4,
+    ShadowOnly,
+    SolidOnly,
+    ShadowWithSolidBackground75,
+    ShadowWithSolidBackground50,
+    ShadowWithSolidBackground25,
 }
 
-#[derive(FromPrimitive, Copy, Clone, VariantCount)]
+impl std::fmt::Display for ScreenLayeringKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match *self {
+            ScreenLayeringKind::ShadowOnly => write!(f, "Shadow only"),
+            ScreenLayeringKind::SolidOnly => write!(f, "Solid only"),
+            ScreenLayeringKind::ShadowWithSolidBackground75 => write!(f, "Shadow with 75% Solid background"),
+            ScreenLayeringKind::ShadowWithSolidBackground50 => write!(f, "Shadow with 50% Solid background"),
+            ScreenLayeringKind::ShadowWithSolidBackground25 => write!(f, "Shadow with 25% Solid background"),
+        }
+    }
+}
+
+#[derive(FromPrimitive, ToPrimitive, Copy, Clone)]
 pub enum ScreenCurvatureKind {
-    Flat = 0,
-    Curved = 1,
-    Pulse = 2,
+    Flat,
+    Curved,
+    Pulse,
 }
 
+impl std::fmt::Display for ScreenCurvatureKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match *self {
+            ScreenCurvatureKind::Flat => write!(f, "Flat"),
+            ScreenCurvatureKind::Curved => write!(f, "Curved"),
+            ScreenCurvatureKind::Pulse => write!(f, "Weaving pulse"),
+        }
+    }
+}
+
+#[derive(FromPrimitive, ToPrimitive)]
 pub enum ColorChannels {
     Combined,
     Overlapping,
     SplitHorizontal,
     SplitVertical,
+}
+
+impl std::fmt::Display for ColorChannels {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match *self {
+            ColorChannels::Combined => write!(f, "Combined"),
+            ColorChannels::Overlapping => write!(f, "Horizontal overlapping"),
+            ColorChannels::SplitHorizontal => write!(f, "Horizontal split"),
+            ColorChannels::SplitVertical => write!(f, "Vertical split"),
+        }
+    }
 }
 
 impl CrtFilters {

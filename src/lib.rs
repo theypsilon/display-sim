@@ -6,6 +6,7 @@ mod camera;
 mod console;
 mod dispatch_event;
 mod event_listeners;
+mod general_types;
 mod internal_resolution_render;
 mod pixels_render;
 mod render_types;
