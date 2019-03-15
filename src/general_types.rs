@@ -4,7 +4,10 @@ pub trait NextEnumVariant {
     fn next_enum_variant(&mut self) -> Result<(), &str>;
 }
 
-impl<T> NextEnumVariant for T where T: FromPrimitive + ToPrimitive {
+impl<T> NextEnumVariant for T
+where
+    T: FromPrimitive + ToPrimitive,
+{
     fn next_enum_variant(&mut self) -> Result<(), &str>
     where
         Self: FromPrimitive + ToPrimitive,
