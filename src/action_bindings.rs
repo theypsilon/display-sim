@@ -38,62 +38,62 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
         "arrowdown" | "↓" | "▼" => input.turn_down = pressed,
         "f" => {
             if input.shift {
-                input.filter_speed_up.input = pressed
+                input.filter_speed.increase.input = pressed
             } else {
-                input.translation_speed_up.input = pressed
+                input.translation_speed.increase.input = pressed
             }
         }
         "r" => {
             if input.shift {
-                input.filter_speed_down.input = pressed
+                input.filter_speed.decrease.input = pressed
             } else {
-                input.translation_speed_down.input = pressed
+                input.translation_speed.decrease.input = pressed
             }
         }
-        "feature-change-move-speed-inc" => input.translation_speed_up.input = pressed,
-        "feature-change-move-speed-dec" => input.translation_speed_down.input = pressed,
-        "feature-change-pixel-speed-inc" => input.filter_speed_up.input = pressed,
-        "feature-change-pixel-speed-dec" => input.filter_speed_down.input = pressed,
+        "feature-change-move-speed-inc" => input.translation_speed.increase.input = pressed,
+        "feature-change-move-speed-dec" => input.translation_speed.decrease.input = pressed,
+        "feature-change-pixel-speed-inc" => input.filter_speed.increase.input = pressed,
+        "feature-change-pixel-speed-dec" => input.filter_speed.decrease.input = pressed,
         "t" | "reset-speeds" => input.reset_speeds = pressed,
-        "camera-zoom-inc" => input.increase_camera_zoom = pressed,
-        "camera-zoom-dec" => input.decrease_camera_zoom = pressed,
-        "u" | "pixel-vertical-gap-inc" => input.increase_pixel_scale_x = pressed,
-        "i" | "pixel-vertical-gap-dec" => input.decrease_pixel_scale_x = pressed,
-        "j" | "pixel-horizontal-gap-inc" => input.increase_pixel_scale_y = pressed,
-        "k" | "pixel-horizontal-gap-dec" => input.decrease_pixel_scale_y = pressed,
+        "camera-zoom-inc" => input.camera_zoom.increase = pressed,
+        "camera-zoom-dec" => input.camera_zoom.decrease = pressed,
+        "u" | "pixel-vertical-gap-inc" => input.pixel_scale_x.increase = pressed,
+        "i" | "pixel-vertical-gap-dec" => input.pixel_scale_x.decrease = pressed,
+        "j" | "pixel-horizontal-gap-inc" => input.pixel_scale_y.increase = pressed,
+        "k" | "pixel-horizontal-gap-dec" => input.pixel_scale_y.decrease = pressed,
         "n" | "pixel-width-inc" => {
             if input.shift {
-                input.increase_pixel_gap = pressed
+                input.pixel_gap.increase = pressed
             } else {
-                input.increase_pixel_width = pressed
+                input.pixel_width.increase = pressed
             }
         }
         "m" | "pixel-width-dec" => {
             if input.shift {
-                input.decrease_pixel_gap = pressed
+                input.pixel_gap.decrease = pressed
             } else {
-                input.decrease_pixel_width = pressed
+                input.pixel_width.decrease = pressed
             }
         }
-        "b" | "blur-level-inc" => input.increase_blur.input = pressed,
-        "v" | "bluer-level-dec" => input.decrease_blur.input = pressed,
-        "<" | "&lt;" | "pixel-contrast-inc" => input.increase_contrast = pressed,
-        "z" | "pixel-contrast-dec" => input.decrease_contrast = pressed,
-        "c" | "pixel-brightness-inc" => input.increase_bright = pressed,
-        "x" | "pixel-brightness-dec" => input.decrease_bright = pressed,
+        "b" | "blur-level-inc" => input.blur.increase.input = pressed,
+        "v" | "bluer-level-dec" => input.blur.decrease.input = pressed,
+        "<" | "&lt;" | "pixel-contrast-inc" => input.contrast.increase = pressed,
+        "z" | "pixel-contrast-dec" => input.contrast.decrease = pressed,
+        "c" | "pixel-brightness-inc" => input.bright.increase = pressed,
+        "x" | "pixel-brightness-dec" => input.bright.decrease = pressed,
         "y" | "feature-change-color-representation" => input.next_color_representation_kind.input = pressed,
         "o" | "feature-change-pixel-geometry" => input.next_pixel_geometry_kind.input = pressed,
         "l" | "feature-change-screen-curvature" => input.next_screen_curvature_type.input = pressed,
-        "g" | "lines-per-pixel-inc" => input.increase_lpp.input = pressed,
-        "h" | "lines-per-pixel-dec" => input.decrease_lpp.input = pressed,
+        "g" | "lines-per-pixel-inc" => input.lpp.increase.input = pressed,
+        "h" | "lines-per-pixel-dec" => input.lpp.decrease.input = pressed,
         "shift" => {
             input.shift = pressed;
             if input.shift {
-                input.increase_pixel_width = false;
-                input.decrease_pixel_width = false
+                input.pixel_width.increase = false;
+                input.pixel_width.decrease = false
             } else {
-                input.increase_pixel_gap = false;
-                input.decrease_pixel_gap = false
+                input.pixel_gap.increase = false;
+                input.pixel_gap.decrease = false
             }
         }
         "alt" => input.alt = pressed,

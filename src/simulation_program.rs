@@ -14,7 +14,9 @@ use crate::internal_resolution_render::InternalResolutionRender;
 use crate::pixels_render::{PixelsGeometryKind, PixelsRender, PixelsUniform};
 use crate::render_types::TextureBufferStack;
 use crate::rgb_render::RgbRender;
-use crate::simulation_state::{AnimationData, ColorChannels, CrtFilters, InitialParameters, Input, Resources, ScreenCurvatureKind, ScreenLayeringKind, SimulationTimers, StateOwner};
+use crate::simulation_state::{
+    AnimationData, ColorChannels, CrtFilters, CustomInputEvent, IncDec, InitialParameters, Input, Resources, ScreenCurvatureKind, ScreenLayeringKind, SimulationTimers, StateOwner,
+};
 use crate::wasm_error::{WasmError, WasmResult};
 use crate::web_utils::{now, window};
 
@@ -149,17 +151,17 @@ fn calculate_far_away_position(animation: &AnimationData) -> f32 {
 fn pre_process_input(input: &mut Input, resources: &Resources) -> WasmResult<()> {
     input.now = now().unwrap_or(resources.timers.last_time);
     input.toggle_pixels_shadow_kind.track_input();
-    input.translation_speed_up.track_input();
-    input.translation_speed_down.track_input();
-    input.filter_speed_up.track_input();
-    input.filter_speed_down.track_input();
-    input.turn_speed_up.track_input();
-    input.turn_speed_down.track_input();
+    input.translation_speed.increase.track_input();
+    input.translation_speed.decrease.track_input();
+    input.filter_speed.increase.track_input();
+    input.filter_speed.decrease.track_input();
+    input.turn_speed.increase.track_input();
+    input.turn_speed.decrease.track_input();
     input.mouse_click.track_input();
-    input.increase_blur.track_input();
-    input.decrease_blur.track_input();
-    input.increase_lpp.track_input();
-    input.decrease_lpp.track_input();
+    input.blur.increase.track_input();
+    input.blur.decrease.track_input();
+    input.lpp.increase.track_input();
+    input.lpp.decrease.track_input();
     input.next_color_representation_kind.track_input();
     input.next_pixel_geometry_kind.track_input();
     input.next_layering_kind.track_input();
@@ -237,13 +239,13 @@ fn update_animation_buffer(res: &mut Resources, input: &Input) {
 }
 
 fn update_colors(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> {
-    if input.increase_bright {
+    if input.bright.increase {
         res.crt_filters.extra_bright += 0.01 * dt * res.crt_filters.change_speed;
     }
-    if input.decrease_bright {
+    if input.bright.decrease {
         res.crt_filters.extra_bright -= 0.01 * dt * res.crt_filters.change_speed;
     }
-    if input.increase_bright || input.decrease_bright {
+    if input.bright.increase || input.bright.decrease {
         if res.crt_filters.extra_bright < -1.0 {
             res.crt_filters.extra_bright = -1.0;
             dispatch_event_with("app-event.top_message", &"Minimum value is -1.0".into())?;
@@ -254,13 +256,13 @@ fn update_colors(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> 
             dispatch_event_with("app-event.change_pixel_brightness", &res.crt_filters.extra_bright.into())?;
         }
     }
-    if input.increase_contrast {
+    if input.contrast.increase {
         res.crt_filters.extra_contrast += 0.01 * dt * res.crt_filters.change_speed;
     }
-    if input.decrease_contrast {
+    if input.contrast.decrease {
         res.crt_filters.extra_contrast -= 0.01 * dt * res.crt_filters.change_speed;
     }
-    if input.increase_contrast || input.decrease_contrast {
+    if input.contrast.increase || input.contrast.decrease {
         if res.crt_filters.extra_contrast < 0.0 {
             res.crt_filters.extra_contrast = 0.0;
             dispatch_event_with("app-event.top_message", &"Minimum value is 0.0".into())?;
@@ -296,10 +298,10 @@ fn update_colors(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> 
 
 fn update_blur(res: &mut Resources, input: &Input) -> WasmResult<()> {
     let last_blur_passes = res.crt_filters.blur_passes;
-    if input.increase_blur.is_just_pressed() {
+    if input.blur.increase.is_just_pressed() {
         res.crt_filters.blur_passes += 1;
     }
-    if input.decrease_blur.is_just_pressed() {
+    if input.blur.decrease.is_just_pressed() {
         if res.crt_filters.blur_passes > 0 {
             res.crt_filters.blur_passes -= 1;
         } else {
@@ -325,10 +327,10 @@ fn update_blur(res: &mut Resources, input: &Input) -> WasmResult<()> {
 // lines per pixel
 fn update_lpp(res: &mut Resources, input: &Input) -> WasmResult<()> {
     let last_lpp = res.crt_filters.lines_per_pixel;
-    if input.increase_lpp.is_just_pressed() {
+    if input.lpp.increase.is_just_pressed() {
         res.crt_filters.lines_per_pixel += 1;
     }
-    if input.decrease_lpp.is_just_pressed() && res.crt_filters.lines_per_pixel > 0 {
+    if input.lpp.decrease.is_just_pressed() && res.crt_filters.lines_per_pixel > 0 {
         res.crt_filters.lines_per_pixel -= 1;
     }
     if input.custom_event.kind.as_ref() as &str == "event_kind:lines_per_pixel" {
@@ -458,52 +460,48 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
 
     let pixel_velocity = dt * res.crt_filters.change_speed;
     change_pixel_sizes(
-        &input,
-        input.increase_pixel_scale_x,
-        input.decrease_pixel_scale_x,
+        &input.custom_event,
+        input.pixel_scale_x.clone(),
         &mut res.crt_filters.cur_pixel_scale_x,
         pixel_velocity * 0.00125,
         "app-event.change_pixel_vertical_gap",
         "event_kind:pixel_vertical_gap",
     )?;
     change_pixel_sizes(
-        &input,
-        input.increase_pixel_scale_y,
-        input.decrease_pixel_scale_y,
+        &input.custom_event,
+        input.pixel_scale_y.clone(),
         &mut res.crt_filters.cur_pixel_scale_y,
         pixel_velocity * 0.00125,
         "app-event.change_pixel_horizontal_gap",
         "event_kind:pixel_horizontal_gap",
     )?;
     change_pixel_sizes(
-        &input,
-        input.increase_pixel_width,
-        input.decrease_pixel_width,
+        &input.custom_event,
+        input.pixel_width.clone(),
         &mut res.crt_filters.cur_pixel_width,
         pixel_velocity * 0.005,
         "app-event.change_pixel_width",
         "event_kind:pixel_width",
     )?;
     change_pixel_sizes(
-        &input,
-        input.increase_pixel_gap,
-        input.decrease_pixel_gap,
+        &input.custom_event,
+        input.pixel_gap.clone(),
         &mut res.crt_filters.cur_pixel_gap,
         pixel_velocity * 0.005,
         "app-event.change_pixel_spread",
         "event_kind:pixel_spread",
     )?;
 
-    fn change_pixel_sizes(input: &Input, increase: bool, decrease: bool, cur_size: &mut f32, velocity: f32, event_id: &str, event_kind: &str) -> WasmResult<()> {
+    fn change_pixel_sizes(custom_event: &CustomInputEvent, controller: IncDec<bool>, cur_size: &mut f32, velocity: f32, event_id: &str, event_kind: &str) -> WasmResult<()> {
         let before_size = *cur_size;
-        if increase {
+        if controller.increase {
             *cur_size += velocity;
         }
-        if decrease {
+        if controller.decrease {
             *cur_size -= velocity;
         }
-        if input.custom_event.kind.as_ref() as &str == event_kind {
-            *cur_size = input.custom_event.value.as_f64().ok_or("it should be a number")? as f32;
+        if custom_event.kind.as_ref() as &str == event_kind {
+            *cur_size = custom_event.value.as_f64().ok_or("it should be a number")? as f32;
         }
         if *cur_size != before_size {
             if *cur_size < 0.0 {
@@ -520,8 +518,7 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
 
 fn update_speeds(res: &mut Resources, input: &Input) -> WasmResult<()> {
     change_speed(
-        &input.turn_speed_up,
-        &input.turn_speed_down,
+        &input.turn_speed,
         &mut res.camera.turning_speed,
         TURNING_BASE_SPEED,
         "Turning camera speed: ",
@@ -529,8 +526,7 @@ fn update_speeds(res: &mut Resources, input: &Input) -> WasmResult<()> {
     )?;
 
     change_speed(
-        &input.filter_speed_up,
-        &input.filter_speed_down,
+        &input.filter_speed,
         &mut res.crt_filters.change_speed,
         PIXEL_MANIPULATION_BASE_SPEED,
         "Pixel manipulation speed: ",
@@ -538,28 +534,26 @@ fn update_speeds(res: &mut Resources, input: &Input) -> WasmResult<()> {
     )?;
 
     change_speed(
-        &input.translation_speed_up,
-        &input.translation_speed_down,
+        &input.translation_speed,
         &mut res.camera.turning_speed,
         TURNING_BASE_SPEED,
         "Turning camera speed: ",
         "app-event.change_turning_speed",
     )?;
     change_speed(
-        &input.translation_speed_up,
-        &input.translation_speed_down,
+        &input.translation_speed,
         &mut res.camera.movement_speed,
         res.initial_parameters.initial_movement_speed,
         "Translation camera speed: ",
         "app-event.change_movement_speed",
     )?;
 
-    fn change_speed(speed_up: &BooleanButton, speed_down: &BooleanButton, cur_speed: &mut f32, base_speed: f32, top_message: &str, event_id: &str) -> WasmResult<()> {
+    fn change_speed(speed: &IncDec<BooleanButton>, cur_speed: &mut f32, base_speed: f32, top_message: &str, event_id: &str) -> WasmResult<()> {
         let before_speed = *cur_speed;
-        if speed_up.is_just_pressed() && *cur_speed < 10000.0 {
+        if speed.increase.is_just_pressed() && *cur_speed < 10000.0 {
             *cur_speed *= 2.0;
         }
-        if speed_down.is_just_pressed() && *cur_speed > 0.01 {
+        if speed.decrease.is_just_pressed() && *cur_speed > 0.01 {
             *cur_speed /= 2.0;
         }
         if *cur_speed != before_speed {
@@ -629,9 +623,9 @@ fn update_camera(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> 
         dispatch_event("app-event.exit_pointer_lock")?;
     }
 
-    if input.increase_camera_zoom {
+    if input.camera_zoom.increase {
         res.camera.change_zoom(dt * -100.0)?;
-    } else if input.decrease_camera_zoom {
+    } else if input.camera_zoom.decrease {
         res.camera.change_zoom(dt * 100.0)?;
     } else if input.mouse_scroll_y != 0.0 {
         res.camera.change_zoom(input.mouse_scroll_y)?;
