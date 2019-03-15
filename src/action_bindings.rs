@@ -1,14 +1,30 @@
-use crate::simulation_state::{Input};
 use crate::console;
+use crate::simulation_state::Input;
 
 pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
     match button_action {
-        "," => if !input.input_focused { input.next_layering_kind.input = pressed},
-        "." => if !input.input_focused { input.toggle_pixels_shadow_kind.input = pressed},
+        "," => {
+            if !input.input_focused {
+                input.next_layering_kind.input = pressed
+            }
+        }
+        "." => {
+            if !input.input_focused {
+                input.toggle_pixels_shadow_kind.input = pressed
+            }
+        }
         "feature-change-screen-layering-type" => input.next_layering_kind.input = pressed,
         "feature-change-pixel-shadow" => input.toggle_pixels_shadow_kind.input = pressed,
-        "+" => if !input.input_focused { input.rotate_left = pressed },
-        "-" => if !input.input_focused { input.rotate_right = pressed },
+        "+" => {
+            if !input.input_focused {
+                input.rotate_left = pressed
+            }
+        }
+        "-" => {
+            if !input.input_focused {
+                input.rotate_right = pressed
+            }
+        }
         "input_focused" => input.input_focused = pressed,
         "a" => input.walk_left = pressed,
         "d" => input.walk_right = pressed,
@@ -25,11 +41,11 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
         "feature-change-pixel-speed-inc" => {
             input.speed_up.input = pressed;
             input.shift = pressed;
-        },
+        }
         "feature-change-pixel-speed-dec" => {
             input.speed_down.input = pressed;
             input.shift = pressed;
-        },
+        }
         "t" | "reset-speeds" => input.reset_speeds = pressed,
         "camera-zoom-inc" => input.increase_camera_zoom = pressed,
         "camera-zoom-dec" => input.decrease_camera_zoom = pressed,

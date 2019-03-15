@@ -1,23 +1,12 @@
-use web_sys::{
-    WebGlProgram, WebGl2RenderingContext, 
-    WebGlShader, WebGlVertexArrayObject
-};
+use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlShader, WebGlVertexArrayObject};
 
-use crate::web_utils::{js_f32_array, js_i32_array};
 use crate::wasm_error::{WasmError, WasmResult};
+use crate::web_utils::{js_f32_array, js_i32_array};
 use std::mem::size_of;
 
 pub fn make_shader(gl: &WebGl2RenderingContext, vertex_shader: &str, fragment_shader: &str) -> WasmResult<WebGlProgram> {
-    let vert_shader = compile_shader(
-        &gl,
-        WebGl2RenderingContext::VERTEX_SHADER,
-        vertex_shader,
-    )?;
-    let frag_shader = compile_shader(
-        &gl,
-        WebGl2RenderingContext::FRAGMENT_SHADER,
-        fragment_shader,
-    )?;
+    let vert_shader = compile_shader(&gl, WebGl2RenderingContext::VERTEX_SHADER, vertex_shader)?;
+    let frag_shader = compile_shader(&gl, WebGl2RenderingContext::FRAGMENT_SHADER, fragment_shader)?;
     link_shader(&gl, [vert_shader, frag_shader].iter())
 }
 
@@ -26,17 +15,10 @@ fn compile_shader(gl: &WebGl2RenderingContext, shader_type: u32, source: &str) -
     gl.shader_source(&shader, source);
     gl.compile_shader(&shader);
 
-    if gl
-        .get_shader_parameter(&shader, WebGl2RenderingContext::COMPILE_STATUS)
-        .as_bool()
-        .unwrap_or(false)
-    {
+    if gl.get_shader_parameter(&shader, WebGl2RenderingContext::COMPILE_STATUS).as_bool().unwrap_or(false) {
         Ok(shader)
     } else {
-        Err(WasmError::Str(gl
-            .get_shader_info_log(&shader)
-            .ok_or("Unknown error creating shader")?)
-        )
+        Err(WasmError::Str(gl.get_shader_info_log(&shader).ok_or("Unknown error creating shader")?))
     }
 }
 
@@ -47,11 +29,7 @@ fn link_shader<'a, T: IntoIterator<Item = &'a WebGlShader>>(gl: &WebGl2Rendering
     }
     gl.link_program(&program);
 
-    if gl
-        .get_program_parameter(&program, WebGl2RenderingContext::LINK_STATUS)
-        .as_bool()
-        .unwrap_or(false)
-    {
+    if gl.get_program_parameter(&program, WebGl2RenderingContext::LINK_STATUS).as_bool().unwrap_or(false) {
         Ok(program)
     } else {
         Err(WasmError::Str(gl.get_program_info_log(&program).ok_or("cannot get program info log")?))
@@ -65,11 +43,7 @@ pub fn make_quad_vao(gl: &WebGl2RenderingContext, shader: &WebGlProgram) -> Wasm
     let quad_vbo = gl.create_buffer().ok_or("cannot create quad_vbo")?;
     let quad_ebo = gl.create_buffer().ok_or("cannot create quad_ebo")?;
     gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&quad_vbo));
-    gl.buffer_data_with_opt_array_buffer(
-        WebGl2RenderingContext::ARRAY_BUFFER,
-        Some(&js_f32_array(&QUAD_GEOMETRY).buffer()),
-        WebGl2RenderingContext::STATIC_DRAW,
-    );
+    gl.buffer_data_with_opt_array_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&js_f32_array(&QUAD_GEOMETRY).buffer()), WebGl2RenderingContext::STATIC_DRAW);
     gl.bind_buffer(WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER, Some(&quad_ebo));
     gl.buffer_data_with_opt_array_buffer(WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER, Some(&js_i32_array(&QUAD_INDICES).buffer()), WebGl2RenderingContext::STATIC_DRAW);
 
@@ -84,6 +58,7 @@ pub fn make_quad_vao(gl: &WebGl2RenderingContext, shader: &WebGlProgram) -> Wasm
     Ok(vao)
 }
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 pub const QUAD_GEOMETRY : [f32; 20] = [
     1.0,  1.0, 0.0,   1.0, 1.0,
     1.0, -1.0, 0.0,   1.0, 0.0,
@@ -91,11 +66,11 @@ pub const QUAD_GEOMETRY : [f32; 20] = [
     -1.0,  1.0, 0.0,   0.0, 1.0
 ];
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 pub const QUAD_INDICES: [i32; 6] = [
     0, 1, 3,
     1, 2, 3,
 ];
-
 
 pub const TEXTURE_VERTEX_SHADER: &str = r#"#version 300 es
 precision highp float;

@@ -1,22 +1,22 @@
+use js_sys::ArrayBuffer;
 use wasm_bindgen::prelude::{Closure, JsValue};
-use js_sys::{ArrayBuffer};
 
 use num_derive::FromPrimitive;
 use variant_count::VariantCount;
 
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::rc::Rc;
 
-use crate::wasm_error::{WasmResult};
-use crate::boolean_button::BooleanButton;
-use crate::camera::{Camera};
-use crate::web_utils::{now};
-use crate::pixels_render::{PixelsRender, PixelsGeometryKind};
-use crate::blur_render::BlurRender;
-use crate::internal_resolution_render::InternalResolutionRender;
-use crate::rgb_render::RgbRender;
 use crate::background_render::BackgroundRender;
-use crate::render_types::{TextureBufferStack};
+use crate::blur_render::BlurRender;
+use crate::boolean_button::BooleanButton;
+use crate::camera::Camera;
+use crate::internal_resolution_render::InternalResolutionRender;
+use crate::pixels_render::{PixelsGeometryKind, PixelsRender};
+use crate::render_types::TextureBufferStack;
+use crate::rgb_render::RgbRender;
+use crate::wasm_error::WasmResult;
+use crate::web_utils::now;
 
 pub struct AnimationData {
     pub steps: Vec<ArrayBuffer>,
@@ -111,7 +111,6 @@ pub enum ScreenLayeringKind {
     ShadowWithSolidBackground50 = 3,
     ShadowWithSolidBackground25 = 4,
 }
-
 
 #[derive(FromPrimitive, Copy, Clone, VariantCount)]
 pub enum ScreenCurvatureKind {

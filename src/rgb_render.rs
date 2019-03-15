@@ -1,7 +1,7 @@
-use web_sys::{WebGl2RenderingContext, WebGlVertexArrayObject, WebGlProgram};
+use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlVertexArrayObject};
 
+use crate::shaders::{make_quad_vao, make_shader, TEXTURE_VERTEX_SHADER};
 use crate::wasm_error::WasmResult;
-use crate::shaders::{make_shader, make_quad_vao, TEXTURE_VERTEX_SHADER};
 
 pub struct RgbRender {
     vao: Option<WebGlVertexArrayObject>,
@@ -12,13 +12,13 @@ impl RgbRender {
     pub fn new(gl: &WebGl2RenderingContext) -> WasmResult<RgbRender> {
         let shader = make_shader(gl, TEXTURE_VERTEX_SHADER, RGB_FRAGMENT_SHADER)?;
         let vao = make_quad_vao(gl, &shader)?;
-        Ok(RgbRender{vao, shader})
+        Ok(RgbRender { vao, shader })
     }
 
     pub fn render(&self, gl: &WebGl2RenderingContext) {
         gl.bind_vertex_array(self.vao.as_ref());
         gl.use_program(Some(&self.shader));
-        
+
         gl.uniform1i(gl.get_uniform_location(&self.shader, "redImage").as_ref(), 0);
         gl.uniform1i(gl.get_uniform_location(&self.shader, "greenImage").as_ref(), 1);
         gl.uniform1i(gl.get_uniform_location(&self.shader, "blueImage").as_ref(), 2);

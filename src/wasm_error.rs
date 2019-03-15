@@ -1,11 +1,14 @@
 pub enum WasmError {
     Js(wasm_bindgen::JsValue),
-    Str(String)
+    Str(String),
 }
 
 impl WasmError {
     pub fn to_js(&self) -> wasm_bindgen::JsValue {
-        match self { WasmError::Js(o) => o.clone(), WasmError::Str(s) => s.into()}
+        match self {
+            WasmError::Js(o) => o.clone(),
+            WasmError::Str(s) => s.into(),
+        }
     }
 }
 

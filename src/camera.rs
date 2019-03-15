@@ -1,9 +1,16 @@
-use js_sys::{Float32Array};
+use js_sys::Float32Array;
 
+use crate::dispatch_event::dispatch_event_with;
 use crate::wasm_error::WasmResult;
-use crate::dispatch_event::{dispatch_event_with};
 
-pub enum CameraDirection{Down, Up, Left, Right, Forward, Backward}
+pub enum CameraDirection {
+    Down,
+    Up,
+    Left,
+    Right,
+    Forward,
+    Backward,
+}
 
 pub struct Camera {
     position: glm::Vec3,
@@ -23,11 +30,11 @@ pub struct Camera {
 impl Camera {
     pub fn new(movement_speed: f32, turning_speed: f32) -> Camera {
         Camera {
-            position: glm::vec3 (0.0, 0.0, 0.0),
-            position_delta: glm::vec3 (0.0, 0.0, 0.0),
-            direction: glm::vec3 (0.0, 0.0, -1.0),
-            axis_up: glm::vec3 (0.0, 1.0, 0.0),
-            axis_right: glm::vec3 (1.0, 0.0, 0.0),
+            position: glm::vec3(0.0, 0.0, 0.0),
+            position_delta: glm::vec3(0.0, 0.0, 0.0),
+            direction: glm::vec3(0.0, 0.0, -1.0),
+            axis_up: glm::vec3(0.0, 1.0, 0.0),
+            axis_right: glm::vec3(1.0, 0.0, 0.0),
             pitch: 0.0,
             heading: 0.0,
             rotate: 0.0,
@@ -66,11 +73,11 @@ impl Camera {
         let velocity = self.movement_speed * dt;
         self.position_delta += match direction {
             CameraDirection::Up => self.axis_up * velocity,
-            CameraDirection::Down => - self.axis_up * velocity,
-            CameraDirection::Left => - self.axis_right * velocity,
+            CameraDirection::Down => -self.axis_up * velocity,
+            CameraDirection::Left => -self.axis_right * velocity,
             CameraDirection::Right => self.axis_right * velocity,
             CameraDirection::Forward => self.direction * velocity,
-            CameraDirection::Backward => - self.direction * velocity,
+            CameraDirection::Backward => -self.direction * velocity,
         };
     }
 
@@ -81,7 +88,7 @@ impl Camera {
             CameraDirection::Down => self.heading -= velocity,
             CameraDirection::Left => self.pitch += velocity,
             CameraDirection::Right => self.pitch -= velocity,
-            _ => unreachable!()
+            _ => unreachable!(),
         };
     }
 
@@ -90,7 +97,7 @@ impl Camera {
         match direction {
             CameraDirection::Left => self.rotate += velocity,
             CameraDirection::Right => self.rotate -= velocity,
-            _ => unreachable!()
+            _ => unreachable!(),
         };
     }
 
@@ -119,7 +126,7 @@ impl Camera {
     }
 
     pub fn update_view(&mut self) -> WasmResult<()> {
-        if self.pitch == 0.0 && self.heading == 0.0 && self.rotate == 0.0 && self.position_delta == glm::vec3 (0.0, 0.0, 0.0) {
+        if self.pitch == 0.0 && self.heading == 0.0 && self.rotate == 0.0 && self.position_delta == glm::vec3(0.0, 0.0, 0.0) {
             return Ok(());
         }
         let pitch_quat = glm::quat_angle_axis(self.pitch, &self.axis_up);
@@ -131,16 +138,16 @@ impl Camera {
         self.direction = glm::quat_cross_vec(&temp, &self.direction);
         self.axis_up = glm::quat_cross_vec(&temp, &self.axis_up);
         self.axis_right = glm::quat_cross_vec(&temp, &self.axis_right);
-        
+
         self.heading *= 0.5;
         self.pitch *= 0.5;
         self.rotate *= 0.5;
-        
+
         self.position += self.position_delta;
-        self.position_delta = glm::vec3 (0.0, 0.0, 0.0);
+        self.position_delta = glm::vec3(0.0, 0.0, 0.0);
 
         if !self.sending_camera_update_event {
-            return Ok(())
+            return Ok(());
         }
 
         let values_array = Float32Array::new(&wasm_bindgen::JsValue::from(9));

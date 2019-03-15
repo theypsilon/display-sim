@@ -1,7 +1,5 @@
-use web_sys::{
-    WebGl2RenderingContext, WebGlTexture, WebGlFramebuffer
-};
-use crate::wasm_error::{WasmResult};
+use crate::wasm_error::WasmResult;
+use web_sys::{WebGl2RenderingContext, WebGlFramebuffer, WebGlTexture};
 
 pub struct TextureBuffer {
     texture: Option<WebGlTexture>,
@@ -24,7 +22,7 @@ impl TextureBuffer {
             0,
             WebGl2RenderingContext::RGBA,
             WebGl2RenderingContext::UNSIGNED_BYTE,
-            None
+            None,
         )?;
         gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MIN_FILTER, WebGl2RenderingContext::NEAREST as i32);
         gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MAG_FILTER, WebGl2RenderingContext::NEAREST as i32);
@@ -32,7 +30,7 @@ impl TextureBuffer {
         gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_WRAP_T, WebGl2RenderingContext::CLAMP_TO_EDGE as i32);
         gl.framebuffer_texture_2d(WebGl2RenderingContext::FRAMEBUFFER, WebGl2RenderingContext::COLOR_ATTACHMENT0, WebGl2RenderingContext::TEXTURE_2D, texture.as_ref(), 0);
 
-        Ok(TextureBuffer {texture, framebuffer})
+        Ok(TextureBuffer { texture, framebuffer })
     }
 
     pub fn new_with_depthbuffer(gl: &WebGl2RenderingContext, width: i32, height: i32) -> WasmResult<TextureBuffer> {
@@ -63,7 +61,13 @@ pub struct TextureBufferStack {
 
 impl TextureBufferStack {
     pub fn new(width: i32, height: i32) -> TextureBufferStack {
-        TextureBufferStack {stack: Vec::new(), width, height, cursor: 0, max_cursor: 0}
+        TextureBufferStack {
+            stack: Vec::new(),
+            width,
+            height,
+            cursor: 0,
+            max_cursor: 0,
+        }
     }
 
     pub fn push(&mut self, gl: &WebGl2RenderingContext) -> WasmResult<()> {
@@ -113,6 +117,4 @@ impl TextureBufferStack {
         }
         Ok(())
     }
-
 }
-

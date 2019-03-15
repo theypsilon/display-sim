@@ -2,7 +2,7 @@ pub struct BooleanButton {
     pub input: bool,
     activated: bool,
     just_pressed: bool,
-    just_released: bool
+    just_released: bool,
 }
 
 impl BooleanButton {
@@ -30,7 +30,13 @@ impl BooleanButton {
         self.track(self.input);
     }
 
-    pub fn is_activated(&self) -> bool { self.activated }
-    pub fn is_just_pressed(&self) -> bool { self.just_pressed }
-    pub fn is_just_released(&self) -> bool { self.just_released }
+    pub fn is_activated(&self) -> bool {
+        self.activated
+    }
+    pub fn is_just_pressed(&self) -> bool {
+        self.just_pressed
+    }
+    pub fn is_just_released(&self) -> bool {
+        self.just_released
+    }
 }

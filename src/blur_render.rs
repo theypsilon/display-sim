@@ -1,9 +1,9 @@
-use web_sys::{WebGl2RenderingContext, WebGlVertexArrayObject, WebGlProgram, WebGlFramebuffer};
+use web_sys::{WebGl2RenderingContext, WebGlFramebuffer, WebGlProgram, WebGlVertexArrayObject};
 
-use crate::wasm_error::WasmResult;
-use crate::shaders::{make_shader, make_quad_vao, TEXTURE_VERTEX_SHADER};
-use web_sys::{WebGlTexture};
 use crate::render_types::TextureBufferStack;
+use crate::shaders::{make_quad_vao, make_shader, TEXTURE_VERTEX_SHADER};
+use crate::wasm_error::WasmResult;
+use web_sys::WebGlTexture;
 
 pub struct BlurRender {
     shader: WebGlProgram,
@@ -14,7 +14,7 @@ impl BlurRender {
     pub fn new(gl: &WebGl2RenderingContext) -> WasmResult<BlurRender> {
         let shader = make_shader(gl, TEXTURE_VERTEX_SHADER, BLUR_FRAGMENT_SHADER)?;
         let vao = make_quad_vao(gl, &shader)?;
-        Ok(BlurRender {shader, vao})
+        Ok(BlurRender { shader, vao })
     }
 
     pub fn render(&self, gl: &WebGl2RenderingContext, passes: usize, stack: &mut TextureBufferStack) -> WasmResult<()> {
@@ -25,14 +25,11 @@ impl BlurRender {
         stack.push(gl)?;
         stack.push(gl)?;
         let target = stack.get_nth(-2)?;
-        let texture_buffers = [
-            stack.get_nth(0)?,
-            stack.get_nth(-1)?,
-        ];
+        let texture_buffers = [stack.get_nth(0)?, stack.get_nth(-1)?];
 
         for tb in &texture_buffers {
             gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, tb.framebuffer());
-            gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT|WebGl2RenderingContext::DEPTH_BUFFER_BIT);
+            gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
         }
 
         let blur_iteration = |texture: Option<&WebGlTexture>, framebuffer: Option<&WebGlFramebuffer>, horizontal: i32| {
@@ -45,7 +42,7 @@ impl BlurRender {
         gl.use_program(Some(&self.shader));
         gl.bind_vertex_array(self.vao.as_ref());
         blur_iteration(target.texture(), texture_buffers[0].framebuffer(), 0);
-        for i in 1 .. passes {
+        for i in 1..passes {
             let buffer_index = i % 2;
             let texture_index = (i + 1) % 2;
             blur_iteration(texture_buffers[texture_index].texture(), texture_buffers[buffer_index].framebuffer(), buffer_index as i32);

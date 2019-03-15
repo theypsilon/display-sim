@@ -1,6 +1,6 @@
 use crate::wasm_error::WasmResult;
-use web_sys::Window;
 use js_sys::{Float32Array, Int32Array};
+use web_sys::Window;
 
 pub fn window() -> WasmResult<Window> {
     Ok(web_sys::window().ok_or("cannot access window")?)

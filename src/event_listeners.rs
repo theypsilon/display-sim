@@ -1,17 +1,14 @@
-use wasm_bindgen::prelude::{JsValue, Closure};
-use wasm_bindgen::JsCast;
-use web_sys::{
-    KeyboardEvent, MouseEvent, WheelEvent, EventTarget, CustomEvent
-};
 use std::rc::Rc;
+use wasm_bindgen::prelude::{Closure, JsValue};
+use wasm_bindgen::JsCast;
+use web_sys::{CustomEvent, EventTarget, KeyboardEvent, MouseEvent, WheelEvent};
 
-use crate::wasm_error::{WasmResult};
-use crate::web_utils::{window};
-use crate::simulation_state::{OwnedClosure, StateOwner, Input};
 use crate::action_bindings::on_button_action;
+use crate::simulation_state::{Input, OwnedClosure, StateOwner};
+use crate::wasm_error::WasmResult;
+use crate::web_utils::window;
 
 pub fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<OwnedClosure>> {
-
     let onblur: Closure<FnMut(JsValue)> = {
         let state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |_: JsValue| {
@@ -111,7 +108,7 @@ pub fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<Owned
     document.set_onwheel(Some(onmousewheel.as_ref().unchecked_ref()));
     EventTarget::from(window).add_event_listener_with_callback("app-event.custom_input_event", oncustominputevent.as_ref().unchecked_ref())?;
 
-    let mut closures: Vec<OwnedClosure> = vec!();
+    let mut closures: Vec<OwnedClosure> = vec![];
     closures.push(Some(onblur));
     closures.push(Some(onkeydown));
     closures.push(Some(onkeyup));

@@ -1,19 +1,15 @@
-use js_sys::{Float32Array, ArrayBuffer};
+use js_sys::{ArrayBuffer, Float32Array};
 use std::mem::size_of;
-use web_sys::{
-    WebGl2RenderingContext, WebGlVertexArrayObject, WebGlProgram, WebGlBuffer, WebGlTexture,
-};
+use web_sys::{WebGl2RenderingContext, WebGlBuffer, WebGlProgram, WebGlTexture, WebGlVertexArrayObject};
 
+use crate::shaders::make_shader;
 use crate::wasm_error::WasmResult;
-use crate::shaders::{
-    make_shader,
-};
-use crate::web_utils::{js_f32_array};
+use crate::web_utils::js_f32_array;
 
 #[derive(Clone, Copy)]
 pub enum PixelsGeometryKind {
     Squares,
-    Cubes
+    Cubes,
 }
 
 pub struct PixelsRender {
@@ -46,7 +42,6 @@ const TEXTURE_SIZE: usize = 256;
 
 impl PixelsRender {
     pub fn new(gl: &WebGl2RenderingContext, width: usize, height: usize) -> WasmResult<PixelsRender> {
-
         let shader = make_shader(&gl, PIXEL_VERTEX_SHADER, PIXEL_FRAGMENT_SHADER)?;
 
         let vao = gl.create_vertex_array();
@@ -54,11 +49,7 @@ impl PixelsRender {
 
         let pixels_vbo = gl.create_buffer().ok_or("cannot create pixels_vbo")?;
         gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&pixels_vbo));
-        gl.buffer_data_with_opt_array_buffer(
-            WebGl2RenderingContext::ARRAY_BUFFER,
-            Some(&js_f32_array(&CUBE_GEOMETRY).buffer()),
-            WebGl2RenderingContext::STATIC_DRAW,
-        );
+        gl.buffer_data_with_opt_array_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&js_f32_array(&CUBE_GEOMETRY).buffer()), WebGl2RenderingContext::STATIC_DRAW);
 
         let a_pos_position = gl.get_attrib_location(&shader, "aPos") as u32;
         gl.vertex_attrib_pointer_with_i32(a_pos_position, 3, WebGl2RenderingContext::FLOAT, false, 6 * size_of::<f32>() as i32, 0);
@@ -68,7 +59,7 @@ impl PixelsRender {
         gl.vertex_attrib_pointer_with_i32(a_normal_position, 3, WebGl2RenderingContext::FLOAT, false, 6 * size_of::<f32>() as i32, 3 * size_of::<f32>() as i32);
         gl.enable_vertex_attrib_array(a_normal_position);
 
-        let colors_vbo = gl.create_buffer().ok_or("cannot create colors_vbo")?; 
+        let colors_vbo = gl.create_buffer().ok_or("cannot create colors_vbo")?;
         gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&colors_vbo));
 
         let a_color_position = gl.get_attrib_location(&shader, "aColor") as u32;
@@ -83,11 +74,7 @@ impl PixelsRender {
 
         let a_offset_position = gl.get_attrib_location(&shader, "aOffset") as u32;
         gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&offset_vbo));
-        gl.buffer_data_with_opt_array_buffer(
-            WebGl2RenderingContext::ARRAY_BUFFER,
-            Some(&offsets.buffer()),
-            WebGl2RenderingContext::STATIC_DRAW,
-        );
+        gl.buffer_data_with_opt_array_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&offsets.buffer()), WebGl2RenderingContext::STATIC_DRAW);
         gl.enable_vertex_attrib_array(a_offset_position);
         gl.vertex_attrib_pointer_with_i32(a_offset_position, 2, WebGl2RenderingContext::FLOAT, false, 2 * size_of::<f32>() as i32, 0);
         gl.vertex_attrib_divisor(a_offset_position, 1);
@@ -154,11 +141,10 @@ impl PixelsRender {
     }
 
     fn create_shadow_texture(gl: &WebGl2RenderingContext, weight: impl Fn(usize, usize) -> u8) -> WasmResult<Option<WebGlTexture>> {
-
         let mut texture: [u8; 4 * TEXTURE_SIZE * TEXTURE_SIZE] = [0; TEXTURE_SIZE * TEXTURE_SIZE * 4];
         {
-            for i in TEXTURE_SIZE / 2 .. TEXTURE_SIZE {
-                for j in TEXTURE_SIZE / 2 .. TEXTURE_SIZE {
+            for i in TEXTURE_SIZE / 2..TEXTURE_SIZE {
+                for j in TEXTURE_SIZE / 2..TEXTURE_SIZE {
                     let value = weight(i, j);
                     //let value = 255;
                     texture[(i * TEXTURE_SIZE + j) * 4 + 0] = 255;
@@ -179,7 +165,6 @@ impl PixelsRender {
                     texture[((TEXTURE_SIZE - i) * TEXTURE_SIZE - j - 1) * 4 + 3] = value;
                 }
             }
-
         }
 
         /*
@@ -203,7 +188,7 @@ impl PixelsRender {
             0,
             WebGl2RenderingContext::RGBA,
             WebGl2RenderingContext::UNSIGNED_BYTE,
-            Some(&mut texture)
+            Some(&mut texture),
         )?;
         gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MIN_FILTER, WebGl2RenderingContext::NEAREST as i32);
         gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MAG_FILTER, WebGl2RenderingContext::NEAREST as i32);
@@ -218,16 +203,14 @@ impl PixelsRender {
         gl.bind_vertex_array(self.vao.as_ref());
         gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&self.colors_vbo));
 
-        gl.buffer_data_with_opt_array_buffer(
-            WebGl2RenderingContext::ARRAY_BUFFER,
-            Some(&buffer),
-            WebGl2RenderingContext::STATIC_DRAW,
-        );
+        gl.buffer_data_with_opt_array_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&buffer), WebGl2RenderingContext::STATIC_DRAW);
     }
 
     pub fn render(&self, gl: &WebGl2RenderingContext, uniforms: PixelsUniform) {
         gl.use_program(Some(&self.shader));
-        if uniforms.shadow_kind >= self.shadows.len() {panic!("Bug on shadow_kind!")}
+        if uniforms.shadow_kind >= self.shadows.len() {
+            panic!("Bug on shadow_kind!")
+        }
         gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, self.shadows[uniforms.shadow_kind].as_ref());
         gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&self.shader, "view").as_ref(), false, uniforms.view);
         gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&self.shader, "projection").as_ref(), false, uniforms.projection);
@@ -240,14 +223,17 @@ impl PixelsRender {
         gl.uniform3fv_with_f32_array(gl.get_uniform_location(&self.shader, "pixel_scale").as_ref(), uniforms.pixel_scale);
         gl.uniform3fv_with_f32_array(gl.get_uniform_location(&self.shader, "pixel_offset").as_ref(), uniforms.pixel_offset);
         gl.uniform1f(gl.get_uniform_location(&self.shader, "pixel_pulse").as_ref(), uniforms.pixel_pulse);
-        gl.uniform1f(gl.get_uniform_location(&self.shader, "heightModifierFactor").as_ref(), uniforms.height_modifier_factor);        
+        gl.uniform1f(gl.get_uniform_location(&self.shader, "heightModifierFactor").as_ref(), uniforms.height_modifier_factor);
 
         gl.bind_vertex_array(self.vao.as_ref());
         gl.draw_arrays_instanced(
             WebGl2RenderingContext::TRIANGLES,
             0,
-            match uniforms.geometry_kind { PixelsGeometryKind::Squares => 6, PixelsGeometryKind::Cubes => 36 },
-            (self.width * self.height) as i32
+            match uniforms.geometry_kind {
+                PixelsGeometryKind::Squares => 6,
+                PixelsGeometryKind::Cubes => 36,
+            },
+            (self.width * self.height) as i32,
         );
     }
 }
@@ -258,8 +244,8 @@ fn calculate_offsets(width: usize, height: usize) -> Float32Array {
     {
         let half_width: f32 = width as f32 / 2.0;
         let half_height: f32 = height as f32 / 2.0;
-        let center_dx = if width % 2 == 0 {0.5} else {0.0};
-        let center_dy = if height % 2 == 0 {0.5} else {0.0};
+        let center_dx = if width % 2 == 0 { 0.5 } else { 0.0 };
+        let center_dy = if height % 2 == 0 { 0.5 } else { 0.0 };
         for i in 0..width {
             for j in 0..height {
                 let index = (pixels_total - width - j * width + i) as u32;
@@ -273,6 +259,7 @@ fn calculate_offsets(width: usize, height: usize) -> Float32Array {
     offsets
 }
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 const CUBE_GEOMETRY : [f32; 216] = [
     // cube coordinates       cube normals
     -0.5, -0.5,  0.5,      0.0,  0.0,  1.0,
