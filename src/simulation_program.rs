@@ -150,25 +150,12 @@ fn calculate_far_away_position(animation: &AnimationData) -> f32 {
 
 fn pre_process_input(input: &mut Input, resources: &Resources) -> WasmResult<()> {
     input.now = now().unwrap_or(resources.timers.last_time);
-    input.toggle_pixels_shadow_kind.track_input();
-    input.translation_speed.increase.track_input();
-    input.translation_speed.decrease.track_input();
-    input.filter_speed.increase.track_input();
-    input.filter_speed.decrease.track_input();
-    input.turn_speed.increase.track_input();
-    input.turn_speed.decrease.track_input();
-    input.mouse_click.track_input();
-    input.blur.increase.track_input();
-    input.blur.decrease.track_input();
-    input.lpp.increase.track_input();
-    input.lpp.decrease.track_input();
-    input.next_color_representation_kind.track_input();
-    input.next_pixel_geometry_kind.track_input();
-    input.next_layering_kind.track_input();
-    input.next_screen_curvature_type.track_input();
-    input.esc.track_input();
-    input.space.track_input();
-    input.screenshot.track_input();
+    let track_buttom_input = |button: &mut &mut BooleanButton| button.track_input();
+    input.get_mut_fields_booleanbutton().iter_mut().for_each(track_buttom_input);
+    input
+        .get_mut_fields_incdec_booleanbutton__()
+        .iter_mut()
+        .for_each(|incdec| incdec.get_mut_fields_t().iter_mut().for_each(track_buttom_input));
     Ok(())
 }
 

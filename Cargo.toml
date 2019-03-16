@@ -20,6 +20,7 @@ glm = { version = "0.1", package = "nalgebra-glm" }
 paste = "0.1.4"
 num-traits = "0.2"
 num-derive = "0.2"
+getters-by-type = "0.1.0"
 
 [dependencies.web-sys]
 version = "0.3.10"

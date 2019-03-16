@@ -1,8 +1,8 @@
 use js_sys::ArrayBuffer;
 use wasm_bindgen::prelude::{Closure, JsValue};
 
+use getters_by_type::GettersMutByType;
 use num_derive::{FromPrimitive, ToPrimitive};
-
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -200,7 +200,7 @@ impl Default for CustomInputEvent {
     }
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, GettersMutByType)]
 pub struct IncDec<T> {
     pub increase: T,
     pub decrease: T,
@@ -217,7 +217,7 @@ pub trait DefaultReset {
 
 impl<T> DefaultReset for IncDec<T> where T: std::marker::Sized + std::default::Default {}
 
-#[derive(Default)]
+#[derive(Default, GettersMutByType)]
 pub struct Input {
     pub now: f64,
     pub custom_event: CustomInputEvent,
