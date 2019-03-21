@@ -150,12 +150,11 @@ fn calculate_far_away_position(animation: &AnimationData) -> f32 {
 
 fn pre_process_input(input: &mut Input, resources: &Resources) -> WasmResult<()> {
     input.now = now().unwrap_or(resources.timers.last_time);
-    let track_buttom_input = |button: &mut &mut BooleanButton| button.track_input();
-    input.get_mut_fields_booleanbutton().iter_mut().for_each(track_buttom_input);
+    input.get_mut_fields_booleanbutton().iter_mut().for_each(|button| button.track_input());
     input
-        .get_mut_fields_incdec_booleanbutton__()
+        .get_mut_fields_incdec_booleanbutton_()
         .iter_mut()
-        .for_each(|incdec| incdec.get_mut_fields_t().iter_mut().for_each(track_buttom_input));
+        .for_each(|incdec| incdec.get_mut_fields_t().iter_mut().for_each(|button| button.track_input()));
     Ok(())
 }
 
