@@ -1,0 +1,2 @@
+· Fix blur.
+· Fix left click on panel and grabbing camera by mistake.
