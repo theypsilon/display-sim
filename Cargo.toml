@@ -21,6 +21,8 @@ paste = "0.1.4"
 num-traits = "0.2"
 num-derive = "0.2"
 getters-by-type = "0.2"
+enum-len-derive = { path = "crates/enum-len-derive" }
+enum-len-trait = { path = "crates/enum-len-trait" }
 
 [dependencies.web-sys]
 version = "0.3.10"

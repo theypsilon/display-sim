@@ -1,6 +1,7 @@
 use js_sys::ArrayBuffer;
 use wasm_bindgen::prelude::{Closure, JsValue};
 
+use enum_len_derive::EnumLen;
 use getters_by_type::GettersMutByType;
 use num_derive::{FromPrimitive, ToPrimitive};
 use std::cell::RefCell;
@@ -102,7 +103,7 @@ pub struct CrtFilters {
     pub layering_kind: ScreenLayeringKind,
 }
 
-#[derive(FromPrimitive, ToPrimitive, Copy, Clone)]
+#[derive(FromPrimitive, ToPrimitive, EnumLen, Copy, Clone)]
 pub enum ScreenLayeringKind {
     ShadowOnly,
     SolidOnly,
@@ -123,7 +124,7 @@ impl std::fmt::Display for ScreenLayeringKind {
     }
 }
 
-#[derive(FromPrimitive, ToPrimitive, Copy, Clone)]
+#[derive(FromPrimitive, ToPrimitive, EnumLen, Copy, Clone)]
 pub enum ScreenCurvatureKind {
     Flat,
     Curved,
@@ -140,7 +141,7 @@ impl std::fmt::Display for ScreenCurvatureKind {
     }
 }
 
-#[derive(FromPrimitive, ToPrimitive)]
+#[derive(FromPrimitive, ToPrimitive, EnumLen)]
 pub enum ColorChannels {
     Combined,
     Overlapping,
@@ -206,6 +207,12 @@ pub struct IncDec<T> {
     pub decrease: T,
 }
 
+impl IncDec<BooleanButton> {
+    pub fn any_just_pressed(&self) -> bool {
+        self.increase.is_just_pressed() || self.decrease.is_just_pressed()
+    }
+}
+
 pub trait DefaultReset {
     fn reset(&mut self)
     where
@@ -249,17 +256,17 @@ pub struct Input {
     pub pixel_gap: IncDec<bool>,
     pub bright: IncDec<bool>,
     pub contrast: IncDec<bool>,
-    pub toggle_pixels_shadow_kind: BooleanButton,
     pub translation_speed: IncDec<BooleanButton>,
     pub turn_speed: IncDec<BooleanButton>,
     pub filter_speed: IncDec<BooleanButton>,
     pub mouse_click: BooleanButton,
     pub blur: IncDec<BooleanButton>,
     pub lpp: IncDec<BooleanButton>,
-    pub next_color_representation_kind: BooleanButton,
-    pub next_pixel_geometry_kind: BooleanButton,
-    pub next_layering_kind: BooleanButton,
-    pub next_screen_curvature_type: BooleanButton,
+    pub next_pixels_shadow_kind: IncDec<BooleanButton>,
+    pub next_color_representation_kind: IncDec<BooleanButton>,
+    pub next_pixel_geometry_kind: IncDec<BooleanButton>,
+    pub next_layering_kind: IncDec<BooleanButton>,
+    pub next_screen_curvature_type: IncDec<BooleanButton>,
     pub esc: BooleanButton,
     pub space: BooleanButton,
     pub screenshot: BooleanButton,

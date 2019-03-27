@@ -1,0 +1,14 @@
+[package]
+name = "enum-len-trait"
+version = "0.1.0"
+authors = ["José Manuel Barroso Galindo <theypsilon@gmail.com>"]
+license = "MIT"
+edition = "2018"
+
+description = "Trait with len method."
+readme = "README.md"
+documentation = "https://docs.rs/enum-len-trait"
+
+repository = "https://github.com/theypsilon/enum-len-trait-rs"
+keywords = ["enum", "len", "trait", "variant", "count"]
+categories = ["rust-patterns"]

@@ -291,7 +291,7 @@ function customEventOnChange(deo, kind, parse) {
     deo.onmouseup = () => document.dispatchEvent(new KeyboardEvent('keyup', {key: deo.id}));
 });
 
-document.querySelectorAll('.feature-number-input').forEach(deo => {
+document.querySelectorAll('.number-input').forEach(deo => {
     [{button_text: "↑", mode: "inc", placement: "before"}, {button_text: "↓", mode: "dec", placement: "after"}].forEach(o => {
         const button = document.createElement('button');
         button.innerText = o.button_text;

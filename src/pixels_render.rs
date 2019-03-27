@@ -1,5 +1,7 @@
+use enum_len_derive::EnumLen;
 use js_sys::{ArrayBuffer, Float32Array};
 use num_derive::{FromPrimitive, ToPrimitive};
+
 use std::mem::size_of;
 use web_sys::{WebGl2RenderingContext, WebGlBuffer, WebGlProgram, WebGlTexture, WebGlVertexArrayObject};
 
@@ -7,7 +9,7 @@ use crate::shaders::make_shader;
 use crate::wasm_error::WasmResult;
 use crate::web_utils::js_f32_array;
 
-#[derive(FromPrimitive, ToPrimitive, Clone, Copy)]
+#[derive(FromPrimitive, ToPrimitive, EnumLen, Clone, Copy)]
 pub enum PixelsGeometryKind {
     Squares,
     Cubes,

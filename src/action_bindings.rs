@@ -5,16 +5,14 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
     match button_action {
         "," => {
             if !input.input_focused {
-                input.next_layering_kind.input = pressed
+                input.next_layering_kind.increase.input = pressed
             }
         }
         "." => {
             if !input.input_focused {
-                input.toggle_pixels_shadow_kind.input = pressed
+                input.next_pixels_shadow_kind.increase.input = pressed
             }
         }
-        "feature-change-screen-layering-type" => input.next_layering_kind.input = pressed,
-        "feature-change-pixel-shadow" => input.toggle_pixels_shadow_kind.input = pressed,
         "+" => {
             if !input.input_focused {
                 input.rotate_left = pressed
@@ -81,9 +79,16 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
         "z" | "pixel-contrast-dec" => input.contrast.decrease = pressed,
         "c" | "pixel-brightness-inc" => input.bright.increase = pressed,
         "x" | "pixel-brightness-dec" => input.bright.decrease = pressed,
-        "y" | "feature-change-color-representation" => input.next_color_representation_kind.input = pressed,
-        "o" | "feature-change-pixel-geometry" => input.next_pixel_geometry_kind.input = pressed,
-        "l" | "feature-change-screen-curvature" => input.next_screen_curvature_type.input = pressed,
+        "y" | "feature-change-color-representation-inc" => input.next_color_representation_kind.increase.input = pressed,
+        "feature-change-color-representation-dec" => input.next_color_representation_kind.decrease.input = pressed,
+        "o" | "feature-change-pixel-geometry-inc" => input.next_pixel_geometry_kind.increase.input = pressed,
+        "feature-change-pixel-geometry-dec" => input.next_pixel_geometry_kind.decrease.input = pressed,
+        "l" | "feature-change-screen-curvature-inc" => input.next_screen_curvature_type.increase.input = pressed,
+        "feature-change-screen-curvature-dec" => input.next_screen_curvature_type.decrease.input = pressed,
+        "feature-change-screen-layering-type-inc" => input.next_layering_kind.increase.input = pressed,
+        "feature-change-screen-layering-type-dec" => input.next_layering_kind.decrease.input = pressed,
+        "feature-change-pixel-shadow-inc" => input.next_pixels_shadow_kind.increase.input = pressed,
+        "feature-change-pixel-shadow-dec" => input.next_pixels_shadow_kind.decrease.input = pressed,
         "g" | "lines-per-pixel-inc" => input.lpp.increase.input = pressed,
         "h" | "lines-per-pixel-dec" => input.lpp.decrease.input = pressed,
         "shift" => {

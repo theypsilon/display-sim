@@ -241,8 +241,13 @@ canvas:hover {
     height: 100%;
 }
 
-.feature-number-input {
+.feature-modificable-input, .feature-readonly-input {
     width: 40px;
+}
+
+.feature-readonly-input {
+    background-color: rgba(0, 0, 0, 0);
+    border: none;
 }
 
 .feature-button {

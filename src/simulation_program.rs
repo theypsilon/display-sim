@@ -338,8 +338,12 @@ fn update_lpp(res: &mut Resources, input: &Input) -> WasmResult<()> {
 }
 
 fn update_pixel_pulse(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> {
-    if input.next_screen_curvature_type.is_just_pressed() {
-        res.crt_filters.screen_curvature_kind.next_enum_variant()?;
+    if input.next_screen_curvature_type.any_just_pressed() {
+        if input.next_screen_curvature_type.increase.is_just_pressed() {
+            res.crt_filters.screen_curvature_kind.next_enum_variant()?;
+        } else {
+            res.crt_filters.screen_curvature_kind.previous_enum_variant()?;
+        }
         dispatch_event_with("app-event.top_message", &format!("Screen curvature: {}.", res.crt_filters.screen_curvature_kind).into())?;
     }
 
@@ -360,8 +364,12 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
         return Ok(());
     }
 
-    if input.next_layering_kind.is_just_pressed() {
-        res.crt_filters.layering_kind.next_enum_variant()?;
+    if input.next_layering_kind.any_just_pressed() {
+        if input.next_layering_kind.increase.is_just_pressed() {
+            res.crt_filters.layering_kind.next_enum_variant()?;
+        } else {
+            res.crt_filters.layering_kind.previous_enum_variant()?;
+        }
         match res.crt_filters.layering_kind {
             ScreenLayeringKind::ShadowOnly => {
                 res.crt_filters.showing_diffuse_foreground = true;
@@ -391,20 +399,35 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
         dispatch_event_with("app-event.top_message", &format!("Layering kind: {}.", res.crt_filters.layering_kind).into())?;
     }
 
-    if input.next_color_representation_kind.is_just_pressed() {
-        res.crt_filters.color_channels.next_enum_variant()?;
+    if input.next_color_representation_kind.any_just_pressed() {
+        if input.next_color_representation_kind.increase.is_just_pressed() {
+            res.crt_filters.color_channels.next_enum_variant()?;
+        } else {
+            res.crt_filters.color_channels.previous_enum_variant()?;
+        }
         dispatch_event_with("app-event.top_message", &format!("Pixel color representation: {}.", res.crt_filters.color_channels).into())?;
     }
 
-    if input.next_pixel_geometry_kind.is_just_released() {
-        res.crt_filters.pixels_geometry_kind.next_enum_variant()?;
+    if input.next_pixel_geometry_kind.any_just_pressed() {
+        if input.next_pixel_geometry_kind.increase.is_just_released() {
+            res.crt_filters.pixels_geometry_kind.next_enum_variant()?;
+        } else {
+            res.crt_filters.pixels_geometry_kind.previous_enum_variant()?;
+        }
         dispatch_event_with("app-event.top_message", &format!("Pixel geometry: {}.", res.crt_filters.pixels_geometry_kind).into())?;
     }
 
-    if input.toggle_pixels_shadow_kind.is_just_released() {
-        res.crt_filters.pixel_shadow_kind += 1;
-        if res.crt_filters.pixel_shadow_kind >= res.pixels_render.shadows_len() {
-            res.crt_filters.pixel_shadow_kind = 0;
+    if input.next_pixels_shadow_kind.any_just_pressed() {
+        if input.next_pixels_shadow_kind.increase.is_just_released() {
+            res.crt_filters.pixel_shadow_kind += 1;
+            if res.crt_filters.pixel_shadow_kind >= res.pixels_render.shadows_len() {
+                res.crt_filters.pixel_shadow_kind = 0;
+            }
+        } else {
+            if res.crt_filters.pixel_shadow_kind == 0 {
+                res.crt_filters.pixel_shadow_kind = res.pixels_render.shadows_len();
+            }
+            res.crt_filters.pixel_shadow_kind -= 1;
         }
         dispatch_event_with(
             "app-event.top_message",
