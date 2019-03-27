@@ -61,7 +61,8 @@ const featureQuitDeo = document.getElementById('feature-quit');
 
 const featureChangeColorRepresentationDeo = document.getElementById('feature-change-color-representation');
 const featureChangePixelGeometryDeo = document.getElementById('feature-change-pixel-geometry');
-const featureChangePixelShadowDeo = document.getElementById('feature-change-pixel-shadow-shape');
+const featureChangePixelShadowShapeDeo = document.getElementById('feature-change-pixel-shadow-shape');
+const featureChangePixelShadowHeightDeo = document.getElementById('feature-change-pixel-shadow-height');
 const featureChangeScreenLayeringTypeDeo = document.getElementById('feature-change-screen-layering-type');
 const featureChangeScreenCurvatureDeo = document.getElementById('feature-change-screen-curvature');
 
@@ -204,7 +205,8 @@ updateInnerHtmlWithEventNumber(featureChangeTurnSpeedDeo, 'app-event.change_turn
 
 updateInnerHtmlWithEventNumber(featureChangeColorRepresentationDeo, "app-event.color_representation");
 updateInnerHtmlWithEventNumber(featureChangePixelGeometryDeo, "app-event.pixel_geometry");
-updateInnerHtmlWithEventNumber(featureChangePixelShadowDeo, "app-event.pixel_shadow_shape");
+updateInnerHtmlWithEventNumber(featureChangePixelShadowShapeDeo, "app-event.pixel_shadow_shape");
+updateInnerHtmlWithEventNumber(featureChangePixelShadowHeightDeo, "app-event.pixel_shadow_height");
 updateInnerHtmlWithEventNumber(featureChangeScreenLayeringTypeDeo, "app-event.screen_layering_type");
 updateInnerHtmlWithEventNumber(featureChangeScreenCurvatureDeo, "app-event.screen_curvature");
 
@@ -226,6 +228,7 @@ function updateInnerHtmlWithEventNumber(deo, eventId) {
             case 'app-event.color_representation':
             case 'app-event.pixel_geometry':
             case 'app-event.pixel_shadow_shape':
+            case 'app-event.pixel_shadow_height':
             case 'app-event.screen_layering_type':
             case 'app-event.screen_curvature':
                 deo.value = Math.round(event.detail * 1000.0) / 1000.0;
@@ -271,7 +274,7 @@ customEventOnChange(blurLevelDeo, "blur_level", a => +a);
 customEventOnChange(lppDeo, "lines_per_pixel", a => +a);
 customEventOnChange(pixelBrigthnessDeo, "pixel_brightness", a => +a);
 customEventOnChange(pixelContrastDeo, "pixel_brightness", a => +a);
-
+customEventOnChange(featureChangePixelShadowHeightDeo, "pixel_shadow_height", a => +a);
 const parseColor = (value) => parseInt('0x' +value.substring(1));
 customEventOnChange(lightColorDeo, "light_color", parseColor);
 customEventOnChange(brightnessColorDeo, "brightness_color", parseColor);
@@ -291,7 +294,8 @@ function customEventOnChange(deo, kind, parse) {
 [
     featureChangeColorRepresentationDeo,
     featureChangePixelGeometryDeo,
-    featureChangePixelShadowDeo,
+    featureChangePixelShadowShapeDeo,
+    featureChangePixelShadowHeightDeo,
     featureChangeScreenLayeringTypeDeo,
     featureChangeScreenCurvatureDeo,
     featureQuitDeo,

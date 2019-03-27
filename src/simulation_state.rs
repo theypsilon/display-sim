@@ -93,6 +93,7 @@ pub struct CrtFilters {
     pub cur_pixel_gap: f32,
     pub change_speed: f32,
     pub pixels_pulse: f32,
+    pub pixel_shadow_height_factor: f32,
     pub pixels_geometry_kind: PixelsGeometryKind,
     pub color_channels: ColorChannels,
     pub screen_curvature_kind: ScreenCurvatureKind,
@@ -173,6 +174,7 @@ impl CrtFilters {
             cur_pixel_scale_x: 0.0,
             cur_pixel_scale_y: 0.0,
             cur_pixel_gap: 0.0,
+            pixel_shadow_height_factor: 0.5,
             change_speed,
             pixels_pulse: 0.0,
             pixels_geometry_kind: PixelsGeometryKind::Squares,
@@ -210,6 +212,15 @@ pub struct IncDec<T> {
 impl IncDec<BooleanButton> {
     pub fn any_just_pressed(&self) -> bool {
         self.increase.is_just_pressed() || self.decrease.is_just_pressed()
+    }
+    pub fn any_just_released(&self) -> bool {
+        self.increase.is_just_released() || self.decrease.is_just_released()
+    }
+}
+
+impl IncDec<bool> {
+    pub fn any_active(&self) -> bool {
+        self.increase || self.decrease
     }
 }
 
@@ -262,7 +273,8 @@ pub struct Input {
     pub mouse_click: BooleanButton,
     pub blur: IncDec<BooleanButton>,
     pub lpp: IncDec<BooleanButton>,
-    pub next_pixels_shadow_kind: IncDec<BooleanButton>,
+    pub next_pixels_shadow_shape_kind: IncDec<BooleanButton>,
+    pub next_pixels_shadow_height_factor: IncDec<bool>,
     pub next_color_representation_kind: IncDec<BooleanButton>,
     pub next_pixel_geometry_kind: IncDec<BooleanButton>,
     pub next_layering_kind: IncDec<BooleanButton>,

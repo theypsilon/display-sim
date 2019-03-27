@@ -189,8 +189,8 @@ impl PixelsRender {
             console!(log. line);
         }*/
 
-        let pixel_shadow_shape_texture = gl.create_texture();
-        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, pixel_shadow_shape_texture.as_ref());
+        let pixel_shadow_texture = gl.create_texture();
+        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, pixel_shadow_texture.as_ref());
         gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
             WebGl2RenderingContext::TEXTURE_2D,
             0,
@@ -208,7 +208,7 @@ impl PixelsRender {
         gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_WRAP_T, WebGl2RenderingContext::CLAMP_TO_EDGE as i32);
         gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, None);
 
-        Ok(pixel_shadow_shape_texture)
+        Ok(pixel_shadow_texture)
     }
 
     pub fn apply_colors(&self, gl: &WebGl2RenderingContext, buffer: &ArrayBuffer) {

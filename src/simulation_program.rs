@@ -116,6 +116,7 @@ fn change_frontend_input_values(res: &Resources) -> WasmResult<()> {
     dispatch_event_with("app-event.color_representation", &(res.crt_filters.color_channels as i32).into())?;
     dispatch_event_with("app-event.pixel_geometry", &(res.crt_filters.pixels_geometry_kind as i32).into())?;
     dispatch_event_with("app-event.pixel_shadow_shape", &(res.crt_filters.pixel_shadow_shape_kind as i32).into())?;
+    dispatch_event_with("app-event.pixel_shadow_height", &(res.crt_filters.pixel_shadow_height_factor).into())?;
     dispatch_event_with("app-event.screen_layering_type", &(res.crt_filters.layering_kind as i32).into())?;
     dispatch_event_with("app-event.screen_curvature", &(res.crt_filters.screen_curvature_kind as i32).into())?;
     dispatch_event_with(
@@ -426,8 +427,8 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
         dispatch_event_with("app-event.pixel_geometry", &(res.crt_filters.pixels_geometry_kind as i32).into())?;
     }
 
-    if input.next_pixels_shadow_kind.any_just_pressed() {
-        if input.next_pixels_shadow_kind.increase.is_just_pressed() {
+    if input.next_pixels_shadow_shape_kind.any_just_pressed() {
+        if input.next_pixels_shadow_shape_kind.increase.is_just_pressed() {
             res.crt_filters.pixel_shadow_shape_kind += 1;
             if res.crt_filters.pixel_shadow_shape_kind >= res.pixels_render.shadows_len() {
                 res.crt_filters.pixel_shadow_shape_kind = 0;
@@ -443,6 +444,28 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
             &format!("Showing next pixel shadow: {}.", res.crt_filters.pixel_shadow_shape_kind.to_string()).into(),
         )?;
         dispatch_event_with("app-event.pixel_shadow_shape", &(res.crt_filters.pixel_shadow_shape_kind as i32).into())?;
+    }
+
+    let received_pixel_shadow_height = input.custom_event.kind.as_ref() as &str == "event_kind:pixel_shadow_height";
+    if input.next_pixels_shadow_height_factor.any_active() || received_pixel_shadow_height {
+        if input.next_pixels_shadow_height_factor.increase {
+            res.crt_filters.pixel_shadow_height_factor += dt * 0.3;
+        }
+        if input.next_pixels_shadow_height_factor.decrease {
+            res.crt_filters.pixel_shadow_height_factor -= dt * 0.3;
+        }
+        if received_pixel_shadow_height {
+            res.crt_filters.pixel_shadow_height_factor = input.custom_event.value.as_f64().ok_or("it should be a number")? as f32;
+        }
+        if res.crt_filters.pixel_shadow_height_factor < 0.0 {
+            res.crt_filters.pixel_shadow_height_factor = 0.0;
+            dispatch_event_with("app-event.top_message", &"Minimum value is 0.0".into())?;
+        }
+        if res.crt_filters.pixel_shadow_height_factor > 1.0 {
+            res.crt_filters.pixel_shadow_height_factor = 1.0;
+            dispatch_event_with("app-event.top_message", &"Maximum value is 1.0".into())?;
+        }
+        dispatch_event_with("app-event.pixel_shadow_height", &res.crt_filters.pixel_shadow_height_factor.into())?;
     }
 
     let pixel_velocity = dt * res.crt_filters.change_speed;
@@ -779,7 +802,7 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
                         pixel_scale,
                         pixel_pulse: res.crt_filters.pixels_pulse,
                         pixel_offset,
-                        height_modifier_factor: 1.0,
+                        height_modifier_factor: 1.0 - res.crt_filters.pixel_shadow_height_factor,
                     },
                 );
             }

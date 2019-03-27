@@ -246,8 +246,6 @@ canvas:hover {
 }
 
 .feature-readonly-input {
-    background-color: rgba(0, 0, 0, 0);
-    color: black;
     border: none;
     text-align: center;
 }
