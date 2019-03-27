@@ -3,7 +3,8 @@ WORKDIR /app
 ENV RUSTUP_HOME=/usr/local/rustup \
     CARGO_HOME=/usr/local/cargo \
     PATH=/usr/local/cargo/bin:$PATH \
-    BINARYEN_VER="1.38.13"
+    BINARYEN_VER="1.38.13" \
+    RUST_TOOLCHAIN="1.33.0"
 RUN set -eux; \
     apt-get update || true; \
     apt-get install -y --no-install-recommends \
@@ -22,16 +23,17 @@ RUN set -eux; \
         *) echo >&2 "unsupported architecture: ${dpkgArch}"; exit 1 ;; \
     esac; \
     url="https://static.rust-lang.org/rustup/archive/1.15.0/${rustArch}/rustup-init"; \
-    wget "$url"; \
+    wget -q "$url"; \
     echo "${rustupSha256} *rustup-init" | sha256sum -c -; \
     chmod +x rustup-init; \
-    ./rustup-init -y --no-modify-path --default-toolchain 1.33.0; \
+    ./rustup-init -y --no-modify-path --default-toolchain ${RUST_TOOLCHAIN}; \
     rm rustup-init; \
     chmod -R a+w $RUSTUP_HOME $CARGO_HOME; \
     rustup --version; \
     cargo --version; \
     rustc --version; \
-    wget -O- https://rustwasm.github.io/wasm-pack/installer/init.sh | sh; \
+    wget -qO- https://rustwasm.github.io/wasm-pack/installer/init.sh | sh; \
+    rustup target add wasm32-unknown-unknown --toolchain ${RUST_TOOLCHAIN}; \
     wget -qO- https://github.com/WebAssembly/binaryen/releases/download/${BINARYEN_VER}/binaryen-${BINARYEN_VER}-x86-linux.tar.gz | tar xvz binaryen-${BINARYEN_VER}/wasm-opt ; \
     mv binaryen-${BINARYEN_VER}/wasm-opt .; \
     apt-get remove -y --auto-remove wget; \
