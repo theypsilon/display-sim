@@ -110,34 +110,30 @@ impl PixelsRender {
         }
 
         let mut shadows = Vec::new();
-        shadows.push(Self::create_shadow_texture(gl, |_i, _j| 255)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 0) * calc_with_log(j, 0) * 255.0) as u8)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 1) * calc_with_log(j, 1) * 255.0) as u8)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 2) * calc_with_log(j, 2) * 255.0) as u8)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 3) * calc_with_log(j, 3) * 255.0) as u8)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| ((calc_with_log(i, 0) * 0.9 + calc_with_log(j, 0) * 0.1) * 255.0) as u8)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| ((calc_with_log(i, 1) * 0.9 + calc_with_log(j, 1) * 0.1) * 255.0) as u8)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| ((calc_with_log(i, 2) * 0.9 + calc_with_log(j, 2) * 0.1) * 255.0) as u8)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| ((calc_with_log(i, 3) * 0.9 + calc_with_log(j, 3) * 0.1) * 255.0) as u8)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| ((calc_with_log(i, 0) * 0.8 + calc_with_log(j, 0) * 0.2) * 255.0) as u8)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| ((calc_with_log(i, 1) * 0.8 + calc_with_log(j, 1) * 0.2) * 255.0) as u8)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| ((calc_with_log(i, 2) * 0.8 + calc_with_log(j, 2) * 0.2) * 255.0) as u8)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| ((calc_with_log(i, 3) * 0.8 + calc_with_log(j, 3) * 0.2) * 255.0) as u8)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| ((calc_with_log(i, 0) * 0.5 + calc_with_log(j, 0) * 0.5) * 255.0) as u8)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| ((calc_with_log(i, 1) * 0.5 + calc_with_log(j, 1) * 0.5) * 255.0) as u8)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| ((calc_with_log(i, 2) * 0.5 + calc_with_log(j, 2) * 0.5) * 255.0) as u8)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| ((calc_with_log(i, 3) * 0.5 + calc_with_log(j, 3) * 0.5) * 255.0) as u8)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, _j| (calc_with_log(i, 0) * 255.0) as u8)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, _j| (calc_with_log(i, 1) * 255.0) as u8)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, _j| (calc_with_log(i, 2) * 255.0) as u8)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, _j| (calc_with_log(i, 3) * 255.0) as u8)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, _j| (calc_with_log(i, 4) * 255.0) as u8)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_diamond(i, 0) * calc_diamond(j, 0) * 255.0) as u8)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_diamond(i, 1) * calc_diamond(j, 1) * 255.0) as u8)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_diamond(i, 2) * calc_diamond(j, 2) * 255.0) as u8)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, _j| (calc_diamond(i, 0) * 255.0) as u8)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, _j| (calc_diamond(i, 1) * 255.0) as u8)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, _j| (calc_diamond(i, 2) * 255.0) as u8)?);
+        shadows.push(Self::create_shadow_texture(gl, |_i, _j| 255.0)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| calc_with_log(i, 0) * calc_with_log(j, 0) * 1.0 * 255.0)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| calc_with_log(i, 1) * calc_with_log(j, 1) * 1.5 * 255.0)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| calc_with_log(i, 2) * calc_with_log(j, 2) * 3.0 * 255.0)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 0) * 0.9 + calc_with_log(j, 0) * 0.1) * 1.0 * 255.0)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 1) * 0.9 + calc_with_log(j, 1) * 0.1) * 1.5 * 255.0)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 2) * 0.9 + calc_with_log(j, 2) * 0.1) * 3.0 * 255.0)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 3) * 0.9 + calc_with_log(j, 3) * 0.1) * 6.0 * 255.0)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 0) * 0.8 + calc_with_log(j, 0) * 0.2) * 1.0 * 255.0)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 1) * 0.8 + calc_with_log(j, 1) * 0.2) * 1.5 * 255.0)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 2) * 0.8 + calc_with_log(j, 2) * 0.2) * 3.0 * 255.0)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 3) * 0.8 + calc_with_log(j, 3) * 0.2) * 6.0 * 255.0)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 0) * 0.5 + calc_with_log(j, 0) * 0.5) * 1.0 * 255.0)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 1) * 0.5 + calc_with_log(j, 1) * 0.5) * 1.5 * 255.0)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 2) * 0.5 + calc_with_log(j, 2) * 0.5) * 3.0 * 255.0)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 3) * 0.5 + calc_with_log(j, 3) * 0.5) * 6.0 * 255.0)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, _j| calc_with_log(i, 0) * 1.0 * 255.0)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, _j| calc_with_log(i, 1) * 1.5 * 255.0)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, _j| calc_with_log(i, 2) * 3.0 * 255.0)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, _j| calc_with_log(i, 3) * 6.0 * 255.0)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, _j| calc_with_log(i, 4) * 9.0 * 255.0)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, j| calc_diamond(i, 0) * calc_diamond(j, 0) * 1.0 * 255.0)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, _j| calc_diamond(i, 0) * 1.0 * 255.0)?);
+        shadows.push(Self::create_shadow_texture(gl, |i, _j| calc_diamond(i, 1) * 1.5 * 255.0)?);
         Ok(PixelsRender {
             vao,
             shader,
@@ -152,12 +148,16 @@ impl PixelsRender {
         self.shadows.len()
     }
 
-    fn create_shadow_texture(gl: &WebGl2RenderingContext, weight: impl Fn(usize, usize) -> u8) -> WasmResult<Option<WebGlTexture>> {
+    fn create_shadow_texture(gl: &WebGl2RenderingContext, weight: impl Fn(usize, usize) -> f64) -> WasmResult<Option<WebGlTexture>> {
         let mut texture: [u8; 4 * TEXTURE_SIZE * TEXTURE_SIZE] = [0; TEXTURE_SIZE * TEXTURE_SIZE * 4];
         {
             for i in TEXTURE_SIZE / 2..TEXTURE_SIZE {
                 for j in TEXTURE_SIZE / 2..TEXTURE_SIZE {
-                    let value = weight(i, j);
+                    let mut value = weight(i, j);
+                    if value > 255.0 {
+                        value = 255.0;
+                    }
+                    let value = value as u8;
                     //let value = 255;
                     texture[(i * TEXTURE_SIZE + j) * 4 + 0] = 255;
                     texture[(i * TEXTURE_SIZE + j) * 4 + 1] = 255;
@@ -189,8 +189,8 @@ impl PixelsRender {
             console!(log. line);
         }*/
 
-        let pixel_shadow_texture = gl.create_texture();
-        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, pixel_shadow_texture.as_ref());
+        let pixel_shadow_shape_texture = gl.create_texture();
+        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, pixel_shadow_shape_texture.as_ref());
         gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
             WebGl2RenderingContext::TEXTURE_2D,
             0,
@@ -208,7 +208,7 @@ impl PixelsRender {
         gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_WRAP_T, WebGl2RenderingContext::CLAMP_TO_EDGE as i32);
         gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, None);
 
-        Ok(pixel_shadow_texture)
+        Ok(pixel_shadow_shape_texture)
     }
 
     pub fn apply_colors(&self, gl: &WebGl2RenderingContext, buffer: &ArrayBuffer) {

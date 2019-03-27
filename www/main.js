@@ -61,7 +61,7 @@ const featureQuitDeo = document.getElementById('feature-quit');
 
 const featureChangeColorRepresentationDeo = document.getElementById('feature-change-color-representation');
 const featureChangePixelGeometryDeo = document.getElementById('feature-change-pixel-geometry');
-const featureChangePixelShadowDeo = document.getElementById('feature-change-pixel-shadow');
+const featureChangePixelShadowDeo = document.getElementById('feature-change-pixel-shadow-shape');
 const featureChangeScreenLayeringTypeDeo = document.getElementById('feature-change-screen-layering-type');
 const featureChangeScreenCurvatureDeo = document.getElementById('feature-change-screen-curvature');
 
@@ -201,6 +201,13 @@ updateInnerHtmlWithEventNumber(brightnessColorDeo, 'app-event.change_brightness_
 updateInnerHtmlWithEventNumber(featureChangeMoveSpeedDeo, 'app-event.change_movement_speed');
 updateInnerHtmlWithEventNumber(featureChangePixelSpeedDeo, 'app-event.change_pixel_speed');
 updateInnerHtmlWithEventNumber(featureChangeTurnSpeedDeo, 'app-event.change_turning_speed');
+
+updateInnerHtmlWithEventNumber(featureChangeColorRepresentationDeo, "app-event.color_representation");
+updateInnerHtmlWithEventNumber(featureChangePixelGeometryDeo, "app-event.pixel_geometry");
+updateInnerHtmlWithEventNumber(featureChangePixelShadowDeo, "app-event.pixel_shadow_shape");
+updateInnerHtmlWithEventNumber(featureChangeScreenLayeringTypeDeo, "app-event.screen_layering_type");
+updateInnerHtmlWithEventNumber(featureChangeScreenCurvatureDeo, "app-event.screen_curvature");
+
 function updateInnerHtmlWithEventNumber(deo, eventId) {
     if (!deo) throw new Error("Wrong deo on defining: " + eventId);
     window.addEventListener(eventId, event => {
@@ -216,6 +223,11 @@ function updateInnerHtmlWithEventNumber(deo, eventId) {
             case 'app-event.change_movement_speed':
             case 'app-event.change_pixel_speed':
             case 'app-event.change_turning_speed':
+            case 'app-event.color_representation':
+            case 'app-event.pixel_geometry':
+            case 'app-event.pixel_shadow_shape':
+            case 'app-event.screen_layering_type':
+            case 'app-event.screen_curvature':
                 deo.value = Math.round(event.detail * 1000.0) / 1000.0;
                 break;
             case 'app-event.change_pixel_brightness':

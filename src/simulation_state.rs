@@ -99,7 +99,7 @@ pub struct CrtFilters {
     pub showing_solid_background: bool,
     pub showing_diffuse_foreground: bool,
     pub solid_color_weight: f32,
-    pub pixel_shadow_kind: usize,
+    pub pixel_shadow_shape_kind: usize,
     pub layering_kind: ScreenLayeringKind,
 }
 
@@ -141,7 +141,7 @@ impl std::fmt::Display for ScreenCurvatureKind {
     }
 }
 
-#[derive(FromPrimitive, ToPrimitive, EnumLen)]
+#[derive(FromPrimitive, ToPrimitive, EnumLen, Copy, Clone)]
 pub enum ColorChannels {
     Combined,
     Overlapping,
@@ -176,7 +176,7 @@ impl CrtFilters {
             change_speed,
             pixels_pulse: 0.0,
             pixels_geometry_kind: PixelsGeometryKind::Squares,
-            pixel_shadow_kind: 1,
+            pixel_shadow_shape_kind: 1,
             color_channels: ColorChannels::Combined,
             screen_curvature_kind: ScreenCurvatureKind::Curved,
             showing_diffuse_foreground: true,

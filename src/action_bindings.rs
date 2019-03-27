@@ -87,8 +87,8 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
         "feature-change-screen-curvature-dec" => input.next_screen_curvature_type.decrease.input = pressed,
         "feature-change-screen-layering-type-inc" => input.next_layering_kind.increase.input = pressed,
         "feature-change-screen-layering-type-dec" => input.next_layering_kind.decrease.input = pressed,
-        "feature-change-pixel-shadow-inc" => input.next_pixels_shadow_kind.increase.input = pressed,
-        "feature-change-pixel-shadow-dec" => input.next_pixels_shadow_kind.decrease.input = pressed,
+        "feature-change-pixel-shadow-shape-inc" => input.next_pixels_shadow_kind.increase.input = pressed,
+        "feature-change-pixel-shadow-shape-dec" => input.next_pixels_shadow_kind.decrease.input = pressed,
         "g" | "lines-per-pixel-inc" => input.lpp.increase.input = pressed,
         "h" | "lines-per-pixel-dec" => input.lpp.decrease.input = pressed,
         "shift" => {
