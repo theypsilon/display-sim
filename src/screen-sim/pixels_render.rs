@@ -1,13 +1,13 @@
 use enum_len_derive::EnumLen;
-use js_sys::{ArrayBuffer, Float32Array};
+use js_sys::Float32Array;
 use num_derive::{FromPrimitive, ToPrimitive};
 
-use std::mem::size_of;
-use web_sys::{WebGl2RenderingContext, WebGlBuffer, WebGlProgram, WebGlTexture, WebGlVertexArrayObject};
-
 use crate::shaders::make_shader;
+use crate::simulation_state::AnimationData;
 use crate::wasm_error::WasmResult;
 use crate::web_utils::js_f32_array;
+use std::mem::size_of;
+use web_sys::{WebGl2RenderingContext, WebGlBuffer, WebGlProgram, WebGlTexture, WebGlVertexArrayObject};
 
 #[derive(FromPrimitive, ToPrimitive, EnumLen, Clone, Copy)]
 pub enum PixelsGeometryKind {
@@ -28,8 +28,9 @@ pub struct PixelsRender {
     shader: WebGlProgram,
     vao: Option<WebGlVertexArrayObject>,
     colors_vbo: WebGlBuffer,
-    width: usize,
-    height: usize,
+    offsets_vbo: WebGlBuffer,
+    width: u32,
+    height: u32,
     shadows: Vec<Option<WebGlTexture>>,
 }
 
@@ -53,7 +54,7 @@ pub struct PixelsUniform<'a> {
 const TEXTURE_SIZE: usize = 256;
 
 impl PixelsRender {
-    pub fn new(gl: &WebGl2RenderingContext, width: usize, height: usize) -> WasmResult<PixelsRender> {
+    pub fn new(gl: &WebGl2RenderingContext) -> WasmResult<PixelsRender> {
         let shader = make_shader(&gl, PIXEL_VERTEX_SHADER, PIXEL_FRAGMENT_SHADER)?;
 
         let vao = gl.create_vertex_array();
@@ -79,14 +80,10 @@ impl PixelsRender {
         gl.vertex_attrib_pointer_with_i32(a_color_position, 1, WebGl2RenderingContext::FLOAT, false, size_of::<f32>() as i32, 0);
         gl.vertex_attrib_divisor(a_color_position, 1);
 
-        let offset_vbo = gl.create_buffer().ok_or("cannot create offset_vbo")?;
-        gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&offset_vbo));
-
-        let offsets = calculate_offsets(width, height);
+        let offsets_vbo = gl.create_buffer().ok_or("cannot create offsets_vbo")?;
+        gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&offsets_vbo));
 
         let a_offset_position = gl.get_attrib_location(&shader, "aOffset") as u32;
-        gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&offset_vbo));
-        gl.buffer_data_with_opt_array_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&offsets.buffer()), WebGl2RenderingContext::STATIC_DRAW);
         gl.enable_vertex_attrib_array(a_offset_position);
         gl.vertex_attrib_pointer_with_i32(a_offset_position, 2, WebGl2RenderingContext::FLOAT, false, 2 * size_of::<f32>() as i32, 0);
         gl.vertex_attrib_divisor(a_offset_position, 1);
@@ -137,9 +134,10 @@ impl PixelsRender {
         Ok(PixelsRender {
             vao,
             shader,
+            offsets_vbo,
             colors_vbo,
-            width,
-            height,
+            width: 0,
+            height: 0,
             shadows,
         })
     }
@@ -211,11 +209,18 @@ impl PixelsRender {
         Ok(pixel_shadow_texture)
     }
 
-    pub fn apply_colors(&self, gl: &WebGl2RenderingContext, buffer: &ArrayBuffer) {
+    pub fn load_image(&mut self, gl: &WebGl2RenderingContext, animation: &AnimationData, frame: usize) {
+        if animation.image_width != self.width || animation.image_height != self.height {
+            self.width = animation.image_width;
+            self.height = animation.image_height;
+            gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&self.offsets_vbo));
+            let offsets = calculate_offsets(self.width, self.height);
+            gl.buffer_data_with_opt_array_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&offsets.buffer()), WebGl2RenderingContext::STATIC_DRAW);
+        }
         gl.bind_vertex_array(self.vao.as_ref());
         gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&self.colors_vbo));
 
-        gl.buffer_data_with_opt_array_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&buffer), WebGl2RenderingContext::STATIC_DRAW);
+        gl.buffer_data_with_opt_array_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&animation.steps[frame]), WebGl2RenderingContext::STATIC_DRAW);
     }
 
     pub fn render(&self, gl: &WebGl2RenderingContext, uniforms: PixelsUniform) {
@@ -250,7 +255,7 @@ impl PixelsRender {
     }
 }
 
-fn calculate_offsets(width: usize, height: usize) -> Float32Array {
+fn calculate_offsets(width: u32, height: u32) -> Float32Array {
     let pixels_total = width * height;
     let offsets = Float32Array::new(&wasm_bindgen::JsValue::from(pixels_total as u32 * 2));
     {

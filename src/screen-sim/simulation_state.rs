@@ -45,12 +45,12 @@ pub struct StateOwner {
 }
 
 impl StateOwner {
-    pub fn new_rc(resources: Resources, input: Input, materials: Materials) -> Rc<StateOwner> {
+    pub fn new_rc(resources: Resources, materials: Materials, input: Input) -> Rc<StateOwner> {
         Rc::new(StateOwner {
             closures: RefCell::new(Vec::new()),
             resources: RefCell::new(resources),
-            input: RefCell::new(input),
             materials: RefCell::new(materials),
+            input: RefCell::new(input),
         })
     }
 }

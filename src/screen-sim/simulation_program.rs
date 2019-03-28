@@ -28,12 +28,7 @@ const MOVEMENT_SPEED_FACTOR: f32 = 50.0;
 
 pub fn program(gl: JsValue, animation: AnimationData) -> WasmResult<()> {
     let gl = gl.dyn_into::<WebGl2RenderingContext>()?;
-    let owned_state = {
-        let res = load_resources(animation)?;
-        let input = Input::new()?;
-        let materials = load_materials(gl, &res.animation)?;
-        StateOwner::new_rc(res, input, materials)
-    };
+    let owned_state = StateOwner::new_rc(load_resources(animation)?, load_materials(gl)?, Input::new()?);
     let frame_closure: Closure<FnMut(JsValue)> = {
         let owned_state = Rc::clone(&owned_state);
         let window = window()?;
@@ -97,9 +92,9 @@ fn load_resources(animation: AnimationData) -> WasmResult<Resources> {
     Ok(res)
 }
 
-fn load_materials(gl: WebGl2RenderingContext, animation: &AnimationData) -> WasmResult<Materials> {
+fn load_materials(gl: WebGl2RenderingContext) -> WasmResult<Materials> {
     let main_buffer_stack = TextureBufferStack::new();
-    let pixels_render = PixelsRender::new(&gl, animation.image_width as usize, animation.image_height as usize)?;
+    let pixels_render = PixelsRender::new(&gl)?;
     let blur_render = BlurRender::new(&gl)?;
     let internal_resolution_render = InternalResolutionRender::new(&gl)?;
     let rgb_render = RgbRender::new(&gl)?;
@@ -762,7 +757,7 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
     //gl.blend_func(WebGl2RenderingContext::SRC_ALPHA, WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA);
 
     if res.animation.needs_buffer_data_load {
-        materials.pixels_render.apply_colors(gl, &res.animation.steps[res.animation.current_frame]);
+        materials.pixels_render.load_image(gl, &res.animation, res.animation.current_frame);
     }
 
     materials.main_buffer_stack.set_depthbuffer(
