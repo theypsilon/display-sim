@@ -226,12 +226,6 @@ function updateInnerHtmlWithEventNumber(deo, eventId) {
             case 'app-event.change_blur_level':
             case 'app-event.change_lines_per_pixel':
             case 'app-event.change_pixel_contrast':
-            case 'app-event.color_representation':
-            case 'app-event.pixel_geometry':
-            case 'app-event.pixel_shadow_shape':
-            case 'app-event.pixel_shadow_height':
-            case 'app-event.screen_layering_type':
-            case 'app-event.screen_curvature':
                 deo.value = Math.round(event.detail * 1000.0) / 1000.0;
                 break;
             case 'app-event.change_pixel_brightness':
@@ -246,9 +240,16 @@ function updateInnerHtmlWithEventNumber(deo, eventId) {
             case 'app-event.change_turning_speed':
                 deo.value = (Math.round(event.detail * 1000.0) / 1000.0) + 'x';
                 break;
+            case 'app-event.color_representation':
+            case 'app-event.pixel_geometry':
+            case 'app-event.pixel_shadow_shape':
+            case 'app-event.pixel_shadow_height':
+            case 'app-event.screen_layering_type':
+            case 'app-event.screen_curvature':
             case 'app-event.internal_resolution':
             case 'app-event.texture_interpolation':
                 deo.value = event.detail;
+                deo.title = event.detail;
                 break;
             default: throw new Error("Unreachable!");
         }

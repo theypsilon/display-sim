@@ -109,12 +109,12 @@ fn change_frontend_input_values(res: &Resources) -> WasmResult<()> {
     dispatch_event_with("app-event.change_camera_zoom", &res.camera.zoom.into())?;
     dispatch_event_with("app-event.change_blur_level", &(res.crt_filters.blur_passes as i32).into())?;
     dispatch_event_with("app-event.change_lines_per_pixel", &(res.crt_filters.lines_per_pixel as i32).into())?;
-    dispatch_event_with("app-event.color_representation", &(res.crt_filters.color_channels as i32).into())?;
-    dispatch_event_with("app-event.pixel_geometry", &(res.crt_filters.pixels_geometry_kind as i32).into())?;
-    dispatch_event_with("app-event.pixel_shadow_shape", &(res.crt_filters.pixel_shadow_shape_kind as i32).into())?;
+    dispatch_event_with("app-event.color_representation", &(res.crt_filters.color_channels.to_string()).into())?;
+    dispatch_event_with("app-event.pixel_geometry", &(res.crt_filters.pixels_geometry_kind.to_string()).into())?;
+    dispatch_event_with("app-event.pixel_shadow_shape", &(res.crt_filters.pixel_shadow_shape_kind.to_string()).into())?;
     dispatch_event_with("app-event.pixel_shadow_height", &(res.crt_filters.pixel_shadow_height_factor).into())?;
-    dispatch_event_with("app-event.screen_layering_type", &(res.crt_filters.layering_kind as i32).into())?;
-    dispatch_event_with("app-event.screen_curvature", &(res.crt_filters.screen_curvature_kind as i32).into())?;
+    dispatch_event_with("app-event.screen_layering_type", &(res.crt_filters.layering_kind.to_string()).into())?;
+    dispatch_event_with("app-event.screen_curvature", &(res.crt_filters.screen_curvature_kind.to_string()).into())?;
     dispatch_event_with("app-event.internal_resolution", &(res.crt_filters.internal_resolution.to_label(&res.animation)).into())?;
     dispatch_event_with("app-event.texture_interpolation", &(res.crt_filters.texture_interpolation.to_string()).into())?;
     dispatch_event_with(
@@ -348,7 +348,7 @@ fn update_pixel_pulse(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
             res.crt_filters.screen_curvature_kind.previous_enum_variant()?;
         }
         dispatch_event_with("app-event.top_message", &format!("Screen curvature: {}.", res.crt_filters.screen_curvature_kind).into())?;
-        dispatch_event_with("app-event.screen_curvature", &(res.crt_filters.screen_curvature_kind as i32).into())?;
+        dispatch_event_with("app-event.screen_curvature", &(res.crt_filters.screen_curvature_kind.to_string()).into())?;
     }
 
     if let ScreenCurvatureKind::Pulse = res.crt_filters.screen_curvature_kind {
@@ -401,7 +401,7 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
             }
         };
         dispatch_event_with("app-event.top_message", &format!("Layering kind: {}.", res.crt_filters.layering_kind).into())?;
-        dispatch_event_with("app-event.screen_layering_type", &(res.crt_filters.layering_kind as i32).into())?;
+        dispatch_event_with("app-event.screen_layering_type", &(res.crt_filters.layering_kind.to_string()).into())?;
     }
 
     if input.next_color_representation_kind.any_just_pressed() {
@@ -411,7 +411,7 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
             res.crt_filters.color_channels.previous_enum_variant()?;
         }
         dispatch_event_with("app-event.top_message", &format!("Pixel color representation: {}.", res.crt_filters.color_channels).into())?;
-        dispatch_event_with("app-event.color_representation", &(res.crt_filters.color_channels as i32).into())?;
+        dispatch_event_with("app-event.color_representation", &(res.crt_filters.color_channels.to_string()).into())?;
     }
 
     if input.next_pixel_geometry_kind.any_just_pressed() {
@@ -421,7 +421,7 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
             res.crt_filters.pixels_geometry_kind.previous_enum_variant()?;
         }
         dispatch_event_with("app-event.top_message", &format!("Pixel geometry: {}.", res.crt_filters.pixels_geometry_kind).into())?;
-        dispatch_event_with("app-event.pixel_geometry", &(res.crt_filters.pixels_geometry_kind as i32).into())?;
+        dispatch_event_with("app-event.pixel_geometry", &(res.crt_filters.pixels_geometry_kind.to_string()).into())?;
     }
 
     if input.next_pixels_shadow_shape_kind.any_just_pressed() {
@@ -440,7 +440,7 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
             "app-event.top_message",
             &format!("Showing next pixel shadow: {}.", res.crt_filters.pixel_shadow_shape_kind.to_string()).into(),
         )?;
-        dispatch_event_with("app-event.pixel_shadow_shape", &(res.crt_filters.pixel_shadow_shape_kind as i32).into())?;
+        dispatch_event_with("app-event.pixel_shadow_shape", &(res.crt_filters.pixel_shadow_shape_kind.to_string()).into())?;
     }
 
     let received_pixel_shadow_height = input.custom_event.kind.as_ref() as &str == "event_kind:pixel_shadow_height";
