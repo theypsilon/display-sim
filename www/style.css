@@ -136,6 +136,7 @@ body {
     left: 18px;
     background: white;
     width: 335px;
+    z-index: 1;
 }
 
 #info-panel:hover {
@@ -241,22 +242,24 @@ canvas:hover {
     height: 100%;
 }
 
-.feature-modificable-input, .feature-readonly-input {
+.feature-modificable-input {
     width: 40px;
+    text-align: right;
 }
 
 .feature-readonly-input {
+    width: 80px;
     border: none;
     text-align: center;
 }
 
 .feature-button {
-    width: 60px;
+    width: 70px;
     height: 26px;
 }
 
 .button-inc-dec {
-    width: 10px;
+    width: 15px;
     margin-left: 0px;
     margin-right: 0px;
     padding-left: 0px;
