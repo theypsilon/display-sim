@@ -8,7 +8,7 @@ pub struct TextureBuffer {
 }
 
 impl TextureBuffer {
-    pub fn new(gl: &WebGl2RenderingContext, width: i32, height: i32) -> WasmResult<TextureBuffer> {
+    pub fn new(gl: &WebGl2RenderingContext, width: i32, height: i32, interpolation: u32) -> WasmResult<TextureBuffer> {
         let framebuffer = gl.create_framebuffer();
         let texture = gl.create_texture();
 
@@ -25,8 +25,8 @@ impl TextureBuffer {
             WebGl2RenderingContext::UNSIGNED_BYTE,
             None,
         )?;
-        gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MIN_FILTER, WebGl2RenderingContext::LINEAR as i32);
-        gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MAG_FILTER, WebGl2RenderingContext::LINEAR as i32);
+        gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MIN_FILTER, interpolation as i32);
+        gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MAG_FILTER, interpolation as i32);
         gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_WRAP_S, WebGl2RenderingContext::CLAMP_TO_EDGE as i32);
         gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_WRAP_T, WebGl2RenderingContext::CLAMP_TO_EDGE as i32);
         gl.framebuffer_texture_2d(
@@ -40,9 +40,9 @@ impl TextureBuffer {
         Ok(TextureBuffer { texture, framebuffer })
     }
 
-    pub fn new_with_depthbuffer(gl: &WebGl2RenderingContext, width: i32, height: i32) -> WasmResult<TextureBuffer> {
+    pub fn new_with_depthbuffer(gl: &WebGl2RenderingContext, width: i32, height: i32, interpolation: u32) -> WasmResult<TextureBuffer> {
         let depthbuffer = gl.create_renderbuffer();
-        let texture_buffer = Self::new(gl, width, height)?;
+        let texture_buffer = Self::new(gl, width, height, interpolation)?;
         gl.bind_renderbuffer(WebGl2RenderingContext::RENDERBUFFER, depthbuffer.as_ref());
         gl.renderbuffer_storage(WebGl2RenderingContext::RENDERBUFFER, WebGl2RenderingContext::DEPTH_COMPONENT16, width, height);
         gl.framebuffer_renderbuffer(
@@ -67,6 +67,7 @@ pub struct TextureBufferStack {
     pub stack: Vec<TextureBuffer>,
     width: i32,
     height: i32,
+    interpolation: u32,
     cursor: usize,
     max_cursor: usize,
     depthbuffer_active: bool,
@@ -77,6 +78,7 @@ impl TextureBufferStack {
         TextureBufferStack {
             stack: Vec::new(),
             width: 0,
+            interpolation: WebGl2RenderingContext::LINEAR,
             height: 0,
             cursor: 0,
             max_cursor: 0,
@@ -99,6 +101,13 @@ impl TextureBufferStack {
         }
     }
 
+    pub fn set_interpolation(&mut self, gl: &WebGl2RenderingContext, interpolation: u32) {
+        if self.interpolation != interpolation {
+            self.interpolation = interpolation;
+            self.reset_stack(gl);
+        }
+    }
+
     fn reset_stack(&mut self, gl: &WebGl2RenderingContext) {
         self.cursor = 0;
         self.max_cursor = 0;
@@ -112,9 +121,9 @@ impl TextureBufferStack {
     pub fn push(&mut self, gl: &WebGl2RenderingContext) -> WasmResult<()> {
         if self.stack.len() == self.cursor {
             let tb = if self.depthbuffer_active {
-                TextureBuffer::new_with_depthbuffer(gl, self.width, self.height)?
+                TextureBuffer::new_with_depthbuffer(gl, self.width, self.height, self.interpolation)?
             } else {
-                TextureBuffer::new(gl, self.width, self.height)?
+                TextureBuffer::new(gl, self.width, self.height, self.interpolation)?
             };
             self.stack.push(tb);
         }

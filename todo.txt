@@ -1,3 +1,5 @@
 · Expose internal resolution multiplier to the UI.
 · Fix left click on panel and grabbing camera by mistake.
 · Work on curved screen.
+· Initial screen layering type is not correct in UI.
+· Bug. When top message is happening, buttons up and down on speed ui are not clickable.

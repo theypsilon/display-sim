@@ -16,6 +16,7 @@ use crate::render_types::TextureBufferStack;
 use crate::rgb_render::RgbRender;
 use crate::simulation_state::{
     AnimationData, ColorChannels, CrtFilters, CustomInputEvent, IncDec, InitialParameters, Input, Resources, ScreenCurvatureKind, ScreenLayeringKind, SimulationTimers, StateOwner,
+    TextureInterpolation,
 };
 use crate::wasm_error::{WasmError, WasmResult};
 use crate::web_utils::{now, window};
@@ -114,6 +115,8 @@ fn change_frontend_input_values(res: &Resources) -> WasmResult<()> {
     dispatch_event_with("app-event.pixel_shadow_height", &(res.crt_filters.pixel_shadow_height_factor).into())?;
     dispatch_event_with("app-event.screen_layering_type", &(res.crt_filters.layering_kind as i32).into())?;
     dispatch_event_with("app-event.screen_curvature", &(res.crt_filters.screen_curvature_kind as i32).into())?;
+    dispatch_event_with("app-event.internal_resolution", &(res.crt_filters.internal_resolution.to_label(&res.animation)).into())?;
+    dispatch_event_with("app-event.texture_interpolation", &(res.crt_filters.texture_interpolation.to_string()).into())?;
     dispatch_event_with(
         "app-event.change_movement_speed",
         &((res.camera.movement_speed / res.initial_parameters.initial_movement_speed) as i32).into(),
@@ -462,6 +465,33 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
         dispatch_event_with("app-event.pixel_shadow_height", &res.crt_filters.pixel_shadow_height_factor.into())?;
     }
 
+    if input.next_internal_resolution.any_just_released() {
+        if input.next_internal_resolution.increase.is_just_released() {
+            res.crt_filters.internal_resolution.multiplier *= 2.0;
+        }
+        if input.next_internal_resolution.decrease.is_just_released() {
+            res.crt_filters.internal_resolution.multiplier /= 2.0;
+        }
+        let height = (res.animation.viewport_height as f32 * res.crt_filters.internal_resolution.multiplier) as i32;
+        if height < 32 {
+            res.crt_filters.internal_resolution.multiplier *= 2.0;
+            dispatch_event_with("app-event.top_message", &"Minimum internal resolution has been reached.".into())?;
+        } else {
+            let resolution_text = res.crt_filters.internal_resolution.to_label(&res.animation);
+            dispatch_event_with("app-event.internal_resolution", &resolution_text.into())?;
+        }
+    }
+
+    if input.next_texture_interpolation.any_just_pressed() {
+        if input.next_texture_interpolation.increase.is_just_pressed() {
+            res.crt_filters.texture_interpolation.next_enum_variant()?;
+        }
+        if input.next_texture_interpolation.decrease.is_just_pressed() {
+            res.crt_filters.texture_interpolation.previous_enum_variant()?;
+        }
+        dispatch_event_with("app-event.texture_interpolation", &res.crt_filters.texture_interpolation.to_string().into())?;
+    }
+
     let pixel_velocity = dt * res.crt_filters.change_speed;
     change_pixel_sizes(
         &input.custom_event,
@@ -721,9 +751,17 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
         PixelsGeometryKind::Squares => buffer_stack.set_depthbuffer(gl, false),
     };
 
-    let internal_width = res.animation.viewport_width as i32 * res.crt_filters.internal_resolution_multiplier;
-    let internal_height = res.animation.viewport_height as i32 * res.crt_filters.internal_resolution_multiplier;
+    let internal_width = (res.animation.viewport_width as f32 * res.crt_filters.internal_resolution.multiplier) as i32;
+    let internal_height = (res.animation.viewport_height as f32 * res.crt_filters.internal_resolution.multiplier) as i32;
     buffer_stack.set_resolution(gl, internal_width, internal_height);
+
+    buffer_stack.set_interpolation(
+        gl,
+        match res.crt_filters.texture_interpolation {
+            TextureInterpolation::Linear => WebGl2RenderingContext::LINEAR,
+            TextureInterpolation::Nearest => WebGl2RenderingContext::NEAREST,
+        },
+    );
 
     buffer_stack.push(gl)?;
     buffer_stack.push(gl)?;
@@ -880,9 +918,9 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
     }
 
     if res.launch_screenshot {
-        let multiplier: i32 = res.crt_filters.internal_resolution_multiplier;
-        let width = res.animation.viewport_width as i32 * multiplier;
-        let height = res.animation.viewport_height as i32 * multiplier;
+        let multiplier: f32 = res.crt_filters.internal_resolution.multiplier;
+        let width = (res.animation.viewport_width as f32 * multiplier) as i32;
+        let height = (res.animation.viewport_height as f32 * multiplier) as i32;
         let pixels = js_sys::Uint8Array::new(&(width * height * 4).into());
         gl.read_pixels_with_opt_array_buffer_view(0, 0, width, height, WebGl2RenderingContext::RGBA, WebGl2RenderingContext::UNSIGNED_BYTE, Some(&pixels))?;
         let array = js_sys::Array::new();

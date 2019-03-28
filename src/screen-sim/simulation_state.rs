@@ -80,7 +80,8 @@ pub struct InitialParameters {
 }
 
 pub struct CrtFilters {
-    pub internal_resolution_multiplier: i32,
+    pub internal_resolution: InternalResolution,
+    pub texture_interpolation: TextureInterpolation,
     pub blur_passes: usize,
     pub lines_per_pixel: usize,
     pub light_color: i32,
@@ -125,6 +126,21 @@ impl std::fmt::Display for ScreenLayeringKind {
     }
 }
 
+pub struct InternalResolution {
+    pub multiplier: f32,
+}
+
+impl InternalResolution {
+    pub fn to_label(&self, animation: &AnimationData) -> String {
+        let height = (animation.viewport_height as f32 * self.multiplier) as i32;
+        if height <= 1080 {
+            format!("{}p", height)
+        } else {
+            format!("{}K", height / 540)
+        }
+    }
+}
+
 #[derive(FromPrimitive, ToPrimitive, EnumLen, Copy, Clone)]
 pub enum ScreenCurvatureKind {
     Flat,
@@ -138,6 +154,21 @@ impl std::fmt::Display for ScreenCurvatureKind {
             ScreenCurvatureKind::Flat => write!(f, "Flat"),
             ScreenCurvatureKind::Curved => write!(f, "Curved"),
             ScreenCurvatureKind::Pulse => write!(f, "Weaving pulse"),
+        }
+    }
+}
+
+#[derive(FromPrimitive, ToPrimitive, EnumLen, Copy, Clone)]
+pub enum TextureInterpolation {
+    Nearest,
+    Linear,
+}
+
+impl std::fmt::Display for TextureInterpolation {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match *self {
+            TextureInterpolation::Nearest => write!(f, "Nearest"),
+            TextureInterpolation::Linear => write!(f, "Linear"),
         }
     }
 }
@@ -164,7 +195,8 @@ impl std::fmt::Display for ColorChannels {
 impl CrtFilters {
     pub fn new(change_speed: f32) -> CrtFilters {
         CrtFilters {
-            internal_resolution_multiplier: 1,
+            internal_resolution: InternalResolution { multiplier: 1.0 },
+            texture_interpolation: TextureInterpolation::Linear,
             blur_passes: 0,
             lines_per_pixel: 1,
             light_color: 0x00FF_FFFF,
@@ -280,6 +312,8 @@ pub struct Input {
     pub next_pixel_geometry_kind: IncDec<BooleanButton>,
     pub next_layering_kind: IncDec<BooleanButton>,
     pub next_screen_curvature_type: IncDec<BooleanButton>,
+    pub next_internal_resolution: IncDec<BooleanButton>,
+    pub next_texture_interpolation: IncDec<BooleanButton>,
     pub esc: BooleanButton,
     pub space: BooleanButton,
     pub screenshot: BooleanButton,

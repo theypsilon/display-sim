@@ -65,6 +65,8 @@ const featureChangePixelShadowShapeDeo = document.getElementById('feature-change
 const featureChangePixelShadowHeightDeo = document.getElementById('feature-change-pixel-shadow-height');
 const featureChangeScreenLayeringTypeDeo = document.getElementById('feature-change-screen-layering-type');
 const featureChangeScreenCurvatureDeo = document.getElementById('feature-change-screen-curvature');
+const featureInternalResolutionDeo = document.getElementById('feature-internal-resolution');
+const featureTextureInterpolationDeo = document.getElementById('feature-texture-interpolation');
 
 const featureChangeMoveSpeedDeo = document.getElementById('feature-change-move-speed');
 const featureChangeTurnSpeedDeo = document.getElementById('feature-change-turn-speed');
@@ -208,6 +210,8 @@ updateInnerHtmlWithEventNumber(featureChangePixelGeometryDeo, "app-event.pixel_g
 updateInnerHtmlWithEventNumber(featureChangePixelShadowShapeDeo, "app-event.pixel_shadow_shape");
 updateInnerHtmlWithEventNumber(featureChangePixelShadowHeightDeo, "app-event.pixel_shadow_height");
 updateInnerHtmlWithEventNumber(featureChangeScreenLayeringTypeDeo, "app-event.screen_layering_type");
+updateInnerHtmlWithEventNumber(featureInternalResolutionDeo, "app-event.internal_resolution");
+updateInnerHtmlWithEventNumber(featureTextureInterpolationDeo, "app-event.texture_interpolation");
 updateInnerHtmlWithEventNumber(featureChangeScreenCurvatureDeo, "app-event.screen_curvature");
 
 function updateInnerHtmlWithEventNumber(deo, eventId) {
@@ -222,9 +226,6 @@ function updateInnerHtmlWithEventNumber(deo, eventId) {
             case 'app-event.change_blur_level':
             case 'app-event.change_lines_per_pixel':
             case 'app-event.change_pixel_contrast':
-            case 'app-event.change_movement_speed':
-            case 'app-event.change_pixel_speed':
-            case 'app-event.change_turning_speed':
             case 'app-event.color_representation':
             case 'app-event.pixel_geometry':
             case 'app-event.pixel_shadow_shape':
@@ -239,6 +240,15 @@ function updateInnerHtmlWithEventNumber(deo, eventId) {
             case 'app-event.change_light_color':
             case 'app-event.change_brightness_color':
                 deo.value = '#' + event.detail.toString(16);
+                break;
+            case 'app-event.change_movement_speed':
+            case 'app-event.change_pixel_speed':
+            case 'app-event.change_turning_speed':
+                deo.value = (Math.round(event.detail * 1000.0) / 1000.0) + 'x';
+                break;
+            case 'app-event.internal_resolution':
+            case 'app-event.texture_interpolation':
+                deo.value = event.detail;
                 break;
             default: throw new Error("Unreachable!");
         }
