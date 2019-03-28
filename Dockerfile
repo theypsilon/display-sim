@@ -44,7 +44,7 @@ FROM rust-wasm as wasm-artifact
 ENV RUST_BACKTRACE=1
 ADD src/crates /app/src/crates
 ADD Cargo.* /app/
-RUN mkdir -p src && touch src/lib.rs \
+RUN mkdir -p src && mkdir -p src/screen-sim touch src/screen-sim/lib.rs \
     && cargo build --release \
     && wasm-pack build --debug \
     && bash -c 'rm -rf ${CARGO_HOME}/registry/src/*/*/{!Cargo.toml}' \
