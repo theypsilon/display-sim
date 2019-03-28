@@ -1,6 +1,7 @@
 use crate::wasm_error::WasmResult;
 use web_sys::{WebGl2RenderingContext, WebGlFramebuffer, WebGlTexture};
 
+#[derive(Debug)]
 pub struct TextureBuffer {
     texture: Option<WebGlTexture>,
     framebuffer: Option<WebGlFramebuffer>,
@@ -24,8 +25,8 @@ impl TextureBuffer {
             WebGl2RenderingContext::UNSIGNED_BYTE,
             None,
         )?;
-        gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MIN_FILTER, WebGl2RenderingContext::NEAREST as i32);
-        gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MAG_FILTER, WebGl2RenderingContext::NEAREST as i32);
+        gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MIN_FILTER, WebGl2RenderingContext::LINEAR as i32);
+        gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MAG_FILTER, WebGl2RenderingContext::LINEAR as i32);
         gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_WRAP_S, WebGl2RenderingContext::CLAMP_TO_EDGE as i32);
         gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_WRAP_T, WebGl2RenderingContext::CLAMP_TO_EDGE as i32);
         gl.framebuffer_texture_2d(
@@ -68,23 +69,54 @@ pub struct TextureBufferStack {
     height: i32,
     cursor: usize,
     max_cursor: usize,
+    depthbuffer_active: bool,
 }
 
 impl TextureBufferStack {
-    pub fn new(width: i32, height: i32) -> TextureBufferStack {
+    pub fn new() -> TextureBufferStack {
         TextureBufferStack {
             stack: Vec::new(),
-            width,
-            height,
+            width: 0,
+            height: 0,
             cursor: 0,
             max_cursor: 0,
+            depthbuffer_active: false,
         }
+    }
+
+    pub fn set_depthbuffer(&mut self, gl: &WebGl2RenderingContext, new_value: bool) {
+        if self.depthbuffer_active != new_value {
+            self.depthbuffer_active = new_value;
+            self.reset_stack(gl);
+        }
+    }
+
+    pub fn set_resolution(&mut self, gl: &WebGl2RenderingContext, width: i32, height: i32) {
+        if self.width != width || self.height != height {
+            self.width = width;
+            self.height = height;
+            self.reset_stack(gl);
+        }
+    }
+
+    fn reset_stack(&mut self, gl: &WebGl2RenderingContext) {
+        self.cursor = 0;
+        self.max_cursor = 0;
+        for tb in self.stack.iter() {
+            gl.delete_framebuffer(tb.framebuffer());
+            gl.delete_texture(tb.texture());
+        }
+        self.stack.clear();
     }
 
     pub fn push(&mut self, gl: &WebGl2RenderingContext) -> WasmResult<()> {
         if self.stack.len() == self.cursor {
-            //console!(log. "creating new texture buffer!", (self.stack.len() as f32));
-            self.stack.push(TextureBuffer::new_with_depthbuffer(gl, self.width, self.height)?);
+            let tb = if self.depthbuffer_active {
+                TextureBuffer::new_with_depthbuffer(gl, self.width, self.height)?
+            } else {
+                TextureBuffer::new(gl, self.width, self.height)?
+            };
+            self.stack.push(tb);
         }
         self.cursor += 1;
         if self.cursor > self.max_cursor {

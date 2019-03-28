@@ -27,30 +27,25 @@ impl BlurRender {
         let target = stack.get_nth(-2)?;
         let texture_buffers = [stack.get_nth(0)?, stack.get_nth(-1)?];
 
-        for tb in &texture_buffers {
-            gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, tb.framebuffer());
-            gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
-        }
-
-        let blur_iteration = |texture: Option<&WebGlTexture>, framebuffer: Option<&WebGlFramebuffer>, horizontal: i32| {
+        let blur_iteration = |texture: Option<&WebGlTexture>, framebuffer: Option<&WebGlFramebuffer>, horizontal: bool| {
             gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, framebuffer);
             gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, texture);
-            gl.uniform1i(gl.get_uniform_location(&self.shader, "horizontal").as_ref(), horizontal);
+            gl.uniform1i(gl.get_uniform_location(&self.shader, "horizontal").as_ref(), if horizontal { 1 } else { 0 });
+            gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
             gl.draw_elements_with_i32(WebGl2RenderingContext::TRIANGLES, 6, WebGl2RenderingContext::UNSIGNED_INT, 0);
         };
 
         gl.use_program(Some(&self.shader));
         gl.bind_vertex_array(self.vao.as_ref());
-        blur_iteration(target.texture(), texture_buffers[0].framebuffer(), 0);
+        blur_iteration(target.texture(), texture_buffers[0].framebuffer(), false);
         for i in 1..passes {
             let buffer_index = i % 2;
             let texture_index = (i + 1) % 2;
-            blur_iteration(texture_buffers[texture_index].texture(), texture_buffers[buffer_index].framebuffer(), buffer_index as i32);
+            blur_iteration(texture_buffers[texture_index].texture(), texture_buffers[buffer_index].framebuffer(), buffer_index == 1);
         }
-
         let buffer_index = passes % 2;
         let texture_index = (passes + 1) % 2;
-        blur_iteration(texture_buffers[texture_index].texture(), target.framebuffer(), buffer_index as i32);
+        blur_iteration(texture_buffers[texture_index].texture(), target.framebuffer(), buffer_index == 1);
         gl.bind_vertex_array(None);
         gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, None);
         stack.pop()?;

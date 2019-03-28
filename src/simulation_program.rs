@@ -69,13 +69,8 @@ fn load_resources(gl: &WebGl2RenderingContext, animation: AnimationData) -> Wasm
     let mut crt_filters = CrtFilters::new(PIXEL_MANIPULATION_BASE_SPEED);
     crt_filters.cur_pixel_width = animation.pixel_width;
 
-    let internal_resolution_multiplier: i32 = 2;
-    let internal_width = animation.viewport_width as i32 * internal_resolution_multiplier;
-    let internal_height = animation.viewport_height as i32 * internal_resolution_multiplier;
-
     let now = now()?;
     let res = Resources {
-        internal_resolution_multiplier,
         initial_parameters: InitialParameters {
             initial_position_z,
             initial_pixel_width: animation.pixel_width,
@@ -91,7 +86,7 @@ fn load_resources(gl: &WebGl2RenderingContext, animation: AnimationData) -> Wasm
         internal_resolution_render: InternalResolutionRender::new(gl)?,
         rgb_render: RgbRender::new(gl)?,
         background_render: BackgroundRender::new(gl)?,
-        texture_buffer_stack: std::cell::RefCell::new(TextureBufferStack::new(internal_width, internal_height)),
+        texture_buffer_stack: std::cell::RefCell::new(TextureBufferStack::new()),
         animation,
         camera,
         crt_filters,
@@ -309,7 +304,6 @@ fn update_blur(res: &mut Resources, input: &Input) -> WasmResult<()> {
         dispatch_event_with("app-event.top_message", &"Maximum value is 100".into())?;
     }
     if last_blur_passes != res.crt_filters.blur_passes {
-        console!(log. "blur_level changed!");
         dispatch_event_with("app-event.top_message", &("Blur level: ".to_string() + &res.crt_filters.blur_passes.to_string()).into())?;
         dispatch_event_with("app-event.change_blur_level", &(res.crt_filters.blur_passes as i32).into())?;
     }
@@ -722,6 +716,15 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
     }
 
     let mut buffer_stack = res.texture_buffer_stack.borrow_mut();
+    match res.crt_filters.pixels_geometry_kind {
+        PixelsGeometryKind::Cubes => buffer_stack.set_depthbuffer(gl, true),
+        PixelsGeometryKind::Squares => buffer_stack.set_depthbuffer(gl, false),
+    };
+
+    let internal_width = res.animation.viewport_width as i32 * res.crt_filters.internal_resolution_multiplier;
+    let internal_height = res.animation.viewport_height as i32 * res.crt_filters.internal_resolution_multiplier;
+    buffer_stack.set_resolution(gl, internal_width, internal_height);
+
     buffer_stack.push(gl)?;
     buffer_stack.push(gl)?;
     buffer_stack.bind_current(gl)?;
@@ -877,7 +880,7 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
     }
 
     if res.launch_screenshot {
-        let multiplier: i32 = res.internal_resolution_multiplier;
+        let multiplier: i32 = res.crt_filters.internal_resolution_multiplier;
         let width = res.animation.viewport_width as i32 * multiplier;
         let height = res.animation.viewport_height as i32 * multiplier;
         let pixels = js_sys::Uint8Array::new(&(width * height * 4).into());

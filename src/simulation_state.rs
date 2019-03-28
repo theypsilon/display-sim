@@ -60,7 +60,6 @@ pub struct Resources {
     pub blur_render: BlurRender,
     pub background_render: BackgroundRender,
     pub internal_resolution_render: InternalResolutionRender,
-    pub internal_resolution_multiplier: i32,
     pub rgb_render: RgbRender,
     pub texture_buffer_stack: std::cell::RefCell<TextureBufferStack>,
     pub timers: SimulationTimers,
@@ -81,6 +80,7 @@ pub struct InitialParameters {
 }
 
 pub struct CrtFilters {
+    pub internal_resolution_multiplier: i32,
     pub blur_passes: usize,
     pub lines_per_pixel: usize,
     pub light_color: i32,
@@ -164,6 +164,7 @@ impl std::fmt::Display for ColorChannels {
 impl CrtFilters {
     pub fn new(change_speed: f32) -> CrtFilters {
         CrtFilters {
+            internal_resolution_multiplier: 1,
             blur_passes: 0,
             lines_per_pixel: 1,
             light_color: 0x00FF_FFFF,
