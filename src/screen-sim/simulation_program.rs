@@ -757,7 +757,7 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
     //gl.blend_func(WebGl2RenderingContext::SRC_ALPHA, WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA);
 
     if res.animation.needs_buffer_data_load {
-        materials.pixels_render.load_image(gl, &res.animation, res.animation.current_frame);
+        materials.pixels_render.load_image(gl, &res.animation);
     }
 
     materials.main_buffer_stack.set_depthbuffer(

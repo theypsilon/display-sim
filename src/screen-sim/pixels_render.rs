@@ -209,7 +209,7 @@ impl PixelsRender {
         Ok(pixel_shadow_texture)
     }
 
-    pub fn load_image(&mut self, gl: &WebGl2RenderingContext, animation: &AnimationData, frame: usize) {
+    pub fn load_image(&mut self, gl: &WebGl2RenderingContext, animation: &AnimationData) {
         if animation.image_width != self.width || animation.image_height != self.height {
             self.width = animation.image_width;
             self.height = animation.image_height;
@@ -220,7 +220,11 @@ impl PixelsRender {
         gl.bind_vertex_array(self.vao.as_ref());
         gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&self.colors_vbo));
 
-        gl.buffer_data_with_opt_array_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&animation.steps[frame]), WebGl2RenderingContext::STATIC_DRAW);
+        gl.buffer_data_with_opt_array_buffer(
+            WebGl2RenderingContext::ARRAY_BUFFER,
+            Some(&animation.steps[animation.current_frame]),
+            WebGl2RenderingContext::STATIC_DRAW,
+        );
     }
 
     pub fn render(&self, gl: &WebGl2RenderingContext, uniforms: PixelsUniform) {
