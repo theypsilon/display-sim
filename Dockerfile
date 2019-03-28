@@ -49,7 +49,7 @@ RUN mkdir -p src && touch src/lib.rs \
     && wasm-pack build --debug \
     && bash -c 'rm -rf ${CARGO_HOME}/registry/src/*/*/{!Cargo.toml}' \
     && rm -rf target/debug target/wasm32-unknown-unknown/debug
-ADD src src
+ADD src/screen-sim /app/src/screen-sim
 RUN cargo test --release \
     && wasm-pack build \
     && mkdir -p /wasm && cp -r pkg/crt_3d_sim* /wasm/ \
