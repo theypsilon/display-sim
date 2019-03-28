@@ -42,6 +42,7 @@ RUN set -eux; \
 
 FROM rust-wasm as wasm-artifact
 ENV RUST_BACKTRACE=1
+ADD src/crates /app/src/crates
 ADD Cargo.* /app/
 RUN mkdir -p src && touch src/lib.rs \
     && cargo build --release \
