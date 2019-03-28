@@ -1,5 +1,6 @@
 use js_sys::ArrayBuffer;
 use wasm_bindgen::prelude::{Closure, JsValue};
+use web_sys::WebGl2RenderingContext;
 
 use enum_len_derive::EnumLen;
 use getters_by_type::GettersMutByType;
@@ -40,31 +41,39 @@ pub struct StateOwner {
     pub closures: RefCell<Vec<OwnedClosure>>,
     pub resources: RefCell<Resources>,
     pub input: RefCell<Input>,
+    pub materials: RefCell<Materials>,
 }
 
 impl StateOwner {
-    pub fn new_rc(resources: Resources, input: Input) -> Rc<StateOwner> {
+    pub fn new_rc(resources: Resources, input: Input, materials: Materials) -> Rc<StateOwner> {
         Rc::new(StateOwner {
             closures: RefCell::new(Vec::new()),
             resources: RefCell::new(resources),
             input: RefCell::new(input),
+            materials: RefCell::new(materials),
         })
     }
 }
 
+// Simulation Resources
 pub struct Resources {
     pub animation: AnimationData,
     pub camera: Camera,
     pub crt_filters: CrtFilters,
+    pub timers: SimulationTimers,
+    pub initial_parameters: InitialParameters,
+    pub launch_screenshot: bool,
+}
+
+// Rendering Materials
+pub struct Materials {
+    pub gl: WebGl2RenderingContext,
+    pub main_buffer_stack: TextureBufferStack,
     pub pixels_render: PixelsRender,
     pub blur_render: BlurRender,
     pub background_render: BackgroundRender,
     pub internal_resolution_render: InternalResolutionRender,
     pub rgb_render: RgbRender,
-    pub texture_buffer_stack: std::cell::RefCell<TextureBufferStack>,
-    pub timers: SimulationTimers,
-    pub initial_parameters: InitialParameters,
-    pub launch_screenshot: bool,
 }
 
 pub struct SimulationTimers {

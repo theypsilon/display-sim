@@ -15,7 +15,7 @@ use crate::pixels_render::{PixelsGeometryKind, PixelsRender, PixelsUniform};
 use crate::render_types::TextureBufferStack;
 use crate::rgb_render::RgbRender;
 use crate::simulation_state::{
-    AnimationData, ColorChannels, CrtFilters, CustomInputEvent, IncDec, InitialParameters, Input, Resources, ScreenCurvatureKind, ScreenLayeringKind, SimulationTimers, StateOwner,
+    AnimationData, ColorChannels, CrtFilters, CustomInputEvent, IncDec, InitialParameters, Input, Materials, Resources, ScreenCurvatureKind, ScreenLayeringKind, SimulationTimers, StateOwner,
     TextureInterpolation,
 };
 use crate::wasm_error::{WasmError, WasmResult};
@@ -28,12 +28,17 @@ const MOVEMENT_SPEED_FACTOR: f32 = 50.0;
 
 pub fn program(gl: JsValue, animation: AnimationData) -> WasmResult<()> {
     let gl = gl.dyn_into::<WebGl2RenderingContext>()?;
-    let owned_state = StateOwner::new_rc(load_resources(&gl, animation)?, Input::new()?);
+    let owned_state = {
+        let res = load_resources(animation)?;
+        let input = Input::new()?;
+        let materials = load_materials(gl, &res.animation)?;
+        StateOwner::new_rc(res, input, materials)
+    };
     let frame_closure: Closure<FnMut(JsValue)> = {
         let owned_state = Rc::clone(&owned_state);
         let window = window()?;
         Closure::wrap(Box::new(move |_| {
-            if let Err(e) = program_iteration(&owned_state, &gl, &window) {
+            if let Err(e) = program_iteration(&owned_state, &window) {
                 console!(error. "An unexpected error happened during program_iteration.", e.to_js());
             }
         }))
@@ -48,22 +53,23 @@ pub fn program(gl: JsValue, animation: AnimationData) -> WasmResult<()> {
     Ok(())
 }
 
-fn program_iteration(owned_state: &StateOwner, gl: &WebGl2RenderingContext, window: &Window) -> WasmResult<()> {
+fn program_iteration(owned_state: &StateOwner, window: &Window) -> WasmResult<()> {
     let mut input = owned_state.input.borrow_mut();
     let mut resources = owned_state.resources.borrow_mut();
+    let mut materials = owned_state.materials.borrow_mut();
     let closures = owned_state.closures.borrow();
     pre_process_input(&mut input, &resources)?;
-    if !update_simulation(&mut resources, &input)? {
+    if !update_simulation(&mut resources, &input, &materials)? {
         console!(log. "User closed the simulation.");
         return Ok(());
     }
     post_process_input(&mut input)?;
-    draw(&gl, &resources)?;
+    draw(&mut materials, &resources)?;
     window.request_animation_frame(closures[0].as_ref().ok_or("Wrong closure.")?.as_ref().unchecked_ref())?;
     Ok(())
 }
 
-fn load_resources(gl: &WebGl2RenderingContext, animation: AnimationData) -> WasmResult<Resources> {
+fn load_resources(animation: AnimationData) -> WasmResult<Resources> {
     let initial_position_z = calculate_far_away_position(&animation);
     let mut camera = Camera::new(MOVEMENT_BASE_SPEED * initial_position_z / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED);
     camera.set_position(glm::vec3(0.0, 0.0, initial_position_z));
@@ -82,12 +88,6 @@ fn load_resources(gl: &WebGl2RenderingContext, animation: AnimationData) -> Wasm
             last_time: now,
             last_second: now,
         },
-        pixels_render: PixelsRender::new(&gl, animation.image_width as usize, animation.image_height as usize)?,
-        blur_render: BlurRender::new(&gl)?,
-        internal_resolution_render: InternalResolutionRender::new(gl)?,
-        rgb_render: RgbRender::new(gl)?,
-        background_render: BackgroundRender::new(gl)?,
-        texture_buffer_stack: std::cell::RefCell::new(TextureBufferStack::new()),
         animation,
         camera,
         crt_filters,
@@ -95,6 +95,25 @@ fn load_resources(gl: &WebGl2RenderingContext, animation: AnimationData) -> Wasm
     };
     change_frontend_input_values(&res)?;
     Ok(res)
+}
+
+fn load_materials(gl: WebGl2RenderingContext, animation: &AnimationData) -> WasmResult<Materials> {
+    let main_buffer_stack = TextureBufferStack::new();
+    let pixels_render = PixelsRender::new(&gl, animation.image_width as usize, animation.image_height as usize)?;
+    let blur_render = BlurRender::new(&gl)?;
+    let internal_resolution_render = InternalResolutionRender::new(&gl)?;
+    let rgb_render = RgbRender::new(&gl)?;
+    let background_render = BackgroundRender::new(&gl)?;
+    let materials = Materials {
+        gl,
+        main_buffer_stack,
+        pixels_render,
+        blur_render,
+        internal_resolution_render,
+        rgb_render,
+        background_render,
+    };
+    Ok(materials)
 }
 
 fn change_frontend_input_values(res: &Resources) -> WasmResult<()> {
@@ -170,7 +189,7 @@ fn post_process_input(input: &mut Input) -> WasmResult<()> {
     Ok(())
 }
 
-fn update_simulation(res: &mut Resources, input: &Input) -> WasmResult<bool> {
+fn update_simulation(res: &mut Resources, input: &Input, materials: &Materials) -> WasmResult<bool> {
     let dt = update_timers_and_dt(res, input)?;
 
     update_animation_buffer(res, input);
@@ -188,7 +207,7 @@ fn update_simulation(res: &mut Resources, input: &Input) -> WasmResult<bool> {
     }
 
     update_pixel_pulse(dt, res, input)?;
-    update_crt_filters(dt, res, input)?;
+    update_crt_filters(dt, res, input, materials)?;
     update_speeds(res, input)?;
     update_camera(dt, res, input)?;
     res.launch_screenshot = input.screenshot.is_just_released();
@@ -359,7 +378,7 @@ fn update_pixel_pulse(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
     Ok(())
 }
 
-fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> {
+fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input, materials: &Materials) -> WasmResult<()> {
     if input.reset_filters {
         res.crt_filters = CrtFilters::new(PIXEL_MANIPULATION_BASE_SPEED);
         res.crt_filters.cur_pixel_width = res.initial_parameters.initial_pixel_width;
@@ -427,12 +446,12 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
     if input.next_pixels_shadow_shape_kind.any_just_pressed() {
         if input.next_pixels_shadow_shape_kind.increase.is_just_pressed() {
             res.crt_filters.pixel_shadow_shape_kind += 1;
-            if res.crt_filters.pixel_shadow_shape_kind >= res.pixels_render.shadows_len() {
+            if res.crt_filters.pixel_shadow_shape_kind >= materials.pixels_render.shadows_len() {
                 res.crt_filters.pixel_shadow_shape_kind = 0;
             }
         } else {
             if res.crt_filters.pixel_shadow_shape_kind == 0 {
-                res.crt_filters.pixel_shadow_shape_kind = res.pixels_render.shadows_len();
+                res.crt_filters.pixel_shadow_shape_kind = materials.pixels_render.shadows_len();
             }
             res.crt_filters.pixel_shadow_shape_kind -= 1;
         }
@@ -734,7 +753,8 @@ fn update_camera(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> 
     res.camera.update_view()
 }
 
-pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
+pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
+    let gl = &materials.gl;
     gl.enable(WebGl2RenderingContext::DEPTH_TEST);
     gl.clear_color(0.0, 0.0, 0.0, 0.0);
 
@@ -742,20 +762,22 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
     //gl.blend_func(WebGl2RenderingContext::SRC_ALPHA, WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA);
 
     if res.animation.needs_buffer_data_load {
-        res.pixels_render.apply_colors(gl, &res.animation.steps[res.animation.current_frame]);
+        materials.pixels_render.apply_colors(gl, &res.animation.steps[res.animation.current_frame]);
     }
 
-    let mut buffer_stack = res.texture_buffer_stack.borrow_mut();
-    match res.crt_filters.pixels_geometry_kind {
-        PixelsGeometryKind::Cubes => buffer_stack.set_depthbuffer(gl, true),
-        PixelsGeometryKind::Squares => buffer_stack.set_depthbuffer(gl, false),
-    };
+    materials.main_buffer_stack.set_depthbuffer(
+        gl,
+        match res.crt_filters.pixels_geometry_kind {
+            PixelsGeometryKind::Cubes => true,
+            PixelsGeometryKind::Squares => false,
+        },
+    );
 
     let internal_width = (res.animation.viewport_width as f32 * res.crt_filters.internal_resolution.multiplier) as i32;
     let internal_height = (res.animation.viewport_height as f32 * res.crt_filters.internal_resolution.multiplier) as i32;
-    buffer_stack.set_resolution(gl, internal_width, internal_height);
+    materials.main_buffer_stack.set_resolution(gl, internal_width, internal_height);
 
-    buffer_stack.set_interpolation(
+    materials.main_buffer_stack.set_interpolation(
         gl,
         match res.crt_filters.texture_interpolation {
             TextureInterpolation::Linear => WebGl2RenderingContext::LINEAR,
@@ -763,9 +785,9 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
         },
     );
 
-    buffer_stack.push(gl)?;
-    buffer_stack.push(gl)?;
-    buffer_stack.bind_current(gl)?;
+    materials.main_buffer_stack.push(gl)?;
+    materials.main_buffer_stack.push(gl)?;
+    materials.main_buffer_stack.bind_current(gl)?;
     gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
 
     if res.crt_filters.showing_diffuse_foreground {
@@ -817,14 +839,14 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
                     pixel_scale[0] *= vertical_lines_ratio as f32;
                 }
                 if let ColorChannels::Overlapping = res.crt_filters.color_channels {
-                    buffer_stack.push(gl)?;
-                    buffer_stack.bind_current(gl)?;
+                    materials.main_buffer_stack.push(gl)?;
+                    materials.main_buffer_stack.bind_current(gl)?;
                     if j == 0 {
                         gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
                     }
                 }
                 //gl.blend_func(WebGl2RenderingContext::SRC_ALPHA, WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA);
-                res.pixels_render.render(
+                materials.pixels_render.render(
                     gl,
                     PixelsUniform {
                         shadow_kind: res.crt_filters.pixel_shadow_shape_kind,
@@ -848,33 +870,33 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
                 );
             }
             if let ColorChannels::Overlapping = res.crt_filters.color_channels {
-                buffer_stack.pop()?;
-                buffer_stack.pop()?;
-                buffer_stack.pop()?;
+                materials.main_buffer_stack.pop()?;
+                materials.main_buffer_stack.pop()?;
+                materials.main_buffer_stack.pop()?;
             }
         }
 
         if let ColorChannels::Overlapping = res.crt_filters.color_channels {
-            buffer_stack.bind_current(gl)?;
+            materials.main_buffer_stack.bind_current(gl)?;
             gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 0);
-            gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, buffer_stack.get_nth(1)?.texture());
+            gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, materials.main_buffer_stack.get_nth(1)?.texture());
             gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 1);
-            gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, buffer_stack.get_nth(2)?.texture());
+            gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, materials.main_buffer_stack.get_nth(2)?.texture());
             gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 2);
-            gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, buffer_stack.get_nth(3)?.texture());
+            gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, materials.main_buffer_stack.get_nth(3)?.texture());
 
-            res.rgb_render.render(gl);
+            materials.rgb_render.render(gl);
 
             gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 0);
         }
     }
 
-    buffer_stack.push(gl)?;
-    buffer_stack.bind_current(gl)?;
+    materials.main_buffer_stack.push(gl)?;
+    materials.main_buffer_stack.bind_current(gl)?;
     gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
 
     if res.crt_filters.showing_solid_background {
-        res.pixels_render.render(
+        materials.pixels_render.render(
             gl,
             PixelsUniform {
                 shadow_kind: 0,
@@ -901,20 +923,20 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
             },
         );
     }
-    buffer_stack.pop()?;
-    buffer_stack.pop()?;
-    buffer_stack.bind_current(gl)?;
+    materials.main_buffer_stack.pop()?;
+    materials.main_buffer_stack.pop()?;
+    materials.main_buffer_stack.bind_current(gl)?;
     gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
 
     gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 0);
-    gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, buffer_stack.get_nth(1)?.texture());
+    gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, materials.main_buffer_stack.get_nth(1)?.texture());
     gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 1);
-    gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, buffer_stack.get_nth(2)?.texture());
-    res.background_render.render(gl);
+    gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, materials.main_buffer_stack.get_nth(2)?.texture());
+    materials.background_render.render(gl);
     gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 0);
 
     if res.crt_filters.blur_passes > 0 {
-        res.blur_render.render(&gl, res.crt_filters.blur_passes, &mut buffer_stack)?;
+        materials.blur_render.render(&gl, res.crt_filters.blur_passes, &mut materials.main_buffer_stack)?;
     }
 
     if res.launch_screenshot {
@@ -929,15 +951,15 @@ pub fn draw(gl: &WebGl2RenderingContext, res: &Resources) -> WasmResult<()> {
         dispatch_event_with("app-event.screenshot", &array)?;
     }
 
-    buffer_stack.pop()?;
-    buffer_stack.assert_no_stack()?;
+    materials.main_buffer_stack.pop()?;
+    materials.main_buffer_stack.assert_no_stack()?;
     //gl.blend_func(WebGl2RenderingContext::SRC_ALPHA, WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA);
 
     gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, None);
     gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
     gl.viewport(0, 0, res.animation.viewport_width as i32, res.animation.viewport_height as i32);
 
-    res.internal_resolution_render.render(gl, buffer_stack.get_nth(1)?.texture());
+    materials.internal_resolution_render.render(gl, materials.main_buffer_stack.get_nth(1)?.texture());
 
     check_error(&gl, line!())?;
 
