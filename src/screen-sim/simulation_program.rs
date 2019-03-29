@@ -63,12 +63,6 @@ fn program_iteration(owned_state: &StateOwner, window: &Window) -> WasmResult<()
 
 impl Resources {
     fn init(&mut self, animation: AnimationData) -> WasmResult<()> {
-        let now = now()?;
-        self.timers = SimulationTimers {
-            frame_count: 0,
-            last_time: now,
-            last_second: now,
-        };
         let initial_position_z = calculate_far_away_position(&animation);
         let mut camera = Camera::new(MOVEMENT_BASE_SPEED * initial_position_z / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED);
         let initial_parameters = InitialParameters {
@@ -90,6 +84,12 @@ impl Resources {
             }
         }
         self.resetted = true;
+        let now = now()?;
+        self.timers = SimulationTimers {
+            frame_count: 0,
+            last_time: now,
+            last_second: now,
+        };
         self.initial_parameters = initial_parameters;
         self.camera = camera;
         self.animation = animation;
