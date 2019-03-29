@@ -5,7 +5,7 @@ use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 use crate::console;
 use crate::simulation_program::program;
-use crate::simulation_state::{AnimationData, Resources};
+use crate::simulation_state::{AnimationData, AnimationStep, Resources};
 use crate::wasm_error::WasmError;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -46,17 +46,7 @@ pub struct AnimationWasm {
 impl AnimationWasm {
     #[allow(clippy::too_many_arguments)]
     #[wasm_bindgen(constructor)]
-    pub fn new(
-        image_width: u32,
-        image_height: u32,
-        background_width: u32,
-        background_height: u32,
-        canvas_width: u32,
-        canvas_height: u32,
-        frame_length: f32,
-        pixel_width: f32,
-        stretch: bool,
-    ) -> AnimationWasm {
+    pub fn new(image_width: u32, image_height: u32, background_width: u32, background_height: u32, canvas_width: u32, canvas_height: u32, pixel_width: f32, stretch: bool) -> AnimationWasm {
         AnimationWasm {
             data: AnimationData {
                 image_width,
@@ -66,19 +56,17 @@ impl AnimationWasm {
                 viewport_width: canvas_width,
                 viewport_height: canvas_height,
                 steps: Vec::new(),
-                frame_length,
                 pixel_width,
                 stretch,
-                current_frame: 1,
+                current_frame: 0,
                 last_frame_change: -100.0,
                 needs_buffer_data_load: true,
             },
         }
     }
 
-    pub fn add(&mut self, frame: ArrayBuffer) {
-        self.data.steps.push(frame);
-        self.data.current_frame = self.data.steps.len() + 1;
+    pub fn add(&mut self, buffer: ArrayBuffer, delay: u32) {
+        self.data.steps.push(AnimationStep { buffer, delay });
     }
 }
 

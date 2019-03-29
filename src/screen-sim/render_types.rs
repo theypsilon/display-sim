@@ -1,10 +1,12 @@
 use crate::wasm_error::WasmResult;
 use web_sys::{WebGl2RenderingContext, WebGlFramebuffer, WebGlTexture};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TextureBuffer {
     texture: Option<WebGlTexture>,
     framebuffer: Option<WebGlFramebuffer>,
+    pub width: i32,
+    pub height: i32,
 }
 
 impl TextureBuffer {
@@ -37,7 +39,7 @@ impl TextureBuffer {
             0,
         );
 
-        Ok(TextureBuffer { texture, framebuffer })
+        Ok(TextureBuffer { texture, framebuffer, width, height })
     }
 
     pub fn new_with_depthbuffer(gl: &WebGl2RenderingContext, width: i32, height: i32, interpolation: u32) -> WasmResult<TextureBuffer> {
@@ -94,6 +96,9 @@ impl TextureBufferStack {
     }
 
     pub fn set_resolution(&mut self, gl: &WebGl2RenderingContext, width: i32, height: i32) {
+        if width <= 0 || height <= 0 {
+            return;
+        }
         if self.width != width || self.height != height {
             self.width = width;
             self.height = height;

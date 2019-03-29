@@ -26,7 +26,7 @@ pub const MOVEMENT_SPEED_FACTOR: f32 = 50.0;
 
 #[derive(Default)]
 pub struct AnimationData {
-    pub steps: Vec<ArrayBuffer>,
+    pub steps: Vec<AnimationStep>,
     pub image_width: u32,
     pub image_height: u32,
     pub background_width: u32,
@@ -35,10 +35,14 @@ pub struct AnimationData {
     pub viewport_height: u32,
     pub pixel_width: f32,
     pub stretch: bool,
-    pub frame_length: f32,
     pub current_frame: usize,
     pub last_frame_change: f64,
     pub needs_buffer_data_load: bool,
+}
+
+pub struct AnimationStep {
+    pub buffer: ArrayBuffer,
+    pub delay: u32,
 }
 
 pub type OwnedClosure = Option<Closure<FnMut(JsValue)>>;
@@ -90,6 +94,7 @@ impl Resources {
 pub struct Materials {
     pub gl: WebGl2RenderingContext,
     pub main_buffer_stack: TextureBufferStack,
+    pub bg_buffer_stack: TextureBufferStack,
     pub pixels_render: PixelsRender,
     pub blur_render: BlurRender,
     pub background_render: BackgroundRender,
@@ -149,11 +154,11 @@ pub enum ScreenLayeringKind {
 impl std::fmt::Display for ScreenLayeringKind {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match *self {
-            ScreenLayeringKind::ShadowOnly => write!(f, "Shadow only"),
+            ScreenLayeringKind::ShadowOnly => write!(f, "Lines only"),
             ScreenLayeringKind::SolidOnly => write!(f, "Solid only"),
-            ScreenLayeringKind::ShadowWithSolidBackground75 => write!(f, "Shadow with 75% Solid background"),
-            ScreenLayeringKind::ShadowWithSolidBackground50 => write!(f, "Shadow with 50% Solid background"),
-            ScreenLayeringKind::ShadowWithSolidBackground25 => write!(f, "Shadow with 25% Solid background"),
+            ScreenLayeringKind::ShadowWithSolidBackground75 => write!(f, "Lines +75% BG"),
+            ScreenLayeringKind::ShadowWithSolidBackground50 => write!(f, "Lines +50% BG"),
+            ScreenLayeringKind::ShadowWithSolidBackground25 => write!(f, "Lines +25% BG"),
         }
     }
 }

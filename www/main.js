@@ -387,8 +387,8 @@ restoreDefaultOptionsDeo.onclick = () => {
 prepareUi();
 
 // simulation global state:
-let simulation_resources = undefined;
-let frameDelay = 1 / 60; // chapu
+let simulationResources = undefined;
+const gifCache = {};
 
 function prepareUi() {
     loadInputValuesFromStorage();
@@ -402,31 +402,36 @@ function prepareUi() {
             visibility.showLoading();
             setTimeout(async () => {
                 const preview = getPreviewDeo();
-                let canvases = null;
-                if (preview.isGif) {
-                    const gif = GIF();
+                const canvases = await loadCanvases(preview);
+                const rawImgs = canvases.map(({ctx, delay}) => ({raw: ctx.getImageData(0, 0, preview.width, preview.height), delay}));
+                startResolve(rawImgs)
+            }, 50);
+
+            async function loadCanvases(preview) {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = preview.width;
+                canvas.height = preview.height;
+                ctx.drawImage(preview, 0, 0);
+                if (!preview.isGif) {
+                    return [{ctx, delay: 16}];
+                }
+                benchmark("loading gif");
+                const gifKey = canvas.toDataURL();
+                let gif = gifCache[gifKey];
+                if (!gif) {
+                    gif = GIF();
                     gif.load(preview.previewUrl);
                     await new Promise(resolve => gif.onload = () => resolve());
-                    canvases = gif.frames.map(frame => frame.image.getContext('2d'));
-                    if (gif.frames.length > 0) {
-                        frameDelay = gif.frames[0].delay;
-                    }
-                } else {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    canvas.width = preview.width;
-                    canvas.height = preview.height;
-                    ctx.drawImage(preview, 0, 0);
-                    canvases = [ctx];
+                    gifCache[gifKey] = gif;
                 }
-                const raws = canvases.map(ctx => ctx.getImageData(0, 0, preview.width, preview.height))
-                startResolve(raws)
-            }, 50);
+                benchmark("gif loaded", gif);
+                return gif.frames.map(frame => ({ctx: frame.image.getContext('2d'), delay: frame.delay}));
+            }
         }
         startAnimationDeo.onclick = () => {
             visibility.hideUi();
             visibility.showLoading();
-            frameDelay = 1 / 60;
             const animationPromise = new Promise((imgResolve, imgReject) => {
                 const img = new Image();
                 img.src = 'assets/wwix_spritesheet.png';
@@ -441,7 +446,7 @@ function prepareUi() {
                     for (let i = 0; i <= 45; i++) {
                         const x = i % columns;
                         const y = Math.floor(i / columns);
-                        rawImgs.push(ctx.getImageData(x * 256, y * 224, 256, 224));
+                        rawImgs.push({raw: ctx.getImageData(x * 256, y * 224, 256, 224), delay: 16});
                     }
                     imgResolve(rawImgs);
                 }
@@ -462,8 +467,8 @@ function prepareUi() {
         let stretch = false;
         storage.setScalingId(checkedScalingInput.id);
 
-        const imageWidth = rawImgs[0].width;
-        const imageHeight = rawImgs[0].height;
+        const imageWidth = rawImgs[0].raw.width;
+        const imageHeight = rawImgs[0].raw.height;
         let backgroundWidth = imageWidth;
         let backgroundHeight = imageHeight;
 
@@ -564,20 +569,20 @@ function prepareUi() {
                 imageWidth, imageHeight, // to read the image pixels
                 backgroundWidth, backgroundHeight, // to calculate model distance to the camera
                 canvas.width, canvas.height, // gl.viewport
-                frameDelay, +scaleX, stretch
+                +scaleX, stretch
             );
             for (let i = 0; i < rawImgs.length; i++) {
                 const rawImg = rawImgs[i];
-                animation.add(rawImg.data.buffer);
+                animation.add(rawImg.raw.data.buffer, rawImg.delay);
             }
 
-            if (simulation_resources === undefined) {
+            if (simulationResources === undefined) {
                 benchmark('calling wasm load_simulation_resources');
-                simulation_resources = wasm.load_simulation_resources();
+                simulationResources = wasm.load_simulation_resources();
                 benchmark('wasm load_simulation_resources done');
             }
             benchmark('calling wasm run_program');
-            wasm.run_program(gl, simulation_resources, animation);
+            wasm.run_program(gl, simulationResources, animation);
             benchmark('wasm run_program done');
 
             visibility.hideLoading();
@@ -715,7 +720,7 @@ function makeVisibility() {
 }
 
 function benchmark(message, ctx) {
-    if (!window.bench && !window.localStorage.getItem('bench')) return;
+    if (!window.screen_sim_bench && !window.localStorage.getItem('screen_sim_bench')) return;
     const date = new Date().toISOString();
     if (ctx) {
         console.log(date, message, ctx);
@@ -724,6 +729,7 @@ function benchmark(message, ctx) {
     }
 }
 
+// This is a library found in StackOverflow: https://stackoverflow.com/questions/48234696/how-to-put-a-gif-with-canvas
 /*============================================================================
   Gif Decoder and player for use with Canvas API's
 

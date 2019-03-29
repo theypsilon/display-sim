@@ -222,7 +222,7 @@ impl PixelsRender {
 
         gl.buffer_data_with_opt_array_buffer(
             WebGl2RenderingContext::ARRAY_BUFFER,
-            Some(&animation.steps[animation.current_frame]),
+            Some(&animation.steps[animation.current_frame].buffer),
             WebGl2RenderingContext::STATIC_DRAW,
         );
     }

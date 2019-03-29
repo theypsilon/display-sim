@@ -103,7 +103,6 @@ impl Resources {
 }
 
 fn load_materials(gl: WebGl2RenderingContext) -> WasmResult<Materials> {
-    let main_buffer_stack = TextureBufferStack::new();
     let pixels_render = PixelsRender::new(&gl)?;
     let blur_render = BlurRender::new(&gl)?;
     let internal_resolution_render = InternalResolutionRender::new(&gl)?;
@@ -111,7 +110,8 @@ fn load_materials(gl: WebGl2RenderingContext) -> WasmResult<Materials> {
     let background_render = BackgroundRender::new(&gl)?;
     let materials = Materials {
         gl,
-        main_buffer_stack,
+        main_buffer_stack: TextureBufferStack::new(),
+        bg_buffer_stack: TextureBufferStack::new(),
         pixels_render,
         blur_render,
         internal_resolution_render,
@@ -238,7 +238,7 @@ fn update_timers_and_dt(res: &mut Resources, input: &Input) -> WasmResult<f32> {
 
 fn update_animation_buffer(res: &mut Resources, input: &Input) {
     res.animation.needs_buffer_data_load = res.resetted;
-    let next_frame_update = res.animation.last_frame_change + f64::from(res.animation.frame_length);
+    let next_frame_update = res.animation.last_frame_change + 0.001 * f64::from(res.animation.steps[res.animation.current_frame].delay);
     if input.now >= next_frame_update {
         res.animation.last_frame_change = next_frame_update;
         let last_frame = res.animation.current_frame;
@@ -498,7 +498,7 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input, materials: &M
             res.crt_filters.internal_resolution.multiplier /= 2.0;
         }
         let height = (res.animation.viewport_height as f32 * res.crt_filters.internal_resolution.multiplier) as i32;
-        if height < 32 {
+        if height < 2 {
             res.crt_filters.internal_resolution.multiplier *= 2.0;
             dispatch_event_with("app-event.top_message", &"Minimum internal resolution has been reached.".into())?;
         } else {
@@ -902,6 +902,14 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
     gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
 
     if res.crt_filters.showing_solid_background {
+        if res.crt_filters.showing_diffuse_foreground {
+            materials.bg_buffer_stack.set_resolution(gl, 1920 / 8, 1080 / 8);
+            materials.bg_buffer_stack.set_depthbuffer(gl, false);
+            materials.bg_buffer_stack.set_interpolation(gl, WebGl2RenderingContext::LINEAR);
+            materials.bg_buffer_stack.push(gl)?;
+            materials.bg_buffer_stack.bind_current(gl)?;
+            gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
+        }
         materials.pixels_render.render(
             gl,
             PixelsUniform {
@@ -928,6 +936,12 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
                 height_modifier_factor: 0.0,
             },
         );
+        if res.crt_filters.showing_diffuse_foreground {
+            let source = materials.bg_buffer_stack.get_current()?.clone();
+            let target = materials.main_buffer_stack.get_current()?;
+            materials.blur_render.render(&gl, &mut materials.bg_buffer_stack, &source, &target, 2)?;
+            materials.bg_buffer_stack.pop()?;
+        }
     }
     materials.main_buffer_stack.pop()?;
     materials.main_buffer_stack.pop()?;
@@ -942,7 +956,8 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
     gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 0);
 
     if res.crt_filters.blur_passes > 0 {
-        materials.blur_render.render(&gl, res.crt_filters.blur_passes, &mut materials.main_buffer_stack)?;
+        let target = materials.main_buffer_stack.get_current()?.clone();
+        materials.blur_render.render(&gl, &mut materials.main_buffer_stack, &target, &target, res.crt_filters.blur_passes)?;
     }
 
     if res.launch_screenshot {
