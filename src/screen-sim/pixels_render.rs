@@ -280,7 +280,7 @@ fn calculate_offsets(width: u32, height: u32) -> Float32Array {
     offsets
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 const CUBE_GEOMETRY : [f32; 216] = [
     // cube coordinates       cube normals
     -0.5, -0.5,  0.5,      0.0,  0.0,  1.0,

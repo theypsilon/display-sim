@@ -19,6 +19,12 @@ use crate::rgb_render::RgbRender;
 use crate::wasm_error::WasmResult;
 use crate::web_utils::now;
 
+pub const PIXEL_MANIPULATION_BASE_SPEED: f32 = 20.0;
+pub const TURNING_BASE_SPEED: f32 = 3.0;
+pub const MOVEMENT_BASE_SPEED: f32 = 10.0;
+pub const MOVEMENT_SPEED_FACTOR: f32 = 50.0;
+
+#[derive(Default)]
 pub struct AnimationData {
     pub steps: Vec<ArrayBuffer>,
     pub image_width: u32,
@@ -39,16 +45,16 @@ pub type OwnedClosure = Option<Closure<FnMut(JsValue)>>;
 
 pub struct StateOwner {
     pub closures: RefCell<Vec<OwnedClosure>>,
-    pub resources: RefCell<Resources>,
+    pub resources: Rc<RefCell<Resources>>,
     pub input: RefCell<Input>,
     pub materials: RefCell<Materials>,
 }
 
 impl StateOwner {
-    pub fn new_rc(resources: Resources, materials: Materials, input: Input) -> Rc<StateOwner> {
+    pub fn new_rc(resources: Rc<RefCell<Resources>>, materials: Materials, input: Input) -> Rc<StateOwner> {
         Rc::new(StateOwner {
             closures: RefCell::new(Vec::new()),
-            resources: RefCell::new(resources),
+            resources,
             materials: RefCell::new(materials),
             input: RefCell::new(input),
         })
@@ -63,6 +69,21 @@ pub struct Resources {
     pub timers: SimulationTimers,
     pub initial_parameters: InitialParameters,
     pub launch_screenshot: bool,
+    pub resetted: bool,
+}
+
+impl Resources {
+    pub fn new() -> Resources {
+        Resources {
+            resetted: true,
+            initial_parameters: InitialParameters::default(),
+            timers: SimulationTimers::default(),
+            animation: AnimationData::default(),
+            camera: Camera::new(MOVEMENT_BASE_SPEED / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED),
+            crt_filters: CrtFilters::new(PIXEL_MANIPULATION_BASE_SPEED),
+            launch_screenshot: false,
+        }
+    }
 }
 
 // Rendering Materials
@@ -76,12 +97,14 @@ pub struct Materials {
     pub rgb_render: RgbRender,
 }
 
+#[derive(Default)]
 pub struct SimulationTimers {
     pub frame_count: u32,
     pub last_time: f64,
     pub last_second: f64,
 }
 
+#[derive(Default)]
 pub struct InitialParameters {
     pub initial_movement_speed: f32,
     pub initial_position_z: f32,

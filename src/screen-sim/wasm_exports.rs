@@ -5,18 +5,36 @@ use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 use crate::console;
 use crate::simulation_program::program;
-use crate::simulation_state::AnimationData;
+use crate::simulation_state::{AnimationData, Resources};
 use crate::wasm_error::WasmError;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 #[wasm_bindgen]
-pub fn main(gl: JsValue, animation: AnimationWasm) {
-    set_panic_hook();
-    if let Err(e) = program(gl, animation.into_animation_data()) {
-        match e {
-            WasmError::Js(o) => console!(error. "An unexpected error ocurred.", o),
-            WasmError::Str(s) => console!(error. "An unexpected error ocurred.", s),
-        };
+pub fn load_simulation_resources() -> ResourcesWasm {
+    ResourcesWasm {
+        data: Rc::new(RefCell::new(Resources::new())),
     }
+}
+
+#[wasm_bindgen]
+pub fn run_program(gl: JsValue, res: &ResourcesWasm, animation: AnimationWasm) {
+    set_panic_hook();
+    if let Err(e) = program(gl, res.data.clone(), animation.into_animation_data()) {
+        print_error(e);
+    }
+}
+
+fn print_error(e: WasmError) {
+    match e {
+        WasmError::Js(o) => console!(error. "An unexpected error ocurred.", o),
+        WasmError::Str(s) => console!(error. "An unexpected error ocurred.", s),
+    };
+}
+
+#[wasm_bindgen]
+pub struct ResourcesWasm {
+    data: Rc<RefCell<Resources>>,
 }
 
 #[wasm_bindgen]

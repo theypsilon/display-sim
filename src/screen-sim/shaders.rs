@@ -62,7 +62,7 @@ pub fn make_quad_vao(gl: &WebGl2RenderingContext, shader: &WebGlProgram) -> Wasm
     Ok(vao)
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 pub const QUAD_GEOMETRY : [f32; 20] = [
     1.0,  1.0, 0.0,   1.0, 1.0,
     1.0, -1.0, 0.0,   1.0, 0.0,
@@ -70,7 +70,7 @@ pub const QUAD_GEOMETRY : [f32; 20] = [
     -1.0,  1.0, 0.0,   0.0, 1.0
 ];
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 pub const QUAD_INDICES: [i32; 6] = [
     0, 1, 3,
     1, 2, 3,

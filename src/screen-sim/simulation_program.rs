@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
 use web_sys::{WebGl2RenderingContext, Window};
@@ -16,19 +17,15 @@ use crate::render_types::TextureBufferStack;
 use crate::rgb_render::RgbRender;
 use crate::simulation_state::{
     AnimationData, ColorChannels, CrtFilters, CustomInputEvent, IncDec, InitialParameters, Input, Materials, Resources, ScreenCurvatureKind, ScreenLayeringKind, SimulationTimers, StateOwner,
-    TextureInterpolation,
+    TextureInterpolation, MOVEMENT_BASE_SPEED, MOVEMENT_SPEED_FACTOR, PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
 };
 use crate::wasm_error::{WasmError, WasmResult};
 use crate::web_utils::{now, window};
 
-const PIXEL_MANIPULATION_BASE_SPEED: f32 = 20.0;
-const TURNING_BASE_SPEED: f32 = 3.0;
-const MOVEMENT_BASE_SPEED: f32 = 10.0;
-const MOVEMENT_SPEED_FACTOR: f32 = 50.0;
-
-pub fn program(gl: JsValue, animation: AnimationData) -> WasmResult<()> {
+pub fn program(gl: JsValue, res: Rc<RefCell<Resources>>, animation: AnimationData) -> WasmResult<()> {
     let gl = gl.dyn_into::<WebGl2RenderingContext>()?;
-    let owned_state = StateOwner::new_rc(load_resources(animation)?, load_materials(gl)?, Input::new()?);
+    res.borrow_mut().set(animation)?;
+    let owned_state = StateOwner::new_rc(res, load_materials(gl)?, Input::new()?);
     let frame_closure: Closure<FnMut(JsValue)> = {
         let owned_state = Rc::clone(&owned_state);
         let window = window()?;
@@ -64,32 +61,33 @@ fn program_iteration(owned_state: &StateOwner, window: &Window) -> WasmResult<()
     Ok(())
 }
 
-fn load_resources(animation: AnimationData) -> WasmResult<Resources> {
-    let initial_position_z = calculate_far_away_position(&animation);
-    let mut camera = Camera::new(MOVEMENT_BASE_SPEED * initial_position_z / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED);
-    camera.set_position(glm::vec3(0.0, 0.0, initial_position_z));
-    let mut crt_filters = CrtFilters::new(PIXEL_MANIPULATION_BASE_SPEED);
-    crt_filters.cur_pixel_width = animation.pixel_width;
-
-    let now = now()?;
-    let res = Resources {
-        initial_parameters: InitialParameters {
-            initial_position_z,
-            initial_pixel_width: animation.pixel_width,
-            initial_movement_speed: camera.movement_speed,
-        },
-        timers: SimulationTimers {
+impl Resources {
+    fn set(&mut self, animation: AnimationData) -> WasmResult<()> {
+        let now = now()?;
+        self.timers = SimulationTimers {
             frame_count: 0,
             last_time: now,
             last_second: now,
-        },
-        animation,
-        camera,
-        crt_filters,
-        launch_screenshot: false,
-    };
-    change_frontend_input_values(&res)?;
-    Ok(res)
+        };
+        let initial_position_z = calculate_far_away_position(&animation);
+        let mut camera = Camera::new(MOVEMENT_BASE_SPEED * initial_position_z / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED);
+        if self.resetted {
+            self.crt_filters.cur_pixel_width = animation.pixel_width;
+            camera.set_position(glm::vec3(0.0, 0.0, initial_position_z));
+        } else {
+            camera.set_position(self.camera.get_position());
+        }
+        self.resetted = true;
+        self.initial_parameters = InitialParameters {
+            initial_position_z,
+            initial_pixel_width: animation.pixel_width,
+            initial_movement_speed: camera.movement_speed,
+        };
+        self.camera = camera;
+        self.animation = animation;
+        change_frontend_input_values(self)?;
+        Ok(())
+    }
 }
 
 fn load_materials(gl: WebGl2RenderingContext) -> WasmResult<Materials> {
@@ -227,7 +225,7 @@ fn update_timers_and_dt(res: &mut Resources, input: &Input) -> WasmResult<f32> {
 }
 
 fn update_animation_buffer(res: &mut Resources, input: &Input) {
-    res.animation.needs_buffer_data_load = false;
+    res.animation.needs_buffer_data_load = res.resetted;
     let next_frame_update = res.animation.last_frame_change + f64::from(res.animation.frame_length);
     if input.now >= next_frame_update {
         res.animation.last_frame_change = next_frame_update;
@@ -240,6 +238,7 @@ fn update_animation_buffer(res: &mut Resources, input: &Input) {
             res.animation.needs_buffer_data_load = true;
         }
     }
+    res.resetted = false;
 }
 
 fn update_colors(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> {

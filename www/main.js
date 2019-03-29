@@ -386,6 +386,9 @@ restoreDefaultOptionsDeo.onclick = () => {
 
 prepareUi();
 
+// simulation global state:
+let simulation_resources = undefined;
+
 function prepareUi() {
     loadInputValuesFromStorage();
 
@@ -437,7 +440,7 @@ function prepareUi() {
     });
 
     startPromise.then((rawImgs) => {
-        console.log(new Date().toISOString(), 'image readed');
+        benchmark('image readed');
         const dpi = window.devicePixelRatio;
         const width = window.screen.width;
         const height = window.screen.height;
@@ -513,7 +516,7 @@ function prepareUi() {
         };
         storage.setAntiAliasing(ctxOptions.antialias);
         storage.setPowerPreference(checkedPowerPreferenceInput.id);
-        console.log('gl context form', ctxOptions);
+        benchmark('gl context form', ctxOptions);
         const gl = canvas.getContext('webgl2', ctxOptions);
 
         var documentElement = document.documentElement;
@@ -556,9 +559,14 @@ function prepareUi() {
                 animation.add(rawImg.data.buffer);
             }
 
-            console.log(new Date().toISOString(), 'calling wasm main');
-            wasm.main(gl, animation);
-            console.log(new Date().toISOString(), 'wasm main done');
+            if (simulation_resources === undefined) {
+                benchmark('calling wasm load_simulation_resources');
+                simulation_resources = wasm.load_simulation_resources();
+                benchmark('wasm load_simulation_resources done');
+            }
+            benchmark('calling wasm run_program');
+            wasm.run_program(gl, simulation_resources, animation);
+            benchmark('wasm run_program done');
 
             visibility.hideLoading();
             visibility.showInfoPanel();
@@ -689,5 +697,15 @@ function makeVisibility() {
     }
     function isVisible(element) {
         return element.classList.contains('display-none') == false;
+    }
+}
+
+function benchmark(message, ctx) {
+    if (!window.bench && !window.localStorage.getItem('bench')) return;
+    const date = new Date().toISOString();
+    if (ctx) {
+        console.log(date, message, ctx);
+    } else {
+        console.log(date, message);
     }
 }
