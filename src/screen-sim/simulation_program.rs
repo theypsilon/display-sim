@@ -24,7 +24,7 @@ use crate::web_utils::{now, window};
 
 pub fn program(gl: JsValue, res: Rc<RefCell<Resources>>, animation: AnimationData) -> WasmResult<()> {
     let gl = gl.dyn_into::<WebGl2RenderingContext>()?;
-    res.borrow_mut().set(animation)?;
+    res.borrow_mut().init(animation)?;
     let owned_state = StateOwner::new_rc(res, load_materials(gl)?, Input::new()?);
     let frame_closure: Closure<FnMut(JsValue)> = {
         let owned_state = Rc::clone(&owned_state);
@@ -62,7 +62,7 @@ fn program_iteration(owned_state: &StateOwner, window: &Window) -> WasmResult<()
 }
 
 impl Resources {
-    fn set(&mut self, animation: AnimationData) -> WasmResult<()> {
+    fn init(&mut self, animation: AnimationData) -> WasmResult<()> {
         let now = now()?;
         self.timers = SimulationTimers {
             frame_count: 0,
