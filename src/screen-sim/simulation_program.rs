@@ -71,18 +71,26 @@ impl Resources {
         };
         let initial_position_z = calculate_far_away_position(&animation);
         let mut camera = Camera::new(MOVEMENT_BASE_SPEED * initial_position_z / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED);
-        if self.resetted {
-            self.crt_filters.cur_pixel_width = animation.pixel_width;
-            camera.set_position(glm::vec3(0.0, 0.0, initial_position_z));
-        } else {
-            camera.set_position(self.camera.get_position());
-        }
-        self.resetted = true;
-        self.initial_parameters = InitialParameters {
+        let initial_parameters = InitialParameters {
             initial_position_z,
             initial_pixel_width: animation.pixel_width,
             initial_movement_speed: camera.movement_speed,
         };
+        if self.resetted {
+            self.crt_filters.cur_pixel_width = animation.pixel_width;
+            camera.set_position(glm::vec3(0.0, 0.0, initial_position_z));
+        } else {
+            let mut camera_position = self.camera.get_position();
+            if self.initial_parameters.initial_position_z == camera_position.z {
+                camera_position.z = initial_parameters.initial_position_z;
+            }
+            camera.set_position(camera_position);
+            if self.crt_filters.cur_pixel_width == self.animation.pixel_width {
+                self.crt_filters.cur_pixel_width = animation.pixel_width;
+            }
+        }
+        self.resetted = true;
+        self.initial_parameters = initial_parameters;
         self.camera = camera;
         self.animation = animation;
         change_frontend_input_values(self)?;
