@@ -63,34 +63,38 @@ fn program_iteration(owned_state: &StateOwner, window: &Window) -> WasmResult<()
 
 impl Resources {
     fn init(&mut self, animation: AnimationData) -> WasmResult<()> {
+        let now = now()?;
         let initial_position_z = calculate_far_away_position(&animation);
         let mut camera = Camera::new(MOVEMENT_BASE_SPEED * initial_position_z / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED);
-        let initial_parameters = InitialParameters {
-            initial_position_z,
-            initial_pixel_width: animation.pixel_width,
-            initial_movement_speed: camera.movement_speed,
-        };
-        if self.resetted {
-            self.crt_filters.cur_pixel_width = animation.pixel_width;
-            camera.set_position(glm::vec3(0.0, 0.0, initial_position_z));
-        } else {
-            let mut camera_position = self.camera.get_position();
-            if self.initial_parameters.initial_position_z == camera_position.z {
-                camera_position.z = initial_parameters.initial_position_z;
-            }
-            camera.set_position(camera_position);
-            if self.crt_filters.cur_pixel_width == self.animation.pixel_width {
-                self.crt_filters.cur_pixel_width = animation.pixel_width;
+        let mut cur_pixel_width = animation.pixel_width;
+        {
+            let res: &Resources = self; // let's avoid using '&mut self' when just reading values
+            if res.resetted {
+                cur_pixel_width = animation.pixel_width;
+                camera.set_position(glm::vec3(0.0, 0.0, initial_position_z));
+            } else {
+                let mut camera_position = res.camera.get_position();
+                if res.initial_parameters.initial_position_z == camera_position.z {
+                    camera_position.z = initial_position_z;
+                }
+                camera.set_position(camera_position);
+                if res.crt_filters.cur_pixel_width != res.animation.pixel_width {
+                    cur_pixel_width = res.crt_filters.cur_pixel_width;
+                }
             }
         }
         self.resetted = true;
-        let now = now()?;
+        self.crt_filters.cur_pixel_width = cur_pixel_width;
         self.timers = SimulationTimers {
             frame_count: 0,
             last_time: now,
             last_second: now,
         };
-        self.initial_parameters = initial_parameters;
+        self.initial_parameters = InitialParameters {
+            initial_position_z,
+            initial_pixel_width: animation.pixel_width,
+            initial_movement_speed: camera.movement_speed,
+        };
         self.camera = camera;
         self.animation = animation;
         change_frontend_input_values(self)?;
