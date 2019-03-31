@@ -399,35 +399,41 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input, materials: &M
         } else {
             res.crt_filters.layering_kind.previous_enum_variant()?;
         }
-        match res.crt_filters.layering_kind {
-            ScreenLayeringKind::ShadowOnly => {
-                res.crt_filters.showing_diffuse_foreground = true;
-                res.crt_filters.showing_solid_background = false;
-            }
-            ScreenLayeringKind::SolidOnly => {
-                res.crt_filters.showing_diffuse_foreground = false;
-                res.crt_filters.showing_solid_background = true;
-                res.crt_filters.solid_color_weight = 1.0;
-            }
-            ScreenLayeringKind::ShadowWithSolidBackground75 => {
-                res.crt_filters.showing_diffuse_foreground = true;
-                res.crt_filters.showing_solid_background = true;
-                res.crt_filters.solid_color_weight = 0.75;
-            }
-            ScreenLayeringKind::ShadowWithSolidBackground50 => {
-                res.crt_filters.showing_diffuse_foreground = true;
-                res.crt_filters.showing_solid_background = true;
-                res.crt_filters.solid_color_weight = 0.5;
-            }
-            ScreenLayeringKind::ShadowWithSolidBackground25 => {
-                res.crt_filters.showing_diffuse_foreground = true;
-                res.crt_filters.showing_solid_background = true;
-                res.crt_filters.solid_color_weight = 0.25;
-            }
-        };
         dispatch_event_with("app-event.top_message", &format!("Layering kind: {}.", res.crt_filters.layering_kind).into())?;
         dispatch_event_with("app-event.screen_layering_type", &(res.crt_filters.layering_kind.to_string()).into())?;
     }
+
+    match res.crt_filters.layering_kind {
+        ScreenLayeringKind::ShadowOnly => {
+            res.crt_filters.showing_diffuse_foreground = true;
+            res.crt_filters.showing_solid_background = false;
+        }
+        ScreenLayeringKind::SolidOnly => {
+            res.crt_filters.showing_diffuse_foreground = false;
+            res.crt_filters.showing_solid_background = true;
+            res.crt_filters.solid_color_weight = 1.0;
+        }
+        ScreenLayeringKind::DiffuseOnly => {
+            res.crt_filters.showing_diffuse_foreground = false;
+            res.crt_filters.showing_solid_background = true;
+            res.crt_filters.solid_color_weight = 1.0;
+        }
+        ScreenLayeringKind::ShadowWithSolidBackground75 => {
+            res.crt_filters.showing_diffuse_foreground = true;
+            res.crt_filters.showing_solid_background = true;
+            res.crt_filters.solid_color_weight = 0.75;
+        }
+        ScreenLayeringKind::ShadowWithSolidBackground50 => {
+            res.crt_filters.showing_diffuse_foreground = true;
+            res.crt_filters.showing_solid_background = true;
+            res.crt_filters.solid_color_weight = 0.5;
+        }
+        ScreenLayeringKind::ShadowWithSolidBackground25 => {
+            res.crt_filters.showing_diffuse_foreground = true;
+            res.crt_filters.showing_solid_background = true;
+            res.crt_filters.solid_color_weight = 0.25;
+        }
+    };
 
     if input.next_color_representation_kind.any_just_pressed() {
         if input.next_color_representation_kind.increase.is_just_pressed() {
@@ -902,8 +908,9 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
     gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
 
     if res.crt_filters.showing_solid_background {
-        if res.crt_filters.showing_diffuse_foreground {
-            materials.bg_buffer_stack.set_resolution(gl, 1920 / 8, 1080 / 8);
+        let diffuse_condition = res.crt_filters.showing_diffuse_foreground || if let ScreenLayeringKind::DiffuseOnly = res.crt_filters.layering_kind { true } else { false };
+        if diffuse_condition {
+            materials.bg_buffer_stack.set_resolution(gl, 1920 / 2, 1080 / 2);
             materials.bg_buffer_stack.set_depthbuffer(gl, false);
             materials.bg_buffer_stack.set_interpolation(gl, WebGl2RenderingContext::LINEAR);
             materials.bg_buffer_stack.push(gl)?;
@@ -936,10 +943,10 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
                 height_modifier_factor: 0.0,
             },
         );
-        if res.crt_filters.showing_diffuse_foreground {
+        if diffuse_condition {
             let source = materials.bg_buffer_stack.get_current()?.clone();
             let target = materials.main_buffer_stack.get_current()?;
-            materials.blur_render.render(&gl, &mut materials.bg_buffer_stack, &source, &target, 2)?;
+            materials.blur_render.render(&gl, &mut materials.bg_buffer_stack, &source, &target, 6)?;
             materials.bg_buffer_stack.pop()?;
         }
     }

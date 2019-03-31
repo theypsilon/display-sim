@@ -36,6 +36,15 @@ uniform sampler2D backgroundImage;
 void main()
 {
     vec4 foregroundColor = texture(foregroundImage, TexCoord);
-    FragColor = foregroundColor.a * foregroundColor + (1.0 - foregroundColor.a) * texture(backgroundImage, TexCoord);
+    float foregroundWeight = (foregroundColor.r + foregroundColor.g + foregroundColor.b + foregroundColor.a) / 4.0;
+    vec4 backgroundColor = texture(backgroundImage, TexCoord);
+    float backgroundWeight = (backgroundColor.r + backgroundColor.g + backgroundColor.b + backgroundColor.a) / 4.0;
+    vec4 result1 = foregroundColor.a * foregroundColor + (1.0 - foregroundColor.a) * backgroundColor;
+    float weight1 = (result1.r + result1.g + result1.b + result1.a) / 4.0;
+    if (foregroundWeight <= 0.26 && backgroundWeight > foregroundWeight) {
+        weight1 = 0.0;
+    }
+    float factor = weight1 / (weight1 + backgroundWeight * 0.1);
+    FragColor = result1 * factor + (1.0 - factor) * backgroundColor;
 } 
 "#;

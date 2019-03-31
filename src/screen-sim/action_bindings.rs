@@ -74,7 +74,7 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
             }
         }
         "b" | "blur-level-inc" => input.blur.increase.input = pressed,
-        "v" | "bluer-level-dec" => input.blur.decrease.input = pressed,
+        "v" | "blur-level-dec" => input.blur.decrease.input = pressed,
         "<" | "&lt;" | "pixel-contrast-inc" => input.contrast.increase = pressed,
         "z" | "pixel-contrast-dec" => input.contrast.decrease = pressed,
         "c" | "pixel-brightness-inc" => input.bright.increase = pressed,

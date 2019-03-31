@@ -1,2 +1,1 @@
 · Work on curved screen.
-· Initial screen layering type is not correct in UI.

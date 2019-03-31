@@ -145,20 +145,22 @@ pub struct CrtFilters {
 #[derive(FromPrimitive, ToPrimitive, EnumLen, Copy, Clone)]
 pub enum ScreenLayeringKind {
     ShadowOnly,
-    SolidOnly,
-    ShadowWithSolidBackground75,
-    ShadowWithSolidBackground50,
     ShadowWithSolidBackground25,
+    ShadowWithSolidBackground50,
+    ShadowWithSolidBackground75,
+    DiffuseOnly,
+    SolidOnly,
 }
 
 impl std::fmt::Display for ScreenLayeringKind {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match *self {
             ScreenLayeringKind::ShadowOnly => write!(f, "Lines only"),
-            ScreenLayeringKind::SolidOnly => write!(f, "Solid only"),
-            ScreenLayeringKind::ShadowWithSolidBackground75 => write!(f, "Lines +75% BG"),
-            ScreenLayeringKind::ShadowWithSolidBackground50 => write!(f, "Lines +50% BG"),
-            ScreenLayeringKind::ShadowWithSolidBackground25 => write!(f, "Lines +25% BG"),
+            ScreenLayeringKind::ShadowWithSolidBackground75 => write!(f, "+75% BL"),
+            ScreenLayeringKind::ShadowWithSolidBackground50 => write!(f, "+50% BL"),
+            ScreenLayeringKind::ShadowWithSolidBackground25 => write!(f, "+25% BL"),
+            ScreenLayeringKind::DiffuseOnly => write!(f, "Backlight only"),
+            ScreenLayeringKind::SolidOnly => write!(f, "Disabled"),
         }
     }
 }
@@ -254,7 +256,7 @@ impl CrtFilters {
             showing_diffuse_foreground: true,
             showing_solid_background: true,
             solid_color_weight: 0.75,
-            layering_kind: ScreenLayeringKind::ShadowOnly,
+            layering_kind: ScreenLayeringKind::ShadowWithSolidBackground50,
         }
     }
 }
