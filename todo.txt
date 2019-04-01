@@ -1,1 +1,1 @@
-· Work on curved screen.
+· Merge Dropfile area and test launcher.

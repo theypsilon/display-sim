@@ -802,6 +802,13 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
     materials.main_buffer_stack.bind_current(gl)?;
     gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
 
+    let screen_curvature = match res.crt_filters.screen_curvature_kind {
+        ScreenCurvatureKind::Curved1 => 0.1,
+        ScreenCurvatureKind::Curved2 => 0.2,
+        ScreenCurvatureKind::Curved3 => 0.3,
+        _ => 0.0,
+    };
+
     if res.crt_filters.showing_diffuse_foreground {
         let mut extra_light = get_3_f32color_from_int(res.crt_filters.brightness_color);
         for light in extra_light.iter_mut() {
@@ -873,6 +880,7 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
                         light_color: &mut light_color,
                         extra_light: &mut extra_light,
                         light_pos: res.camera.get_position().as_mut_slice(),
+                        screen_curvature,
                         pixel_gap: &mut [(1.0 + res.crt_filters.cur_pixel_gap) * res.crt_filters.cur_pixel_width, 1.0 + res.crt_filters.cur_pixel_gap],
                         pixel_scale,
                         pixel_pulse: res.crt_filters.pixels_pulse,
@@ -938,6 +946,7 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
                     res.crt_filters.cur_pixel_scale_y + 1.0,
                     (res.crt_filters.cur_pixel_scale_x + res.crt_filters.cur_pixel_scale_x) * 0.5 + 1.0,
                 ],
+                screen_curvature,
                 pixel_pulse: res.crt_filters.pixels_pulse,
                 pixel_offset: &mut [0.0, 0.0, 0.0],
                 height_modifier_factor: 0.0,

@@ -183,7 +183,9 @@ impl InternalResolution {
 #[derive(FromPrimitive, ToPrimitive, EnumLen, Copy, Clone)]
 pub enum ScreenCurvatureKind {
     Flat,
-    Curved,
+    Curved1,
+    Curved2,
+    Curved3,
     Pulse,
 }
 
@@ -191,8 +193,10 @@ impl std::fmt::Display for ScreenCurvatureKind {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match *self {
             ScreenCurvatureKind::Flat => write!(f, "Flat"),
-            ScreenCurvatureKind::Curved => write!(f, "Curved"),
-            ScreenCurvatureKind::Pulse => write!(f, "Weaving pulse"),
+            ScreenCurvatureKind::Curved1 => write!(f, "Curved 1"),
+            ScreenCurvatureKind::Curved2 => write!(f, "Curved 2"),
+            ScreenCurvatureKind::Curved3 => write!(f, "Curved 3"),
+            ScreenCurvatureKind::Pulse => write!(f, "Weavy"),
         }
     }
 }
@@ -252,7 +256,7 @@ impl CrtFilters {
             pixels_geometry_kind: PixelsGeometryKind::Squares,
             pixel_shadow_shape_kind: 1,
             color_channels: ColorChannels::Combined,
-            screen_curvature_kind: ScreenCurvatureKind::Curved,
+            screen_curvature_kind: ScreenCurvatureKind::Flat,
             showing_diffuse_foreground: true,
             showing_solid_background: true,
             solid_color_weight: 0.75,

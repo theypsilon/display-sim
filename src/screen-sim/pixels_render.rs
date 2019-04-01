@@ -31,6 +31,7 @@ pub struct PixelsRender {
     offsets_vbo: WebGlBuffer,
     width: u32,
     height: u32,
+    inverse_squared_max_offset: f32,
     shadows: Vec<Option<WebGlTexture>>,
 }
 
@@ -44,6 +45,7 @@ pub struct PixelsUniform<'a> {
     pub extra_light: &'a mut [f32],
     pub ambient_strength: f32,
     pub contrast_factor: f32,
+    pub screen_curvature: f32,
     pub pixel_gap: &'a mut [f32],
     pub pixel_scale: &'a mut [f32],
     pub pixel_offset: &'a mut [f32],
@@ -138,6 +140,7 @@ impl PixelsRender {
             colors_vbo,
             width: 0,
             height: 0,
+            inverse_squared_max_offset: 0.0,
             shadows,
         })
     }
@@ -213,6 +216,7 @@ impl PixelsRender {
         if animation.image_width != self.width || animation.image_height != self.height {
             self.width = animation.image_width;
             self.height = animation.image_height;
+            self.inverse_squared_max_offset = 1.0 / (self.width * self.width + self.height * self.height) as f32;
             gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&self.offsets_vbo));
             let offsets = calculate_offsets(self.width, self.height);
             gl.buffer_data_with_opt_array_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&offsets.buffer()), WebGl2RenderingContext::STATIC_DRAW);
@@ -240,6 +244,8 @@ impl PixelsRender {
         gl.uniform3fv_with_f32_array(gl.get_uniform_location(&self.shader, "extraLight").as_ref(), uniforms.extra_light);
         gl.uniform1f(gl.get_uniform_location(&self.shader, "ambientStrength").as_ref(), uniforms.ambient_strength);
         gl.uniform1f(gl.get_uniform_location(&self.shader, "contrastFactor").as_ref(), uniforms.contrast_factor);
+        gl.uniform1f(gl.get_uniform_location(&self.shader, "inverse_squared_max_offset").as_ref(), self.inverse_squared_max_offset);
+        gl.uniform1f(gl.get_uniform_location(&self.shader, "screen_curvature").as_ref(), uniforms.screen_curvature);
         gl.uniform2fv_with_f32_array(gl.get_uniform_location(&self.shader, "pixel_gap").as_ref(), uniforms.pixel_gap);
         gl.uniform3fv_with_f32_array(gl.get_uniform_location(&self.shader, "pixel_scale").as_ref(), uniforms.pixel_scale);
         gl.uniform3fv_with_f32_array(gl.get_uniform_location(&self.shader, "pixel_offset").as_ref(), uniforms.pixel_offset);
@@ -342,6 +348,8 @@ out vec2 ImagePos;
 uniform mat4 view;
 uniform mat4 projection;
 
+uniform float inverse_squared_max_offset;
+uniform float screen_curvature;
 uniform vec2 pixel_gap;
 uniform vec3 pixel_scale;
 uniform float pixel_pulse;
@@ -371,11 +379,17 @@ void main()
 
     if (pixel_pulse > 0.0) {
         float radius = length(aOffset);
-        pos += vec3(0, 0, sin(pixel_pulse + sin(pixel_pulse / 10.0) * radius / 4.0) * 2.0);
+        pos += vec3(0, 0, sin(pixel_pulse + sin(pixel_pulse * 0.1) * radius * 0.25) * 2.0);
+    }
+    if (screen_curvature > 0.0) {
+        float radius = length(aOffset);
+        float normalized = radius * radius * 4.0 * inverse_squared_max_offset;
+        pos.z -= sin(normalized) * screen_curvature * 100.0;
     }
     if (pixel_offset.x != 0.0 || pixel_offset.y != 0.0 || pixel_offset.z != 0.0) {
         pos += pixel_offset;
     }
+
     FragPos = pos;
     Normal = aNormal;
     
