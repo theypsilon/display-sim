@@ -6,7 +6,6 @@ const scalingStretchToNearestEdgeHtmlId = 'scaling-stretch-nearest';
 const powerPreferenceDefaultId = 'powerPreference-1';
 const glCanvasHtmlId = 'gl-canvas';
 const topMessageHtmlId = 'top-message';
-const previewHtmlId = 'preview';
 const firstPreviewImageId = 'first-preview-image';
 
 const scalingHtmlName = 'scaling';
