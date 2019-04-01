@@ -119,7 +119,7 @@ impl Camera {
             self.zoom = 45.0;
             dispatch_event_with("app-event.top_message", &"Maximum value is 45.0".into())?;
         }
-        if self.zoom != last_zoom {
+        if (self.zoom - last_zoom).abs() < std::f32::EPSILON {
             dispatch_event_with("app-event.change_camera_zoom", &self.zoom.into())?;
         }
         Ok(())

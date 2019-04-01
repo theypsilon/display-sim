@@ -74,11 +74,11 @@ impl Resources {
                 camera.set_position(glm::vec3(0.0, 0.0, initial_position_z));
             } else {
                 let mut camera_position = res.camera.get_position();
-                if res.initial_parameters.initial_position_z == camera_position.z {
+                if (res.initial_parameters.initial_position_z - camera_position.z).abs() < std::f32::EPSILON {
                     camera_position.z = initial_position_z;
                 }
                 camera.set_position(camera_position);
-                if res.crt_filters.cur_pixel_width != res.animation.pixel_width {
+                if (res.crt_filters.cur_pixel_width - res.animation.pixel_width).abs() < std::f32::EPSILON {
                     cur_pixel_width = res.crt_filters.cur_pixel_width;
                 }
             }
@@ -329,7 +329,7 @@ fn update_blur(res: &mut Resources, input: &Input) -> WasmResult<()> {
         app_events::dispatch_top_message("Maximum value is 100".into())?;
     }
     if last_blur_passes != res.crt_filters.blur_passes {
-        app_events::dispatch_top_message(("Blur level: ".to_string() + &res.crt_filters.blur_passes.to_string()).into())?;
+        app_events::dispatch_top_message(format!("Blur level: {}", res.crt_filters.blur_passes))?;
         app_events::dispatch_change_blur_level(res)?;
     }
     Ok(())
@@ -356,7 +356,7 @@ fn update_lpp(res: &mut Resources, input: &Input) -> WasmResult<()> {
         app_events::dispatch_top_message("Maximum value is 20".into())?;
     }
     if last_lpp != res.crt_filters.lines_per_pixel {
-        app_events::dispatch_top_message(format!("Lines per pixel: {}.", res.crt_filters.lines_per_pixel).into())?;
+        app_events::dispatch_top_message(format!("Lines per pixel: {}.", res.crt_filters.lines_per_pixel))?;
         app_events::dispatch_change_lines_per_pixel(res)?;
     }
     Ok(())
@@ -369,7 +369,7 @@ fn update_pixel_pulse(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
         } else {
             res.crt_filters.screen_curvature_kind.previous_enum_variant()?;
         }
-        app_events::dispatch_top_message(format!("Screen curvature: {}.", res.crt_filters.screen_curvature_kind).into())?;
+        app_events::dispatch_top_message(format!("Screen curvature: {}.", res.crt_filters.screen_curvature_kind))?;
         app_events::dispatch_screen_curvature(res)?;
     }
 
@@ -396,7 +396,7 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input, materials: &M
         } else {
             res.crt_filters.layering_kind.previous_enum_variant()?;
         }
-        app_events::dispatch_top_message(format!("Layering kind: {}.", res.crt_filters.layering_kind).into())?;
+        app_events::dispatch_top_message(format!("Layering kind: {}.", res.crt_filters.layering_kind))?;
         app_events::dispatch_screen_layering_type(res)?;
     }
 
@@ -438,7 +438,7 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input, materials: &M
         } else {
             res.crt_filters.color_channels.previous_enum_variant()?;
         }
-        app_events::dispatch_top_message(format!("Pixel color representation: {}.", res.crt_filters.color_channels).into())?;
+        app_events::dispatch_top_message(format!("Pixel color representation: {}.", res.crt_filters.color_channels))?;
         app_events::dispatch_color_representation(res)?;
     }
 
@@ -448,7 +448,7 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input, materials: &M
         } else {
             res.crt_filters.pixels_geometry_kind.previous_enum_variant()?;
         }
-        app_events::dispatch_top_message(format!("Pixel geometry: {}.", res.crt_filters.pixels_geometry_kind).into())?;
+        app_events::dispatch_top_message(format!("Pixel geometry: {}.", res.crt_filters.pixels_geometry_kind))?;
         app_events::dispatch_pixel_geometry(res)?;
     }
 
@@ -464,7 +464,7 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input, materials: &M
             }
             res.crt_filters.pixel_shadow_shape_kind -= 1;
         }
-        app_events::dispatch_top_message(format!("Showing next pixel shadow: {}.", res.crt_filters.pixel_shadow_shape_kind.to_string()))?;
+        app_events::dispatch_top_message(format!("Showing next pixel shadow: {}.", res.crt_filters.pixel_shadow_shape_kind))?;
         app_events::dispatch_pixel_shadow_shape(res)?;
     }
 
@@ -568,7 +568,7 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input, materials: &M
         if custom_event.kind.as_ref() as &str == event_kind {
             *cur_size = custom_event.value.as_f64().ok_or("it should be a number")? as f32;
         }
-        if *cur_size != before_size {
+        if (*cur_size - before_size).abs() < std::f32::EPSILON {
             if *cur_size < 0.0 {
                 *cur_size = 0.0;
                 app_events::dispatch_top_message("Minimum value is 0.0".into())?;
@@ -621,10 +621,9 @@ fn update_speeds(res: &mut Resources, input: &Input) -> WasmResult<()> {
         if speed.decrease.is_just_pressed() && *cur_speed > 0.01 {
             *cur_speed /= 2.0;
         }
-        if *cur_speed != before_speed {
+        if (*cur_speed - before_speed).abs() < std::f32::EPSILON {
             let speed = (*cur_speed / base_speed * 1000.0).round() / 1000.0;
-            let message = top_message.to_string() + &speed.to_string() + &"x".to_string();
-            app_events::dispatch_top_message(message.into())?;
+            app_events::dispatch_top_message(format!("{}{}x", top_message, speed))?;
             dispatch_update(*cur_speed / base_speed)?;
         }
         Ok(())
