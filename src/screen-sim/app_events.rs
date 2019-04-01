@@ -4,39 +4,50 @@ use crate::wasm_error::WasmResult;
 use js_sys::Array;
 
 pub fn dispatch_change_pixel_horizontal_gap(size: f32) -> WasmResult<()> {
+    let size = ((size * 1000.0) as i32) as f32 / 1000.0;
     dispatch_event_with("app-event.change_pixel_horizontal_gap", &size.into())
 }
 
 pub fn dispatch_change_pixel_vertical_gap(size: f32) -> WasmResult<()> {
+    let size = ((size * 1000.0) as i32) as f32 / 1000.0;
     dispatch_event_with("app-event.change_pixel_vertical_gap", &size.into())
 }
 
 pub fn dispatch_change_pixel_width(size: f32) -> WasmResult<()> {
+    let size = ((size * 1000.0) as i32) as f32 / 1000.0;
     dispatch_event_with("app-event.change_pixel_width", &size.into())
 }
 
 pub fn dispatch_change_pixel_spread(size: f32) -> WasmResult<()> {
+    let size = ((size * 1000.0) as i32) as f32 / 1000.0;
     dispatch_event_with("app-event.change_pixel_spread", &size.into())
 }
 
 pub fn dispatch_change_pixel_brightness(res: &Resources) -> WasmResult<()> {
-    dispatch_event_with("app-event.change_pixel_brightness", &res.crt_filters.extra_bright.into())
+    let value = ((res.crt_filters.extra_bright * 100.0) as i32) as f32 / 100.0;
+    dispatch_event_with("app-event.change_pixel_brightness", &value.into())
 }
 
 pub fn dispatch_change_pixel_contrast(res: &Resources) -> WasmResult<()> {
-    dispatch_event_with("app-event.change_pixel_contrast", &res.crt_filters.extra_contrast.into())
+    let contrast = ((res.crt_filters.extra_contrast * 1000.0) as i32) as f32 / 1000.0;
+    dispatch_event_with("app-event.change_pixel_contrast", &contrast.into())
 }
 
 pub fn dispatch_change_light_color(res: &Resources) -> WasmResult<()> {
-    dispatch_event_with("app-event.change_light_color", &res.crt_filters.light_color.into())
+    dispatch_change_color("app-event.change_light_color", res.crt_filters.light_color)
 }
 
 pub fn dispatch_change_brightness_color(res: &Resources) -> WasmResult<()> {
-    dispatch_event_with("app-event.change_brightness_color", &res.crt_filters.brightness_color.into())
+    dispatch_change_color("app-event.change_brightness_color", res.crt_filters.brightness_color)
+}
+
+fn dispatch_change_color(id: &str, color: i32) -> WasmResult<()> {
+    dispatch_event_with(id, &format!("#{:X}", color).into())
 }
 
 pub fn dispatch_change_camera_zoom(res: &Resources) -> WasmResult<()> {
-    dispatch_event_with("app-event.change_camera_zoom", &res.camera.zoom.into())
+    let value = ((res.camera.zoom * 100.0) as i32) as f32 / 100.0;
+    dispatch_event_with("app-event.change_camera_zoom", &value.into())
 }
 
 pub fn dispatch_change_blur_level(res: &Resources) -> WasmResult<()> {
