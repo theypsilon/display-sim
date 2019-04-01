@@ -1,3 +1,6 @@
+#![allow(clippy::useless_attribute)]
+#![allow(clippy::identity_op)]
+
 mod action_bindings;
 mod app_events;
 mod background_render;
