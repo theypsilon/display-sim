@@ -19,10 +19,6 @@ body {
     text-align: center;
 }
 
-.render-panel-dad {
-    display: block;
-}
-
 .options {
     text-align: left;
 }
@@ -83,29 +79,45 @@ body {
     margin-top: 20px;
 }
 
-.gif {
+ul.select-image {
+    text-align: center;
+}
+
+ul.select-image li {
+    display: inline-block;
     margin-left: auto;
     margin-right: auto;
     border: 2px solid rgb(187, 187, 187);
-    height: 116px;
+    height: 130px;
     width: 114px;
     border-radius: 5px 5px 5px 5px;
+    vertical-align: middle;
 }
 
-.gif img {
+ul.select-image li span {
+    vertical-align: middle;
+}
+
+ul.select-image li img {
     margin-top: 5px;
+    max-width: 100px;
+    max-height: 100px;
+}
+
+.selectable-image:hover:not(.selected-image) {
+    cursor: pointer;
+}
+
+.selected-image {
+    background-color: white;
+    color: black;
 }
 
 #drop-zone {
-    position: relative;
-    display: table;
-    width: 100%;
     border: 2px dashed rgb(187, 187, 187);
     border-radius: 5px 5px 5px 5px;
-    padding: 15px;
-    text-align: center;
     color: rgb(87, 87, 87);
-    height: 200px;
+    text-align: center;
 }
 
 #drop-zone:hover {
@@ -114,12 +126,8 @@ body {
     color: #a3cef5;
 }
 
-#drop-zone-text {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+#drop-zone span {
+    color: white;
 }
 
 .preview-size {

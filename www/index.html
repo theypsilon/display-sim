@@ -9,15 +9,15 @@
 
     gtag('config', 'UA-128249288-1');
   </script>
-  <title>CRT 3D Sim</title>
+  <title>Screen Sim</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="bootstrap.min.css">
+  <link rel="stylesheet" href="bootstrap-theme.min.css">
+  <link rel="stylesheet" href="theme.css">
   <meta content="text/html;charset=utf-8" http-equiv="Content-Type"/>
 </head>
 <body>
   <img id="loading" src="assets/Loading_icon.gif">
-  <link rel="stylesheet" href="bootstrap.min.css">
-  <link rel="stylesheet" href="bootstrap-theme.min.css">
-  <link rel="stylesheet" href="theme.css">
 
   <section id="ui" class="display-none">
     <a href="https://github.com/theypsilon/crt-3d-sim">
@@ -25,7 +25,7 @@
     </a>
 
     <header class="container bg-white jumbotron page-header">
-      <h1 class="margin-sm-bottom">CRT 3D Sim</h1>
+      <h1 class="margin-sm-bottom">Screen Sim</h1>
       <div class="row">
         <div class="col-md-6 col-sm-12 margin-sm-bottom">
           <p>This tool is a proof of concept of a sandbox to create filters that mitigate the unrealistic experience of watching content designed for old CRTs in modern LCD screens.</p>
@@ -47,27 +47,19 @@
     <section class="bg-green text-white form">
       <form class="container" id="form" name="form">
         <div class="render-tests row">
-          <div class="render-panel-dad col-sm-6 margin-sm-bottom">
-            <h3>Render test animation</h3>
-            <div class="well render-panel">
-              <div class="gif bg-white"><img src="assets/wwix.gif"><span>256 ✕ 224</span></div><br/>
-              <input id="start-animation" class="start btn-crt btn-white" type="button" value="Launch">
-            </div>
-          </div>
-          <div class="render-panel-dad col-sm-6">
-            <h3>Render image from your disk</h3>
-            <div class="well render-panel">
-              <input type="file" id="file" class="display-none" accept="image/*">
-              <div id="drop-zone">
-                <div id="drop-zone-text" class="text-white">drop an image file here or click to upload it</div>
-                <div class="display-none text-white" id="preview-size-elements">
-                  <div class="preview-size" id="preview-width">256</div>
-                  <div class="preview-size">✕</div>
-                  <div class="preview-size" id="preview-height">224</div>
-                </div>
-              </div>
-              <input id="start-custom" class="start btn-crt btn-white" type="button" value="Launch" title="You need to have an image first" disabled>
-            </div>
+          <div class="col-sm-12 margin-sm-bottom">
+            <h3>Select Image:</h3>
+            <input type="file" id="file" class="display-none" accept="image/*">
+            <ul id="select-image-list" class="well select-image col-sm-12">
+              <li class="selectable-image selected-image" id="first-preview-image"><img src="assets/wwix.gif"><span>256 ✕ 224</span><br></li>
+              <li class="selectable-image"><img src="assets/seiken.png"><span>256 ✕ 224</span><br></li>
+              <li class="selectable-image"><img src="assets/sonicscroll.gif"><span>320 ✕ 224</span><br></li>
+              <li class="selectable-image"><img src="assets/metroid.gif"><span>256 ✕ 238</span><br></li>
+              <li class="selectable-image"><img src="assets/tf4.gif"><span>320 ✕ 224</span><br></li>
+              <li class="selectable-image"><img src="assets/dkc2.png"><span>256 ✕ 224</span><br></li>
+              <li id="drop-zone"><span>upload your image here</span></li>
+            </ul>
+            <input id="start-animation" class="start btn-crt btn-white" type="button" value="Play Simulation">
           </div>
         </div>
         <div>

@@ -111,10 +111,6 @@ input.btn-white:not([disabled]):hover {
   box-shadow: none;
 }
 
-#drop-zone {
-  height: 116px;
-}
-
 #drop-zone:hover {
   border: 2px solid #ffffff;
   cursor: pointer;

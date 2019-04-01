@@ -7,6 +7,7 @@ const powerPreferenceDefaultId = 'powerPreference-1';
 const glCanvasHtmlId = 'gl-canvas';
 const topMessageHtmlId = 'top-message';
 const previewHtmlId = 'preview';
+const firstPreviewImageId = 'first-preview-image';
 
 const scalingHtmlName = 'scaling';
 const powerPreferenceHtmlName = 'powerPreference';
@@ -15,7 +16,6 @@ const uiDeo = document.getElementById('ui');
 const formDeo = document.getElementById('form');
 const loadingDeo = document.getElementById('loading');
 const inputFileUploadDeo = document.getElementById('file');
-const startCustomDeo = document.getElementById('start-custom');
 const startAnimationDeo = document.getElementById('start-animation');
 const antialiasDeo = document.getElementById('antialias');
 const scalingCustomResWidthDeo = document.getElementById('scaling-custom-resolution-width');
@@ -26,9 +26,7 @@ const scalingCustomArYDeo = document.getElementById('scaling-custom-aspect-ratio
 const scalingCustomStretchNearestDeo = document.getElementById('scaling-custom-stretch-nearest');
 const scalingCustomInputsDeo = document.getElementById('scaling-custom-inputs');
 const dropZoneDeo = document.getElementById('drop-zone');
-const dropZoneTextDeo = document.getElementById('drop-zone-text');
-const previewSizeElementsDeo = document.getElementById('preview-size-elements');
-const previewWidthDeo = document.getElementById('preview-width');
+const selectImageList = document.getElementById('select-image-list');
 const previewHeightDeo = document.getElementById('preview-height');
 const restoreDefaultOptionsDeo = document.getElementById('restore-default-options');
 
@@ -78,11 +76,13 @@ const resetFiltersDeo = document.getElementById('reset-filters');
 const resetSpeedsDeo = document.getElementById('reset-speeds');
 
 const getGlCanvasDeo = () => document.getElementById(glCanvasHtmlId);
-const getPreviewDeo = () => document.getElementById(previewHtmlId);
 const getTopMessageDeo = () => document.getElementById(topMessageHtmlId);
 
 const visibility = makeVisibility();
 const storage = makeStorage();
+const gifCache = {};
+let previewDeo = document.getElementById(firstPreviewImageId);
+let simulationResources = undefined;
 
 window.ondrop = event => {
     event.preventDefault();
@@ -284,6 +284,20 @@ function customEventOnChange(deo, kind, parse) {
     deo.onmouseup = () => document.dispatchEvent(new KeyboardEvent('keyup', {key: deo.id}));
 });
 
+document.querySelectorAll('.selectable-image').forEach(deo => {
+    const img = deo.querySelector('img');
+    img.isGif = img.src.includes(".gif");
+    img.previewUrl = img.src;
+    makeImageSelectable(deo);
+});
+function makeImageSelectable(deo) {
+    deo.onclick = () => {
+        previewDeo.classList.remove('selected-image');
+        previewDeo = deo;
+        previewDeo.classList.add('selected-image');
+    }
+}
+
 document.querySelectorAll('.number-input').forEach(deo => {
     [{button_text: "↑", mode: "inc", placement: "before"}, {button_text: "↓", mode: "dec", placement: "after"}].forEach(o => {
         const button = document.createElement('button');
@@ -317,6 +331,7 @@ inputFileUploadDeo.onchange = () => {
   const url = (window.URL || window.webkitURL).createObjectURL(file);
   processFileToUpload(url);
 };
+
 dropZoneDeo.onclick = () => {
     inputFileUploadDeo.click();
 };
@@ -352,10 +367,6 @@ restoreDefaultOptionsDeo.onclick = () => {
 
 prepareUi();
 
-// simulation global state:
-let simulationResources = undefined;
-const gifCache = {};
-
 function prepareUi() {
     loadInputValuesFromStorage();
 
@@ -363,14 +374,39 @@ function prepareUi() {
     visibility.hideLoading();
 
     const startPromise = new Promise((startResolve, startReject) => {
-        startCustomDeo.onclick = () => {
+        startAnimationDeo.onclick = () => {
             visibility.hideUi();
             visibility.showLoading();
             setTimeout(async () => {
-                const preview = getPreviewDeo();
-                const canvases = await loadCanvases(preview);
-                const rawImgs = canvases.map(({ctx, delay}) => ({raw: ctx.getImageData(0, 0, preview.width, preview.height), delay}));
-                startResolve(rawImgs)
+                if (previewDeo.id === firstPreviewImageId) {
+                    const animationPromise = new Promise((imgResolve, imgReject) => {
+                        const img = new Image();
+                        img.src = 'assets/wwix_spritesheet.png';
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            const ctx = canvas.getContext('2d');
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                            ctx.drawImage(img, 0, 0);
+                            const columns = Math.floor(img.width / 256);
+                            const rawImgs = [];
+                            for (let i = 0; i <= 45; i++) {
+                                const x = i % columns;
+                                const y = Math.floor(i / columns);
+                                rawImgs.push({raw: ctx.getImageData(x * 256, y * 224, 256, 224), delay: 16});
+                            }
+                            imgResolve(rawImgs);
+                        }
+                        img.onerror = (e) => imgReject(e);
+                    });
+                    const rawImgs = await animationPromise;
+                    startResolve(rawImgs)
+                } else {
+                    const img = previewDeo.querySelector('img');
+                    const canvases = await loadCanvases(img);
+                    const rawImgs = canvases.map(({ctx, delay}) => ({raw: ctx.getImageData(0, 0, img.width, img.height), delay}));
+                    startResolve(rawImgs)
+                }
             }, 50);
 
             async function loadCanvases(preview) {
@@ -394,31 +430,6 @@ function prepareUi() {
                 benchmark("gif loaded", gif);
                 return gif.frames.map(frame => ({ctx: frame.image.getContext('2d'), delay: frame.delay}));
             }
-        }
-        startAnimationDeo.onclick = () => {
-            visibility.hideUi();
-            visibility.showLoading();
-            const animationPromise = new Promise((imgResolve, imgReject) => {
-                const img = new Image();
-                img.src = 'assets/wwix_spritesheet.png';
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    ctx.drawImage(img, 0, 0);
-                    const columns = Math.floor(img.width / 256);
-                    const rawImgs = [];
-                    for (let i = 0; i <= 45; i++) {
-                        const x = i % columns;
-                        const y = Math.floor(i / columns);
-                        rawImgs.push({raw: ctx.getImageData(x * 256, y * 224, 256, 224), delay: 16});
-                    }
-                    imgResolve(rawImgs);
-                }
-                img.onerror = (e) => imgReject(e);
-            });
-            animationPromise.then(startResolve);
         }
     });
 
@@ -592,30 +603,24 @@ async function processFileToUpload(url) {
 
     await new Promise(resolve => img.onload = () => resolve());
 
-    const preview = getPreviewDeo();
-    if (preview) {
-        preview.remove();
-    }
-    img.id = previewHtmlId;
     const width = img.width;
     const height = img.height;
-    if (width > height) {
-        img.style.width = '100px';
-    } else {
-        img.style.height = '100px';
-    }
     scalingCustomResButtonDeo.value = "Set to " + width + " ✕ " + height;
     scalingCustomResButtonDeo.onclick = () => {
         scalingCustomResWidthDeo.value = width;
         scalingCustomResHeightDeo.value = height;
     };
-    previewWidthDeo.innerHTML = width;
-    previewHeightDeo.innerHTML = height;
-    dropZoneTextDeo.remove();
-    dropZoneDeo.insertBefore(img, previewSizeElementsDeo);
-    visibility.showPreviewSizeElements();
+    const span = document.createElement('span');
+    span.innerHTML = width + " ✕ " + height;
+    const li = document.createElement('li');
+    li.appendChild(img);
+    li.appendChild(document.createElement('br'));
+    li.appendChild(span);
+    li.classList.add('selectable-image');
+    makeImageSelectable(li);
+    li.click();
+    selectImageList.insertBefore(li, dropZoneDeo);
     visibility.showScalingCustomResButton();
-    startCustomDeo.disabled = false;
 }
 
 function makeStorage() {
@@ -669,7 +674,6 @@ function makeVisibility() {
         showInfoPanel: () => showElement(infoPanelDeo),
         hideInfoPanel: () => hideElement(infoPanelDeo),
         isInfoPanelVisible: () => isVisible(infoPanelDeo),
-        showPreviewSizeElements: () => showElement(previewSizeElementsDeo),
         showScalingCustomResButton: () => showElement(scalingCustomResButtonDeo),
         showScaleCustomInputs: () => showElement(scalingCustomInputsDeo),
         hideScaleCustomInputs: () => hideElement(scalingCustomInputsDeo),
