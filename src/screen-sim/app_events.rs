@@ -92,7 +92,8 @@ pub fn dispatch_change_movement_speed(speed: f32) -> WasmResult<()> {
 }
 
 fn dispatch_internal_speed(id: &str, speed: f32) -> WasmResult<()> {
-    dispatch_event_with(id, &format!("x{}", speed as i32).into())
+    let speed = ((speed * 1000.0) as i32) as f32 / 1000.0;
+    dispatch_event_with(id, &format!("x{}", speed).into())
 }
 
 pub fn dispatch_exiting_session() -> WasmResult<()> {
