@@ -74,11 +74,11 @@ impl Resources {
                 camera.set_position(glm::vec3(0.0, 0.0, initial_position_z));
             } else {
                 let mut camera_position = res.camera.get_position();
-                if (res.initial_parameters.initial_position_z - camera_position.z).abs() < std::f32::EPSILON {
+                if res.initial_parameters.initial_position_z != camera_position.z {
                     camera_position.z = initial_position_z;
                 }
                 camera.set_position(camera_position);
-                if (res.crt_filters.cur_pixel_width - res.animation.pixel_width).abs() < std::f32::EPSILON {
+                if res.crt_filters.cur_pixel_width != res.animation.pixel_width {
                     cur_pixel_width = res.crt_filters.cur_pixel_width;
                 }
             }
@@ -568,7 +568,7 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input, materials: &M
         if custom_event.kind.as_ref() as &str == event_kind {
             *cur_size = custom_event.value.as_f64().ok_or("it should be a number")? as f32;
         }
-        if (*cur_size - before_size).abs() < std::f32::EPSILON {
+        if *cur_size != before_size {
             if *cur_size < 0.0 {
                 *cur_size = 0.0;
                 app_events::dispatch_top_message("Minimum value is 0.0".into())?;
@@ -621,7 +621,7 @@ fn update_speeds(res: &mut Resources, input: &Input) -> WasmResult<()> {
         if speed.decrease.is_just_pressed() && *cur_speed > 0.01 {
             *cur_speed /= 2.0;
         }
-        if (*cur_speed - before_speed).abs() < std::f32::EPSILON {
+        if *cur_speed != before_speed {
             let speed = (*cur_speed / base_speed * 1000.0).round() / 1000.0;
             app_events::dispatch_top_message(format!("{}{}x", top_message, speed))?;
             dispatch_update(*cur_speed / base_speed)?;
@@ -802,9 +802,9 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
     gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
 
     let screen_curvature = match res.crt_filters.screen_curvature_kind {
-        ScreenCurvatureKind::Curved1 => 0.1,
-        ScreenCurvatureKind::Curved2 => 0.2,
-        ScreenCurvatureKind::Curved3 => 0.3,
+        ScreenCurvatureKind::Curved1 => 0.15,
+        ScreenCurvatureKind::Curved2 => 0.3,
+        ScreenCurvatureKind::Curved3 => 0.45,
         _ => 0.0,
     };
 
