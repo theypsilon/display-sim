@@ -238,8 +238,6 @@ function updateInnerHtmlWithEventNumber(deo, eventId) {
             case 'app-event.change_movement_speed':
             case 'app-event.change_pixel_speed':
             case 'app-event.change_turning_speed':
-                deo.value = (Math.round(event.detail * 1000.0) / 1000.0) + 'x';
-                break;
             case 'app-event.color_representation':
             case 'app-event.pixel_geometry':
             case 'app-event.pixel_shadow_shape':

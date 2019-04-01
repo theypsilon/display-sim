@@ -3,12 +3,20 @@ use std::rc::Rc;
 use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
 use web_sys::{WebGl2RenderingContext, Window};
 
+use crate::app_events::{
+    dispatch_appevent_change_blur_level, dispatch_appevent_change_brightness_color, dispatch_appevent_change_camera_zoom, dispatch_appevent_change_light_color,
+    dispatch_appevent_change_lines_per_pixel, dispatch_appevent_change_movement_speed, dispatch_appevent_change_pixel_brightness, dispatch_appevent_change_pixel_contrast,
+    dispatch_appevent_change_pixel_horizontal_gap, dispatch_appevent_change_pixel_speed, dispatch_appevent_change_pixel_spread, dispatch_appevent_change_pixel_vertical_gap,
+    dispatch_appevent_change_pixel_width, dispatch_appevent_change_turning_speed, dispatch_appevent_color_representation, dispatch_appevent_exit_pointer_lock, dispatch_appevent_exiting_session,
+    dispatch_appevent_fps, dispatch_appevent_internal_resolution, dispatch_appevent_pixel_geometry, dispatch_appevent_pixel_shadow_height, dispatch_appevent_pixel_shadow_shape,
+    dispatch_appevent_request_pointer_lock, dispatch_appevent_screen_curvature, dispatch_appevent_screen_layering_type, dispatch_appevent_screenshot, dispatch_appevent_texture_interpolation,
+    dispatch_appevent_toggle_info_panel, dispatch_appevent_top_message,
+};
 use crate::background_render::BackgroundRender;
 use crate::blur_render::BlurRender;
 use crate::boolean_button::BooleanButton;
 use crate::camera::{Camera, CameraDirection};
 use crate::console;
-use crate::dispatch_event::{dispatch_event, dispatch_event_with};
 use crate::event_listeners::set_event_listeners;
 use crate::general_types::NextEnumVariant;
 use crate::internal_resolution_render::InternalResolutionRender;
@@ -122,31 +130,28 @@ fn load_materials(gl: WebGl2RenderingContext) -> WasmResult<Materials> {
 }
 
 fn change_frontend_input_values(res: &Resources) -> WasmResult<()> {
-    dispatch_event_with("app-event.change_pixel_horizontal_gap", &res.crt_filters.cur_pixel_scale_x.into())?;
-    dispatch_event_with("app-event.change_pixel_vertical_gap", &res.crt_filters.cur_pixel_scale_y.into())?;
-    dispatch_event_with("app-event.change_pixel_width", &res.crt_filters.cur_pixel_width.into())?;
-    dispatch_event_with("app-event.change_pixel_spread", &res.crt_filters.cur_pixel_gap.into())?;
-    dispatch_event_with("app-event.change_pixel_brightness", &res.crt_filters.extra_bright.into())?;
-    dispatch_event_with("app-event.change_pixel_contrast", &res.crt_filters.extra_contrast.into())?;
-    dispatch_event_with("app-event.change_light_color", &res.crt_filters.light_color.into())?;
-    dispatch_event_with("app-event.change_brightness_color", &res.crt_filters.brightness_color.into())?;
-    dispatch_event_with("app-event.change_camera_zoom", &res.camera.zoom.into())?;
-    dispatch_event_with("app-event.change_blur_level", &(res.crt_filters.blur_passes as i32).into())?;
-    dispatch_event_with("app-event.change_lines_per_pixel", &(res.crt_filters.lines_per_pixel as i32).into())?;
-    dispatch_event_with("app-event.color_representation", &(res.crt_filters.color_channels.to_string()).into())?;
-    dispatch_event_with("app-event.pixel_geometry", &(res.crt_filters.pixels_geometry_kind.to_string()).into())?;
-    dispatch_event_with("app-event.pixel_shadow_shape", &(res.crt_filters.pixel_shadow_shape_kind.to_string()).into())?;
-    dispatch_event_with("app-event.pixel_shadow_height", &(res.crt_filters.pixel_shadow_height_factor).into())?;
-    dispatch_event_with("app-event.screen_layering_type", &(res.crt_filters.layering_kind.to_string()).into())?;
-    dispatch_event_with("app-event.screen_curvature", &(res.crt_filters.screen_curvature_kind.to_string()).into())?;
-    dispatch_event_with("app-event.internal_resolution", &(res.crt_filters.internal_resolution.to_label(&res.animation)).into())?;
-    dispatch_event_with("app-event.texture_interpolation", &(res.crt_filters.texture_interpolation.to_string()).into())?;
-    dispatch_event_with(
-        "app-event.change_movement_speed",
-        &((res.camera.movement_speed / res.initial_parameters.initial_movement_speed) as i32).into(),
-    )?;
-    dispatch_event_with("app-event.change_pixel_speed", &((res.crt_filters.change_speed / PIXEL_MANIPULATION_BASE_SPEED) as i32).into())?;
-    dispatch_event_with("app-event.change_turning_speed", &((res.camera.turning_speed / TURNING_BASE_SPEED) as i32).into())?;
+    dispatch_appevent_change_pixel_horizontal_gap(res.crt_filters.cur_pixel_scale_y)?;
+    dispatch_appevent_change_pixel_vertical_gap(res.crt_filters.cur_pixel_scale_x)?;
+    dispatch_appevent_change_pixel_width(res.crt_filters.cur_pixel_width)?;
+    dispatch_appevent_change_pixel_spread(res.crt_filters.cur_pixel_gap)?;
+    dispatch_appevent_change_pixel_brightness(res)?;
+    dispatch_appevent_change_pixel_contrast(res)?;
+    dispatch_appevent_change_light_color(res)?;
+    dispatch_appevent_change_brightness_color(res)?;
+    dispatch_appevent_change_camera_zoom(res)?;
+    dispatch_appevent_change_blur_level(res)?;
+    dispatch_appevent_change_lines_per_pixel(res)?;
+    dispatch_appevent_color_representation(res)?;
+    dispatch_appevent_pixel_geometry(res)?;
+    dispatch_appevent_pixel_shadow_shape(res)?;
+    dispatch_appevent_pixel_shadow_height(res)?;
+    dispatch_appevent_screen_layering_type(res)?;
+    dispatch_appevent_screen_curvature(res)?;
+    dispatch_appevent_internal_resolution(res)?;
+    dispatch_appevent_texture_interpolation(res)?;
+    dispatch_appevent_change_pixel_speed(res.crt_filters.change_speed / PIXEL_MANIPULATION_BASE_SPEED)?;
+    dispatch_appevent_change_turning_speed(res.camera.turning_speed / TURNING_BASE_SPEED)?;
+    dispatch_appevent_change_movement_speed(res.camera.movement_speed / res.initial_parameters.initial_movement_speed)?;
     Ok(())
 }
 
@@ -203,12 +208,12 @@ fn update_simulation(res: &mut Resources, input: &Input, materials: &Materials) 
     update_lpp(res, input)?;
 
     if input.esc.is_just_pressed() {
-        dispatch_event("app-event.exiting_session")?;
+        dispatch_appevent_exiting_session()?;
         return Ok(false);
     }
 
     if input.space.is_just_pressed() {
-        dispatch_event("app-event.toggle_info_panel")?;
+        dispatch_appevent_toggle_info_panel()?;
     }
 
     update_pixel_pulse(dt, res, input)?;
@@ -227,7 +232,7 @@ fn update_timers_and_dt(res: &mut Resources, input: &Input) -> WasmResult<f32> {
 
     if ellapsed >= 1_000.0 {
         let fps = res.timers.frame_count as f32;
-        dispatch_event_with("app-event.fps", &fps.into())?;
+        dispatch_appevent_fps(fps)?;
         res.timers.last_second = input.now;
         res.timers.frame_count = 0;
     } else {
@@ -263,12 +268,12 @@ fn update_colors(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> 
     if input.bright.increase || input.bright.decrease {
         if res.crt_filters.extra_bright < -1.0 {
             res.crt_filters.extra_bright = -1.0;
-            dispatch_event_with("app-event.top_message", &"Minimum value is -1.0".into())?;
+            dispatch_appevent_top_message("Minimum value is -1.0".into())?;
         } else if res.crt_filters.extra_bright > 1.0 {
             res.crt_filters.extra_bright = 1.0;
-            dispatch_event_with("app-event.top_message", &"Maximum value is +1.0".into())?;
+            dispatch_appevent_top_message("Maximum value is +1.0".into())?;
         } else {
-            dispatch_event_with("app-event.change_pixel_brightness", &res.crt_filters.extra_bright.into())?;
+            dispatch_appevent_change_pixel_brightness(&res)?;
         }
     }
     if input.contrast.increase {
@@ -280,12 +285,12 @@ fn update_colors(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> 
     if input.contrast.increase || input.contrast.decrease {
         if res.crt_filters.extra_contrast < 0.0 {
             res.crt_filters.extra_contrast = 0.0;
-            dispatch_event_with("app-event.top_message", &"Minimum value is 0.0".into())?;
+            dispatch_appevent_top_message("Minimum value is 0.0".into())?;
         } else if res.crt_filters.extra_contrast > 20.0 {
             res.crt_filters.extra_contrast = 20.0;
-            dispatch_event_with("app-event.top_message", &"Maximum value is 20.0".into())?;
+            dispatch_appevent_top_message("Maximum value is 20.0".into())?;
         } else {
-            dispatch_event_with("app-event.change_pixel_contrast", &res.crt_filters.extra_contrast.into())?;
+            dispatch_appevent_change_pixel_contrast(&res)?;
         }
     }
     let color_variable = match input.custom_event.kind.as_ref() {
@@ -305,7 +310,7 @@ fn update_colors(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> 
     let color_pick = input.custom_event.value.as_f64().ok_or("it should be a number")? as i32;
     if color_pick != *color_variable {
         *color_variable = color_pick;
-        dispatch_event_with("app-event.top_message", &"Color changed.".into())?;
+        dispatch_appevent_top_message("Color changed.".into())?;
     }
 
     Ok(())
@@ -320,20 +325,20 @@ fn update_blur(res: &mut Resources, input: &Input) -> WasmResult<()> {
         if res.crt_filters.blur_passes > 0 {
             res.crt_filters.blur_passes -= 1;
         } else {
-            dispatch_event_with("app-event.top_message", &"Minimum value is 0".into())?;
+            dispatch_appevent_top_message("Minimum value is 0".into())?;
         }
     }
     if input.custom_event.kind.as_ref() as &str == "event_kind:blur_level" {
         res.crt_filters.blur_passes = input.custom_event.value.as_f64().ok_or("it should be a number")? as usize;
-        dispatch_event_with("app-event.change_blur_level", &(res.crt_filters.blur_passes as i32).into())?;
+        dispatch_appevent_change_blur_level(res)?;
     }
     if res.crt_filters.blur_passes > 100 {
         res.crt_filters.blur_passes = 100;
-        dispatch_event_with("app-event.top_message", &"Maximum value is 100".into())?;
+        dispatch_appevent_top_message("Maximum value is 100".into())?;
     }
     if last_blur_passes != res.crt_filters.blur_passes {
-        dispatch_event_with("app-event.top_message", &("Blur level: ".to_string() + &res.crt_filters.blur_passes.to_string()).into())?;
-        dispatch_event_with("app-event.change_blur_level", &(res.crt_filters.blur_passes as i32).into())?;
+        dispatch_appevent_top_message(("Blur level: ".to_string() + &res.crt_filters.blur_passes.to_string()).into())?;
+        dispatch_appevent_change_blur_level(res)?;
     }
     Ok(())
 }
@@ -349,18 +354,18 @@ fn update_lpp(res: &mut Resources, input: &Input) -> WasmResult<()> {
     }
     if input.custom_event.kind.as_ref() as &str == "event_kind:lines_per_pixel" {
         res.crt_filters.lines_per_pixel = input.custom_event.value.as_f64().ok_or("it should be a number")? as usize;
-        dispatch_event_with("app-event.change_lines_per_pixel", &(res.crt_filters.lines_per_pixel as i32).into())?;
+        dispatch_appevent_change_lines_per_pixel(res)?;
     }
     if res.crt_filters.lines_per_pixel < 1 {
         res.crt_filters.lines_per_pixel = 1;
-        dispatch_event_with("app-event.top_message", &"Minimum value is 1".into())?;
+        dispatch_appevent_top_message("Minimum value is 1".into())?;
     } else if res.crt_filters.lines_per_pixel > 20 {
         res.crt_filters.lines_per_pixel = 20;
-        dispatch_event_with("app-event.top_message", &"Maximum value is 20".into())?;
+        dispatch_appevent_top_message("Maximum value is 20".into())?;
     }
     if last_lpp != res.crt_filters.lines_per_pixel {
-        dispatch_event_with("app-event.top_message", &format!("Lines per pixel: {}.", res.crt_filters.lines_per_pixel).into())?;
-        dispatch_event_with("app-event.change_lines_per_pixel", &(res.crt_filters.lines_per_pixel as i32).into())?;
+        dispatch_appevent_top_message(format!("Lines per pixel: {}.", res.crt_filters.lines_per_pixel).into())?;
+        dispatch_appevent_change_lines_per_pixel(res)?;
     }
     Ok(())
 }
@@ -372,8 +377,8 @@ fn update_pixel_pulse(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
         } else {
             res.crt_filters.screen_curvature_kind.previous_enum_variant()?;
         }
-        dispatch_event_with("app-event.top_message", &format!("Screen curvature: {}.", res.crt_filters.screen_curvature_kind).into())?;
-        dispatch_event_with("app-event.screen_curvature", &(res.crt_filters.screen_curvature_kind.to_string()).into())?;
+        dispatch_appevent_top_message(format!("Screen curvature: {}.", res.crt_filters.screen_curvature_kind).into())?;
+        dispatch_appevent_screen_curvature(res)?;
     }
 
     if let ScreenCurvatureKind::Pulse = res.crt_filters.screen_curvature_kind {
@@ -389,7 +394,7 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input, materials: &M
         res.crt_filters = CrtFilters::new(PIXEL_MANIPULATION_BASE_SPEED);
         res.crt_filters.cur_pixel_width = res.initial_parameters.initial_pixel_width;
         change_frontend_input_values(res)?;
-        dispatch_event_with("app-event.top_message", &"All filter options have been reset.".into())?;
+        dispatch_appevent_top_message("All filter options have been reset.".into())?;
         return Ok(());
     }
 
@@ -399,8 +404,8 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input, materials: &M
         } else {
             res.crt_filters.layering_kind.previous_enum_variant()?;
         }
-        dispatch_event_with("app-event.top_message", &format!("Layering kind: {}.", res.crt_filters.layering_kind).into())?;
-        dispatch_event_with("app-event.screen_layering_type", &(res.crt_filters.layering_kind.to_string()).into())?;
+        dispatch_appevent_top_message(format!("Layering kind: {}.", res.crt_filters.layering_kind).into())?;
+        dispatch_appevent_screen_layering_type(res)?;
     }
 
     match res.crt_filters.layering_kind {
@@ -441,8 +446,8 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input, materials: &M
         } else {
             res.crt_filters.color_channels.previous_enum_variant()?;
         }
-        dispatch_event_with("app-event.top_message", &format!("Pixel color representation: {}.", res.crt_filters.color_channels).into())?;
-        dispatch_event_with("app-event.color_representation", &(res.crt_filters.color_channels.to_string()).into())?;
+        dispatch_appevent_top_message(format!("Pixel color representation: {}.", res.crt_filters.color_channels).into())?;
+        dispatch_appevent_color_representation(res)?;
     }
 
     if input.next_pixel_geometry_kind.any_just_pressed() {
@@ -451,8 +456,8 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input, materials: &M
         } else {
             res.crt_filters.pixels_geometry_kind.previous_enum_variant()?;
         }
-        dispatch_event_with("app-event.top_message", &format!("Pixel geometry: {}.", res.crt_filters.pixels_geometry_kind).into())?;
-        dispatch_event_with("app-event.pixel_geometry", &(res.crt_filters.pixels_geometry_kind.to_string()).into())?;
+        dispatch_appevent_top_message(format!("Pixel geometry: {}.", res.crt_filters.pixels_geometry_kind).into())?;
+        dispatch_appevent_pixel_geometry(res)?;
     }
 
     if input.next_pixels_shadow_shape_kind.any_just_pressed() {
@@ -467,11 +472,8 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input, materials: &M
             }
             res.crt_filters.pixel_shadow_shape_kind -= 1;
         }
-        dispatch_event_with(
-            "app-event.top_message",
-            &format!("Showing next pixel shadow: {}.", res.crt_filters.pixel_shadow_shape_kind.to_string()).into(),
-        )?;
-        dispatch_event_with("app-event.pixel_shadow_shape", &(res.crt_filters.pixel_shadow_shape_kind.to_string()).into())?;
+        dispatch_appevent_top_message(format!("Showing next pixel shadow: {}.", res.crt_filters.pixel_shadow_shape_kind.to_string()))?;
+        dispatch_appevent_pixel_shadow_shape(res)?;
     }
 
     let received_pixel_shadow_height = input.custom_event.kind.as_ref() as &str == "event_kind:pixel_shadow_height";
@@ -487,13 +489,13 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input, materials: &M
         }
         if res.crt_filters.pixel_shadow_height_factor < 0.0 {
             res.crt_filters.pixel_shadow_height_factor = 0.0;
-            dispatch_event_with("app-event.top_message", &"Minimum value is 0.0".into())?;
+            dispatch_appevent_top_message("Minimum value is 0.0".into())?;
         }
         if res.crt_filters.pixel_shadow_height_factor > 1.0 {
             res.crt_filters.pixel_shadow_height_factor = 1.0;
-            dispatch_event_with("app-event.top_message", &"Maximum value is 1.0".into())?;
+            dispatch_appevent_top_message("Maximum value is 1.0".into())?;
         }
-        dispatch_event_with("app-event.pixel_shadow_height", &res.crt_filters.pixel_shadow_height_factor.into())?;
+        dispatch_appevent_pixel_shadow_height(&res)?;
     }
 
     if input.next_internal_resolution.any_just_released() {
@@ -506,10 +508,9 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input, materials: &M
         let height = (res.animation.viewport_height as f32 * res.crt_filters.internal_resolution.multiplier) as i32;
         if height < 2 {
             res.crt_filters.internal_resolution.multiplier *= 2.0;
-            dispatch_event_with("app-event.top_message", &"Minimum internal resolution has been reached.".into())?;
+            dispatch_appevent_top_message("Minimum internal resolution has been reached.".into())?;
         } else {
-            let resolution_text = res.crt_filters.internal_resolution.to_label(&res.animation);
-            dispatch_event_with("app-event.internal_resolution", &resolution_text.into())?;
+            dispatch_appevent_internal_resolution(&res)?;
         }
     }
 
@@ -520,7 +521,7 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input, materials: &M
         if input.next_texture_interpolation.decrease.is_just_pressed() {
             res.crt_filters.texture_interpolation.previous_enum_variant()?;
         }
-        dispatch_event_with("app-event.texture_interpolation", &res.crt_filters.texture_interpolation.to_string().into())?;
+        dispatch_appevent_texture_interpolation(&res)?;
     }
 
     let pixel_velocity = dt * res.crt_filters.change_speed;
@@ -529,7 +530,7 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input, materials: &M
         input.pixel_scale_x.clone(),
         &mut res.crt_filters.cur_pixel_scale_x,
         pixel_velocity * 0.00125,
-        "app-event.change_pixel_vertical_gap",
+        dispatch_appevent_change_pixel_vertical_gap,
         "event_kind:pixel_vertical_gap",
     )?;
     change_pixel_sizes(
@@ -537,7 +538,7 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input, materials: &M
         input.pixel_scale_y.clone(),
         &mut res.crt_filters.cur_pixel_scale_y,
         pixel_velocity * 0.00125,
-        "app-event.change_pixel_horizontal_gap",
+        dispatch_appevent_change_pixel_horizontal_gap,
         "event_kind:pixel_horizontal_gap",
     )?;
     change_pixel_sizes(
@@ -545,7 +546,7 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input, materials: &M
         input.pixel_width.clone(),
         &mut res.crt_filters.cur_pixel_width,
         pixel_velocity * 0.005,
-        "app-event.change_pixel_width",
+        dispatch_appevent_change_pixel_width,
         "event_kind:pixel_width",
     )?;
     change_pixel_sizes(
@@ -553,11 +554,18 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input, materials: &M
         input.pixel_gap.clone(),
         &mut res.crt_filters.cur_pixel_gap,
         pixel_velocity * 0.005,
-        "app-event.change_pixel_spread",
+        dispatch_appevent_change_pixel_spread,
         "event_kind:pixel_spread",
     )?;
 
-    fn change_pixel_sizes(custom_event: &CustomInputEvent, controller: IncDec<bool>, cur_size: &mut f32, velocity: f32, event_id: &str, event_kind: &str) -> WasmResult<()> {
+    fn change_pixel_sizes(
+        custom_event: &CustomInputEvent,
+        controller: IncDec<bool>,
+        cur_size: &mut f32,
+        velocity: f32,
+        dispatch_update: fn(f32) -> WasmResult<()>,
+        event_kind: &str,
+    ) -> WasmResult<()> {
         let before_size = *cur_size;
         if controller.increase {
             *cur_size += velocity;
@@ -571,10 +579,10 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input, materials: &M
         if *cur_size != before_size {
             if *cur_size < 0.0 {
                 *cur_size = 0.0;
-                dispatch_event_with("app-event.top_message", &"Minimum value is 0.0".into())?;
+                dispatch_appevent_top_message("Minimum value is 0.0".into())?;
             }
             let size = *cur_size;
-            dispatch_event_with(event_id, &size.into())?;
+            dispatch_update(size)?;
         }
         Ok(())
     }
@@ -587,7 +595,7 @@ fn update_speeds(res: &mut Resources, input: &Input) -> WasmResult<()> {
         &mut res.camera.turning_speed,
         TURNING_BASE_SPEED,
         "Turning camera speed: ",
-        "app-event.change_turning_speed",
+        dispatch_appevent_change_turning_speed,
     )?;
 
     change_speed(
@@ -595,7 +603,7 @@ fn update_speeds(res: &mut Resources, input: &Input) -> WasmResult<()> {
         &mut res.crt_filters.change_speed,
         PIXEL_MANIPULATION_BASE_SPEED,
         "Pixel manipulation speed: ",
-        "app-event.change_pixel_speed",
+        dispatch_appevent_change_pixel_speed,
     )?;
 
     change_speed(
@@ -603,17 +611,17 @@ fn update_speeds(res: &mut Resources, input: &Input) -> WasmResult<()> {
         &mut res.camera.turning_speed,
         TURNING_BASE_SPEED,
         "Turning camera speed: ",
-        "app-event.change_turning_speed",
+        dispatch_appevent_change_turning_speed,
     )?;
     change_speed(
         &input.translation_speed,
         &mut res.camera.movement_speed,
         res.initial_parameters.initial_movement_speed,
         "Translation camera speed: ",
-        "app-event.change_movement_speed",
+        dispatch_appevent_change_movement_speed,
     )?;
 
-    fn change_speed(speed: &IncDec<BooleanButton>, cur_speed: &mut f32, base_speed: f32, top_message: &str, event_id: &str) -> WasmResult<()> {
+    fn change_speed(speed: &IncDec<BooleanButton>, cur_speed: &mut f32, base_speed: f32, top_message: &str, dispatch_update: fn(f32) -> WasmResult<()>) -> WasmResult<()> {
         let before_speed = *cur_speed;
         if speed.increase.is_just_pressed() && *cur_speed < 10000.0 {
             *cur_speed *= 2.0;
@@ -624,8 +632,8 @@ fn update_speeds(res: &mut Resources, input: &Input) -> WasmResult<()> {
         if *cur_speed != before_speed {
             let speed = (*cur_speed / base_speed * 1000.0).round() / 1000.0;
             let message = top_message.to_string() + &speed.to_string() + &"x".to_string();
-            dispatch_event_with("app-event.top_message", &message.into())?;
-            dispatch_event_with(event_id, &speed.into())?;
+            dispatch_appevent_top_message(message.into())?;
+            dispatch_update(*cur_speed / base_speed)?;
         }
         Ok(())
     }
@@ -634,7 +642,7 @@ fn update_speeds(res: &mut Resources, input: &Input) -> WasmResult<()> {
         res.camera.turning_speed = TURNING_BASE_SPEED;
         res.camera.movement_speed = res.initial_parameters.initial_movement_speed;
         res.crt_filters.change_speed = PIXEL_MANIPULATION_BASE_SPEED;
-        dispatch_event_with("app-event.top_message", &"All speeds have been reset.".into())?;
+        dispatch_appevent_top_message("All speeds have been reset.".into())?;
         change_frontend_input_values(res)?;
     }
     Ok(())
@@ -681,11 +689,11 @@ fn update_camera(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> 
     }
 
     if input.mouse_click.is_just_pressed() {
-        dispatch_event("app-event.request_pointer_lock")?;
+        dispatch_appevent_request_pointer_lock()?;
     } else if input.mouse_click.is_activated() {
         res.camera.drag(input.mouse_position_x, input.mouse_position_y);
     } else if input.mouse_click.is_just_released() {
-        dispatch_event("app-event.exit_pointer_lock")?;
+        dispatch_appevent_exit_pointer_lock()?;
     }
 
     if input.camera_zoom.increase {
@@ -758,8 +766,8 @@ fn update_camera(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> 
         res.camera.set_direction(glm::vec3(0.0, 0.0, -1.0));
         res.camera.set_axis_up(glm::vec3(0.0, 1.0, 0.0));
         res.camera.zoom = 45.0;
-        dispatch_event_with("app-event.change_camera_zoom", &res.camera.zoom.into())?;
-        dispatch_event_with("app-event.top_message", &"The camera have been reset.".into())?;
+        dispatch_appevent_change_camera_zoom(&res)?;
+        dispatch_appevent_top_message("The camera have been reset.".into())?;
     }
 
     res.camera.update_view()
@@ -985,7 +993,7 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
         let array = js_sys::Array::new();
         array.push(&pixels);
         array.push(&multiplier.into());
-        dispatch_event_with("app-event.screenshot", &array)?;
+        dispatch_appevent_screenshot(&array)?;
     }
 
     materials.main_buffer_stack.pop()?;

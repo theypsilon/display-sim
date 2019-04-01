@@ -1,4 +1,5 @@
 mod action_bindings;
+mod app_events;
 mod background_render;
 mod blur_render;
 mod boolean_button;
