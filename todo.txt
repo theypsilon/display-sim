@@ -1,1 +1,2 @@
 · Merge Dropfile area and test launcher.
+· Adjust auto pixel width for different resolutions 240p-like.
