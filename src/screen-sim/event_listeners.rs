@@ -105,8 +105,8 @@ pub fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<Owned
         .ok_or("Could not get gl-canvas")?
         .dyn_into::<EventTarget>()
         .map_err(|_| "Could not cast gl-canvas")?;
-    document.set_onkeydown(Some(onkeydown.as_ref().unchecked_ref()));
-    document.set_onkeyup(Some(onkeyup.as_ref().unchecked_ref()));
+    canvas.add_event_listener_with_callback("keydown", onkeydown.as_ref().unchecked_ref())?;
+    canvas.add_event_listener_with_callback("keyup", onkeydown.as_ref().unchecked_ref())?;
     canvas.add_event_listener_with_callback("mousedown", onmousedown.as_ref().unchecked_ref())?;
     canvas.add_event_listener_with_callback("mouseup", onmouseup.as_ref().unchecked_ref())?;
     canvas.add_event_listener_with_callback("mousemove", onmousemove.as_ref().unchecked_ref())?;

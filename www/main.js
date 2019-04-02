@@ -413,7 +413,7 @@ async function prepareUi () {
             let gif = gifCache[gifKey];
             if (!gif) {
                 const GIF = await new Promise(resolve => import(/* webpackPrefetch: true */ './gif.js').then(resolve));
-                gif = GIF();
+                gif = GIF.default();
                 gif.load(img.src);
                 await new Promise(resolve => {
                     gif.onload = () => resolve();

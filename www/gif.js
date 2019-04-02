@@ -419,7 +419,7 @@ const GIF = function () {
     return gif;
 }
 
-
+export default GIF;
 
 
 
