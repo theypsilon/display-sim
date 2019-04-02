@@ -2,8 +2,11 @@
 
 set -euo pipefail
 
-source ~/.nvm/nvm.sh
-nvm use stable
+if [ -f ~/.nvm/nvm.sh ] ; then
+    source ~/.nvm/nvm.sh
+    nvm use stable
+fi
+
 pushd www
 npm test
 popd
