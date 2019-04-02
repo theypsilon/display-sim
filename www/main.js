@@ -22,7 +22,7 @@ const scalingCustomStretchNearestDeo = document.getElementById('scaling-custom-s
 const scalingCustomInputsDeo = document.getElementById('scaling-custom-inputs');
 const dropZoneDeo = document.getElementById('drop-zone');
 const selectImageList = document.getElementById('select-image-list');
-// const restoreDefaultOptionsDeo = document.getElementById('restore-default-options');
+const restoreDefaultOptionsDeo = document.getElementById('restore-default-options');
 
 const optionPowerPreferenceSelect = document.getElementById('option-powerPreference');
 const optionScalingSelect = document.getElementById('option-scaling');
@@ -353,12 +353,10 @@ optionScalingSelect.onchange = () => {
     }
 };
 
-/*
 restoreDefaultOptionsDeo.onclick = () => {
     storage.removeAllOptions();
     loadInputValuesFromStorage();
 };
-*/
 
 prepareUi();
 

@@ -61,9 +61,11 @@
             </ul>
           </div>
         </div>
-        <div class="col-sm-4">
-          <h3>Options</h3>
-          <!--<input class="btn btn-crt btn-white pull-right" type="button" id="restore-default-options" value="Restore defaults">-->
+        <div class="container col-sm-4">
+          <div class="container">
+            <h3 class="col-sm-2">Options</h3>
+            <div class="col-sm-2"><input class="btn btn-crt btn-white" type="button" id="restore-default-options" value="Restore defaults"></div>
+          </div>
           <ul class="options">
             <li class="option-inputs">
               <label for="antialias" >WebGL Antialias:</label>
@@ -71,7 +73,7 @@
             </li>
 
             <li class="option-inputs">
-              <label for="option-powerPreference" >WebGL Power Preference:</label>
+              <label for="option-powerPreference" >WebGL Performance:</label>
               <select id="option-powerPreference" name="option-powerPreference">
                   <option value="default">Default</option>
                   <option value="high-performance">High Performance</option>
@@ -115,7 +117,7 @@
                 </li>
               </ul>
             </li>
-          </div>
+          </ul>
         </div>
         <input id="start-animation" class="start btn-crt btn-white" type="button" value="Play Simulation">
       </form>
