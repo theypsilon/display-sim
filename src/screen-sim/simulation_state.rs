@@ -1,12 +1,10 @@
 use js_sys::ArrayBuffer;
-use wasm_bindgen::prelude::{Closure, JsValue};
+use wasm_bindgen::prelude::JsValue;
 use web_sys::WebGl2RenderingContext;
 
 use enum_len_derive::EnumLen;
 use getters_by_type::GettersMutByType;
 use num_derive::{FromPrimitive, ToPrimitive};
-use std::cell::RefCell;
-use std::rc::Rc;
 
 use crate::background_render::BackgroundRender;
 use crate::blur_render::BlurRender;
@@ -43,26 +41,6 @@ pub struct AnimationData {
 pub struct AnimationStep {
     pub buffer: ArrayBuffer,
     pub delay: u32,
-}
-
-pub type OwnedClosure = Option<Closure<FnMut(JsValue)>>;
-
-pub struct StateOwner {
-    pub closures: RefCell<Vec<OwnedClosure>>,
-    pub resources: Rc<RefCell<Resources>>,
-    pub input: RefCell<Input>,
-    pub materials: RefCell<Materials>,
-}
-
-impl StateOwner {
-    pub fn new_rc(resources: Rc<RefCell<Resources>>, materials: Materials, input: Input) -> Rc<StateOwner> {
-        Rc::new(StateOwner {
-            closures: RefCell::new(Vec::new()),
-            resources,
-            materials: RefCell::new(materials),
-            input: RefCell::new(input),
-        })
-    }
 }
 
 // Simulation Resources

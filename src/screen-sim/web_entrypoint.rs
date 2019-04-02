@@ -1,14 +1,76 @@
+use std::cell::RefCell;
 use std::rc::Rc;
-use wasm_bindgen::prelude::{Closure, JsValue};
-use wasm_bindgen::JsCast;
-use web_sys::{CustomEvent, EventTarget, KeyboardEvent, MouseEvent, WheelEvent};
+use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
+use web_sys::{CustomEvent, EventTarget, KeyboardEvent, MouseEvent, WebGl2RenderingContext, WheelEvent, Window};
 
 use crate::action_bindings::on_button_action;
-use crate::simulation_state::{Input, OwnedClosure, StateOwner};
-use crate::wasm_error::WasmResult;
+use crate::console;
+use crate::simulation_main_functions::{init_resources, load_materials, simulation_tick};
+use crate::simulation_state::{AnimationData, Input, Materials, Resources};
+use crate::wasm_error::{WasmError, WasmResult};
 use crate::web_utils::window;
 
-pub fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<OwnedClosure>> {
+pub type OwnedClosure = Option<Closure<FnMut(JsValue)>>;
+
+pub struct StateOwner {
+    pub closures: RefCell<Vec<OwnedClosure>>,
+    pub resources: Rc<RefCell<Resources>>,
+    pub input: RefCell<Input>,
+    pub materials: RefCell<Materials>,
+}
+
+impl StateOwner {
+    pub fn new_rc(resources: Rc<RefCell<Resources>>, materials: Materials, input: Input) -> Rc<StateOwner> {
+        Rc::new(StateOwner {
+            closures: RefCell::new(Vec::new()),
+            resources,
+            materials: RefCell::new(materials),
+            input: RefCell::new(input),
+        })
+    }
+}
+
+pub fn web_entrypoint(gl: JsValue, res: Rc<RefCell<Resources>>, animation: AnimationData) -> WasmResult<()> {
+    let gl = gl.dyn_into::<WebGl2RenderingContext>()?;
+    init_resources(&mut res.borrow_mut(), animation)?;
+    let owned_state = StateOwner::new_rc(res, load_materials(gl)?, Input::new()?);
+    let frame_closure: Closure<FnMut(JsValue)> = {
+        let owned_state = Rc::clone(&owned_state);
+        let window = window()?;
+        Closure::wrap(Box::new(move |_| {
+            if let Err(e) = web_entrypoint_iteration(&owned_state, &window) {
+                console!(error. "An unexpected error happened during web_entrypoint_iteration.", e.to_js());
+            }
+        }))
+    };
+    window()?.request_animation_frame(frame_closure.as_ref().unchecked_ref())?;
+    let mut closures = owned_state.closures.borrow_mut();
+    closures.push(Some(frame_closure));
+
+    let listeners = set_event_listeners(&owned_state)?;
+    closures.extend(listeners);
+
+    Ok(())
+}
+
+pub fn print_error(e: WasmError) {
+    match e {
+        WasmError::Js(o) => console!(error. "An unexpected error ocurred.", o),
+        WasmError::Str(s) => console!(error. "An unexpected error ocurred.", s),
+    };
+}
+
+fn web_entrypoint_iteration(owned_state: &StateOwner, window: &Window) -> WasmResult<()> {
+    let mut input = owned_state.input.borrow_mut();
+    let mut resources = owned_state.resources.borrow_mut();
+    let mut materials = owned_state.materials.borrow_mut();
+    let closures = owned_state.closures.borrow();
+    simulation_tick(&mut input, &mut resources, &mut materials)?;
+    window.request_animation_frame(closures[0].as_ref().ok_or("Wrong closure.")?.as_ref().unchecked_ref())?;
+    Ok(())
+}
+
+fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<OwnedClosure>> {
     let onblur: Closure<FnMut(JsValue)> = {
         let state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |_: JsValue| {

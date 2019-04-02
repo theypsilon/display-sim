@@ -3,10 +3,8 @@ use console_error_panic_hook::set_once as set_panic_hook;
 use js_sys::ArrayBuffer;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
-use crate::console;
-use crate::simulation_program::program;
 use crate::simulation_state::{AnimationData, AnimationStep, Resources};
-use crate::wasm_error::WasmError;
+use crate::web_entrypoint::{print_error, web_entrypoint};
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -20,16 +18,9 @@ pub fn load_simulation_resources() -> ResourcesWasm {
 #[wasm_bindgen]
 pub fn run_program(gl: JsValue, res: &ResourcesWasm, animation: AnimationWasm) {
     set_panic_hook();
-    if let Err(e) = program(gl, res.data.clone(), animation.into_animation_data()) {
+    if let Err(e) = web_entrypoint(gl, res.data.clone(), animation.into_animation_data()) {
         print_error(e);
     }
-}
-
-fn print_error(e: WasmError) {
-    match e {
-        WasmError::Js(o) => console!(error. "An unexpected error ocurred.", o),
-        WasmError::Str(s) => console!(error. "An unexpected error ocurred.", s),
-    };
 }
 
 #[wasm_bindgen]
