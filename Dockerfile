@@ -63,7 +63,8 @@ ADD www/package*.json ./
 RUN npm install --dev
 ADD www .
 COPY --from=wasm-artifact /wasm/* ./
-RUN npm run build \
+RUN npm test \
+    && npm run build \
     && cp *.css dist/ \
     && cp favicon.ico dist/ \
     && mkdir -p dist/assets/ && cp -r assets/ dist/assets/
