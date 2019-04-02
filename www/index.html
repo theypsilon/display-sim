@@ -46,9 +46,9 @@
 
     <section class="bg-green text-white form">
       <form class="container" id="form" name="form">
-        <div class="render-tests row">
-          <div class="col-sm-12 margin-sm-bottom">
-            <h3>Select Image:</h3>
+        <div class="col-sm-8 render-tests row">
+          <div class="margin-sm-bottom">
+            <h3>Select Image</h3>
             <input type="file" id="file" class="display-none" accept="image/*">
             <ul id="select-image-list" class="well select-image col-sm-12">
               <li class="selectable-image selected-image" id="first-preview-image"><img src="assets/wwix.gif"><span>256 ✕ 224</span><br></li>
@@ -59,38 +59,41 @@
               <li class="selectable-image"><img src="assets/dkc2.png"><span>256 ✕ 224</span><br></li>
               <li id="drop-zone"><span>upload your image here</span></li>
             </ul>
-            <input id="start-animation" class="start btn-crt btn-white" type="button" value="Play Simulation">
           </div>
         </div>
-        <div>
+        <div class="col-sm-4">
           <h3>Options</h3>
+          <!--<input class="btn btn-crt btn-white pull-right" type="button" id="restore-default-options" value="Restore defaults">-->
           <div class="options">
             <div class="option-inputs">
               <label class="block">WebGl Context:</label>
               <div class="option-inputs">
-                <label for="antialias">antialias:</label>
+                <label for="antialias" class="block">antialias:</label>
                 <input type="checkbox" id="antialias" value="antialias">
               </div>
 
               <div class="option-inputs">
-                <label class="margin-left">powerPreference:</label>
-                <input type="radio" id="powerPreference-1" name="powerPreference" value="default" /><div class="option-text">default</div>
-                <input type="radio" id="powerPreference-2" name="powerPreference" value="high-performance" /><div class="option-text">high-performance</div>
-                <input type="radio" id="powerPreference-3" name="powerPreference" value="low-power" /><div class="option-text">low-power</div>
+                <label for="option-powerPreference" class="block">power preference:</label>
+                <select id="option-powerPreference" name="option-powerPreference">
+                    <option value="default">default</option>
+                    <option value="high-performance">high-performance</option>
+                    <option value="low-power">low-power</option>
+                </select>
               </div>
             </div>
             <div class="option-inputs">
-              <label class="block">Scaling:</label>
-              <div class="scaling-radio" title="Auto detect">
-                <input type="radio" id="scaling-auto" name="scaling" value="0" />
-                <div class="option-text">auto detect</div>
-              </div>
-              <div class="scaling-radio" title="None"><input type="radio" id="scaling-none" name="scaling" value="1" /><div class="option-text">none</div></div>
-              <div class="scaling-radio" title="4:3 on full image"><input type="radio" id="scaling-4:3" name="scaling" value="-1" /><div class="option-text">4:3 on full image</div></div>
-              <div class="scaling-radio" title="Stretch to both edges"><input type="radio" id="scaling-stretch-both" name="scaling" /><div class="option-text">stretch to both edges</div></div>
-              <div class="scaling-radio" title="Stretch to nearest edge, keeps proportions"><input type="radio" id="scaling-stretch-nearest" name="scaling" /><div class="option-text">stretch to nearest edge</div></div>
-              <div class="scaling-radio" title="Introduce the values yourself"><input type="radio" id="scaling-custom" name="scaling" /><div class="option-text">custom</div></div>
-              <div id="scaling-custom-inputs" class="option-inputs display-none">
+              <label for="option-scaling" class="block">Scaling:</label>
+              <select id="option-scaling" name="option-scaling">
+                  <option value="scaling-auto" title="Auto detect">auto detect</option>
+                  <option value="scaling-none" title="None">none</option>
+                  <option value="scaling-4:3" title="4:3 on full image">4:3 on full image</option>
+                  <option value="scaling-stretch-both" title="Stretch to both edges">stretch to both edges</option>
+                  <option value="scaling-stretch-nearest" title="Stretch to nearest edge, keeps proportions">stretch to nearest edge</option>
+                  <option value="scaling-custom" title="Introduce the values yourself">custom</option>
+              </select>
+            </div>
+            <div class="option-inputs">
+            <div id="scaling-custom-inputs" class="option-inputs display-none">
                 <label for="scaling-custom">Custom Scaling:</label>
                 <div class="option-inputs">
                   <label>background resolution:</label>
@@ -111,9 +114,9 @@
                 </div>
               </div>
             </div>
-            <input class="btn btn-crt btn-white pull-right" type="button" id="restore-default-options" value="Restore defaults">
           </div>
         </div>
+        <input id="start-animation" class="start btn-crt btn-white" type="button" value="Play Simulation">
       </form>
     </section>
 

@@ -3,13 +3,10 @@ const scaling43HtmlId = 'scaling-4:3';
 const scalingCustomHtmlId = 'scaling-custom';
 const scalingStretchToBothEdgesHtmlId = 'scaling-stretch-both';
 const scalingStretchToNearestEdgeHtmlId = 'scaling-stretch-nearest';
-const powerPreferenceDefaultId = 'powerPreference-1';
+const powerPreferenceDefaultHtml = 'default';
 const glCanvasHtmlId = 'gl-canvas';
 const topMessageHtmlId = 'top-message';
 const firstPreviewImageId = 'first-preview-image';
-
-const scalingHtmlName = 'scaling';
-const powerPreferenceHtmlName = 'powerPreference';
 
 const uiDeo = document.getElementById('ui');
 const formDeo = document.getElementById('form');
@@ -28,6 +25,9 @@ const dropZoneDeo = document.getElementById('drop-zone');
 const selectImageList = document.getElementById('select-image-list');
 const previewHeightDeo = document.getElementById('preview-height');
 const restoreDefaultOptionsDeo = document.getElementById('restore-default-options');
+
+const optionPowerPreferenceSelect = document.getElementById('option-powerPreference');
+const optionScalingSelect = document.getElementById('option-scaling');
 
 const infoHideDeo = document.getElementById('info-hide');
 const infoPanelDeo = document.getElementById('info-panel');
@@ -80,6 +80,7 @@ const getTopMessageDeo = () => document.getElementById(topMessageHtmlId);
 const visibility = makeVisibility();
 const storage = makeStorage();
 const gifCache = {};
+window.gifCache = gifCache;
 let previewDeo = document.getElementById(firstPreviewImageId);
 let simulationResources = undefined;
 
@@ -286,7 +287,7 @@ function customEventOnChange(deo, kind, parse) {
 document.querySelectorAll('.selectable-image').forEach(deo => {
     const img = deo.querySelector('img');
     img.isGif = img.src.includes(".gif");
-    img.previewUrl = img.src;
+    img.isAsset = true;
     makeImageSelectable(deo);
 });
 function makeImageSelectable(deo) {
@@ -346,232 +347,219 @@ dropZoneDeo.ondrop = event => {
     const url = (window.URL || window.webkitURL).createObjectURL(file);
     processFileToUpload(url);
 };
-document.form[scalingHtmlName].forEach(s => {
-    s.onclick = function() {
-        if (this.id === scalingCustomHtmlId) {
-            visibility.showScaleCustomInputs();
-        } else {
-            visibility.hideScaleCustomInputs();
-        }
+optionScalingSelect.onchange = () => {
+    if (optionScalingSelect.value == 'scaling-custom') {
+        visibility.showScaleCustomInputs();
+    } else {
+        visibility.hideScaleCustomInputs();
     }
-});
-restoreDefaultOptionsDeo.onclick = () => {
-    storage.removeAllOptions();
-    const scalingSelectionInput = storage.getScalingInputElement();
-    scalingSelectionInput.checked = false;
-    const powerPreferenceInput = storage.getPowerPreferenceInputElement();
-    powerPreferenceInput.checked = false;
-    loadInputValuesFromStorage();
 };
+
+/*restoreDefaultOptionsDeo.onclick = () => {
+    storage.removeAllOptions();
+    loadInputValuesFromStorage();
+};*/
 
 prepareUi();
 
-function prepareUi() {
+async function prepareUi() {
     loadInputValuesFromStorage();
 
     visibility.showUi();
     visibility.hideLoading();
 
-    const startPromise = new Promise((startResolve, startReject) => {
-        startAnimationDeo.onclick = () => {
-            visibility.hideUi();
-            visibility.showLoading();
-            setTimeout(async () => {
-                if (previewDeo.id === firstPreviewImageId) {
-                    const animationPromise = new Promise((imgResolve, imgReject) => {
-                        const img = new Image();
-                        img.src = 'assets/wwix_spritesheet.png';
-                        img.onload = () => {
-                            const canvas = document.createElement('canvas');
-                            const ctx = canvas.getContext('2d');
-                            canvas.width = img.width;
-                            canvas.height = img.height;
-                            ctx.drawImage(img, 0, 0);
-                            const columns = Math.floor(img.width / 256);
-                            const rawImgs = [];
-                            for (let i = 0; i <= 45; i++) {
-                                const x = i % columns;
-                                const y = Math.floor(i / columns);
-                                rawImgs.push({raw: ctx.getImageData(x * 256, y * 224, 256, 224), delay: 16});
-                            }
-                            imgResolve(rawImgs);
-                        }
-                        img.onerror = (e) => imgReject(e);
-                    });
-                    const rawImgs = await animationPromise;
-                    startResolve(rawImgs)
-                } else {
-                    const img = previewDeo.querySelector('img');
-                    const canvases = await loadCanvases(img);
-                    const rawImgs = canvases.map(({ctx, delay}) => ({raw: ctx.getImageData(0, 0, img.width, img.height), delay}));
-                    startResolve(rawImgs)
-                }
-            }, 50);
+    await new Promise(resolve => startAnimationDeo.onclick = resolve);
 
-            async function loadCanvases(preview) {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                canvas.width = preview.width;
-                canvas.height = preview.height;
-                ctx.drawImage(preview, 0, 0);
-                if (!preview.isGif) {
-                    return [{ctx, delay: 16}];
-                }
-                benchmark("loading gif");
-                const gifKey = canvas.toDataURL();
-                let gif = gifCache[gifKey];
-                if (!gif) {
-                    gif = GIF();
-                    gif.load(preview.previewUrl);
-                    await new Promise(resolve => gif.onload = () => resolve());
-                    gifCache[gifKey] = gif;
-                }
-                benchmark("gif loaded", gif);
-                return gif.frames.map(frame => ({ctx: frame.image.getContext('2d'), delay: frame.delay}));
+    visibility.hideUi();
+    visibility.showLoading();
+
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    const rawImgs = await async function () {
+        if (previewDeo.id === firstPreviewImageId) {
+            const img = new Image();
+            img.src = 'assets/wwix_spritesheet.png';
+            await new Promise((resolve, reject) => {
+                img.onload = resolve;
+                img.onerror = reject;
+            });
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+            const columns = Math.floor(img.width / 256);
+            const rawImgs = [];
+            for (let i = 0; i <= 45; i++) {
+                const x = i % columns;
+                const y = Math.floor(i / columns);
+                rawImgs.push({raw: ctx.getImageData(x * 256, y * 224, 256, 224), delay: 16});
             }
-        }
-    });
-
-    startPromise.then((rawImgs) => {
-        benchmark('image readed');
-        const dpi = window.devicePixelRatio;
-        const width = window.screen.width;
-        const height = window.screen.height;
-
-        const checkedScalingInput = formDeo.querySelector('input[name=\''+scalingHtmlName+'\']:checked');
-        let scaleX = 1;
-        let stretch = false;
-        storage.setScalingId(checkedScalingInput.id);
-
-        const imageWidth = rawImgs[0].raw.width;
-        const imageHeight = rawImgs[0].raw.height;
-        let backgroundWidth = imageWidth;
-        let backgroundHeight = imageHeight;
-
-        switch(checkedScalingInput.id) {
-            case scalingAutoHtmlId:
-                scaleX = imageWidth <= 1024 ? (4/3)/(imageWidth/imageHeight) : 1;
-                window.dispatchEvent(new CustomEvent('app-event.top_message', {
-                    detail: 'Scaling auto detect: ' + (scaleX === 1 ? 'none.' : '4:3 on full image.')
-                }));
-                break;
-            case scaling43HtmlId:
-                scaleX = (4/3)/(imageWidth/imageHeight);
-                break;
-            case scalingStretchToBothEdgesHtmlId:
-                scaleX = (width/height)/(imageWidth/imageHeight);
-                stretch = true;
-                break;
-            case scalingStretchToNearestEdgeHtmlId:
-                stretch = true;
-                break;
-            case scalingCustomHtmlId:
-                stretch = scalingCustomStretchNearestDeo.checked;
-                storage.setCustomResWidth(scalingCustomResWidthDeo.value);
-                storage.setCustomResHeight(scalingCustomResHeightDeo.value);
-                storage.setCustomArX(scalingCustomArXDeo.value);
-                storage.setCustomArY(scalingCustomArYDeo.value);
-                storage.setCustomStretchNearest(stretch);
-                backgroundWidth = +scalingCustomResWidthDeo.value;
-                backgroundHeight = +scalingCustomResHeightDeo.value;
-                scaleX = (+scalingCustomArXDeo.value / +scalingCustomArYDeo.value)/(backgroundWidth/backgroundHeight);
-                break;
-        }
-
-        lightColorDeo.value = '#FFFFFF';
-        brightnessColorDeo.value = '#FFFFFF';
-
-        const canvas = document.createElement('canvas');
-
-        canvas.id = glCanvasHtmlId;
-
-        canvas.width = Math.floor(width * dpi / 80) * 80;
-        canvas.height = Math.floor(height * dpi / 60) * 60;
-
-        canvas.style.width = width;
-        canvas.style.height = height;
-
-        infoPanelDeo.style.setProperty('max-height', height - 36);
-
-        document.body.appendChild(canvas);
-
-        const checkedPowerPreferenceInput = formDeo.querySelector('input[name=\''+powerPreferenceHtmlName+'\']:checked');
-
-        const ctxOptions = {
-            alpha: false,
-            antialias: antialiasDeo.checked,
-            depth: true,
-            failIfMajorPerformanceCaveat: false,
-            powerPreference: checkedPowerPreferenceInput.value,
-            premultipliedAlpha: false,
-            preserveDrawingBuffer: false,
-            stencil: false
-        };
-        storage.setAntiAliasing(ctxOptions.antialias);
-        storage.setPowerPreference(checkedPowerPreferenceInput.id);
-        benchmark('gl context form', ctxOptions);
-        const gl = canvas.getContext('webgl2', ctxOptions);
-
-        var documentElement = document.documentElement;
-        documentElement.requestFullscreen = documentElement.requestFullscreen
-            || documentElement.webkitRequestFullScreen
-            || documentElement['mozRequestFullScreen']
-            || documentElement.msRequestFullscreen;
-
-        canvas.onmousedown = (e) => {
-            if (e.buttons != 1) return;
-            canvas.requestPointerLock();
-            if (window.screen.width != window.innerWidth && window.screen.height != window.innerHeight) {
-                documentElement.requestFullscreen();
+            return rawImgs;
+        } else {
+            const img = previewDeo.querySelector('img');
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+            if (!img.isGif) {
+                return [{raw: ctx.getImageData(0, 0, img.width, img.height), delay: 16}];
             }
-        };
+            benchmark("loading gif");
+            const gifKey = img.isAsset ? img.src : canvas.toDataURL();
+            let gif = gifCache[gifKey];
+            if (!gif) {
+                gif = GIF();
+                gif.load(img.src);
+                await new Promise(resolve => gif.onload = () => resolve());
+                gifCache[gifKey] = gif;
+            }
+            benchmark("gif loaded", gif);
+            return gif.frames
+                .map(frame => ({
+                    raw: frame.image.getContext('2d').getImageData(0, 0, img.width, img.height), 
+                    delay: frame.delay
+                }))
+        }
+    }();
 
-        canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock;
-        document.exitPointerLock = document.exitPointerLock || document.mozExitPointerLock;
+    benchmark('image readed');
+    const dpi = window.devicePixelRatio;
+    const width = window.screen.width;
+    const height = window.screen.height;
 
-        if (!gl) {
+    let scaleX = 1;
+    let stretch = false;
+    storage.setScalingSelectOption(optionScalingSelect.value);
+
+    const imageWidth = rawImgs[0].raw.width;
+    const imageHeight = rawImgs[0].raw.height;
+    let backgroundWidth = imageWidth;
+    let backgroundHeight = imageHeight;
+
+    switch(optionScalingSelect.value) {
+        case scalingAutoHtmlId:
+            scaleX = imageWidth <= 1024 ? (4/3)/(imageWidth/imageHeight) : 1;
             window.dispatchEvent(new CustomEvent('app-event.top_message', {
-                detail: 'WebGL is not working on your browser, try restarting it! And remember, this works only on a PC with updated browser and graphics drivers.'
+                detail: 'Scaling auto detect: ' + (scaleX === 1 ? 'none.' : '4:3 on full image.')
             }));
-            alert("Error! WebGL context could not be created!");
-            console.error(new Error('Could not get webgl context.'));
-            canvas.remove();
-            prepareUi();
-            return;
+            break;
+        case scaling43HtmlId:
+            scaleX = (4/3)/(imageWidth/imageHeight);
+            break;
+        case scalingStretchToBothEdgesHtmlId:
+            scaleX = (width/height)/(imageWidth/imageHeight);
+            stretch = true;
+            break;
+        case scalingStretchToNearestEdgeHtmlId:
+            stretch = true;
+            break;
+        case scalingCustomHtmlId:
+            stretch = scalingCustomStretchNearestDeo.checked;
+            storage.setCustomResWidth(scalingCustomResWidthDeo.value);
+            storage.setCustomResHeight(scalingCustomResHeightDeo.value);
+            storage.setCustomArX(scalingCustomArXDeo.value);
+            storage.setCustomArY(scalingCustomArYDeo.value);
+            storage.setCustomStretchNearest(stretch);
+            backgroundWidth = +scalingCustomResWidthDeo.value;
+            backgroundHeight = +scalingCustomResHeightDeo.value;
+            scaleX = (+scalingCustomArXDeo.value / +scalingCustomArYDeo.value)/(backgroundWidth/backgroundHeight);
+            break;
+    }
+
+    lightColorDeo.value = '#FFFFFF';
+    brightnessColorDeo.value = '#FFFFFF';
+
+    const canvas = document.createElement('canvas');
+
+    canvas.id = glCanvasHtmlId;
+
+    canvas.width = Math.floor(width * dpi / 80) * 80;
+    canvas.height = Math.floor(height * dpi / 60) * 60;
+
+    canvas.style.width = width;
+    canvas.style.height = height;
+
+    infoPanelDeo.style.setProperty('max-height', height - 36);
+
+    document.body.appendChild(canvas);
+
+    const ctxOptions = {
+        alpha: false,
+        antialias: antialiasDeo.checked,
+        depth: true,
+        failIfMajorPerformanceCaveat: false,
+        powerPreference: optionPowerPreferenceSelect.value,
+        premultipliedAlpha: false,
+        preserveDrawingBuffer: false,
+        stencil: false
+    };
+
+    storage.setAntiAliasing(ctxOptions.antialias);
+    storage.setPowerPreferenceSelectOption(optionPowerPreferenceSelect.value);
+
+    benchmark('gl context form', ctxOptions);
+    const gl = canvas.getContext('webgl2', ctxOptions);
+
+    var documentElement = document.documentElement;
+    documentElement.requestFullscreen = documentElement.requestFullscreen
+        || documentElement.webkitRequestFullScreen
+        || documentElement['mozRequestFullScreen']
+        || documentElement.msRequestFullscreen;
+
+    canvas.onmousedown = (e) => {
+        if (e.buttons != 1) return;
+        canvas.requestPointerLock();
+        if (window.screen.width != window.innerWidth && window.screen.height != window.innerHeight) {
+            documentElement.requestFullscreen();
         }
+    };
 
-        import(/* webpackPrefetch: true */'./crt_3d_sim').then(wasm => {
-            const animation = new wasm.AnimationWasm(
-                imageWidth, imageHeight, // to read the image pixels
-                backgroundWidth, backgroundHeight, // to calculate model distance to the camera
-                canvas.width, canvas.height, // gl.viewport
-                +scaleX, stretch
-            );
-            for (let i = 0; i < rawImgs.length; i++) {
-                const rawImg = rawImgs[i];
-                animation.add(rawImg.raw.data.buffer, rawImg.delay);
-            }
+    canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock;
+    document.exitPointerLock = document.exitPointerLock || document.mozExitPointerLock;
 
-            if (simulationResources === undefined) {
-                benchmark('calling wasm load_simulation_resources');
-                simulationResources = wasm.load_simulation_resources();
-                benchmark('wasm load_simulation_resources done');
-            }
-            benchmark('calling wasm run_program');
-            wasm.run_program(gl, simulationResources, animation);
-            benchmark('wasm run_program done');
+    if (!gl) {
+        window.dispatchEvent(new CustomEvent('app-event.top_message', {
+            detail: 'WebGL is not working on your browser, try restarting it! And remember, this works only on a PC with updated browser and graphics drivers.'
+        }));
+        alert("Error! WebGL context could not be created!");
+        console.error(new Error('Could not get webgl context.'));
+        canvas.remove();
+        prepareUi();
+        return;
+    }
 
-            visibility.hideLoading();
-            visibility.showInfoPanel();
-        });
-    });
+    const wasm = await new Promise(resolve => import(/* webpackPrefetch: true */'./crt_3d_sim').then(resolve));
+
+    const animation = new wasm.AnimationWasm(
+        imageWidth, imageHeight, // to read the image pixels
+        backgroundWidth, backgroundHeight, // to calculate model distance to the camera
+        canvas.width, canvas.height, // gl.viewport
+        +scaleX, stretch
+    );
+    for (let i = 0; i < rawImgs.length; i++) {
+        const rawImg = rawImgs[i];
+        animation.add(rawImg.raw.data.buffer, rawImg.delay);
+    }
+
+    if (simulationResources === undefined) {
+        benchmark('calling wasm load_simulation_resources');
+        simulationResources = wasm.load_simulation_resources();
+        benchmark('wasm load_simulation_resources done');
+    }
+    benchmark('calling wasm run_program');
+    wasm.run_program(gl, simulationResources, animation);
+    benchmark('wasm run_program done');
+
+    visibility.hideLoading();
+    visibility.showInfoPanel();
 }
 
 function loadInputValuesFromStorage() {
-    const scalingSelectionInput = storage.getScalingInputElement();
-    scalingSelectionInput.checked = true;
-    const scalingSelectionId = scalingSelectionInput.id;
-    if (scalingSelectionId === scalingCustomHtmlId) {
+    optionScalingSelect.value = storage.getScalingSelectOption();
+    optionPowerPreferenceSelect.value = storage.getPowerPreferenceSelectOption();
+    if (optionScalingSelect.value === scalingCustomHtmlId) {
         visibility.showScaleCustomInputs();
     } else {
         visibility.hideScaleCustomInputs();
@@ -582,8 +570,6 @@ function loadInputValuesFromStorage() {
     scalingCustomArYDeo.value = storage.getCustomArY();
     scalingCustomStretchNearestDeo.checked = storage.getCustomStretchNearest();
     antialiasDeo.checked = storage.getAntiAliasing();
-    const powerPreferenceInput = storage.getPowerPreferenceInputElement();
-    powerPreferenceInput.checked = true;
 }
 
 async function processFileToUpload(url) {
@@ -598,7 +584,6 @@ async function processFileToUpload(url) {
     const img = new Image();
     img.src = previewUrl;
     img.isGif = xhr.response.type === 'image/gif';
-    img.previewUrl = previewUrl;
 
     await new Promise(resolve => img.onload = () => resolve());
 
@@ -623,17 +608,19 @@ async function processFileToUpload(url) {
 }
 
 function makeStorage() {
-    const optionScalingId = 'option-scaling-id';
+    const optionScalingSelect = 'option-scaling';
+    const optionPowerPreferenceSelect = 'option-powerPreference';
     const optionScalingCustomResWidth = 'option-scaling-custom-resolution-width';
     const optionScalingCustomResHeight = 'option-scaling-custom-resolution-height';
     const optionScalingCustomArX = 'option-scaling-custom-aspect-ratio-x';
     const optionScalingCustomArY = 'option-scaling-custom-aspect-ratio-y';
     const optionScalingCustomStretchNearest = 'option-scaling-custom-stretch-nearest';
-    const optionPowerPreferenceId = 'option-powerPreference-id';
     const optionAntialias = 'option-antialias';
     return {
-        getScalingInputElement: () => geElementByStoredIdOrBackup(optionScalingId, scalingAutoHtmlId),
-        setScalingId: (scalingId) => localStorage.setItem(optionScalingId, scalingId),
+        getScalingSelectOption: () => localStorage.getItem(optionScalingSelect) || scalingAutoHtmlId,
+        setScalingSelectOption: option => localStorage.setItem(optionScalingSelect, option),
+        getPowerPreferenceSelectOption: () => localStorage.getItem(optionPowerPreferenceSelect) || powerPreferenceDefaultHtml,
+        setPowerPreferenceSelectOption: option => localStorage.setItem(optionPowerPreferenceSelect, option),
         getCustomResWidth: () => localStorage.getItem(optionScalingCustomResWidth) || 256,
         setCustomResWidth: width => localStorage.setItem(optionScalingCustomResWidth, width),
         getCustomResHeight: () => localStorage.getItem(optionScalingCustomResHeight) || 224,
@@ -644,24 +631,19 @@ function makeStorage() {
         setCustomArY: y => localStorage.setItem(optionScalingCustomArY, y),
         getCustomStretchNearest: () => localStorage.getItem(optionScalingCustomStretchNearest) === 'true',
         setCustomStretchNearest: stretch => localStorage.setItem(optionScalingCustomStretchNearest, stretch ? 'true' : 'false'),
-        getPowerPreferenceInputElement: () => geElementByStoredIdOrBackup(optionPowerPreferenceId, powerPreferenceDefaultId),
-        setPowerPreference: (powerPreference) => localStorage.setItem(optionPowerPreferenceId, powerPreference),
         getAntiAliasing: () => localStorage.getItem(optionAntialias) !== 'false',
         setAntiAliasing: antiAliasing => localStorage.setItem(optionAntialias, antiAliasing ? 'true' : 'false'),
         removeAllOptions: ()  => {
-            localStorage.removeItem(optionScalingId);
+            localStorage.removeItem(optionScalingSelect);
+            localStorage.removeItem(optionPowerPreferenceSelect);
             localStorage.removeItem(optionScalingCustomResWidth);
             localStorage.removeItem(optionScalingCustomResHeight);
             localStorage.removeItem(optionScalingCustomArX);
             localStorage.removeItem(optionScalingCustomArY);
             localStorage.removeItem(optionScalingCustomStretchNearest);
-            localStorage.removeItem(optionPowerPreferenceId);
             localStorage.removeItem(optionAntialias);
         }
     };
-    function geElementByStoredIdOrBackup(storedId, backupId) {
-        return document.getElementById(localStorage.getItem(storedId)) || document.getElementById(backupId);
-    }
 }
 
 function makeVisibility() {
