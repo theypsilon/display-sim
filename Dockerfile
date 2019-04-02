@@ -34,6 +34,7 @@ RUN set -eux; \
     rustc --version; \
     wget -qO- https://rustwasm.github.io/wasm-pack/installer/init.sh | sh; \
     rustup target add wasm32-unknown-unknown --toolchain ${RUST_TOOLCHAIN}; \
+    rustup component add clippy; \
     wget -qO- https://github.com/WebAssembly/binaryen/releases/download/${BINARYEN_VER}/binaryen-${BINARYEN_VER}-x86-linux.tar.gz | tar xvz binaryen-${BINARYEN_VER}/wasm-opt ; \
     mv binaryen-${BINARYEN_VER}/wasm-opt .; \
     apt-get remove -y --auto-remove wget; \
@@ -50,7 +51,8 @@ RUN mkdir -p src && mkdir -p src/screen-sim && touch src/screen-sim/lib.rs \
     && bash -c 'rm -rf ${CARGO_HOME}/registry/src/*/*/{!Cargo.toml}' \
     && rm -rf target/debug target/wasm32-unknown-unknown/debug
 ADD src/screen-sim /app/src/screen-sim
-RUN cargo test --release \
+RUN cargo clippy \
+    && cargo test --release \
     && wasm-pack build \
     && mkdir -p /wasm && cp -r pkg/crt_3d_sim* /wasm/ \
     && ./wasm-opt --debug -O3 -o ../wasm/crt_3d_sim_bg.wasm ../wasm/crt_3d_sim_bg.wasm >/dev/null 2>&1 \

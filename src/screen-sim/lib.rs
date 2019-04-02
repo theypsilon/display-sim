@@ -1,5 +1,6 @@
 #![allow(clippy::useless_attribute)]
 #![allow(clippy::identity_op)]
+#![allow(clippy::float_cmp)]
 
 mod action_bindings;
 mod app_events;
