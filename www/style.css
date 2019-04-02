@@ -89,9 +89,17 @@ body {
     text-align: center;
 }
 
+#option-header, #option-header-container, #option-header-restore {
+    padding-left: 0;
+    margin-left: 0;
+    margin-right: 0;
+    padding-right: 0;
+}
+
 #restore-default-options {
     display: block;
     margin-top: 15px;
+    margin-bottom: 15px;
     font-size: 80%;
 }
 
