@@ -51,69 +51,70 @@
             <h3>Select Image</h3>
             <input type="file" id="file" class="display-none" accept="image/*">
             <ul id="select-image-list" class="well select-image col-sm-12">
-              <li class="selectable-image selected-image" id="first-preview-image"><img src="assets/wwix.gif"><span>256 ✕ 224</span><br></li>
-              <li class="selectable-image"><img src="assets/seiken.png"><span>256 ✕ 224</span><br></li>
-              <li class="selectable-image"><img src="assets/sonicscroll.gif"><span>320 ✕ 224</span><br></li>
-              <li class="selectable-image"><img src="assets/metroid.gif"><span>256 ✕ 238</span><br></li>
-              <li class="selectable-image"><img src="assets/tf4.gif"><span>320 ✕ 224</span><br></li>
-              <li class="selectable-image"><img src="assets/dkc2.png"><span>256 ✕ 224</span><br></li>
-              <li id="drop-zone"><span>upload your image here</span></li>
+              <li class="selectable-image selected-image" id="first-preview-image"><div><img src="assets/wwix.gif"><span>256 ✕ 224</span></div></li>
+              <li class="selectable-image"><div><img src="assets/seiken.png"><span>256 ✕ 224</span></div></li>
+              <li class="selectable-image"><div><img src="assets/sonicscroll.gif"><span>320 ✕ 224</span></div></li>
+              <li class="selectable-image"><div><img src="assets/metroid.gif"><span>256 ✕ 238</span></div></li>
+              <li class="selectable-image"><div><img src="assets/tf4.gif"><span>320 ✕ 224</span></div></li>
+              <li class="selectable-image"><div><img src="assets/dkc2.png"><span>256 ✕ 224</span></div></li>
+              <li id="drop-zone"><span>Add your image here</span></li>
             </ul>
           </div>
         </div>
         <div class="col-sm-4">
           <h3>Options</h3>
           <!--<input class="btn btn-crt btn-white pull-right" type="button" id="restore-default-options" value="Restore defaults">-->
-          <div class="options">
-            <div class="option-inputs">
-              <label class="block">WebGl Context:</label>
-              <div class="option-inputs">
-                <label for="antialias" class="block">antialias:</label>
-                <input type="checkbox" id="antialias" value="antialias">
-              </div>
+          <ul class="options">
+            <li class="option-inputs">
+              <label for="antialias" >WebGL Antialias:</label>
+              <input type="checkbox" id="antialias" value="antialias">
+            </li>
 
-              <div class="option-inputs">
-                <label for="option-powerPreference" class="block">power preference:</label>
-                <select id="option-powerPreference" name="option-powerPreference">
-                    <option value="default">default</option>
-                    <option value="high-performance">high-performance</option>
-                    <option value="low-power">low-power</option>
-                </select>
-              </div>
-            </div>
-            <div class="option-inputs">
-              <label for="option-scaling" class="block">Scaling:</label>
-              <select id="option-scaling" name="option-scaling">
-                  <option value="scaling-auto" title="Auto detect">auto detect</option>
-                  <option value="scaling-none" title="None">none</option>
-                  <option value="scaling-4:3" title="4:3 on full image">4:3 on full image</option>
-                  <option value="scaling-stretch-both" title="Stretch to both edges">stretch to both edges</option>
-                  <option value="scaling-stretch-nearest" title="Stretch to nearest edge, keeps proportions">stretch to nearest edge</option>
-                  <option value="scaling-custom" title="Introduce the values yourself">custom</option>
+            <li class="option-inputs">
+              <label for="option-powerPreference" >WebGL Power Preference:</label>
+              <select id="option-powerPreference" name="option-powerPreference">
+                  <option value="default">Default</option>
+                  <option value="high-performance">High Performance</option>
+                  <option value="low-power">Low Power</option>
               </select>
-            </div>
-            <div class="option-inputs">
-            <div id="scaling-custom-inputs" class="option-inputs display-none">
+            </li>
+            <li class="option-inputs">
+              <label for="option-scaling" >Scaling:</label>
+              <select id="option-scaling" name="option-scaling">
+                  <option value="scaling-auto" title="Auto detect">Auto Detect</option>
+                  <option value="scaling-none" title="None">None</option>
+                  <option value="scaling-4:3" title="4:3 on full image">4:3 on full image</option>
+                  <option value="scaling-stretch-both" title="Stretch to both edges">Stretch to both edges</option>
+                  <option value="scaling-stretch-nearest" title="Stretch to nearest edge, keeps proportions">Stretch to nearest edge</option>
+                  <option value="scaling-custom" title="Introduce the values yourself">Custom</option>
+              </select>
+            </li>
+            <li class="option-inputs">
+              <ul id="scaling-custom-inputs" class="option-inputs display-none">
                 <label for="scaling-custom">Custom Scaling:</label>
-                <div class="option-inputs">
-                  <label>background resolution:</label>
-                  <input class="custom-resolution" type="number" id="scaling-custom-resolution-width" value="256" min="1" max="99999">
-                  <span>✕</span>
-                  <input class="custom-resolution" type="number" id="scaling-custom-resolution-height" value="224" min="1" max="99999">
-                  <input class="display-none" type="button" value="Set to " id="scaling-custom-resolution-button" title="Set it to fit the uploaded image">
-                </div>
-                <div class="option-inputs">
-                  <label>aspect ratio:</label>
-                  <input class="custom-aspect-ratio" type="number" id="scaling-custom-aspect-ratio-x" value="4" min="1" max="99">
-                  <span>:</span>
-                  <input class="custom-aspect-ratio" type="number" id="scaling-custom-aspect-ratio-y" value="3" min="1" max="99">
-                </div>
-                <div class="option-inputs">
-                  <label>stretch to nearest edge:</label>
+                <li class="option-inputs option-custom-scaling">
+                  <label>Resolution</label>
+                  <div>
+                    <input class="custom-resolution" type="number" id="scaling-custom-resolution-width" value="256" min="1" max="99999">
+                    <span>✕</span>
+                    <input class="custom-resolution" type="number" id="scaling-custom-resolution-height" value="224" min="1" max="99999">
+                    <input class="display-none" type="button" value="Set to " id="scaling-custom-resolution-button" title="Set it to fit the uploaded image">
+                  </div>
+                </li>
+                <li class="option-inputs option-custom-scaling">
+                  <label>Aspect ratio</label>
+                  <div>
+                    <input class="custom-aspect-ratio" type="number" id="scaling-custom-aspect-ratio-x" value="4" min="1" max="99">
+                    <span>:</span>
+                    <input class="custom-aspect-ratio" type="number" id="scaling-custom-aspect-ratio-y" value="3" min="1" max="99">
+                  </div>
+                </li>
+                <li class="option-inputs option-custom-scaling">
+                  <label>Stretch to nearest edge</label>
                   <input class="custom-checkbox" type="checkbox" id="scaling-custom-stretch-nearest">
-                </div>
-              </div>
-            </div>
+                </li>
+              </ul>
+            </li>
           </div>
         </div>
         <input id="start-animation" class="start btn-crt btn-white" type="button" value="Play Simulation">
@@ -139,10 +140,10 @@
             <label>Concept + Implementation</label><p>José Manuel Barroso Galindo<br>&lt;theypsilon@gmail.com&gt;</p>
           </div>
           <div class="col-sm-4 margin-sm-bottom">
-            <label>Test animation sprites</label><p>Ryoga<br>&lt;pig_saint@gmail.com&gt;</p>
+            <label>Front-end Designer</label><p>Ana Manosfrias<br>&lt;a.gilamor@gmail.com&gt;</p>
           </div>
           <div class="col-sm-4 margin-sm-bottom">
-            <label>Front-end Designer</label><p>Ana Manosfrias<br>&lt;a.gilamor@gmail.com&gt;</p>
+            <label>Spaceship sprites</label><p>Ryoga<br>&lt;pig_saint@gmail.com&gt;</p>
           </div>
         </div>
       </div>

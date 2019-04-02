@@ -20,7 +20,13 @@ body {
 }
 
 .options {
-    text-align: left;
+    display: flex;
+	flex-direction: column;
+    flex-wrap: nowrap;
+	justify-content: flex-start;
+	align-items: stretch;
+    align-content: stretch;
+    padding: 0;
 }
 
 .option-inputs {
@@ -46,8 +52,31 @@ body {
     margin-right: 10px;
 }
 
-#scaling-custom-inputs input {
-    display: inline-block
+.option-inputs li {
+    display: inline-block;
+}
+
+#scaling-custom-inputs {
+    display: flex;
+	flex-direction: column;
+    flex-wrap: nowrap;
+	justify-content: flex-start;
+	align-items: stretch;
+    align-content: stretch;
+    padding: 0;
+}
+
+#scaling-custom-inputs li {
+    display: inline-block;
+}
+
+#scaling-custom-inputs li div {
+    display: inline-block;
+}
+
+.option-custom-scaling {
+    margin-left: 40px;
+    display: inline-block;
 }
 
 .custom-aspect-ratio {
@@ -86,8 +115,7 @@ ul.select-image {
 
 ul.select-image li {
     display: inline-block;
-    margin-left: auto;
-    margin-right: auto;
+    margin: 0px 0px 3px 0px;
     border: 2px solid rgb(187, 187, 187);
     height: 130px;
     width: 114px;
@@ -95,12 +123,16 @@ ul.select-image li {
     vertical-align: middle;
 }
 
-ul.select-image li span {
-    vertical-align: middle;
+ul.select-image li div {
+    display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	align-content: center;
+    height: 100%;
 }
 
 ul.select-image li img {
-    margin-top: 5px;
     max-width: 100px;
     max-height: 100px;
 }
@@ -120,10 +152,17 @@ ul.select-image li img {
     border-radius: 5px 5px 5px 5px;
     color: rgb(87, 87, 87);
     text-align: center;
+    display: inline-block;
 }
 
 #drop-zone span {
     color: white;
+    display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+    align-content: center;
+    height: 100%;
 }
 
 .preview-size {
