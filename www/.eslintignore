@@ -1,0 +1,5 @@
+node_modules/*
+crt_3d_sim.js
+entrypoint.js
+webpack.*.js
+gif.js
