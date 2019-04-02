@@ -604,11 +604,12 @@ async function processFileToUpload (url) {
     };
     const span = document.createElement('span');
     span.innerHTML = width + ' ✕ ' + height;
+    const div = document.createElement('div');
+    div.appendChild(img);
+    div.appendChild(span);
     const li = document.createElement('li');
-    li.appendChild(img);
-    li.appendChild(document.createElement('br'));
-    li.appendChild(span);
     li.classList.add('selectable-image');
+    li.appendChild(div);
     makeImageSelectable(li);
     li.click();
     selectImageList.insertBefore(li, dropZoneDeo);
