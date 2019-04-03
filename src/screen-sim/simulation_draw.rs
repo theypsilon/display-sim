@@ -20,11 +20,9 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
         },
     );
 
-    materials.main_buffer_stack.set_resolution(
-        gl,
-        res.crt_filters.internal_resolution.width(&res.animation),
-        res.crt_filters.internal_resolution.height(&res.animation),
-    );
+    materials
+        .main_buffer_stack
+        .set_resolution(gl, res.crt_filters.internal_resolution.width(), res.crt_filters.internal_resolution.height());
 
     materials.main_buffer_stack.set_interpolation(
         gl,
@@ -110,7 +108,10 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
                         shadow_kind: res.crt_filters.pixel_shadow_shape_kind,
                         geometry_kind: res.crt_filters.pixels_geometry_kind,
                         view: res.camera.get_view().as_mut_slice(),
-                        projection: res.camera.get_projection(res.animation.viewport_width as f32, res.animation.viewport_height as f32).as_mut_slice(),
+                        projection: res
+                            .camera
+                            .get_projection(res.animation.viewport_size.width as f32, res.animation.viewport_size.height as f32)
+                            .as_mut_slice(),
                         ambient_strength: match res.crt_filters.pixels_geometry_kind {
                             PixelsGeometryKind::Squares => 1.0,
                             PixelsGeometryKind::Cubes => 0.5,
@@ -170,7 +171,10 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
                 shadow_kind: 0,
                 geometry_kind: res.crt_filters.pixels_geometry_kind,
                 view: res.camera.get_view().as_mut_slice(),
-                projection: res.camera.get_projection(res.animation.viewport_width as f32, res.animation.viewport_height as f32).as_mut_slice(),
+                projection: res
+                    .camera
+                    .get_projection(res.animation.viewport_size.width as f32, res.animation.viewport_size.height as f32)
+                    .as_mut_slice(),
                 ambient_strength: match res.crt_filters.pixels_geometry_kind {
                     PixelsGeometryKind::Squares => 1.0,
                     PixelsGeometryKind::Cubes => 0.5,
@@ -216,8 +220,8 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
     }
 
     if res.launch_screenshot {
-        let width = res.crt_filters.internal_resolution.width(&res.animation);
-        let height = res.crt_filters.internal_resolution.height(&res.animation);
+        let width = res.crt_filters.internal_resolution.width();
+        let height = res.crt_filters.internal_resolution.height();
         let pixels = js_sys::Uint8Array::new(&(width * height * 4).into());
         gl.read_pixels_with_opt_array_buffer_view(0, 0, width, height, WebGl2RenderingContext::RGBA, WebGl2RenderingContext::UNSIGNED_BYTE, Some(&pixels))?;
         let array = js_sys::Array::new();
@@ -231,7 +235,7 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
 
     gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, None);
     gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
-    gl.viewport(0, 0, res.animation.viewport_width as i32, res.animation.viewport_height as i32);
+    gl.viewport(0, 0, res.animation.viewport_size.width as i32, res.animation.viewport_size.height as i32);
 
     materials.internal_resolution_render.render(gl, materials.main_buffer_stack.get_nth(1)?.texture());
 

@@ -9,25 +9,27 @@ use crate::pixels_render::PixelsRender;
 use crate::render_types::TextureBufferStack;
 use crate::rgb_render::RgbRender;
 use crate::simulation_draw::draw;
-use crate::simulation_state::{AnimationData, InitialParameters, Input, Materials, Resources, SimulationTimers, MOVEMENT_BASE_SPEED, MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED};
+use crate::simulation_state::{
+    AnimationMaterials, AnimationResources, InitialParameters, Input, Materials, Resources, SimulationTimers, MOVEMENT_BASE_SPEED, MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED,
+};
 use crate::simulation_update::{change_frontend_input_values, update_simulation};
 use crate::wasm_error::WasmResult;
 use crate::web_utils::now;
 
 pub fn simulation_tick(input: &mut Input, resources: &mut Resources, materials: &mut Materials) -> WasmResult<bool> {
-    pre_process_input(input, resources)?;
-    if !update_simulation(resources, input, materials)? {
+    pre_process_input(input)?;
+    if !update_simulation(resources, input)? {
         console!(log. "User closed the simulation.");
         return Ok(false);
     }
-    post_process_input(input)?;
+    post_process_input(input);
     if resources.launch_screenshot || resources.screenshot_delay <= 0 {
         draw(materials, resources)?;
     }
     Ok(true)
 }
 
-pub fn init_resources(res: &mut Resources, animation: AnimationData) -> WasmResult<()> {
+pub fn init_resources(res: &mut Resources, animation: AnimationResources) -> WasmResult<()> {
     let now = now()?;
     let initial_position_z = calculate_far_away_position(&animation);
     let mut camera = Camera::new(MOVEMENT_BASE_SPEED * initial_position_z / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED);
@@ -60,14 +62,15 @@ pub fn init_resources(res: &mut Resources, animation: AnimationData) -> WasmResu
         initial_pixel_width: animation.pixel_width,
         initial_movement_speed: camera.movement_speed,
     };
+    res.crt_filters.internal_resolution.init_viewport_size(animation.viewport_size);
     res.camera = camera;
     res.animation = animation;
     change_frontend_input_values(res)?;
     Ok(())
 }
 
-pub fn load_materials(gl: WebGl2RenderingContext) -> WasmResult<Materials> {
-    let pixels_render = PixelsRender::new(&gl)?;
+pub fn load_materials(gl: WebGl2RenderingContext, animation_materials: AnimationMaterials) -> WasmResult<Materials> {
+    let pixels_render = PixelsRender::new(&gl, animation_materials)?;
     let blur_render = BlurRender::new(&gl)?;
     let internal_resolution_render = InternalResolutionRender::new(&gl)?;
     let rgb_render = RgbRender::new(&gl)?;
@@ -85,15 +88,15 @@ pub fn load_materials(gl: WebGl2RenderingContext) -> WasmResult<Materials> {
     Ok(materials)
 }
 
-fn calculate_far_away_position(animation: &AnimationData) -> f32 {
-    let width = animation.background_width as f32;
-    let height = animation.background_height as f32;
-    let viewport_width_scaled = (animation.viewport_width as f32 / animation.pixel_width) as u32;
+fn calculate_far_away_position(animation: &AnimationResources) -> f32 {
+    let width = animation.background_size.width as f32;
+    let height = animation.background_size.height as f32;
+    let viewport_width_scaled = (animation.viewport_size.width as f32 / animation.pixel_width) as u32;
     let width_ratio = viewport_width_scaled as f32 / width;
-    let height_ratio = animation.viewport_height as f32 / height;
+    let height_ratio = animation.viewport_size.height as f32 / height;
     let is_height_bounded = width_ratio > height_ratio;
     let mut bound_ratio = if is_height_bounded { height_ratio } else { width_ratio };
-    let mut resolution = if is_height_bounded { animation.viewport_height } else { viewport_width_scaled } as i32;
+    let mut resolution = if is_height_bounded { animation.viewport_size.height } else { viewport_width_scaled } as i32;
     while bound_ratio < 1.0 {
         bound_ratio *= 2.0;
         resolution *= 2;
@@ -111,8 +114,8 @@ fn calculate_far_away_position(animation: &AnimationData) -> f32 {
     0.5 + (resolution as f32 / bound_ratio) * if is_height_bounded { 1.2076 } else { 0.68 * animation.pixel_width }
 }
 
-fn pre_process_input(input: &mut Input, resources: &Resources) -> WasmResult<()> {
-    input.now = now().unwrap_or(resources.timers.last_time);
+fn pre_process_input(input: &mut Input) -> WasmResult<()> {
+    input.now = now()?;
     input.get_mut_fields_booleanbutton().iter_mut().for_each(|button| button.track_input());
     input
         .get_mut_fields_incdec_booleanbutton_()
@@ -121,10 +124,9 @@ fn pre_process_input(input: &mut Input, resources: &Resources) -> WasmResult<()>
     Ok(())
 }
 
-fn post_process_input(input: &mut Input) -> WasmResult<()> {
+fn post_process_input(input: &mut Input) {
     input.mouse_scroll_y = 0.0;
     input.mouse_position_x = 0;
     input.mouse_position_y = 0;
     input.custom_event.kind = String::new();
-    Ok(())
 }

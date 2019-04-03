@@ -1,13 +1,16 @@
+use js_sys::{ArrayBuffer, Float32Array};
+use web_sys::{WebGl2RenderingContext, WebGlBuffer, WebGlProgram, WebGlTexture, WebGlVertexArrayObject};
+
 use enum_len_derive::EnumLen;
-use js_sys::Float32Array;
 use num_derive::{FromPrimitive, ToPrimitive};
 
+use crate::pixels_shadow::{get_shadows, TEXTURE_SIZE};
 use crate::shaders::make_shader;
-use crate::simulation_state::AnimationData;
+use crate::simulation_state::{AnimationMaterials, AnimationResources};
 use crate::wasm_error::WasmResult;
 use crate::web_utils::js_f32_array;
+
 use std::mem::size_of;
-use web_sys::{WebGl2RenderingContext, WebGlBuffer, WebGlProgram, WebGlTexture, WebGlVertexArrayObject};
 
 #[derive(FromPrimitive, ToPrimitive, EnumLen, Clone, Copy)]
 pub enum PixelsGeometryKind {
@@ -33,6 +36,7 @@ pub struct PixelsRender {
     height: u32,
     offset_inverse_max_length: f32,
     shadows: Vec<Option<WebGlTexture>>,
+    animation_buffers: Vec<ArrayBuffer>,
 }
 
 pub struct PixelsUniform<'a> {
@@ -53,10 +57,8 @@ pub struct PixelsUniform<'a> {
     pub height_modifier_factor: f32,
 }
 
-const TEXTURE_SIZE: usize = 256;
-
 impl PixelsRender {
-    pub fn new(gl: &WebGl2RenderingContext) -> WasmResult<PixelsRender> {
+    pub fn new(gl: &WebGl2RenderingContext, animation_materials: AnimationMaterials) -> WasmResult<PixelsRender> {
         let shader = make_shader(&gl, PIXEL_VERTEX_SHADER, PIXEL_FRAGMENT_SHADER)?;
 
         let vao = gl.create_vertex_array();
@@ -90,50 +92,13 @@ impl PixelsRender {
         gl.vertex_attrib_pointer_with_i32(a_offset_position, 2, WebGl2RenderingContext::FLOAT, false, 2 * size_of::<f32>() as i32, 0);
         gl.vertex_attrib_divisor(a_offset_position, 1);
 
-        fn calc_with_log(number: usize, count: usize) -> f64 {
-            let result = log(TEXTURE_SIZE - number);
-            pow(result, count)
-        }
-        fn log(number: usize) -> f64 {
-            f64::log(number as f64, (TEXTURE_SIZE / 2) as f64)
-        }
-        fn calc_diamond(number: usize, count: usize) -> f64 {
-            let result = 1.0 - ((number - TEXTURE_SIZE / 2) as f64 / (TEXTURE_SIZE as f64 / 2.0));
-            pow(result, count)
-        }
-        fn pow(mut number: f64, count: usize) -> f64 {
-            for _i in 0..count {
-                number *= number;
-            }
-            number
-        }
+        let shadows = get_shadows()
+            .iter()
+            .map(|closure| Self::create_shadow_texture(gl, &**closure))
+            .collect::<WasmResult<Vec<Option<WebGlTexture>>>>()?;
 
-        let mut shadows = Vec::new();
-        shadows.push(Self::create_shadow_texture(gl, |_i, _j| 255.0)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| calc_with_log(i, 0) * calc_with_log(j, 0) * 1.0 * 255.0)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| calc_with_log(i, 1) * calc_with_log(j, 1) * 1.5 * 255.0)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| calc_with_log(i, 2) * calc_with_log(j, 2) * 3.0 * 255.0)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 0) * 0.9 + calc_with_log(j, 0) * 0.1) * 1.0 * 255.0)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 1) * 0.9 + calc_with_log(j, 1) * 0.1) * 1.5 * 255.0)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 2) * 0.9 + calc_with_log(j, 2) * 0.1) * 3.0 * 255.0)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 3) * 0.9 + calc_with_log(j, 3) * 0.1) * 6.0 * 255.0)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 0) * 0.8 + calc_with_log(j, 0) * 0.2) * 1.0 * 255.0)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 1) * 0.8 + calc_with_log(j, 1) * 0.2) * 1.5 * 255.0)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 2) * 0.8 + calc_with_log(j, 2) * 0.2) * 3.0 * 255.0)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 3) * 0.8 + calc_with_log(j, 3) * 0.2) * 6.0 * 255.0)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 0) * 0.5 + calc_with_log(j, 0) * 0.5) * 1.0 * 255.0)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 1) * 0.5 + calc_with_log(j, 1) * 0.5) * 1.5 * 255.0)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 2) * 0.5 + calc_with_log(j, 2) * 0.5) * 3.0 * 255.0)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| (calc_with_log(i, 3) * 0.5 + calc_with_log(j, 3) * 0.5) * 6.0 * 255.0)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, _j| calc_with_log(i, 0) * 1.0 * 255.0)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, _j| calc_with_log(i, 1) * 1.5 * 255.0)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, _j| calc_with_log(i, 2) * 3.0 * 255.0)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, _j| calc_with_log(i, 3) * 6.0 * 255.0)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, _j| calc_with_log(i, 4) * 9.0 * 255.0)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, j| calc_diamond(i, 0) * calc_diamond(j, 0) * 1.0 * 255.0)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, _j| calc_diamond(i, 0) * 1.0 * 255.0)?);
-        shadows.push(Self::create_shadow_texture(gl, |i, _j| calc_diamond(i, 1) * 1.5 * 255.0)?);
         Ok(PixelsRender {
+            animation_buffers: animation_materials.buffers,
             vao,
             shader,
             offsets_vbo,
@@ -145,11 +110,7 @@ impl PixelsRender {
         })
     }
 
-    pub fn shadows_len(&self) -> usize {
-        self.shadows.len()
-    }
-
-    fn create_shadow_texture(gl: &WebGl2RenderingContext, weight: impl Fn(usize, usize) -> f64) -> WasmResult<Option<WebGlTexture>> {
+    fn create_shadow_texture(gl: &WebGl2RenderingContext, weight: &dyn Fn(usize, usize) -> f64) -> WasmResult<Option<WebGlTexture>> {
         let mut texture: [u8; 4 * TEXTURE_SIZE * TEXTURE_SIZE] = [0; TEXTURE_SIZE * TEXTURE_SIZE * 4];
         {
             for i in TEXTURE_SIZE / 2..TEXTURE_SIZE {
@@ -212,10 +173,10 @@ impl PixelsRender {
         Ok(pixel_shadow_texture)
     }
 
-    pub fn load_image(&mut self, gl: &WebGl2RenderingContext, animation: &AnimationData) {
-        if animation.image_width != self.width || animation.image_height != self.height {
-            self.width = animation.image_width;
-            self.height = animation.image_height;
+    pub fn load_image(&mut self, gl: &WebGl2RenderingContext, animation: &AnimationResources) {
+        if animation.image_size.width != self.width || animation.image_size.height != self.height {
+            self.width = animation.image_size.width;
+            self.height = animation.image_size.height;
             self.offset_inverse_max_length = 1.0 / ((self.width as f32 * 0.5).powi(2) + (self.height as f32 * 0.5).powi(2)).sqrt();
             gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&self.offsets_vbo));
             let offsets = calculate_offsets(self.width, self.height);
@@ -226,7 +187,7 @@ impl PixelsRender {
 
         gl.buffer_data_with_opt_array_buffer(
             WebGl2RenderingContext::ARRAY_BUFFER,
-            Some(&animation.steps[animation.current_frame].buffer),
+            Some(&self.animation_buffers[animation.current_frame]),
             WebGl2RenderingContext::STATIC_DRAW,
         );
     }

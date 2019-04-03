@@ -6,8 +6,9 @@ use web_sys::{CustomEvent, EventTarget, KeyboardEvent, MouseEvent, WebGl2Renderi
 use crate::action_bindings::on_button_action;
 use crate::app_events::{dispatch_exiting_session, dispatch_top_message};
 use crate::console;
+use crate::internal_resolution::InternalResolution;
 use crate::simulation_main_functions::{init_resources, load_materials, simulation_tick};
-use crate::simulation_state::{AnimationData, Input, InternalResolution, Materials, Resources};
+use crate::simulation_state::{AnimationMaterials, AnimationResources, Input, Materials, Resources};
 use crate::wasm_error::{WasmError, WasmResult};
 use crate::web_utils::window;
 
@@ -31,10 +32,10 @@ impl StateOwner {
     }
 }
 
-pub fn web_entrypoint(gl: JsValue, res: Rc<RefCell<Resources>>, animation: AnimationData) -> WasmResult<()> {
+pub fn web_entrypoint(gl: JsValue, res: Rc<RefCell<Resources>>, animation_resources: AnimationResources, animation_materials: AnimationMaterials) -> WasmResult<()> {
     let gl = gl.dyn_into::<WebGl2RenderingContext>()?;
-    init_resources(&mut res.borrow_mut(), animation)?;
-    let owned_state = StateOwner::new_rc(res, load_materials(gl)?, Input::new()?);
+    init_resources(&mut res.borrow_mut(), animation_resources)?;
+    let owned_state = StateOwner::new_rc(res, load_materials(gl, animation_materials)?, Input::new()?);
     let frame_closure: Closure<FnMut(JsValue)> = {
         let owned_state = Rc::clone(&owned_state);
         let window = window()?;

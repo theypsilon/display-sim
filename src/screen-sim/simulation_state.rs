@@ -10,6 +10,8 @@ use crate::background_render::BackgroundRender;
 use crate::blur_render::BlurRender;
 use crate::boolean_button::BooleanButton;
 use crate::camera::Camera;
+use crate::general_types::Size2D;
+use crate::internal_resolution::InternalResolution;
 use crate::internal_resolution_render::InternalResolutionRender;
 use crate::pixels_render::{PixelsGeometryKind, PixelsRender};
 use crate::render_types::TextureBufferStack;
@@ -23,14 +25,11 @@ pub const MOVEMENT_BASE_SPEED: f32 = 10.0;
 pub const MOVEMENT_SPEED_FACTOR: f32 = 50.0;
 
 #[derive(Default)]
-pub struct AnimationData {
+pub struct AnimationResources {
     pub steps: Vec<AnimationStep>,
-    pub image_width: u32,
-    pub image_height: u32,
-    pub background_width: u32,
-    pub background_height: u32,
-    pub viewport_width: u32,
-    pub viewport_height: u32,
+    pub image_size: Size2D<u32>,
+    pub background_size: Size2D<u32>,
+    pub viewport_size: Size2D<u32>,
     pub pixel_width: f32,
     pub stretch: bool,
     pub current_frame: usize,
@@ -39,13 +38,16 @@ pub struct AnimationData {
 }
 
 pub struct AnimationStep {
-    pub buffer: ArrayBuffer,
     pub delay: u32,
+}
+
+pub struct AnimationMaterials {
+    pub buffers: Vec<ArrayBuffer>,
 }
 
 // Simulation Resources
 pub struct Resources {
-    pub animation: AnimationData,
+    pub animation: AnimationResources,
     pub camera: Camera,
     pub crt_filters: CrtFilters,
     pub timers: SimulationTimers,
@@ -61,7 +63,7 @@ impl Resources {
             resetted: true,
             initial_parameters: InitialParameters::default(),
             timers: SimulationTimers::default(),
-            animation: AnimationData::default(),
+            animation: AnimationResources::default(),
             camera: Camera::new(MOVEMENT_BASE_SPEED / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED),
             crt_filters: CrtFilters::new(PIXEL_MANIPULATION_BASE_SPEED),
             launch_screenshot: false,
@@ -145,96 +147,6 @@ impl std::fmt::Display for ScreenLayeringKind {
     }
 }
 
-pub struct InternalResolution {
-    pub multiplier: f64,
-    pub minimum_reached: bool,
-    backup_multiplier: f64,
-}
-
-impl InternalResolution {
-    pub fn new(multiplier: f64) -> InternalResolution {
-        InternalResolution {
-            multiplier,
-            minimum_reached: false,
-            backup_multiplier: multiplier,
-        }
-    }
-    pub fn increase(&mut self, animation: &AnimationData) {
-        self.minimum_reached = false;
-        let height = self.height(animation);
-        if height == 720 {
-            self.multiplier = self.backup_multiplier;
-        } else if height == 486 {
-            self.multiplier = 720.0 / animation.viewport_height as f64;
-        } else if height == 480 {
-            self.multiplier = 486.0 / animation.viewport_height as f64;
-        } else if height == 243 {
-            self.multiplier = 480.0 / animation.viewport_height as f64;
-        } else if height == 240 {
-            self.multiplier = 243.0 / animation.viewport_height as f64;
-        } else if height == 224 {
-            self.multiplier = 240.0 / animation.viewport_height as f64;
-        } else if height == 160 {
-            self.multiplier = 224.0 / animation.viewport_height as f64;
-        } else if height == 152 {
-            self.multiplier = 160.0 / animation.viewport_height as f64;
-        } else if height == 144 {
-            self.multiplier = 152.0 / animation.viewport_height as f64;
-        } else if height == 102 {
-            self.multiplier = 144.0 / animation.viewport_height as f64;
-        } else if height == 51 {
-            self.multiplier = 102.0 / animation.viewport_height as f64;
-        } else {
-            self.multiplier *= 2.0;
-        }
-    }
-    pub fn decrease(&mut self, animation: &AnimationData) {
-        let height = self.height(animation);
-        if height <= 1440 && height > 720 {
-            self.backup_multiplier = self.multiplier;
-            self.multiplier = 720.0 / animation.viewport_height as f64;
-        } else if height == 720 {
-            self.multiplier = 486.0 / animation.viewport_height as f64;
-        } else if height == 486 {
-            self.multiplier = 480.0 / animation.viewport_height as f64;
-        } else if height == 480 {
-            self.multiplier = 243.0 / animation.viewport_height as f64;
-        } else if height == 243 {
-            self.multiplier = 240.0 / animation.viewport_height as f64;
-        } else if height == 240 {
-            self.multiplier = 224.0 / animation.viewport_height as f64;
-        } else if height == 224 {
-            self.multiplier = 160.0 / animation.viewport_height as f64;
-        } else if height == 160 {
-            self.multiplier = 152.0 / animation.viewport_height as f64;
-        } else if height == 152 {
-            self.multiplier = 144.0 / animation.viewport_height as f64;
-        } else if height == 144 {
-            self.multiplier = 102.0 / animation.viewport_height as f64;
-        } else {
-            self.multiplier /= 2.0;
-            if self.height(animation) < 2 {
-                self.increase(animation);
-                self.minimum_reached = true;
-            }
-        }
-    }
-    pub fn width(&self, animation: &AnimationData) -> i32 {
-        (animation.viewport_width as f64 * self.multiplier) as i32
-    }
-    pub fn height(&self, animation: &AnimationData) -> i32 {
-        (animation.viewport_height as f64 * self.multiplier) as i32
-    }
-    pub fn to_label(&self, animation: &AnimationData) -> String {
-        let height = self.height(animation);
-        if height <= 1080 {
-            format!("{}p", height)
-        } else {
-            format!("{}K", height / 540)
-        }
-    }
-}
-
 #[derive(FromPrimitive, ToPrimitive, EnumLen, Copy, Clone)]
 pub enum ScreenCurvatureKind {
     Flat,
@@ -295,8 +207,8 @@ impl CrtFilters {
         CrtFilters {
             internal_resolution: InternalResolution::new(1.0),
             texture_interpolation: TextureInterpolation::Linear,
-            blur_passes: 0,
-            lines_per_pixel: 1,
+            blur_passes: 1,
+            lines_per_pixel: 2,
             light_color: 0x00FF_FFFF,
             brightness_color: 0x00FF_FFFF,
             extra_bright: 0.0,
@@ -305,11 +217,11 @@ impl CrtFilters {
             cur_pixel_scale_x: 0.0,
             cur_pixel_scale_y: 0.0,
             cur_pixel_gap: 0.0,
-            pixel_shadow_height_factor: 0.5,
+            pixel_shadow_height_factor: 0.25,
             change_speed,
             pixels_pulse: 0.0,
             pixels_geometry_kind: PixelsGeometryKind::Squares,
-            pixel_shadow_shape_kind: 1,
+            pixel_shadow_shape_kind: 3,
             color_channels: ColorChannels::Combined,
             screen_curvature_kind: ScreenCurvatureKind::Flat,
             showing_diffuse_foreground: true,

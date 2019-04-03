@@ -76,7 +76,7 @@ pub fn dispatch_screen_curvature(res: &Resources) -> WasmResult<()> {
 }
 
 pub fn dispatch_internal_resolution(res: &Resources) -> WasmResult<()> {
-    dispatch_event_with("app-event.internal_resolution", &(res.crt_filters.internal_resolution.to_label(&res.animation)).into())
+    dispatch_event_with("app-event.internal_resolution", &(res.crt_filters.internal_resolution.to_label()).into())
 }
 
 pub fn dispatch_texture_interpolation(res: &Resources) -> WasmResult<()> {

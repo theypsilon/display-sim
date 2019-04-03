@@ -1,6 +1,12 @@
 use enum_len_trait::EnumLen;
 use num_traits::{FromPrimitive, ToPrimitive};
 
+#[derive(Copy, Clone, Default)]
+pub struct Size2D<T: Copy + Clone + Default> {
+    pub width: T,
+    pub height: T,
+}
+
 pub trait NextEnumVariant {
     fn next_enum_variant(&mut self) -> Result<(), &str>;
     fn previous_enum_variant(&mut self) -> Result<(), &str>;

@@ -2,10 +2,11 @@ use crate::app_events;
 use crate::boolean_button::BooleanButton;
 use crate::camera::CameraDirection;
 use crate::general_types::NextEnumVariant;
-use crate::simulation_state::{CrtFilters, CustomInputEvent, IncDec, Input, Materials, Resources, ScreenCurvatureKind, ScreenLayeringKind, PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED};
+use crate::pixels_shadow::SHADOWS_LEN;
+use crate::simulation_state::{CrtFilters, CustomInputEvent, IncDec, Input, Resources, ScreenCurvatureKind, ScreenLayeringKind, PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED};
 use crate::wasm_error::WasmResult;
 
-pub fn update_simulation(res: &mut Resources, input: &Input, materials: &Materials) -> WasmResult<bool> {
+pub fn update_simulation(res: &mut Resources, input: &Input) -> WasmResult<bool> {
     let dt = update_timers_and_dt(res, input)?;
 
     update_animation_buffer(res, input);
@@ -23,7 +24,7 @@ pub fn update_simulation(res: &mut Resources, input: &Input, materials: &Materia
     }
 
     update_pixel_pulse(dt, res, input)?;
-    update_crt_filters(dt, res, input, materials)?;
+    update_crt_filters(dt, res, input)?;
     update_speeds(res, input)?;
     update_camera(dt, res, input)?;
 
@@ -202,7 +203,7 @@ fn update_pixel_pulse(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
     Ok(())
 }
 
-fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input, materials: &Materials) -> WasmResult<()> {
+fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> {
     if input.reset_filters {
         res.crt_filters = CrtFilters::new(PIXEL_MANIPULATION_BASE_SPEED);
         res.crt_filters.cur_pixel_width = res.initial_parameters.initial_pixel_width;
@@ -276,12 +277,12 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input, materials: &M
     if input.next_pixels_shadow_shape_kind.any_just_pressed() {
         if input.next_pixels_shadow_shape_kind.increase.is_just_pressed() {
             res.crt_filters.pixel_shadow_shape_kind += 1;
-            if res.crt_filters.pixel_shadow_shape_kind >= materials.pixels_render.shadows_len() {
+            if res.crt_filters.pixel_shadow_shape_kind >= SHADOWS_LEN {
                 res.crt_filters.pixel_shadow_shape_kind = 0;
             }
         } else {
             if res.crt_filters.pixel_shadow_shape_kind == 0 {
-                res.crt_filters.pixel_shadow_shape_kind = materials.pixels_render.shadows_len();
+                res.crt_filters.pixel_shadow_shape_kind = SHADOWS_LEN;
             }
             res.crt_filters.pixel_shadow_shape_kind -= 1;
         }
@@ -313,10 +314,10 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input, materials: &M
 
     if input.next_internal_resolution.any_just_released() {
         if input.next_internal_resolution.increase.is_just_released() {
-            res.crt_filters.internal_resolution.increase(&res.animation);
+            res.crt_filters.internal_resolution.increase();
         }
         if input.next_internal_resolution.decrease.is_just_released() {
-            res.crt_filters.internal_resolution.decrease(&res.animation);
+            res.crt_filters.internal_resolution.decrease();
         }
         if res.crt_filters.internal_resolution.minimum_reached {
             app_events::dispatch_top_message("Minimum internal resolution has been reached.".into())?;
