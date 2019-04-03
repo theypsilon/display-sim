@@ -7,7 +7,7 @@ use crate::action_bindings::on_button_action;
 use crate::app_events::{dispatch_exiting_session, dispatch_top_message};
 use crate::console;
 use crate::simulation_main_functions::{init_resources, load_materials, simulation_tick};
-use crate::simulation_state::{AnimationData, Input, Materials, Resources};
+use crate::simulation_state::{AnimationData, Input, InternalResolution, Materials, Resources};
 use crate::wasm_error::{WasmError, WasmResult};
 use crate::web_utils::window;
 
@@ -76,7 +76,7 @@ fn web_entrypoint_iteration(owned_state: &StateOwner, window: &Window) -> WasmRe
         }
         Ok(false) => {}
         Err(e) => {
-            resources.crt_filters.internal_resolution.multiplier = 1.0;
+            resources.crt_filters.internal_resolution = InternalResolution::new(1.0);
             return Err(e);
         }
     };

@@ -22,9 +22,11 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
         },
     );
 
-    let internal_width = (res.animation.viewport_width as f32 * res.crt_filters.internal_resolution.multiplier) as i32;
-    let internal_height = (res.animation.viewport_height as f32 * res.crt_filters.internal_resolution.multiplier) as i32;
-    materials.main_buffer_stack.set_resolution(gl, internal_width, internal_height);
+    materials.main_buffer_stack.set_resolution(
+        gl,
+        res.crt_filters.internal_resolution.width(&res.animation),
+        res.crt_filters.internal_resolution.height(&res.animation),
+    );
 
     materials.main_buffer_stack.set_interpolation(
         gl,
@@ -213,14 +215,13 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
     }
 
     if res.launch_screenshot {
-        let multiplier: f32 = res.crt_filters.internal_resolution.multiplier;
-        let width = (res.animation.viewport_width as f32 * multiplier) as i32;
-        let height = (res.animation.viewport_height as f32 * multiplier) as i32;
+        let width = res.crt_filters.internal_resolution.width(&res.animation);
+        let height = res.crt_filters.internal_resolution.height(&res.animation);
         let pixels = js_sys::Uint8Array::new(&(width * height * 4).into());
         gl.read_pixels_with_opt_array_buffer_view(0, 0, width, height, WebGl2RenderingContext::RGBA, WebGl2RenderingContext::UNSIGNED_BYTE, Some(&pixels))?;
         let array = js_sys::Array::new();
         array.push(&pixels);
-        array.push(&multiplier.into());
+        array.push(&res.crt_filters.internal_resolution.multiplier.into());
         app_events::dispatch_screenshot(&array)?;
     }
 

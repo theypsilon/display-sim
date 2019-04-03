@@ -144,12 +144,87 @@ impl std::fmt::Display for ScreenLayeringKind {
 }
 
 pub struct InternalResolution {
-    pub multiplier: f32,
+    pub multiplier: f64,
+    pub minimum_reached: bool,
+    backup_multiplier: f64,
 }
 
 impl InternalResolution {
+    pub fn new(multiplier: f64) -> InternalResolution {
+        InternalResolution {
+            multiplier,
+            minimum_reached: false,
+            backup_multiplier: multiplier,
+        }
+    }
+    pub fn increase(&mut self, animation: &AnimationData) {
+        self.minimum_reached = false;
+        let height = self.height(animation);
+        if height == 720 {
+            self.multiplier = self.backup_multiplier;
+        } else if height == 486 {
+            self.multiplier = 720.0 / animation.viewport_height as f64;
+        } else if height == 480 {
+            self.multiplier = 486.0 / animation.viewport_height as f64;
+        } else if height == 243 {
+            self.multiplier = 480.0 / animation.viewport_height as f64;
+        } else if height == 240 {
+            self.multiplier = 243.0 / animation.viewport_height as f64;
+        } else if height == 224 {
+            self.multiplier = 240.0 / animation.viewport_height as f64;
+        } else if height == 160 {
+            self.multiplier = 224.0 / animation.viewport_height as f64;
+        } else if height == 152 {
+            self.multiplier = 160.0 / animation.viewport_height as f64;
+        } else if height == 144 {
+            self.multiplier = 152.0 / animation.viewport_height as f64;
+        } else if height == 102 {
+            self.multiplier = 144.0 / animation.viewport_height as f64;
+        } else if height == 51 {
+            self.multiplier = 102.0 / animation.viewport_height as f64;
+        } else {
+            self.multiplier *= 2.0;
+        }
+    }
+    pub fn decrease(&mut self, animation: &AnimationData) {
+        let height = self.height(animation);
+        if height <= 1440 && height > 720 {
+            self.backup_multiplier = self.multiplier;
+            self.multiplier = 720.0 / animation.viewport_height as f64;
+        } else if height == 720 {
+            self.multiplier = 486.0 / animation.viewport_height as f64;
+        } else if height == 486 {
+            self.multiplier = 480.0 / animation.viewport_height as f64;
+        } else if height == 480 {
+            self.multiplier = 243.0 / animation.viewport_height as f64;
+        } else if height == 243 {
+            self.multiplier = 240.0 / animation.viewport_height as f64;
+        } else if height == 240 {
+            self.multiplier = 224.0 / animation.viewport_height as f64;
+        } else if height == 224 {
+            self.multiplier = 160.0 / animation.viewport_height as f64;
+        } else if height == 160 {
+            self.multiplier = 152.0 / animation.viewport_height as f64;
+        } else if height == 152 {
+            self.multiplier = 144.0 / animation.viewport_height as f64;
+        } else if height == 144 {
+            self.multiplier = 102.0 / animation.viewport_height as f64;
+        } else {
+            self.multiplier /= 2.0;
+            if self.height(animation) < 2 {
+                self.increase(animation);
+                self.minimum_reached = true;
+            }
+        }
+    }
+    pub fn width(&self, animation: &AnimationData) -> i32 {
+        (animation.viewport_width as f64 * self.multiplier) as i32
+    }
+    pub fn height(&self, animation: &AnimationData) -> i32 {
+        (animation.viewport_height as f64 * self.multiplier) as i32
+    }
     pub fn to_label(&self, animation: &AnimationData) -> String {
-        let height = (animation.viewport_height as f32 * self.multiplier) as i32;
+        let height = self.height(animation);
         if height <= 1080 {
             format!("{}p", height)
         } else {
@@ -216,7 +291,7 @@ impl std::fmt::Display for ColorChannels {
 impl CrtFilters {
     pub fn new(change_speed: f32) -> CrtFilters {
         CrtFilters {
-            internal_resolution: InternalResolution { multiplier: 1.0 },
+            internal_resolution: InternalResolution::new(1.0),
             texture_interpolation: TextureInterpolation::Linear,
             blur_passes: 0,
             lines_per_pixel: 1,

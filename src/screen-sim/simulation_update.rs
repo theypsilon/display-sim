@@ -306,14 +306,12 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input, materials: &M
 
     if input.next_internal_resolution.any_just_released() {
         if input.next_internal_resolution.increase.is_just_released() {
-            res.crt_filters.internal_resolution.multiplier *= 2.0;
+            res.crt_filters.internal_resolution.increase(&res.animation);
         }
         if input.next_internal_resolution.decrease.is_just_released() {
-            res.crt_filters.internal_resolution.multiplier /= 2.0;
+            res.crt_filters.internal_resolution.decrease(&res.animation);
         }
-        let height = (res.animation.viewport_height as f32 * res.crt_filters.internal_resolution.multiplier) as i32;
-        if height < 2 {
-            res.crt_filters.internal_resolution.multiplier *= 2.0;
+        if res.crt_filters.internal_resolution.minimum_reached {
             app_events::dispatch_top_message("Minimum internal resolution has been reached.".into())?;
         } else {
             app_events::dispatch_internal_resolution(&res)?;
