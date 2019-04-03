@@ -146,7 +146,7 @@ window.addEventListener('app-event.screenshot', async event => {
     a.href = url;
     a.download = 'CRT-3D-Sim_' + new Date().toISOString() + '.png';
     a.click();
-    setTimeout(() =>{
+    setTimeout(() => {
         URL.revokeObjectURL(url);
         a.remove();
     }, 3000);
