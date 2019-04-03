@@ -14,15 +14,15 @@ use crate::simulation_update::{change_frontend_input_values, update_simulation};
 use crate::wasm_error::WasmResult;
 use crate::web_utils::now;
 
-pub fn simulation_tick(input: &mut Input, resources: &mut Resources, materials: &mut Materials) -> WasmResult<()> {
+pub fn simulation_tick(input: &mut Input, resources: &mut Resources, materials: &mut Materials) -> WasmResult<bool> {
     pre_process_input(input, resources)?;
     if !update_simulation(resources, input, materials)? {
         console!(log. "User closed the simulation.");
-        return Ok(());
+        return Ok(false);
     }
     post_process_input(input)?;
     draw(materials, resources)?;
-    Ok(())
+    Ok(true)
 }
 
 pub fn init_resources(res: &mut Resources, animation: AnimationData) -> WasmResult<()> {

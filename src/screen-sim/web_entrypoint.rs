@@ -65,8 +65,9 @@ fn web_entrypoint_iteration(owned_state: &StateOwner, window: &Window) -> WasmRe
     let mut resources = owned_state.resources.borrow_mut();
     let mut materials = owned_state.materials.borrow_mut();
     let closures = owned_state.closures.borrow();
-    simulation_tick(&mut input, &mut resources, &mut materials)?;
-    window.request_animation_frame(closures[0].as_ref().ok_or("Wrong closure.")?.as_ref().unchecked_ref())?;
+    if simulation_tick(&mut input, &mut resources, &mut materials)? {
+        window.request_animation_frame(closures[0].as_ref().ok_or("Wrong closure.")?.as_ref().unchecked_ref())?;
+    }
     Ok(())
 }
 
