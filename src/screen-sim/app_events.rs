@@ -4,33 +4,27 @@ use crate::wasm_error::WasmResult;
 use js_sys::Array;
 
 pub fn dispatch_change_pixel_horizontal_gap(size: f32) -> WasmResult<()> {
-    let size = ((size * 1000.0) as i32) as f32 / 1000.0;
-    dispatch_event_with("app-event.change_pixel_horizontal_gap", &size.into())
+    dispatch_event_with("app-event.change_pixel_horizontal_gap", &format!("{:.03}", size).into())
 }
 
 pub fn dispatch_change_pixel_vertical_gap(size: f32) -> WasmResult<()> {
-    let size = ((size * 1000.0) as i32) as f32 / 1000.0;
-    dispatch_event_with("app-event.change_pixel_vertical_gap", &size.into())
+    dispatch_event_with("app-event.change_pixel_vertical_gap", &format!("{:.03}", size).into())
 }
 
 pub fn dispatch_change_pixel_width(size: f32) -> WasmResult<()> {
-    let size = ((size * 1000.0) as i32) as f32 / 1000.0;
-    dispatch_event_with("app-event.change_pixel_width", &size.into())
+    dispatch_event_with("app-event.change_pixel_width", &format!("{:.03}", size).into())
 }
 
 pub fn dispatch_change_pixel_spread(size: f32) -> WasmResult<()> {
-    let size = ((size * 1000.0) as i32) as f32 / 1000.0;
-    dispatch_event_with("app-event.change_pixel_spread", &size.into())
+    dispatch_event_with("app-event.change_pixel_spread", &format!("{:.03}", size).into())
 }
 
 pub fn dispatch_change_pixel_brightness(res: &Resources) -> WasmResult<()> {
-    let value = ((res.crt_filters.extra_bright * 100.0) as i32) as f32 / 100.0;
-    dispatch_event_with("app-event.change_pixel_brightness", &value.into())
+    dispatch_event_with("app-event.change_pixel_brightness", &format!("{:.02}", res.crt_filters.extra_bright).into())
 }
 
 pub fn dispatch_change_pixel_contrast(res: &Resources) -> WasmResult<()> {
-    let contrast = ((res.crt_filters.extra_contrast * 1000.0) as i32) as f32 / 1000.0;
-    dispatch_event_with("app-event.change_pixel_contrast", &contrast.into())
+    dispatch_event_with("app-event.change_pixel_contrast", &format!("{:.03}", res.crt_filters.extra_contrast).into())
 }
 
 pub fn dispatch_change_light_color(res: &Resources) -> WasmResult<()> {
@@ -46,8 +40,7 @@ fn dispatch_change_color(id: &str, color: i32) -> WasmResult<()> {
 }
 
 pub fn dispatch_change_camera_zoom(res: &Resources) -> WasmResult<()> {
-    let value = ((res.camera.zoom * 100.0) as i32) as f32 / 100.0;
-    dispatch_event_with("app-event.change_camera_zoom", &value.into())
+    dispatch_event_with("app-event.change_camera_zoom", &format!("{:.02}", res.camera.zoom).into())
 }
 
 pub fn dispatch_change_blur_level(res: &Resources) -> WasmResult<()> {
@@ -103,8 +96,7 @@ pub fn dispatch_change_movement_speed(speed: f32) -> WasmResult<()> {
 }
 
 fn dispatch_internal_speed(id: &str, speed: f32) -> WasmResult<()> {
-    let speed = ((speed * 1000.0) as i32) as f32 / 1000.0;
-    dispatch_event_with(id, &format!("x{}", speed).into())
+    dispatch_event_with(id, &format!("x{}", format!("{:.03}", speed)).into())
 }
 
 pub fn dispatch_exiting_session() -> WasmResult<()> {
