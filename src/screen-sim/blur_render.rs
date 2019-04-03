@@ -38,15 +38,16 @@ impl BlurRender {
 
         gl.use_program(Some(&self.shader));
         gl.bind_vertex_array(self.vao.as_ref());
-        blur_iteration(source.texture(), texture_buffers[0], false);
+
+        blur_iteration(source.texture(), texture_buffers[0], true);
         for i in 1..passes {
             let buffer_index = i % 2;
             let texture_index = (i + 1) % 2;
-            blur_iteration(texture_buffers[texture_index].texture(), texture_buffers[buffer_index], buffer_index == 1);
+            blur_iteration(texture_buffers[texture_index].texture(), texture_buffers[buffer_index], buffer_index == 0);
         }
         let buffer_index = passes % 2;
         let texture_index = (passes + 1) % 2;
-        blur_iteration(texture_buffers[texture_index].texture(), target, buffer_index == 1);
+        blur_iteration(texture_buffers[texture_index].texture(), target, buffer_index == 0);
         gl.bind_vertex_array(None);
         gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, None);
         stack.pop()?;
