@@ -91,7 +91,8 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
                 }
                 if vertical_lines_ratio > 1 {
                     pixel_offset[0] /= vertical_lines_ratio as f32;
-                    pixel_offset[0] += (j as f32 / vertical_lines_ratio as f32 - calc_stupid_not_extrapoled_function(vertical_lines_ratio)) * res.crt_filters.cur_pixel_width
+                    pixel_offset[0] += (j as f32 / vertical_lines_ratio as f32 - calc_stupid_not_extrapoled_function(vertical_lines_ratio))
+                        * res.crt_filters.cur_pixel_width
                         / (res.crt_filters.cur_pixel_scale_x + 1.0);
                     pixel_scale[0] *= vertical_lines_ratio as f32;
                 }
@@ -108,7 +109,10 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
                         shadow_kind: res.crt_filters.pixel_shadow_shape_kind,
                         geometry_kind: res.crt_filters.pixels_geometry_kind,
                         view: res.camera.get_view().as_mut_slice(),
-                        projection: res.camera.get_projection(res.video.viewport_size.width as f32, res.video.viewport_size.height as f32).as_mut_slice(),
+                        projection: res
+                            .camera
+                            .get_projection(res.video.viewport_size.width as f32, res.video.viewport_size.height as f32)
+                            .as_mut_slice(),
                         ambient_strength: match res.crt_filters.pixels_geometry_kind {
                             PixelsGeometryKind::Squares => 1.0,
                             PixelsGeometryKind::Cubes => 0.5,
@@ -118,7 +122,10 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
                         extra_light: &mut extra_light,
                         light_pos: res.camera.get_position().as_mut_slice(),
                         screen_curvature,
-                        pixel_gap: &mut [(1.0 + res.crt_filters.cur_pixel_gap) * res.crt_filters.cur_pixel_width, 1.0 + res.crt_filters.cur_pixel_gap],
+                        pixel_gap: &mut [
+                            (1.0 + res.crt_filters.cur_pixel_gap) * res.crt_filters.cur_pixel_width,
+                            1.0 + res.crt_filters.cur_pixel_gap,
+                        ],
                         pixel_scale,
                         pixel_pulse: res.crt_filters.pixels_pulse,
                         pixel_offset,
@@ -153,7 +160,12 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
     gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
 
     if res.crt_filters.showing_solid_background {
-        let diffuse_condition = res.crt_filters.showing_diffuse_foreground || if let ScreenLayeringKind::DiffuseOnly = res.crt_filters.layering_kind { true } else { false };
+        let diffuse_condition = res.crt_filters.showing_diffuse_foreground
+            || if let ScreenLayeringKind::DiffuseOnly = res.crt_filters.layering_kind {
+                true
+            } else {
+                false
+            };
         if diffuse_condition {
             materials.bg_buffer_stack.set_resolution(gl, 1920 / 2, 1080 / 2);
             materials.bg_buffer_stack.set_depthbuffer(gl, false);
@@ -168,16 +180,26 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
                 shadow_kind: 0,
                 geometry_kind: res.crt_filters.pixels_geometry_kind,
                 view: res.camera.get_view().as_mut_slice(),
-                projection: res.camera.get_projection(res.video.viewport_size.width as f32, res.video.viewport_size.height as f32).as_mut_slice(),
+                projection: res
+                    .camera
+                    .get_projection(res.video.viewport_size.width as f32, res.video.viewport_size.height as f32)
+                    .as_mut_slice(),
                 ambient_strength: match res.crt_filters.pixels_geometry_kind {
                     PixelsGeometryKind::Squares => 1.0,
                     PixelsGeometryKind::Cubes => 0.5,
                 },
                 contrast_factor: res.crt_filters.extra_contrast,
-                light_color: &mut [res.crt_filters.solid_color_weight, res.crt_filters.solid_color_weight, res.crt_filters.solid_color_weight],
+                light_color: &mut [
+                    res.crt_filters.solid_color_weight,
+                    res.crt_filters.solid_color_weight,
+                    res.crt_filters.solid_color_weight,
+                ],
                 extra_light: &mut [0.0, 0.0, 0.0],
                 light_pos: res.camera.get_position().as_mut_slice(),
-                pixel_gap: &mut [(1.0 + res.crt_filters.cur_pixel_gap) * res.crt_filters.cur_pixel_width, 1.0 + res.crt_filters.cur_pixel_gap],
+                pixel_gap: &mut [
+                    (1.0 + res.crt_filters.cur_pixel_gap) * res.crt_filters.cur_pixel_width,
+                    1.0 + res.crt_filters.cur_pixel_gap,
+                ],
                 pixel_scale: &mut [
                     (res.crt_filters.cur_pixel_scale_x + 1.0) / res.crt_filters.cur_pixel_width,
                     res.crt_filters.cur_pixel_scale_y + 1.0,
@@ -210,14 +232,24 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
 
     if res.crt_filters.blur_passes > 0 {
         let target = materials.main_buffer_stack.get_current()?.clone();
-        materials.blur_render.render(&gl, &mut materials.main_buffer_stack, &target, &target, res.crt_filters.blur_passes)?;
+        materials
+            .blur_render
+            .render(&gl, &mut materials.main_buffer_stack, &target, &target, res.crt_filters.blur_passes)?;
     }
 
     if res.launch_screenshot {
         let width = res.crt_filters.internal_resolution.width();
         let height = res.crt_filters.internal_resolution.height();
         let pixels = js_sys::Uint8Array::new(&(width * height * 4).into());
-        gl.read_pixels_with_opt_array_buffer_view(0, 0, width, height, WebGl2RenderingContext::RGBA, WebGl2RenderingContext::UNSIGNED_BYTE, Some(&pixels))?;
+        gl.read_pixels_with_opt_array_buffer_view(
+            0,
+            0,
+            width,
+            height,
+            WebGl2RenderingContext::RGBA,
+            WebGl2RenderingContext::UNSIGNED_BYTE,
+            Some(&pixels),
+        )?;
         let array = js_sys::Array::new();
         array.push(&pixels);
         array.push(&res.crt_filters.internal_resolution.multiplier.into());
@@ -231,7 +263,9 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
     gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
     gl.viewport(0, 0, res.video.viewport_size.width as i32, res.video.viewport_size.height as i32);
 
-    materials.internal_resolution_render.render(gl, materials.main_buffer_stack.get_nth(1)?.texture());
+    materials
+        .internal_resolution_render
+        .render(gl, materials.main_buffer_stack.get_nth(1)?.texture());
 
     check_error(&gl, line!())?;
 
@@ -247,7 +281,11 @@ fn check_error(gl: &WebGl2RenderingContext, line: u32) -> WasmResult<()> {
 }
 
 fn get_3_f32color_from_int(color: i32) -> [f32; 3] {
-    [(color >> 16) as f32 / 255.0, ((color >> 8) & 0xFF) as f32 / 255.0, (color & 0xFF) as f32 / 255.0]
+    [
+        (color >> 16) as f32 / 255.0,
+        ((color >> 8) & 0xFF) as f32 / 255.0,
+        (color & 0xFF) as f32 / 255.0,
+    ]
 }
 
 fn calc_stupid_not_extrapoled_function(y: usize) -> f32 {

@@ -17,7 +17,14 @@ impl BlurRender {
         Ok(BlurRender { shader, vao })
     }
 
-    pub fn render(&self, gl: &WebGl2RenderingContext, stack: &mut TextureBufferStack, source: &TextureBuffer, target: &TextureBuffer, passes: usize) -> WasmResult<()> {
+    pub fn render(
+        &self,
+        gl: &WebGl2RenderingContext,
+        stack: &mut TextureBufferStack,
+        source: &TextureBuffer,
+        target: &TextureBuffer,
+        passes: usize,
+    ) -> WasmResult<()> {
         if passes < 1 {
             panic!("Should not be called when passes < 1!");
         }

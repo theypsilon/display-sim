@@ -66,14 +66,25 @@ impl PixelsRender {
 
         let pixels_vbo = gl.create_buffer().ok_or("cannot create pixels_vbo")?;
         gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&pixels_vbo));
-        gl.buffer_data_with_opt_array_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&js_f32_array(&CUBE_GEOMETRY).buffer()), WebGl2RenderingContext::STATIC_DRAW);
+        gl.buffer_data_with_opt_array_buffer(
+            WebGl2RenderingContext::ARRAY_BUFFER,
+            Some(&js_f32_array(&CUBE_GEOMETRY).buffer()),
+            WebGl2RenderingContext::STATIC_DRAW,
+        );
 
         let a_pos_position = gl.get_attrib_location(&shader, "aPos") as u32;
         gl.vertex_attrib_pointer_with_i32(a_pos_position, 3, WebGl2RenderingContext::FLOAT, false, 6 * size_of::<f32>() as i32, 0);
         gl.enable_vertex_attrib_array(a_pos_position);
 
         let a_normal_position = gl.get_attrib_location(&shader, "aNormal") as u32;
-        gl.vertex_attrib_pointer_with_i32(a_normal_position, 3, WebGl2RenderingContext::FLOAT, false, 6 * size_of::<f32>() as i32, 3 * size_of::<f32>() as i32);
+        gl.vertex_attrib_pointer_with_i32(
+            a_normal_position,
+            3,
+            WebGl2RenderingContext::FLOAT,
+            false,
+            6 * size_of::<f32>() as i32,
+            3 * size_of::<f32>() as i32,
+        );
         gl.enable_vertex_attrib_array(a_normal_position);
 
         let colors_vbo = gl.create_buffer().ok_or("cannot create colors_vbo")?;
@@ -164,10 +175,26 @@ impl PixelsRender {
             WebGl2RenderingContext::UNSIGNED_BYTE,
             Some(&mut texture),
         )?;
-        gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MIN_FILTER, WebGl2RenderingContext::LINEAR as i32);
-        gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MAG_FILTER, WebGl2RenderingContext::LINEAR as i32);
-        gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_WRAP_S, WebGl2RenderingContext::CLAMP_TO_EDGE as i32);
-        gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_WRAP_T, WebGl2RenderingContext::CLAMP_TO_EDGE as i32);
+        gl.tex_parameteri(
+            WebGl2RenderingContext::TEXTURE_2D,
+            WebGl2RenderingContext::TEXTURE_MIN_FILTER,
+            WebGl2RenderingContext::LINEAR as i32,
+        );
+        gl.tex_parameteri(
+            WebGl2RenderingContext::TEXTURE_2D,
+            WebGl2RenderingContext::TEXTURE_MAG_FILTER,
+            WebGl2RenderingContext::LINEAR as i32,
+        );
+        gl.tex_parameteri(
+            WebGl2RenderingContext::TEXTURE_2D,
+            WebGl2RenderingContext::TEXTURE_WRAP_S,
+            WebGl2RenderingContext::CLAMP_TO_EDGE as i32,
+        );
+        gl.tex_parameteri(
+            WebGl2RenderingContext::TEXTURE_2D,
+            WebGl2RenderingContext::TEXTURE_WRAP_T,
+            WebGl2RenderingContext::CLAMP_TO_EDGE as i32,
+        );
         gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, None);
 
         Ok(pixel_shadow_texture)
@@ -180,7 +207,11 @@ impl PixelsRender {
             self.offset_inverse_max_length = 1.0 / ((self.width as f32 * 0.5).powi(2) + (self.height as f32 * 0.5).powi(2)).sqrt();
             gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&self.offsets_vbo));
             let offsets = calculate_offsets(self.width, self.height);
-            gl.buffer_data_with_opt_array_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&offsets.buffer()), WebGl2RenderingContext::STATIC_DRAW);
+            gl.buffer_data_with_opt_array_buffer(
+                WebGl2RenderingContext::ARRAY_BUFFER,
+                Some(&offsets.buffer()),
+                WebGl2RenderingContext::STATIC_DRAW,
+            );
         }
         gl.bind_vertex_array(self.vao.as_ref());
         gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&self.colors_vbo));
@@ -205,13 +236,19 @@ impl PixelsRender {
         gl.uniform3fv_with_f32_array(gl.get_uniform_location(&self.shader, "extraLight").as_ref(), uniforms.extra_light);
         gl.uniform1f(gl.get_uniform_location(&self.shader, "ambientStrength").as_ref(), uniforms.ambient_strength);
         gl.uniform1f(gl.get_uniform_location(&self.shader, "contrastFactor").as_ref(), uniforms.contrast_factor);
-        gl.uniform1f(gl.get_uniform_location(&self.shader, "offset_inverse_max_length").as_ref(), self.offset_inverse_max_length);
+        gl.uniform1f(
+            gl.get_uniform_location(&self.shader, "offset_inverse_max_length").as_ref(),
+            self.offset_inverse_max_length,
+        );
         gl.uniform1f(gl.get_uniform_location(&self.shader, "screen_curvature").as_ref(), uniforms.screen_curvature);
         gl.uniform2fv_with_f32_array(gl.get_uniform_location(&self.shader, "pixel_gap").as_ref(), uniforms.pixel_gap);
         gl.uniform3fv_with_f32_array(gl.get_uniform_location(&self.shader, "pixel_scale").as_ref(), uniforms.pixel_scale);
         gl.uniform3fv_with_f32_array(gl.get_uniform_location(&self.shader, "pixel_offset").as_ref(), uniforms.pixel_offset);
         gl.uniform1f(gl.get_uniform_location(&self.shader, "pixel_pulse").as_ref(), uniforms.pixel_pulse);
-        gl.uniform1f(gl.get_uniform_location(&self.shader, "heightModifierFactor").as_ref(), uniforms.height_modifier_factor);
+        gl.uniform1f(
+            gl.get_uniform_location(&self.shader, "heightModifierFactor").as_ref(),
+            uniforms.height_modifier_factor,
+        );
 
         gl.bind_vertex_array(self.vao.as_ref());
         gl.draw_arrays_instanced(

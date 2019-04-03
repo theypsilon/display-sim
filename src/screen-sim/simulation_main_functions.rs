@@ -10,7 +10,8 @@ use crate::render_types::TextureBufferStack;
 use crate::rgb_render::RgbRender;
 use crate::simulation_draw::draw;
 use crate::simulation_state::{
-    InitialParameters, Input, Materials, Resources, SimulationTimers, VideoInputMaterials, VideoInputResources, MOVEMENT_BASE_SPEED, MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED,
+    InitialParameters, Input, Materials, Resources, SimulationTimers, VideoInputMaterials, VideoInputResources, MOVEMENT_BASE_SPEED, MOVEMENT_SPEED_FACTOR,
+    TURNING_BASE_SPEED,
 };
 use crate::simulation_update::{change_frontend_input_values, update_simulation};
 use crate::wasm_error::WasmResult;
@@ -96,7 +97,11 @@ fn calculate_far_away_position(video_input: &VideoInputResources) -> f32 {
     let height_ratio = video_input.viewport_size.height as f32 / height;
     let is_height_bounded = width_ratio > height_ratio;
     let mut bound_ratio = if is_height_bounded { height_ratio } else { width_ratio };
-    let mut resolution = if is_height_bounded { video_input.viewport_size.height } else { viewport_width_scaled } as i32;
+    let mut resolution = if is_height_bounded {
+        video_input.viewport_size.height
+    } else {
+        viewport_width_scaled
+    } as i32;
     while bound_ratio < 1.0 {
         bound_ratio *= 2.0;
         resolution *= 2;

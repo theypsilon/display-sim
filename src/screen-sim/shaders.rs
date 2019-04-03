@@ -15,7 +15,11 @@ fn compile_shader(gl: &WebGl2RenderingContext, shader_type: u32, source: &str) -
     gl.shader_source(&shader, source);
     gl.compile_shader(&shader);
 
-    if gl.get_shader_parameter(&shader, WebGl2RenderingContext::COMPILE_STATUS).as_bool().unwrap_or(false) {
+    if gl
+        .get_shader_parameter(&shader, WebGl2RenderingContext::COMPILE_STATUS)
+        .as_bool()
+        .unwrap_or(false)
+    {
         Ok(shader)
     } else {
         Err(WasmError::Str(gl.get_shader_info_log(&shader).ok_or("Unknown error creating shader")?))
@@ -29,7 +33,11 @@ fn link_shader<'a, T: IntoIterator<Item = &'a WebGlShader>>(gl: &WebGl2Rendering
     }
     gl.link_program(&program);
 
-    if gl.get_program_parameter(&program, WebGl2RenderingContext::LINK_STATUS).as_bool().unwrap_or(false) {
+    if gl
+        .get_program_parameter(&program, WebGl2RenderingContext::LINK_STATUS)
+        .as_bool()
+        .unwrap_or(false)
+    {
         Ok(program)
     } else {
         Err(WasmError::Str(gl.get_program_info_log(&program).ok_or("cannot get program info log")?))
@@ -43,7 +51,11 @@ pub fn make_quad_vao(gl: &WebGl2RenderingContext, shader: &WebGlProgram) -> Wasm
     let quad_vbo = gl.create_buffer().ok_or("cannot create quad_vbo")?;
     let quad_ebo = gl.create_buffer().ok_or("cannot create quad_ebo")?;
     gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&quad_vbo));
-    gl.buffer_data_with_opt_array_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&js_f32_array(&QUAD_GEOMETRY).buffer()), WebGl2RenderingContext::STATIC_DRAW);
+    gl.buffer_data_with_opt_array_buffer(
+        WebGl2RenderingContext::ARRAY_BUFFER,
+        Some(&js_f32_array(&QUAD_GEOMETRY).buffer()),
+        WebGl2RenderingContext::STATIC_DRAW,
+    );
     gl.bind_buffer(WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER, Some(&quad_ebo));
     gl.buffer_data_with_opt_array_buffer(
         WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER,
@@ -58,7 +70,14 @@ pub fn make_quad_vao(gl: &WebGl2RenderingContext, shader: &WebGlProgram) -> Wasm
     gl.enable_vertex_attrib_array(q_texture_position);
 
     gl.vertex_attrib_pointer_with_i32(q_pos_position, 3, WebGl2RenderingContext::FLOAT, false, 5 * size_of::<f32>() as i32, 0);
-    gl.vertex_attrib_pointer_with_i32(q_texture_position, 2, WebGl2RenderingContext::FLOAT, false, 5 * size_of::<f32>() as i32, 3 * size_of::<f32>() as i32);
+    gl.vertex_attrib_pointer_with_i32(
+        q_texture_position,
+        2,
+        WebGl2RenderingContext::FLOAT,
+        false,
+        5 * size_of::<f32>() as i32,
+        3 * size_of::<f32>() as i32,
+    );
     Ok(vao)
 }
 

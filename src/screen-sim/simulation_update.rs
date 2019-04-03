@@ -3,7 +3,9 @@ use crate::boolean_button::BooleanButton;
 use crate::camera::CameraDirection;
 use crate::general_types::NextEnumVariant;
 use crate::pixels_shadow::SHADOWS_LEN;
-use crate::simulation_state::{CrtFilters, CustomInputEvent, IncDec, Input, Resources, ScreenCurvatureKind, ScreenLayeringKind, PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED};
+use crate::simulation_state::{
+    CrtFilters, CustomInputEvent, IncDec, Input, Resources, ScreenCurvatureKind, ScreenLayeringKind, PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
+};
 use crate::wasm_error::WasmResult;
 
 pub fn update_simulation(res: &mut Resources, input: &Input) -> WasmResult<bool> {
@@ -433,7 +435,13 @@ fn update_speeds(res: &mut Resources, input: &Input) -> WasmResult<()> {
         app_events::dispatch_change_movement_speed,
     )?;
 
-    fn change_speed(speed: &IncDec<BooleanButton>, cur_speed: &mut f32, base_speed: f32, top_message: &str, dispatch_update: fn(f32) -> WasmResult<()>) -> WasmResult<()> {
+    fn change_speed(
+        speed: &IncDec<BooleanButton>,
+        cur_speed: &mut f32,
+        base_speed: f32,
+        top_message: &str,
+        dispatch_update: fn(f32) -> WasmResult<()>,
+    ) -> WasmResult<()> {
         let before_speed = *cur_speed;
         if speed.increase.is_just_pressed() && *cur_speed < 10000.0 {
             *cur_speed *= 2.0;

@@ -32,7 +32,12 @@ impl StateOwner {
     }
 }
 
-pub fn web_entrypoint(gl: JsValue, res: Rc<RefCell<Resources>>, video_input_resources: VideoInputResources, video_input_materials: VideoInputMaterials) -> WasmResult<()> {
+pub fn web_entrypoint(
+    gl: JsValue,
+    res: Rc<RefCell<Resources>>,
+    video_input_resources: VideoInputResources,
+    video_input_materials: VideoInputMaterials,
+) -> WasmResult<()> {
     let gl = gl.dyn_into::<WebGl2RenderingContext>()?;
     init_resources(&mut res.borrow_mut(), video_input_resources)?;
     let owned_state = StateOwner::new_rc(res, load_materials(gl, video_input_materials)?, Input::new()?);

@@ -23,5 +23,11 @@ fn dispatch_event_internal(event: &Event) -> WasmResult<()> {
         .map_err(|_| "cannot have event target")?
         .dispatch_event(&event)
         .map_err(WasmError::Js)
-        .and_then(|success| if success { Ok(()) } else { Err(WasmError::Str("could not dispatch event".to_string())) })
+        .and_then(|success| {
+            if success {
+                Ok(())
+            } else {
+                Err(WasmError::Str("could not dispatch event".to_string()))
+            }
+        })
 }
