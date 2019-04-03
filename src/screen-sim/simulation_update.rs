@@ -32,7 +32,7 @@ pub fn update_simulation(res: &mut Resources, input: &Input, materials: &Materia
         res.screenshot_delay -= 1;
     } else if input.screenshot.is_just_released() {
         res.launch_screenshot = true;
-        res.screenshot_delay = (5.0 / dt) as i32; // 5 seconds aprox.
+        res.screenshot_delay = (5.0 * res.crt_filters.internal_resolution.multiplier as f32 * (1.0 / dt)) as i32; // 5 seconds aprox.
     }
 
     Ok(true)
