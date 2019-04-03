@@ -547,7 +547,7 @@ async function prepareUi () {
 
     const wasm = await new Promise(resolve => import(/* webpackPrefetch: true */'./crt_3d_sim').then(resolve));
 
-    const animation = new wasm.AnimationWasm(
+    const videoInput = new wasm.VideoInputWasm(
         imageWidth, imageHeight, // to read the image pixels
         backgroundWidth, backgroundHeight, // to calculate model distance to the camera
         canvas.width, canvas.height, // gl.viewport
@@ -555,7 +555,7 @@ async function prepareUi () {
     );
     for (let i = 0; i < rawImgs.length; i++) {
         const rawImg = rawImgs[i];
-        animation.add(rawImg.raw.data.buffer, rawImg.delay);
+        videoInput.add(rawImg.raw.data.buffer, rawImg.delay);
     }
 
     if (simulationResources === undefined) {
@@ -564,7 +564,7 @@ async function prepareUi () {
         benchmark('wasm load_simulation_resources done');
     }
     benchmark('calling wasm run_program');
-    wasm.run_program(gl, simulationResources, animation);
+    wasm.run_program(gl, simulationResources, videoInput);
     benchmark('wasm run_program done');
 
     visibility.hideLoading();

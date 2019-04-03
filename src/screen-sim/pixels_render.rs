@@ -6,7 +6,7 @@ use num_derive::{FromPrimitive, ToPrimitive};
 
 use crate::pixels_shadow::{get_shadows, TEXTURE_SIZE};
 use crate::shaders::make_shader;
-use crate::simulation_state::{AnimationMaterials, AnimationResources};
+use crate::simulation_state::{VideoInputMaterials, VideoInputResources};
 use crate::wasm_error::WasmResult;
 use crate::web_utils::js_f32_array;
 
@@ -36,7 +36,7 @@ pub struct PixelsRender {
     height: u32,
     offset_inverse_max_length: f32,
     shadows: Vec<Option<WebGlTexture>>,
-    animation_buffers: Vec<ArrayBuffer>,
+    video_buffers: Vec<ArrayBuffer>,
 }
 
 pub struct PixelsUniform<'a> {
@@ -58,7 +58,7 @@ pub struct PixelsUniform<'a> {
 }
 
 impl PixelsRender {
-    pub fn new(gl: &WebGl2RenderingContext, animation_materials: AnimationMaterials) -> WasmResult<PixelsRender> {
+    pub fn new(gl: &WebGl2RenderingContext, video_materials: VideoInputMaterials) -> WasmResult<PixelsRender> {
         let shader = make_shader(&gl, PIXEL_VERTEX_SHADER, PIXEL_FRAGMENT_SHADER)?;
 
         let vao = gl.create_vertex_array();
@@ -98,7 +98,7 @@ impl PixelsRender {
             .collect::<WasmResult<Vec<Option<WebGlTexture>>>>()?;
 
         Ok(PixelsRender {
-            animation_buffers: animation_materials.buffers,
+            video_buffers: video_materials.buffers,
             vao,
             shader,
             offsets_vbo,
@@ -173,10 +173,10 @@ impl PixelsRender {
         Ok(pixel_shadow_texture)
     }
 
-    pub fn load_image(&mut self, gl: &WebGl2RenderingContext, animation: &AnimationResources) {
-        if animation.image_size.width != self.width || animation.image_size.height != self.height {
-            self.width = animation.image_size.width;
-            self.height = animation.image_size.height;
+    pub fn load_image(&mut self, gl: &WebGl2RenderingContext, video_res: &VideoInputResources) {
+        if video_res.image_size.width != self.width || video_res.image_size.height != self.height {
+            self.width = video_res.image_size.width;
+            self.height = video_res.image_size.height;
             self.offset_inverse_max_length = 1.0 / ((self.width as f32 * 0.5).powi(2) + (self.height as f32 * 0.5).powi(2)).sqrt();
             gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&self.offsets_vbo));
             let offsets = calculate_offsets(self.width, self.height);
@@ -187,7 +187,7 @@ impl PixelsRender {
 
         gl.buffer_data_with_opt_array_buffer(
             WebGl2RenderingContext::ARRAY_BUFFER,
-            Some(&self.animation_buffers[animation.current_frame]),
+            Some(&self.video_buffers[video_res.current_frame]),
             WebGl2RenderingContext::STATIC_DRAW,
         );
     }

@@ -8,8 +8,8 @@ use crate::wasm_error::{WasmError, WasmResult};
 pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
     let gl = &materials.gl;
 
-    if res.animation.needs_buffer_data_load {
-        materials.pixels_render.load_image(gl, &res.animation);
+    if res.video.needs_buffer_data_load {
+        materials.pixels_render.load_image(gl, &res.video);
     }
 
     materials.main_buffer_stack.set_depthbuffer(
@@ -108,10 +108,7 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
                         shadow_kind: res.crt_filters.pixel_shadow_shape_kind,
                         geometry_kind: res.crt_filters.pixels_geometry_kind,
                         view: res.camera.get_view().as_mut_slice(),
-                        projection: res
-                            .camera
-                            .get_projection(res.animation.viewport_size.width as f32, res.animation.viewport_size.height as f32)
-                            .as_mut_slice(),
+                        projection: res.camera.get_projection(res.video.viewport_size.width as f32, res.video.viewport_size.height as f32).as_mut_slice(),
                         ambient_strength: match res.crt_filters.pixels_geometry_kind {
                             PixelsGeometryKind::Squares => 1.0,
                             PixelsGeometryKind::Cubes => 0.5,
@@ -171,10 +168,7 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
                 shadow_kind: 0,
                 geometry_kind: res.crt_filters.pixels_geometry_kind,
                 view: res.camera.get_view().as_mut_slice(),
-                projection: res
-                    .camera
-                    .get_projection(res.animation.viewport_size.width as f32, res.animation.viewport_size.height as f32)
-                    .as_mut_slice(),
+                projection: res.camera.get_projection(res.video.viewport_size.width as f32, res.video.viewport_size.height as f32).as_mut_slice(),
                 ambient_strength: match res.crt_filters.pixels_geometry_kind {
                     PixelsGeometryKind::Squares => 1.0,
                     PixelsGeometryKind::Cubes => 0.5,
@@ -235,7 +229,7 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
 
     gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, None);
     gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
-    gl.viewport(0, 0, res.animation.viewport_size.width as i32, res.animation.viewport_size.height as i32);
+    gl.viewport(0, 0, res.video.viewport_size.width as i32, res.video.viewport_size.height as i32);
 
     materials.internal_resolution_render.render(gl, materials.main_buffer_stack.get_nth(1)?.texture());
 

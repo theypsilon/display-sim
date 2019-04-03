@@ -56,17 +56,17 @@ fn update_timers_and_dt(res: &mut Resources, input: &Input) -> WasmResult<f32> {
 }
 
 fn update_animation_buffer(res: &mut Resources, input: &Input) {
-    res.animation.needs_buffer_data_load = res.resetted;
-    let next_frame_update = res.animation.last_frame_change + 0.001 * f64::from(res.animation.steps[res.animation.current_frame].delay);
+    res.video.needs_buffer_data_load = res.resetted;
+    let next_frame_update = res.video.last_frame_change + 0.001 * f64::from(res.video.steps[res.video.current_frame].delay);
     if input.now >= next_frame_update {
-        res.animation.last_frame_change = next_frame_update;
-        let last_frame = res.animation.current_frame;
-        res.animation.current_frame += 1;
-        if res.animation.current_frame >= res.animation.steps.len() {
-            res.animation.current_frame = 0;
+        res.video.last_frame_change = next_frame_update;
+        let last_frame = res.video.current_frame;
+        res.video.current_frame += 1;
+        if res.video.current_frame >= res.video.steps.len() {
+            res.video.current_frame = 0;
         }
-        if last_frame != res.animation.current_frame {
-            res.animation.needs_buffer_data_load = true;
+        if last_frame != res.video.current_frame {
+            res.video.needs_buffer_data_load = true;
         }
     }
     res.resetted = false;

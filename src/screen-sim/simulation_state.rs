@@ -25,7 +25,7 @@ pub const MOVEMENT_BASE_SPEED: f32 = 10.0;
 pub const MOVEMENT_SPEED_FACTOR: f32 = 50.0;
 
 #[derive(Default)]
-pub struct AnimationResources {
+pub struct VideoInputResources {
     pub steps: Vec<AnimationStep>,
     pub image_size: Size2D<u32>,
     pub background_size: Size2D<u32>,
@@ -41,13 +41,13 @@ pub struct AnimationStep {
     pub delay: u32,
 }
 
-pub struct AnimationMaterials {
+pub struct VideoInputMaterials {
     pub buffers: Vec<ArrayBuffer>,
 }
 
 // Simulation Resources
 pub struct Resources {
-    pub animation: AnimationResources,
+    pub video: VideoInputResources,
     pub camera: Camera,
     pub crt_filters: CrtFilters,
     pub timers: SimulationTimers,
@@ -63,7 +63,7 @@ impl Resources {
             resetted: true,
             initial_parameters: InitialParameters::default(),
             timers: SimulationTimers::default(),
-            animation: AnimationResources::default(),
+            video: VideoInputResources::default(),
             camera: Camera::new(MOVEMENT_BASE_SPEED / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED),
             crt_filters: CrtFilters::new(PIXEL_MANIPULATION_BASE_SPEED),
             launch_screenshot: false,

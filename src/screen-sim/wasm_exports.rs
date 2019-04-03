@@ -4,7 +4,7 @@ use js_sys::ArrayBuffer;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 use crate::general_types::Size2D;
-use crate::simulation_state::{AnimationMaterials, AnimationResources, AnimationStep, Resources};
+use crate::simulation_state::{AnimationStep, Resources, VideoInputMaterials, VideoInputResources};
 use crate::web_entrypoint::{print_error, web_entrypoint};
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -17,9 +17,9 @@ pub fn load_simulation_resources() -> ResourcesWasm {
 }
 
 #[wasm_bindgen]
-pub fn run_program(gl: JsValue, res: &ResourcesWasm, animation: AnimationWasm) {
+pub fn run_program(gl: JsValue, res: &ResourcesWasm, video_input: VideoInputWasm) {
     set_panic_hook();
-    if let Err(e) = web_entrypoint(gl, res.data.clone(), animation.resources, animation.materials) {
+    if let Err(e) = web_entrypoint(gl, res.data.clone(), video_input.resources, video_input.materials) {
         print_error(e);
     }
 }
@@ -30,18 +30,18 @@ pub struct ResourcesWasm {
 }
 
 #[wasm_bindgen]
-pub struct AnimationWasm {
-    resources: AnimationResources,
-    materials: AnimationMaterials,
+pub struct VideoInputWasm {
+    resources: VideoInputResources,
+    materials: VideoInputMaterials,
 }
 
 #[wasm_bindgen]
-impl AnimationWasm {
+impl VideoInputWasm {
     #[allow(clippy::too_many_arguments)]
     #[wasm_bindgen(constructor)]
-    pub fn new(image_width: u32, image_height: u32, background_width: u32, background_height: u32, canvas_width: u32, canvas_height: u32, pixel_width: f32, stretch: bool) -> AnimationWasm {
-        AnimationWasm {
-            resources: AnimationResources {
+    pub fn new(image_width: u32, image_height: u32, background_width: u32, background_height: u32, canvas_width: u32, canvas_height: u32, pixel_width: f32, stretch: bool) -> VideoInputWasm {
+        VideoInputWasm {
+            resources: VideoInputResources {
                 image_size: Size2D {
                     width: image_width,
                     height: image_height,
@@ -61,7 +61,7 @@ impl AnimationWasm {
                 last_frame_change: -100.0,
                 needs_buffer_data_load: true,
             },
-            materials: AnimationMaterials { buffers: Vec::new() },
+            materials: VideoInputMaterials { buffers: Vec::new() },
         }
     }
 
