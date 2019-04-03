@@ -4,6 +4,7 @@ use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
 use web_sys::{CustomEvent, EventTarget, KeyboardEvent, MouseEvent, WebGl2RenderingContext, WheelEvent, Window};
 
 use crate::action_bindings::on_button_action;
+use crate::app_events::{dispatch_exiting_session, dispatch_top_message};
 use crate::console;
 use crate::simulation_main_functions::{init_resources, load_materials, simulation_tick};
 use crate::simulation_state::{AnimationData, Input, Materials, Resources};
@@ -40,6 +41,10 @@ pub fn web_entrypoint(gl: JsValue, res: Rc<RefCell<Resources>>, animation: Anima
         Closure::wrap(Box::new(move |_| {
             if let Err(e) = web_entrypoint_iteration(&owned_state, &window) {
                 console!(error. "An unexpected error happened during web_entrypoint_iteration.", e.to_js());
+                dispatch_exiting_session()
+                    .and_then(|_| dispatch_top_message("Error! Wild guess... Did you try a too big resolution?".into()))
+                    .ok()
+                    .expect("Can't exit properly.");
             }
         }))
     };
@@ -65,9 +70,16 @@ fn web_entrypoint_iteration(owned_state: &StateOwner, window: &Window) -> WasmRe
     let mut resources = owned_state.resources.borrow_mut();
     let mut materials = owned_state.materials.borrow_mut();
     let closures = owned_state.closures.borrow();
-    if simulation_tick(&mut input, &mut resources, &mut materials)? {
-        window.request_animation_frame(closures[0].as_ref().ok_or("Wrong closure.")?.as_ref().unchecked_ref())?;
-    }
+    match simulation_tick(&mut input, &mut resources, &mut materials) {
+        Ok(true) => {
+            window.request_animation_frame(closures[0].as_ref().ok_or("Wrong closure.")?.as_ref().unchecked_ref())?;
+        }
+        Ok(false) => {}
+        Err(e) => {
+            resources.crt_filters.internal_resolution.multiplier = 1.0;
+            return Err(e);
+        }
+    };
     Ok(())
 }
 
