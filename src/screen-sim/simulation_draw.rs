@@ -7,8 +7,6 @@ use crate::wasm_error::{WasmError, WasmResult};
 
 pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
     let gl = &materials.gl;
-    gl.enable(WebGl2RenderingContext::DEPTH_TEST);
-    gl.clear_color(0.0, 0.0, 0.0, 0.0);
 
     if res.animation.needs_buffer_data_load {
         materials.pixels_render.load_image(gl, &res.animation);
@@ -39,6 +37,9 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
     materials.main_buffer_stack.push(gl)?;
     materials.main_buffer_stack.push(gl)?;
     materials.main_buffer_stack.bind_current(gl)?;
+
+    gl.enable(WebGl2RenderingContext::DEPTH_TEST);
+    gl.clear_color(0.0, 0.0, 0.0, 0.0);
     gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
 
     let screen_curvature = match res.crt_filters.screen_curvature_kind {

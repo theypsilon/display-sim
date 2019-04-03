@@ -51,6 +51,7 @@ pub struct Resources {
     pub timers: SimulationTimers,
     pub initial_parameters: InitialParameters,
     pub launch_screenshot: bool,
+    pub screenshot_delay: i32,
     pub resetted: bool,
 }
 
@@ -64,6 +65,7 @@ impl Resources {
             camera: Camera::new(MOVEMENT_BASE_SPEED / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED),
             crt_filters: CrtFilters::new(PIXEL_MANIPULATION_BASE_SPEED),
             launch_screenshot: false,
+            screenshot_delay: 0,
         }
     }
 }

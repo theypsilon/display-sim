@@ -26,7 +26,14 @@ pub fn update_simulation(res: &mut Resources, input: &Input, materials: &Materia
     update_crt_filters(dt, res, input, materials)?;
     update_speeds(res, input)?;
     update_camera(dt, res, input)?;
-    res.launch_screenshot = input.screenshot.is_just_released();
+
+    res.launch_screenshot = false;
+    if res.screenshot_delay > 0 {
+        res.screenshot_delay -= 1;
+    } else if input.screenshot.is_just_released() {
+        res.launch_screenshot = true;
+        res.screenshot_delay = (5.0 / dt) as i32; // 5 seconds aprox.
+    }
 
     Ok(true)
 }

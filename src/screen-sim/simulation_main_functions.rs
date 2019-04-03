@@ -21,7 +21,9 @@ pub fn simulation_tick(input: &mut Input, resources: &mut Resources, materials: 
         return Ok(false);
     }
     post_process_input(input)?;
-    draw(materials, resources)?;
+    if resources.launch_screenshot || resources.screenshot_delay <= 0 {
+        draw(materials, resources)?;
+    }
     Ok(true)
 }
 

@@ -27,7 +27,8 @@ const restoreDefaultOptionsDeo = document.getElementById('restore-default-option
 const optionPowerPreferenceSelect = document.getElementById('option-powerPreference');
 const optionScalingSelect = document.getElementById('option-scaling');
 
-const infoHideDeo = document.getElementById('info-hide');
+const toggleInfoPanelClass = document.querySelectorAll('.toggle-info-panel');
+const simulationUiDeo = document.getElementById('simulation-ui');
 const infoPanelDeo = document.getElementById('info-panel');
 const fpsCounterDeo = document.getElementById('fps-counter');
 const lightColorDeo = document.getElementById('light-color');
@@ -53,6 +54,7 @@ const pixelContrastDeo = document.getElementById('pixel-contrast');
 const blurLevelDeo = document.getElementById('blur-level');
 const lppDeo = document.getElementById('lines-per-pixel');
 const featureQuitDeo = document.getElementById('feature-quit');
+const featureCaptureFramebufferDeo = document.getElementById('feature-capture-framebuffer');
 
 const featureChangeColorRepresentationDeo = document.getElementById('feature-change-color-representation');
 const featureChangePixelGeometryDeo = document.getElementById('feature-change-pixel-geometry');
@@ -112,10 +114,10 @@ window.addEventListener('app-event.exit_pointer_lock', () => {
 window.addEventListener('app-event.exiting_session', () => {
     prepareUi();
     getGlCanvasDeo().remove();
-    visibility.hideInfoPanel();
+    visibility.hideSimulationUi();
 }, false);
 
-window.addEventListener('app-event.screenshot', event => {
+window.addEventListener('app-event.screenshot', async event => {
     const arrayBuffer = event.detail[0];
     const multiplier = event.detail[1];
 
@@ -139,10 +141,15 @@ window.addEventListener('app-event.screenshot', event => {
     const a = document.createElement('a');
     document.body.appendChild(a);
     a.classList.add('no-display');
-    a.href = canvas.toDataURL();
+    const blob = await new Promise(resolve => canvas.toBlob(resolve));
+    const url = URL.createObjectURL(blob);
+    a.href = url;
     a.download = 'CRT-3D-Sim_' + new Date().toISOString() + '.png';
     a.click();
-    setTimeout(() => a.remove(), 1000);
+    setTimeout(() =>{
+        URL.revokeObjectURL(url);
+        a.remove();
+    }, 3000);
 }, false);
 
 window.addEventListener('app-event.fps', event => {
@@ -274,6 +281,7 @@ function customEventOnChange (deo, kind, parse) {
     featureChangeScreenLayeringTypeDeo,
     featureChangeScreenCurvatureDeo,
     featureQuitDeo,
+    featureCaptureFramebufferDeo,
     resetCameraDeo,
     resetSpeedsDeo,
     resetFiltersDeo
@@ -314,15 +322,21 @@ document.querySelectorAll('input').forEach(deo => {
     deo.addEventListener('blur', () => document.dispatchEvent(new KeyboardEvent('keyup', eventOptions)));
 });
 
-infoHideDeo.onclick = () => {
-    if (!getGlCanvasDeo()) {
-        return;
-    }
-    visibility.hideInfoPanel();
-    window.dispatchEvent(new CustomEvent('app-event.top_message', {
-        detail: 'Show the Sim Panel again by pressing SPACE.'
-    }));
-};
+toggleInfoPanelClass.forEach(deo => {
+    deo.onclick = () => {
+        if (!getGlCanvasDeo()) {
+            return;
+        }
+        if (visibility.isInfoPanelVisible()) {
+            visibility.hideInfoPanel();
+            window.dispatchEvent(new CustomEvent('app-event.top_message', {
+                detail: 'Show the Sim Panel again by pressing SPACE.'
+            }));
+        } else {
+            visibility.showInfoPanel();
+        }
+    };
+});
 
 inputFileUploadDeo.onchange = () => {
     const file = inputFileUploadDeo.files[0];
@@ -556,6 +570,7 @@ async function prepareUi () {
 
     visibility.hideLoading();
     visibility.showInfoPanel();
+    visibility.showSimulationUi();
 }
 
 function loadInputValuesFromStorage () {
@@ -659,6 +674,8 @@ function makeVisibility () {
         hideUi: () => hideElement(uiDeo),
         showLoading: () => showElement(loadingDeo),
         hideLoading: () => hideElement(loadingDeo),
+        showSimulationUi: () => showElement(simulationUiDeo),
+        hideSimulationUi: () => hideElement(simulationUiDeo),
         showInfoPanel: () => showElement(infoPanelDeo),
         hideInfoPanel: () => hideElement(infoPanelDeo),
         isInfoPanelVisible: () => isVisible(infoPanelDeo),
