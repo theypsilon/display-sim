@@ -10,9 +10,6 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
     gl.enable(WebGl2RenderingContext::DEPTH_TEST);
     gl.clear_color(0.0, 0.0, 0.0, 0.0);
 
-    //gl.enable(WebGl2RenderingContext::BLEND);
-    //gl.blend_func(WebGl2RenderingContext::SRC_ALPHA, WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA);
-
     if res.animation.needs_buffer_data_load {
         materials.pixels_render.load_image(gl, &res.animation);
     }
@@ -104,7 +101,6 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
                         gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
                     }
                 }
-                //gl.blend_func(WebGl2RenderingContext::SRC_ALPHA, WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA);
                 materials.pixels_render.render(
                     gl,
                     PixelsUniform {
@@ -230,7 +226,6 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
 
     materials.main_buffer_stack.pop()?;
     materials.main_buffer_stack.assert_no_stack()?;
-    //gl.blend_func(WebGl2RenderingContext::SRC_ALPHA, WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA);
 
     gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, None);
     gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
