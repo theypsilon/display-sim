@@ -155,7 +155,7 @@ impl PixelsRender {
             0,
             WebGl2RenderingContext::RGBA,
             WebGl2RenderingContext::UNSIGNED_BYTE,
-            Some(&mut texture),
+            Some(&texture),
         )?;
         gl.tex_parameteri(
             WebGl2RenderingContext::TEXTURE_2D,

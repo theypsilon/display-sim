@@ -36,6 +36,7 @@ pub struct VideoInputWasm {
 }
 
 #[wasm_bindgen]
+#[allow(clippy::too_many_arguments)]
 pub fn new_video_input_wasm(
     image_width: u32,
     image_height: u32,

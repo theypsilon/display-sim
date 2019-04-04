@@ -35,6 +35,7 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
     gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
 
     let view = res.camera.get_view();
+    let position = res.camera.get_position();
     let projection = res
         .camera
         .get_projection(res.video.viewport_size.width as f32, res.video.viewport_size.height as f32);
@@ -60,7 +61,7 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
                         contrast_factor: res.filters.extra_contrast,
                         light_color: &res.output.light_color[i],
                         extra_light: &res.output.extra_light,
-                        light_pos: res.camera.get_position().as_slice(),
+                        light_pos: position.as_slice(),
                         screen_curvature: res.output.screen_curvature_factor,
                         pixel_gap: &res.output.pixel_gap,
                         pixel_scale: &res.output.pixel_scale_foreground.get(j).expect("Bad pixel_scale_foreground")[i],
@@ -116,7 +117,7 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
                 contrast_factor: res.filters.extra_contrast,
                 light_color: &[res.output.solid_color_weight, res.output.solid_color_weight, res.output.solid_color_weight],
                 extra_light: &[0.0, 0.0, 0.0],
-                light_pos: res.camera.get_position().as_slice(),
+                light_pos: position.as_slice(),
                 pixel_gap: &res.output.pixel_gap,
                 pixel_scale: &res.output.pixel_scale_base,
                 screen_curvature: res.output.screen_curvature_factor,
