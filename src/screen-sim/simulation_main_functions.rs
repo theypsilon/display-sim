@@ -21,14 +21,14 @@ use crate::wasm_error::WasmResult;
 use crate::web_utils::now;
 
 #[derive(new)]
-pub struct SimulationTicker<'a, T: Default + AppEventDispatcher> {
+pub struct SimulationTicker<'a, T: AppEventDispatcher> {
     ctx: &'a mut SimulationContext<T>,
     input: &'a mut Input,
     resources: &'a mut Resources,
     materials: &'a mut Materials,
 }
 
-impl<'a, T: Default + AppEventDispatcher> SimulationTicker<'a, T> {
+impl<'a, T: AppEventDispatcher> SimulationTicker<'a, T> {
     pub fn tick(&mut self) -> WasmResult<bool> {
         self.pre_process_input()?;
 

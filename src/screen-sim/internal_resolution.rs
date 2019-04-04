@@ -17,7 +17,7 @@ impl InternalResolution {
             maximium_reached: false,
             backup_multiplier: multiplier,
             viewport: Size2D { width: 0, height: 0 },
-            max_texture_size: 0,
+            max_texture_size: 16384,
         }
     }
     pub fn initialize(&mut self, viewport: Size2D<u32>, max_texture_size: i32) {

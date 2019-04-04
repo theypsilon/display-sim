@@ -11,13 +11,13 @@ use crate::simulation_state::{
 };
 
 #[derive(new)]
-pub struct SimulationUpdater<'a, T: Default + AppEventDispatcher> {
+pub struct SimulationUpdater<'a, T: AppEventDispatcher> {
     ctx: &'a mut SimulationContext<T>,
     res: &'a mut Resources,
     input: &'a Input,
 }
 
-impl<'a, T: Default + AppEventDispatcher> SimulationUpdater<'a, T> {
+impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
     pub fn update(&mut self) -> bool {
         if self.res.resetted {
             self.change_frontend_input_values();
@@ -225,6 +225,10 @@ impl<'a, T: Default + AppEventDispatcher> SimulationUpdater<'a, T> {
         if self.input.reset_filters {
             self.res.filters = Filters::new(PIXEL_MANIPULATION_BASE_SPEED);
             self.res.filters.cur_pixel_width = self.res.initial_parameters.initial_pixel_width;
+            self.res
+                .filters
+                .internal_resolution
+                .initialize(self.res.video.viewport_size, self.res.video.max_texture_size);
             self.change_frontend_input_values();
             self.ctx.dispatcher.dispatch_top_message("All filter options have been reset.");
             return;
@@ -375,7 +379,7 @@ impl<'a, T: Default + AppEventDispatcher> SimulationUpdater<'a, T> {
             "event_kind:pixel_spread",
         );
 
-        fn change_pixel_sizes<T: Default + AppEventDispatcher>(
+        fn change_pixel_sizes<T: AppEventDispatcher>(
             ctx: &SimulationContext<T>,
             custom_event: &CustomInputEvent,
             controller: IncDec<bool>,
@@ -442,7 +446,7 @@ impl<'a, T: Default + AppEventDispatcher> SimulationUpdater<'a, T> {
             |n| ctx.dispatcher.dispatch_change_movement_speed(n),
         );
 
-        fn change_speed<T: Default + AppEventDispatcher>(
+        fn change_speed<T: AppEventDispatcher>(
             ctx: &SimulationContext<T>,
             speed: &IncDec<BooleanButton>,
             cur_speed: &mut f32,

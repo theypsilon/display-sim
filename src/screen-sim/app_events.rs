@@ -1,6 +1,6 @@
 use crate::simulation_state::Resources;
 
-pub trait AppEventDispatcher {
+pub trait AppEventDispatcher: Default {
     fn dispatch_camera_update(&self, position: &glm::Vec3, direction: &glm::Vec3, axis_up: &glm::Vec3);
     fn dispatch_change_pixel_horizontal_gap(&self, size: f32);
     fn dispatch_change_pixel_vertical_gap(&self, size: f32);

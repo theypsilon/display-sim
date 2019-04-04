@@ -110,11 +110,11 @@ impl Camera {
         }
         if self.zoom <= 1.0 {
             self.zoom = 1.0;
-            dispatcher.dispatch_top_message("Minimum value is 1.0".into());
+            dispatcher.dispatch_top_message("Minimum value is 1.0");
         }
         if self.zoom >= 45.0 {
             self.zoom = 45.0;
-            dispatcher.dispatch_top_message("Maximum value is 45.0".into());
+            dispatcher.dispatch_top_message("Maximum value is 45.0");
         }
         if (self.zoom - last_zoom).abs() < std::f32::EPSILON {
             dispatcher.dispatch_change_camera_zoom(self.zoom);

@@ -8,13 +8,13 @@ use crate::simulation_state::{ColorChannels, Materials, Resources, TextureInterp
 use crate::wasm_error::{WasmError, WasmResult};
 
 #[derive(new)]
-pub struct SimulationDrawer<'a, T: Default + AppEventDispatcher> {
+pub struct SimulationDrawer<'a, T: AppEventDispatcher> {
     ctx: &'a mut SimulationContext<T>,
     materials: &'a mut Materials,
     res: &'a Resources,
 }
 
-impl<'a, T: Default + AppEventDispatcher> SimulationDrawer<'a, T> {
+impl<'a, T: AppEventDispatcher> SimulationDrawer<'a, T> {
     pub fn draw(&mut self) -> WasmResult<()> {
         let gl = &self.materials.gl;
 
