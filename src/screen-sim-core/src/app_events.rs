@@ -1,4 +1,4 @@
-use crate::simulation_state::Resources;
+use crate::simulation_core_state::Resources;
 
 pub trait AppEventDispatcher: Default {
     fn dispatch_camera_update(&self, position: &glm::Vec3, direction: &glm::Vec3, axis_up: &glm::Vec3);

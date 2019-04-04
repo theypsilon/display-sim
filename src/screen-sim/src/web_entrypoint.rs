@@ -4,15 +4,16 @@ use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
 use web_sys::{CustomEvent, EventTarget, KeyboardEvent, MouseEvent, WebGl2RenderingContext, WheelEvent, Window};
 
 use crate::action_bindings::on_button_action;
-use crate::app_events::AppEventDispatcher;
 use crate::console;
-use crate::internal_resolution::InternalResolution;
-use crate::simulation_context::SimulationContext;
-use crate::simulation_main_functions::{init_resources, load_materials, SimulationTicker};
-use crate::simulation_state::{Input, InputEventValue, Materials, Resources, VideoInputMaterials, VideoInputResources};
-use crate::wasm_error::{WasmError, WasmResult};
+use crate::simulation_entrypoint::{init_resources, load_materials, SimulationTicker};
 use crate::web_events::WebEventDispatcher;
-use crate::web_utils::{now, window};
+use core::app_events::AppEventDispatcher;
+use core::internal_resolution::InternalResolution;
+use core::simulation_context::SimulationContext;
+use core::simulation_core_state::{Input, InputEventValue, Resources, VideoInputResources};
+use render::simulation_render_state::{Materials, VideoInputMaterials};
+use web_base::wasm_error::{WasmError, WasmResult};
+use web_base::web_utils::{now, window};
 
 pub type OwnedClosure = Option<Closure<FnMut(JsValue)>>;
 

@@ -1,11 +1,12 @@
 use web_sys::WebGl2RenderingContext;
 
-use crate::app_events::AppEventDispatcher;
-use crate::derive_new::new;
 use crate::pixels_render::PixelsUniform;
-use crate::simulation_context::SimulationContext;
-use crate::simulation_state::{ColorChannels, Materials, Resources, TextureInterpolation};
-use crate::wasm_error::{WasmError, WasmResult};
+use crate::simulation_render_state::Materials;
+use web_base::wasm_error::{WasmError, WasmResult};
+use core::app_events::AppEventDispatcher;
+use core::simulation_context::SimulationContext;
+use core::simulation_core_state::{ColorChannels, Resources, TextureInterpolation};
+use derive_new::new;
 
 #[derive(new)]
 pub struct SimulationDrawer<'a, T: AppEventDispatcher> {

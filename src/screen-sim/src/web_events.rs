@@ -1,9 +1,9 @@
-use crate::app_events::AppEventDispatcher;
 use crate::dispatch_event::{dispatch_event, dispatch_event_with};
-use crate::simulation_state::Resources;
-use crate::wasm_error::{WasmError, WasmResult};
+use core::app_events::AppEventDispatcher;
+use core::simulation_core_state::Resources;
 use js_sys::{Array, Float32Array};
 use std::cell::RefCell;
+use web_base::wasm_error::{WasmError, WasmResult};
 
 #[derive(Default)]
 pub struct WebEventDispatcher {

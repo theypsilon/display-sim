@@ -1,5 +1,5 @@
 use crate::console;
-use crate::simulation_state::{DefaultReset, Input};
+use core::simulation_core_state::{DefaultReset, Input};
 
 pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
     match button_action {

@@ -1,7 +1,7 @@
 use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlShader, WebGlVertexArrayObject};
 
-use crate::wasm_error::{WasmError, WasmResult};
-use crate::web_utils::{js_f32_array, js_i32_array};
+use web_base::wasm_error::{WasmError, WasmResult};
+use web_base::web_utils::{js_f32_array, js_i32_array};
 use std::mem::size_of;
 
 pub fn make_shader(gl: &WebGl2RenderingContext, vertex_shader: &str, fragment_shader: &str) -> WasmResult<WebGlProgram> {

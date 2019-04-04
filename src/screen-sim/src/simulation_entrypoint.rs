@@ -1,24 +1,24 @@
 use web_sys::WebGl2RenderingContext;
 
-use crate::app_events::AppEventDispatcher;
-use crate::background_render::BackgroundRender;
-use crate::blur_render::BlurRender;
-use crate::camera::Camera;
 use crate::console;
-use crate::derive_new::new;
-use crate::internal_resolution_render::InternalResolutionRender;
-use crate::pixels_render::PixelsRender;
-use crate::render_types::TextureBufferStack;
-use crate::rgb_render::RgbRender;
-use crate::simulation_context::SimulationContext;
-use crate::simulation_draw::SimulationDrawer;
-use crate::simulation_state::{
-    InitialParameters, Input, Materials, Resources, SimulationTimers, VideoInputMaterials, VideoInputResources, MOVEMENT_BASE_SPEED, MOVEMENT_SPEED_FACTOR,
-    TURNING_BASE_SPEED,
+use core::app_events::AppEventDispatcher;
+use core::camera::Camera;
+use core::simulation_context::SimulationContext;
+use core::simulation_core_state::{
+    InitialParameters, Input, Resources, SimulationTimers, VideoInputResources, MOVEMENT_BASE_SPEED, MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED,
 };
-use crate::simulation_update::SimulationUpdater;
-use crate::wasm_error::WasmResult;
-use crate::web_utils::now;
+use core::simulation_update::SimulationUpdater;
+use derive_new::new;
+use render::background_render::BackgroundRender;
+use render::blur_render::BlurRender;
+use render::internal_resolution_render::InternalResolutionRender;
+use render::pixels_render::PixelsRender;
+use render::render_types::TextureBufferStack;
+use render::rgb_render::RgbRender;
+use render::simulation_draw::SimulationDrawer;
+use render::simulation_render_state::{Materials, VideoInputMaterials};
+use web_base::wasm_error::WasmResult;
+use web_base::web_utils::now;
 
 #[derive(new)]
 pub struct SimulationTicker<'a, T: AppEventDispatcher> {

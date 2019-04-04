@@ -5,7 +5,7 @@ use crate::derive_new::new;
 use crate::general_types::{get_3_f32color_from_int, NextEnumVariant};
 use crate::pixels_shadow::SHADOWS_LEN;
 use crate::simulation_context::SimulationContext;
-use crate::simulation_state::{
+use crate::simulation_core_state::{
     ColorChannels, CustomInputEvent, Filters, IncDec, Input, InputEventValue, PixelsGeometryKind, Resources, ScreenCurvatureKind, ScreenLayeringKind,
     PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
 };

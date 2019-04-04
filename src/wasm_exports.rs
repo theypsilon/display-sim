@@ -3,11 +3,12 @@ use console_error_panic_hook::set_once as set_panic_hook;
 use js_sys::Uint8Array;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
-use crate::general_types::Size2D;
-use crate::simulation_state::{AnimationStep, Resources, VideoInputMaterials, VideoInputResources};
-use crate::web_entrypoint::{print_error, web_entrypoint};
+use core::general_types::Size2D;
+use core::simulation_core_state::{AnimationStep, Resources, VideoInputResources};
+use render::simulation_render_state::VideoInputMaterials;
 use std::cell::RefCell;
 use std::rc::Rc;
+use web::web_entrypoint::{print_error, web_entrypoint};
 
 #[wasm_bindgen]
 pub fn load_simulation_resources() -> ResourcesWasm {
