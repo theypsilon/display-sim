@@ -1,4 +1,4 @@
-pub const TEXTURE_SIZE: usize = 256;
+pub const TEXTURE_SIZE: usize = 510;
 
 pub const SHADOWS_LEN: usize = 24;
 
