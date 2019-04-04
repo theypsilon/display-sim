@@ -4,13 +4,15 @@ use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
 use web_sys::{CustomEvent, EventTarget, KeyboardEvent, MouseEvent, WebGl2RenderingContext, WheelEvent, Window};
 
 use crate::action_bindings::on_button_action;
-use crate::app_events::{dispatch_exiting_session, dispatch_top_message};
+use crate::app_events::AppEventDispatcher;
 use crate::console;
 use crate::internal_resolution::InternalResolution;
-use crate::simulation_main_functions::{init_resources, load_materials, simulation_tick};
-use crate::simulation_state::{Input, Materials, Resources, VideoInputMaterials, VideoInputResources};
+use crate::simulation_context::SimulationContext;
+use crate::simulation_main_functions::{init_resources, load_materials, SimulationTicker};
+use crate::simulation_state::{Input, InputEventValue, Materials, Resources, VideoInputMaterials, VideoInputResources};
 use crate::wasm_error::{WasmError, WasmResult};
-use crate::web_utils::window;
+use crate::web_events::WebEventDispatcher;
+use crate::web_utils::{now, window};
 
 pub type OwnedClosure = Option<Closure<FnMut(JsValue)>>;
 
@@ -40,17 +42,20 @@ pub fn web_entrypoint(
 ) -> WasmResult<()> {
     let gl = gl.dyn_into::<WebGl2RenderingContext>()?;
     init_resources(&mut res.borrow_mut(), video_input_resources)?;
-    let owned_state = StateOwner::new_rc(res, load_materials(gl, video_input_materials)?, Input::new()?);
+    let owned_state = StateOwner::new_rc(res, load_materials(gl, video_input_materials)?, Input::new(now()?));
     let frame_closure: Closure<FnMut(JsValue)> = {
         let owned_state = Rc::clone(&owned_state);
         let window = window()?;
         Closure::wrap(Box::new(move |_| {
-            if let Err(e) = web_entrypoint_iteration(&owned_state, &window) {
+            let mut ctx: SimulationContext<WebEventDispatcher> = SimulationContext::default();
+            if let Err(e) = web_entrypoint_iteration(&owned_state, &window, &mut ctx) {
                 console!(error. "An unexpected error happened during web_entrypoint_iteration.", e.to_js());
-                dispatch_exiting_session()
-                    .and_then(|_| dispatch_top_message("Error! Wild guess... Did you try a too big resolution?".into()))
-                    .ok()
-                    .expect("Can't exit properly.");
+                ctx.dispatcher.dispatch_exiting_session();
+                ctx.dispatcher
+                    .dispatch_top_message("Error! Try restarting your browser. Contact me if this problem persists!");
+            }
+            if let Err(e) = ctx.dispatcher.check_error() {
+                console!(error. "Error dispatching some events: ", e.to_js());
             }
         }))
     };
@@ -71,12 +76,12 @@ pub fn print_error(e: WasmError) {
     };
 }
 
-fn web_entrypoint_iteration(owned_state: &StateOwner, window: &Window) -> WasmResult<()> {
+fn web_entrypoint_iteration<T: AppEventDispatcher + Default>(owned_state: &StateOwner, window: &Window, ctx: &mut SimulationContext<T>) -> WasmResult<()> {
     let mut input = owned_state.input.borrow_mut();
     let mut resources = owned_state.resources.borrow_mut();
     let mut materials = owned_state.materials.borrow_mut();
     let closures = owned_state.closures.borrow();
-    match simulation_tick(&mut input, &mut resources, &mut materials) {
+    match SimulationTicker::new(ctx, &mut input, &mut resources, &mut materials).tick() {
         Ok(true) => {
             window.request_animation_frame(closures[0].as_ref().ok_or("Wrong closure.")?.as_ref().unchecked_ref())?;
         }
@@ -94,7 +99,7 @@ fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<OwnedClos
         let state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |_: JsValue| {
             let mut input = state_owner.input.borrow_mut();
-            *input = Input::new().ok().unwrap();
+            *input = Input::new(now().unwrap_or(0.0));
         }))
     };
 
@@ -162,17 +167,9 @@ fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<OwnedClos
     let oncustominputevent: Closure<FnMut(JsValue)> = {
         let state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |event: JsValue| {
-            if let Ok(e) = event.dyn_into::<CustomEvent>() {
-                let mut input = state_owner.input.borrow_mut();
-                let object = e.detail();
-                if let Ok(value) = js_sys::Reflect::get(&object, &"value".into()) {
-                    input.custom_event.value = value;
-                }
-                if let Ok(value) = js_sys::Reflect::get(&object, &"kind".into()) {
-                    if let Some(js_kind) = value.as_string() {
-                        input.custom_event.kind = js_kind;
-                    }
-                }
+            let mut input = state_owner.input.borrow_mut();
+            if let Err(e) = read_custom_event(&mut input, event) {
+                console!(error. "Could not read custom event.", e.to_js());
             }
         }))
     };
@@ -205,4 +202,39 @@ fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<OwnedClos
     closures.push(Some(oncustominputevent));
 
     Ok(closures)
+}
+
+pub fn read_custom_event(input: &mut Input, event: JsValue) -> WasmResult<()> {
+    let event = event.dyn_into::<CustomEvent>()?;
+    let object = event.detail();
+    let value = js_sys::Reflect::get(&object, &"value".into())?;
+    let kind = js_sys::Reflect::get(&object, &"kind".into())?
+        .as_string()
+        .ok_or_else(|| WasmError::Str("Could not get kind".into()))?;
+    input.custom_event.value = match kind.as_ref() as &str {
+        "event_kind:pixel_brightness" => InputEventValue::PixelBrighttness(value.as_f64().ok_or("it should be a number")? as f32),
+        "event_kind:pixel_contrast" => InputEventValue::PixelContrast(value.as_f64().ok_or("it should be a number")? as f32),
+        "event_kind:light_color" => InputEventValue::LightColor(value.as_f64().ok_or("it should be a number")? as i32),
+        "event_kind:brightness_color" => InputEventValue::BrightnessColor(value.as_f64().ok_or("it should be a number")? as i32),
+        "event_kind:blur_level" => InputEventValue::BlurLevel(value.as_f64().ok_or("it should be a number")? as usize),
+        "event_kind:lines_per_pixel" => InputEventValue::LinersPerPixel(value.as_f64().ok_or("it should be a number")? as usize),
+        "event_kind:pixel_shadow_height" => InputEventValue::PixelShadowHeight(value.as_f64().ok_or("it should be a number")? as f32),
+        "event_kind:pixel_vertical_gap" => InputEventValue::PixelVerticalGap(value.as_f64().ok_or("it should be a number")? as f32),
+        "event_kind:pixel_horizontal_gap" => InputEventValue::PixelHorizontalGap(value.as_f64().ok_or("it should be a number")? as f32),
+        "event_kind:pixel_width" => InputEventValue::PixelWidth(value.as_f64().ok_or("it should be a number")? as f32),
+        "event_kind:pixel_spread" => InputEventValue::PixelSpread(value.as_f64().ok_or("it should be a number")? as f32),
+        "event_kind:camera_zoom" => InputEventValue::CameraZoom(value.as_f64().ok_or("it should be a number")? as f32),
+        "event_kind:camera_pos_x" => InputEventValue::CameraPosX(value.as_f64().ok_or("it should be a number")? as f32),
+        "event_kind:camera_pos_y" => InputEventValue::CameraPosY(value.as_f64().ok_or("it should be a number")? as f32),
+        "event_kind:camera_pos_z" => InputEventValue::CameraPosZ(value.as_f64().ok_or("it should be a number")? as f32),
+        "event_kind:camera_axis_up_x" => InputEventValue::CameraAxisUpX(value.as_f64().ok_or("it should be a number")? as f32),
+        "event_kind:camera_axis_up_y" => InputEventValue::CameraAxisUpY(value.as_f64().ok_or("it should be a number")? as f32),
+        "event_kind:camera_axis_up_z" => InputEventValue::CameraAxisUpZ(value.as_f64().ok_or("it should be a number")? as f32),
+        "event_kind:camera_direction_x" => InputEventValue::CameraDirectionX(value.as_f64().ok_or("it should be a number")? as f32),
+        "event_kind:camera_direction_y" => InputEventValue::CameraDirectionY(value.as_f64().ok_or("it should be a number")? as f32),
+        "event_kind:camera_direction_z" => InputEventValue::CameraDirectionZ(value.as_f64().ok_or("it should be a number")? as f32),
+        _ => InputEventValue::None,
+    };
+    input.custom_event.kind = kind;
+    Ok(())
 }

@@ -1,4 +1,4 @@
-use js_sys::{ArrayBuffer, Float32Array};
+use js_sys::Float32Array;
 use web_sys::{WebGl2RenderingContext, WebGlBuffer, WebGlProgram, WebGlTexture, WebGlVertexArrayObject};
 
 use crate::pixels_shadow::{get_shadows, TEXTURE_SIZE};
@@ -18,7 +18,7 @@ pub struct PixelsRender {
     height: u32,
     offset_inverse_max_length: f32,
     shadows: Vec<Option<WebGlTexture>>,
-    video_buffers: Vec<ArrayBuffer>,
+    video_buffers: Vec<Box<[u8]>>,
 }
 
 pub struct PixelsUniform<'a> {
@@ -198,9 +198,9 @@ impl PixelsRender {
         gl.bind_vertex_array(self.vao.as_ref());
         gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&self.colors_vbo));
 
-        gl.buffer_data_with_opt_array_buffer(
+        gl.buffer_data_with_u8_array(
             WebGl2RenderingContext::ARRAY_BUFFER,
-            Some(&self.video_buffers[video_res.current_frame]),
+            &self.video_buffers[video_res.current_frame],
             WebGl2RenderingContext::STATIC_DRAW,
         );
     }

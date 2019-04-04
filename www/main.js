@@ -551,11 +551,11 @@ async function prepareUi () {
         imageWidth, imageHeight, // to read the image pixels
         backgroundWidth, backgroundHeight, // to calculate model distance to the camera
         canvas.width, canvas.height, // gl.viewport
-        +scaleX, stretch
+        +scaleX, stretch, gl.getParameter(gl.MAX_TEXTURE_SIZE)
     );
     for (let i = 0; i < rawImgs.length; i++) {
         const rawImg = rawImgs[i];
-        wasm.add_buffer_to_video_input(videoInput, rawImg.raw.data.buffer, rawImg.delay);
+        wasm.add_buffer_to_video_input(videoInput, new Uint8Array(rawImg.raw.data.buffer), rawImg.delay);
     }
 
     if (simulationResources === undefined) {

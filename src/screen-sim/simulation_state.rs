@@ -1,5 +1,3 @@
-use js_sys::ArrayBuffer;
-use wasm_bindgen::prelude::JsValue;
 use web_sys::WebGl2RenderingContext;
 
 use enum_len_derive::EnumLen;
@@ -16,8 +14,6 @@ use crate::internal_resolution_render::InternalResolutionRender;
 use crate::pixels_render::PixelsRender;
 use crate::render_types::TextureBufferStack;
 use crate::rgb_render::RgbRender;
-use crate::wasm_error::WasmResult;
-use crate::web_utils::now;
 
 pub const PIXEL_MANIPULATION_BASE_SPEED: f32 = 20.0;
 pub const TURNING_BASE_SPEED: f32 = 3.0;
@@ -27,6 +23,7 @@ pub const MOVEMENT_SPEED_FACTOR: f32 = 50.0;
 #[derive(Default)]
 pub struct VideoInputResources {
     pub steps: Vec<AnimationStep>,
+    pub max_texture_size: i32,
     pub image_size: Size2D<u32>,
     pub background_size: Size2D<u32>,
     pub viewport_size: Size2D<u32>,
@@ -42,7 +39,7 @@ pub struct AnimationStep {
 }
 
 pub struct VideoInputMaterials {
-    pub buffers: Vec<ArrayBuffer>,
+    pub buffers: Vec<Box<[u8]>>,
 }
 
 // Simulation Resources
@@ -84,6 +81,7 @@ pub struct Materials {
     pub background_render: BackgroundRender,
     pub internal_resolution_render: InternalResolutionRender,
     pub rgb_render: RgbRender,
+    pub screenshot_pixels: Option<Box<[u8]>>,
 }
 
 #[derive(Default)]
@@ -261,15 +259,65 @@ impl std::fmt::Display for ColorChannels {
     }
 }
 
+pub enum InputEventValue {
+    None,
+    PixelBrighttness(f32),
+    PixelContrast(f32),
+    LightColor(i32),
+    BrightnessColor(i32),
+    BlurLevel(usize),
+    LinersPerPixel(usize),
+    PixelShadowHeight(f32),
+    PixelVerticalGap(f32),
+    PixelHorizontalGap(f32),
+    PixelWidth(f32),
+    PixelSpread(f32),
+    CameraZoom(f32),
+    CameraPosX(f32),
+    CameraPosY(f32),
+    CameraPosZ(f32),
+    CameraAxisUpX(f32),
+    CameraAxisUpY(f32),
+    CameraAxisUpZ(f32),
+    CameraDirectionX(f32),
+    CameraDirectionY(f32),
+    CameraDirectionZ(f32),
+}
+
 pub struct CustomInputEvent {
-    pub value: JsValue,
+    pub value: InputEventValue,
     pub kind: String,
+}
+
+impl CustomInputEvent {
+    pub fn get_f32(&self) -> f32 {
+        match self.value {
+            InputEventValue::PixelBrighttness(n) => n,
+            InputEventValue::PixelContrast(n) => n,
+            InputEventValue::PixelShadowHeight(n) => n,
+            InputEventValue::PixelVerticalGap(n) => n,
+            InputEventValue::PixelHorizontalGap(n) => n,
+            InputEventValue::PixelWidth(n) => n,
+            InputEventValue::PixelSpread(n) => n,
+            InputEventValue::CameraZoom(n) => n,
+            InputEventValue::CameraPosX(n) => n,
+            InputEventValue::CameraPosY(n) => n,
+            InputEventValue::CameraPosZ(n) => n,
+            InputEventValue::CameraAxisUpX(n) => n,
+            InputEventValue::CameraAxisUpY(n) => n,
+            InputEventValue::CameraAxisUpZ(n) => n,
+            InputEventValue::CameraDirectionX(n) => n,
+            InputEventValue::CameraDirectionY(n) => n,
+            InputEventValue::CameraDirectionZ(n) => n,
+            _ => 0.0,
+        }
+    }
 }
 
 impl Default for CustomInputEvent {
     fn default() -> Self {
         CustomInputEvent {
-            value: JsValue::undefined(),
+            value: InputEventValue::None,
             kind: String::new(),
         }
     }
@@ -359,9 +407,9 @@ pub struct Input {
 }
 
 impl Input {
-    pub fn new() -> WasmResult<Input> {
+    pub fn new(now: f64) -> Input {
         let mut input: Input = Input::default();
-        input.now = now()?;
-        Ok(input)
+        input.now = now;
+        input
     }
 }

@@ -1,33 +1,64 @@
 use web_sys::WebGl2RenderingContext;
 
+use crate::app_events::AppEventDispatcher;
 use crate::background_render::BackgroundRender;
 use crate::blur_render::BlurRender;
 use crate::camera::Camera;
 use crate::console;
+use crate::derive_new::new;
 use crate::internal_resolution_render::InternalResolutionRender;
 use crate::pixels_render::PixelsRender;
 use crate::render_types::TextureBufferStack;
 use crate::rgb_render::RgbRender;
-use crate::simulation_draw::draw;
+use crate::simulation_context::SimulationContext;
+use crate::simulation_draw::SimulationDrawer;
 use crate::simulation_state::{
     InitialParameters, Input, Materials, Resources, SimulationTimers, VideoInputMaterials, VideoInputResources, MOVEMENT_BASE_SPEED, MOVEMENT_SPEED_FACTOR,
     TURNING_BASE_SPEED,
 };
-use crate::simulation_update::{change_frontend_input_values, update_simulation};
+use crate::simulation_update::SimulationUpdater;
 use crate::wasm_error::WasmResult;
 use crate::web_utils::now;
 
-pub fn simulation_tick(input: &mut Input, resources: &mut Resources, materials: &mut Materials) -> WasmResult<bool> {
-    pre_process_input(input)?;
-    if !update_simulation(resources, input)? {
-        console!(log. "User closed the simulation.");
-        return Ok(false);
+#[derive(new)]
+pub struct SimulationTicker<'a, T: Default + AppEventDispatcher> {
+    ctx: &'a mut SimulationContext<T>,
+    input: &'a mut Input,
+    resources: &'a mut Resources,
+    materials: &'a mut Materials,
+}
+
+impl<'a, T: Default + AppEventDispatcher> SimulationTicker<'a, T> {
+    pub fn tick(&mut self) -> WasmResult<bool> {
+        self.pre_process_input()?;
+
+        if !SimulationUpdater::new(self.ctx, self.resources, self.input).update() {
+            console!(log. "User closed the simulation.");
+            return Ok(false);
+        }
+        self.post_process_input();
+        if self.resources.launch_screenshot || self.resources.screenshot_delay <= 0 {
+            SimulationDrawer::new(self.ctx, self.materials, self.resources).draw()?;
+        }
+        Ok(true)
     }
-    post_process_input(input);
-    if resources.launch_screenshot || resources.screenshot_delay <= 0 {
-        draw(materials, resources)?;
+
+    fn pre_process_input(&mut self) -> WasmResult<()> {
+        self.input.now = now()?;
+        self.input.get_mut_fields_booleanbutton().iter_mut().for_each(|button| button.track_input());
+        self.input
+            .get_mut_fields_incdec_booleanbutton_()
+            .iter_mut()
+            .for_each(|incdec| incdec.get_mut_fields_t().iter_mut().for_each(|button| button.track_input()));
+        Ok(())
     }
-    Ok(true)
+
+    fn post_process_input(&mut self) {
+        self.input.mouse_scroll_y = 0.0;
+        self.input.mouse_position_x = 0;
+        self.input.mouse_position_y = 0;
+        self.input.custom_event.kind = String::new();
+    }
 }
 
 pub fn init_resources(res: &mut Resources, video_input: VideoInputResources) -> WasmResult<()> {
@@ -63,10 +94,11 @@ pub fn init_resources(res: &mut Resources, video_input: VideoInputResources) -> 
         initial_pixel_width: video_input.pixel_width,
         initial_movement_speed: camera.movement_speed,
     };
-    res.filters.internal_resolution.init_viewport_size(video_input.viewport_size);
+    res.filters
+        .internal_resolution
+        .initialize(video_input.viewport_size, video_input.max_texture_size);
     res.camera = camera;
     res.video = video_input;
-    change_frontend_input_values(res)?;
     Ok(())
 }
 
@@ -85,6 +117,7 @@ pub fn load_materials(gl: WebGl2RenderingContext, video: VideoInputMaterials) ->
         internal_resolution_render,
         rgb_render,
         background_render,
+        screenshot_pixels: None,
     };
     Ok(materials)
 }
@@ -117,21 +150,4 @@ fn calculate_far_away_position(video_input: &VideoInputResources) -> f32 {
         bound_ratio = divisor as f32;
     }
     0.5 + (resolution as f32 / bound_ratio) * if is_height_bounded { 1.2076 } else { 0.68 * video_input.pixel_width }
-}
-
-fn pre_process_input(input: &mut Input) -> WasmResult<()> {
-    input.now = now()?;
-    input.get_mut_fields_booleanbutton().iter_mut().for_each(|button| button.track_input());
-    input
-        .get_mut_fields_incdec_booleanbutton_()
-        .iter_mut()
-        .for_each(|incdec| incdec.get_mut_fields_t().iter_mut().for_each(|button| button.track_input()));
-    Ok(())
-}
-
-fn post_process_input(input: &mut Input) {
-    input.mouse_scroll_y = 0.0;
-    input.mouse_position_x = 0;
-    input.mouse_position_y = 0;
-    input.custom_event.kind = String::new();
 }

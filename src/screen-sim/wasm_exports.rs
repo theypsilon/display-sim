@@ -1,6 +1,6 @@
 use console_error_panic_hook::set_once as set_panic_hook;
 
-use js_sys::ArrayBuffer;
+use js_sys::Uint8Array;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 use crate::general_types::Size2D;
@@ -46,6 +46,7 @@ pub fn new_video_input_wasm(
     canvas_height: u32,
     pixel_width: f32,
     stretch: bool,
+    max_texture_size: i32,
 ) -> VideoInputWasm {
     VideoInputWasm {
         resources: VideoInputResources {
@@ -61,6 +62,7 @@ pub fn new_video_input_wasm(
                 width: canvas_width,
                 height: canvas_height,
             },
+            max_texture_size,
             steps: Vec::new(),
             pixel_width,
             stretch,
@@ -73,7 +75,9 @@ pub fn new_video_input_wasm(
 }
 
 #[wasm_bindgen]
-pub fn add_buffer_to_video_input(video_input: &mut VideoInputWasm, buffer: ArrayBuffer, delay: u32) {
+pub fn add_buffer_to_video_input(video_input: &mut VideoInputWasm, buffer: Uint8Array, delay: u32) {
     video_input.resources.steps.push(AnimationStep { delay });
-    video_input.materials.buffers.push(buffer);
+    let mut pixels = vec![0; (video_input.resources.image_size.width * video_input.resources.image_size.height * 4) as usize].into_boxed_slice();
+    buffer.copy_to(&mut *pixels);
+    video_input.materials.buffers.push(pixels);
 }

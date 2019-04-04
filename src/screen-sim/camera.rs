@@ -1,7 +1,4 @@
-use js_sys::Float32Array;
-
-use crate::dispatch_event::dispatch_event_with;
-use crate::wasm_error::WasmResult;
+use crate::app_events::AppEventDispatcher;
 
 pub enum CameraDirection {
     Down,
@@ -106,28 +103,27 @@ impl Camera {
         self.heading -= yoffset as f32 * 0.0003;
     }
 
-    pub fn change_zoom(&mut self, change: f32) -> WasmResult<()> {
+    pub fn change_zoom(&mut self, change: f32, dispatcher: &impl AppEventDispatcher) {
         let last_zoom = self.zoom;
         if self.zoom >= 1.0 && self.zoom <= 45.0 {
             self.zoom -= change * 0.1;
         }
         if self.zoom <= 1.0 {
             self.zoom = 1.0;
-            dispatch_event_with("app-event.top_message", &"Minimum value is 1.0".into())?;
+            dispatcher.dispatch_top_message("Minimum value is 1.0".into());
         }
         if self.zoom >= 45.0 {
             self.zoom = 45.0;
-            dispatch_event_with("app-event.top_message", &"Maximum value is 45.0".into())?;
+            dispatcher.dispatch_top_message("Maximum value is 45.0".into());
         }
         if (self.zoom - last_zoom).abs() < std::f32::EPSILON {
-            dispatch_event_with("app-event.change_camera_zoom", &self.zoom.into())?;
+            dispatcher.dispatch_change_camera_zoom(self.zoom);
         }
-        Ok(())
     }
 
-    pub fn update_view(&mut self) -> WasmResult<()> {
+    pub fn update_view(&mut self, dispatcher: &impl AppEventDispatcher) {
         if self.pitch == 0.0 && self.heading == 0.0 && self.rotate == 0.0 && self.position_delta == glm::vec3(0.0, 0.0, 0.0) {
-            return Ok(());
+            return;
         }
         let pitch_quat = glm::quat_angle_axis(self.pitch, &self.axis_up);
         let heading_quat = glm::quat_angle_axis(self.heading, &self.axis_right);
@@ -147,20 +143,10 @@ impl Camera {
         self.position_delta = glm::vec3(0.0, 0.0, 0.0);
 
         if !self.sending_camera_update_event {
-            return Ok(());
+            return;
         }
 
-        let values_array = Float32Array::new(&wasm_bindgen::JsValue::from(9));
-        values_array.fill(self.position.x, 0, 1);
-        values_array.fill(self.position.y, 1, 2);
-        values_array.fill(self.position.z, 2, 3);
-        values_array.fill(self.direction.x, 3, 4);
-        values_array.fill(self.direction.y, 4, 5);
-        values_array.fill(self.direction.z, 5, 6);
-        values_array.fill(self.axis_up.x, 6, 7);
-        values_array.fill(self.axis_up.y, 7, 8);
-        values_array.fill(self.axis_up.z, 8, 9);
-        dispatch_event_with("app-event.camera_update", &values_array.into())
+        dispatcher.dispatch_camera_update(&self.position, &self.direction, &self.axis_up);
     }
 
     pub fn get_view(&self) -> glm::TMat4<f32> {

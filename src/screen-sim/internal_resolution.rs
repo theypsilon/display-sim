@@ -3,7 +3,9 @@ use crate::general_types::Size2D;
 pub struct InternalResolution {
     pub multiplier: f64,
     pub minimum_reached: bool,
+    pub maximium_reached: bool,
     backup_multiplier: f64,
+    max_texture_size: i32,
     pub viewport: Size2D<u32>,
 }
 
@@ -12,12 +14,15 @@ impl InternalResolution {
         InternalResolution {
             multiplier,
             minimum_reached: false,
+            maximium_reached: false,
             backup_multiplier: multiplier,
             viewport: Size2D { width: 0, height: 0 },
+            max_texture_size: 0,
         }
     }
-    pub fn init_viewport_size(&mut self, viewport: Size2D<u32>) {
+    pub fn initialize(&mut self, viewport: Size2D<u32>, max_texture_size: i32) {
         self.viewport = viewport;
+        self.max_texture_size = max_texture_size;
     }
     pub fn increase(&mut self) {
         self.minimum_reached = false;
@@ -32,11 +37,13 @@ impl InternalResolution {
             152 => 160,
             144 => 152,
             102 => 144,
+            51..=101 => 102,
             height => height * 2,
         };
         self.set_resolution(new_height);
     }
     pub fn decrease(&mut self) {
+        self.maximium_reached = false;
         let new_height = match self.height() {
             721..=1440 => {
                 self.backup_multiplier = self.multiplier;
@@ -61,6 +68,10 @@ impl InternalResolution {
     }
     fn set_resolution(&mut self, resolution: i32) {
         self.multiplier = f64::from(resolution) / f64::from(self.viewport.height);
+        if self.width() > self.max_texture_size || self.height() > self.max_texture_size {
+            self.decrease();
+            self.maximium_reached = true;
+        }
     }
 
     pub fn width(&self) -> i32 {
