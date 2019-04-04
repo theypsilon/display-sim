@@ -1,31 +1,13 @@
 use js_sys::{ArrayBuffer, Float32Array};
 use web_sys::{WebGl2RenderingContext, WebGlBuffer, WebGlProgram, WebGlTexture, WebGlVertexArrayObject};
 
-use enum_len_derive::EnumLen;
-use num_derive::{FromPrimitive, ToPrimitive};
-
 use crate::pixels_shadow::{get_shadows, TEXTURE_SIZE};
 use crate::shaders::make_shader;
-use crate::simulation_state::{VideoInputMaterials, VideoInputResources};
+use crate::simulation_state::{PixelsGeometryKind, VideoInputMaterials, VideoInputResources};
 use crate::wasm_error::WasmResult;
 use crate::web_utils::js_f32_array;
 
 use std::mem::size_of;
-
-#[derive(FromPrimitive, ToPrimitive, EnumLen, Clone, Copy)]
-pub enum PixelsGeometryKind {
-    Squares,
-    Cubes,
-}
-
-impl std::fmt::Display for PixelsGeometryKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match *self {
-            PixelsGeometryKind::Squares => write!(f, "Squares"),
-            PixelsGeometryKind::Cubes => write!(f, "Cubes"),
-        }
-    }
-}
 
 pub struct PixelsRender {
     shader: WebGlProgram,
@@ -42,17 +24,17 @@ pub struct PixelsRender {
 pub struct PixelsUniform<'a> {
     pub shadow_kind: usize,
     pub geometry_kind: PixelsGeometryKind,
-    pub view: &'a mut [f32],
-    pub projection: &'a mut [f32],
-    pub light_pos: &'a mut [f32],
-    pub light_color: &'a mut [f32],
-    pub extra_light: &'a mut [f32],
+    pub view: &'a [f32],
+    pub projection: &'a [f32],
+    pub light_pos: &'a [f32],
+    pub light_color: &'a [f32],
+    pub extra_light: &'a [f32],
     pub ambient_strength: f32,
     pub contrast_factor: f32,
     pub screen_curvature: f32,
-    pub pixel_gap: &'a mut [f32],
-    pub pixel_scale: &'a mut [f32],
-    pub pixel_offset: &'a mut [f32],
+    pub pixel_gap: &'a [f32],
+    pub pixel_scale: &'a [f32],
+    pub pixel_offset: &'a [f32],
     pub pixel_pulse: f32,
     pub height_modifier_factor: f32,
 }

@@ -39,3 +39,41 @@ fn change_enum_variant<T: FromPrimitive + ToPrimitive + EnumLen>(instance: &mut 
     std::mem::swap(instance, &mut changed);
     Ok(())
 }
+
+pub fn get_3_f32color_from_int(color: i32) -> [f32; 3] {
+    [
+        (color >> 16) as f32 / 255.0,
+        ((color >> 8) & 0xFF) as f32 / 255.0,
+        (color & 0xFF) as f32 / 255.0,
+    ]
+}
+
+#[cfg(test)]
+mod tests {
+    mod get_3_f32color_from_int {
+        mod gives_good {
+            use super::super::super::*;
+
+            macro_rules! get_3_f32color_from_int_tests {
+        ($($name:ident: $value:expr,)*) => {
+        $(
+            #[test]
+            fn $name() {
+                let (input, expected) = $value;
+                assert_eq!(expected, get_3_f32color_from_int(input));
+            }
+        )*
+        }
+    }
+
+            get_3_f32color_from_int_tests! {
+                white: (0x00FF_FFFF, [1.0, 1.0, 1.0]),
+                black: (0x0000_0000, [0.0, 0.0, 0.0]),
+                red: (0x00FF_0000, [1.0, 0.0, 0.0]),
+                green: (0x0000_FF00, [0.0, 1.0, 0.0]),
+                blue: (0x0000_00FF, [0.0, 0.0, 1.0]),
+                yellow: (0x00eb_f114, [0.92156863, 0.94509804, 0.078431375]),
+            }
+        }
+    }
+}

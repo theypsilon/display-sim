@@ -1,10 +1,11 @@
 use crate::app_events;
 use crate::boolean_button::BooleanButton;
 use crate::camera::CameraDirection;
-use crate::general_types::NextEnumVariant;
+use crate::general_types::{get_3_f32color_from_int, NextEnumVariant};
 use crate::pixels_shadow::SHADOWS_LEN;
 use crate::simulation_state::{
-    CustomInputEvent, Filters, IncDec, Input, Resources, ScreenCurvatureKind, ScreenLayeringKind, PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
+    ColorChannels, CustomInputEvent, Filters, IncDec, Input, PixelsGeometryKind, Resources, ScreenCurvatureKind, ScreenLayeringKind,
+    PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
 };
 use crate::wasm_error::WasmResult;
 
@@ -13,6 +14,7 @@ pub fn update_simulation(res: &mut Resources, input: &Input) -> WasmResult<bool>
 
     update_animation_buffer(res, input);
     update_colors(dt, res, input)?;
+
     update_blur(res, input)?;
     update_lpp(res, input)?;
 
@@ -25,7 +27,7 @@ pub fn update_simulation(res: &mut Resources, input: &Input) -> WasmResult<bool>
         app_events::dispatch_toggle_info_panel()?;
     }
 
-    update_pixel_pulse(dt, res, input)?;
+    update_curvature(res, input)?;
     update_filters(dt, res, input)?;
     update_speeds(res, input)?;
     update_camera(dt, res, input)?;
@@ -37,6 +39,10 @@ pub fn update_simulation(res: &mut Resources, input: &Input) -> WasmResult<bool>
         res.launch_screenshot = true;
         res.screenshot_delay = (5.0 * res.filters.internal_resolution.multiplier as f32 * (1.0 / dt)) as i32; // 5 seconds aprox.
     }
+
+    update_colors_output(res);
+    update_curvature_output(dt, res);
+    update_filters_output(res);
 
     Ok(true)
 }
@@ -186,7 +192,7 @@ fn update_lpp(res: &mut Resources, input: &Input) -> WasmResult<()> {
     Ok(())
 }
 
-fn update_pixel_pulse(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> {
+fn update_curvature(res: &mut Resources, input: &Input) -> WasmResult<()> {
     if input.next_screen_curvature_type.any_just_pressed() {
         if input.next_screen_curvature_type.increase.is_just_pressed() {
             res.filters.screen_curvature_kind.next_enum_variant()?;
@@ -195,19 +201,6 @@ fn update_pixel_pulse(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
         }
         app_events::dispatch_top_message(format!("Screen curvature: {}.", res.filters.screen_curvature_kind))?;
         app_events::dispatch_screen_curvature(res)?;
-    }
-
-    res.output.screen_curvature_factor = match res.filters.screen_curvature_kind {
-        ScreenCurvatureKind::Curved1 => 0.15,
-        ScreenCurvatureKind::Curved2 => 0.3,
-        ScreenCurvatureKind::Curved3 => 0.45,
-        _ => 0.0,
-    };
-
-    if let ScreenCurvatureKind::Pulse = res.filters.screen_curvature_kind {
-        res.output.pixels_pulse += dt * 0.3;
-    } else {
-        res.output.pixels_pulse = 0.0;
     }
     Ok(())
 }
@@ -230,38 +223,6 @@ fn update_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()>
         app_events::dispatch_top_message(format!("Layering kind: {}.", res.filters.layering_kind))?;
         app_events::dispatch_screen_layering_type(res)?;
     }
-
-    match res.filters.layering_kind {
-        ScreenLayeringKind::ShadowOnly => {
-            res.output.showing_diffuse_foreground = true;
-            res.output.showing_solid_background = false;
-        }
-        ScreenLayeringKind::SolidOnly => {
-            res.output.showing_diffuse_foreground = false;
-            res.output.showing_solid_background = true;
-            res.output.solid_color_weight = 1.0;
-        }
-        ScreenLayeringKind::DiffuseOnly => {
-            res.output.showing_diffuse_foreground = false;
-            res.output.showing_solid_background = true;
-            res.output.solid_color_weight = 1.0;
-        }
-        ScreenLayeringKind::ShadowWithSolidBackground75 => {
-            res.output.showing_diffuse_foreground = true;
-            res.output.showing_solid_background = true;
-            res.output.solid_color_weight = 0.75;
-        }
-        ScreenLayeringKind::ShadowWithSolidBackground50 => {
-            res.output.showing_diffuse_foreground = true;
-            res.output.showing_solid_background = true;
-            res.output.solid_color_weight = 0.5;
-        }
-        ScreenLayeringKind::ShadowWithSolidBackground25 => {
-            res.output.showing_diffuse_foreground = true;
-            res.output.showing_solid_background = true;
-            res.output.solid_color_weight = 0.25;
-        }
-    };
 
     if input.next_color_representation_kind.any_just_pressed() {
         if input.next_color_representation_kind.increase.is_just_pressed() {
@@ -623,4 +584,177 @@ pub fn change_frontend_input_values(res: &Resources) -> WasmResult<()> {
     app_events::dispatch_change_turning_speed(res.camera.turning_speed / TURNING_BASE_SPEED)?;
     app_events::dispatch_change_movement_speed(res.camera.movement_speed / res.initial_parameters.initial_movement_speed)?;
     Ok(())
+}
+
+fn update_colors_output(res: &mut Resources) {
+    res.output.color_splits = match res.filters.color_channels {
+        ColorChannels::Combined => 1,
+        _ => 3,
+    };
+    for i in 0..res.output.color_splits {
+        let mut light_color = get_3_f32color_from_int(res.filters.light_color);
+        match res.filters.color_channels {
+            ColorChannels::Combined => {}
+            _ => {
+                light_color[(i + 0) % 3] *= 1.0;
+                light_color[(i + 1) % 3] = 0.0;
+                light_color[(i + 2) % 3] = 0.0;
+            }
+        }
+        res.output.light_color[i] = light_color;
+    }
+    res.output.extra_light = get_3_f32color_from_int(res.filters.brightness_color);
+    for light in res.output.extra_light.iter_mut() {
+        *light *= res.filters.extra_bright;
+    }
+}
+
+fn update_curvature_output(dt: f32, res: &mut Resources) {
+    res.output.screen_curvature_factor = match res.filters.screen_curvature_kind {
+        ScreenCurvatureKind::Curved1 => 0.15,
+        ScreenCurvatureKind::Curved2 => 0.3,
+        ScreenCurvatureKind::Curved3 => 0.45,
+        _ => 0.0,
+    };
+
+    if let ScreenCurvatureKind::Pulse = res.filters.screen_curvature_kind {
+        res.output.pixels_pulse += dt * 0.3;
+    } else {
+        res.output.pixels_pulse = 0.0;
+    }
+}
+
+fn update_filters_output(res: &mut Resources) {
+    match res.filters.layering_kind {
+        ScreenLayeringKind::ShadowOnly => {
+            res.output.showing_foreground = true;
+            res.output.showing_background = false;
+        }
+        ScreenLayeringKind::SolidOnly => {
+            res.output.showing_foreground = false;
+            res.output.showing_background = true;
+            res.output.solid_color_weight = 1.0;
+        }
+        ScreenLayeringKind::DiffuseOnly => {
+            res.output.showing_foreground = false;
+            res.output.showing_background = true;
+            res.output.solid_color_weight = 1.0;
+        }
+        ScreenLayeringKind::ShadowWithSolidBackground75 => {
+            res.output.showing_foreground = true;
+            res.output.showing_background = true;
+            res.output.solid_color_weight = 0.75;
+        }
+        ScreenLayeringKind::ShadowWithSolidBackground50 => {
+            res.output.showing_foreground = true;
+            res.output.showing_background = true;
+            res.output.solid_color_weight = 0.5;
+        }
+        ScreenLayeringKind::ShadowWithSolidBackground25 => {
+            res.output.showing_foreground = true;
+            res.output.showing_background = true;
+            res.output.solid_color_weight = 0.25;
+        }
+    };
+    res.output.is_background_diffuse = res.output.showing_foreground
+        || if let ScreenLayeringKind::DiffuseOnly = res.filters.layering_kind {
+            true
+        } else {
+            false
+        };
+    let (ambient_strength, pixel_have_depth) = match res.filters.pixels_geometry_kind {
+        PixelsGeometryKind::Squares => (1.0, false),
+        PixelsGeometryKind::Cubes => (0.5, true),
+    };
+    res.output.ambient_strength = ambient_strength;
+    res.output.pixel_have_depth = pixel_have_depth;
+
+    res.output.pixel_gap = [(1.0 + res.filters.cur_pixel_gap) * res.filters.cur_pixel_width, 1.0 + res.filters.cur_pixel_gap];
+    res.output.pixel_scale_base = [
+        (res.filters.cur_pixel_scale_x + 1.0) / res.filters.cur_pixel_width,
+        res.filters.cur_pixel_scale_y + 1.0,
+        (res.filters.cur_pixel_scale_x + res.filters.cur_pixel_scale_x) * 0.5 + 1.0,
+    ];
+
+    res.output.height_modifier_factor = 1.0 - res.filters.pixel_shadow_height_factor;
+
+    res.output.pixel_scale_foreground.resize_with(res.filters.lines_per_pixel, Default::default);
+    res.output.pixel_offset_foreground.resize_with(res.filters.lines_per_pixel, Default::default);
+    for j in 0..res.filters.lines_per_pixel {
+        for i in 0..res.output.color_splits {
+            let pixel_offset = &mut res.output.pixel_offset_foreground[j][i];
+            let pixel_scale = &mut res.output.pixel_scale_foreground[j][i];
+
+            *pixel_offset = [0.0, 0.0, 0.0];
+            *pixel_scale = [
+                (res.filters.cur_pixel_scale_x + 1.0) / res.filters.cur_pixel_width,
+                res.filters.cur_pixel_scale_y + 1.0,
+                (res.filters.cur_pixel_scale_x + res.filters.cur_pixel_scale_x) * 0.5 + 1.0,
+            ];
+            match res.filters.color_channels {
+                ColorChannels::Combined => {}
+                _ => match res.filters.color_channels {
+                    ColorChannels::SplitHorizontal => {
+                        pixel_offset[0] = (i as f32 - 1.0) * (1.0 / 3.0) * res.filters.cur_pixel_width / (res.filters.cur_pixel_scale_x + 1.0);
+                        pixel_scale[0] *= res.output.color_splits as f32;
+                    }
+                    ColorChannels::Overlapping => {
+                        pixel_offset[0] = (i as f32 - 1.0) * (1.0 / 3.0) * res.filters.cur_pixel_width / (res.filters.cur_pixel_scale_x + 1.0);
+                        pixel_scale[0] *= 1.5;
+                    }
+                    ColorChannels::SplitVertical => {
+                        pixel_offset[1] = (i as f32 - 1.0) * (1.0 / 3.0) * (1.0 - res.filters.cur_pixel_scale_y);
+                        pixel_scale[1] *= res.output.color_splits as f32;
+                    }
+                    _ => unreachable!(),
+                },
+            }
+            if res.filters.lines_per_pixel > 1 {
+                pixel_offset[0] /= res.filters.lines_per_pixel as f32;
+                pixel_offset[0] += (j as f32 / res.filters.lines_per_pixel as f32 - calc_stupid_not_extrapoled_function(res.filters.lines_per_pixel))
+                    * res.filters.cur_pixel_width
+                    / (res.filters.cur_pixel_scale_x + 1.0);
+                pixel_scale[0] *= res.filters.lines_per_pixel as f32;
+            }
+        }
+    }
+}
+
+fn calc_stupid_not_extrapoled_function(y: usize) -> f32 {
+    match y {
+        1 => (0.0),
+        2 => (0.25),
+        3 => (1.0 / 3.0),
+        4 => (0.375),
+        5 => (0.4),
+        6 => (0.4 + 0.1 / 6.0),
+        7 => (0.4 + 0.1 / 6.0 + 0.1 / 8.4),
+        8 => (0.4 + 0.1 / 6.0 + 0.1 / 8.4 + 0.008_925_75),
+        9 => (0.4 + 0.1 / 6.0 + 0.1 / 8.4 + 0.008_925_75 + 0.006_945),
+        _ => (0.45), // originalmente: 0.4 + 0.1 / 6.0 + 0.1 / 8.4 + 0.00892575 + 0.006945 + 0.0055555555
+    }
+    /*
+    Let's consider this was a function where we find the following points:
+    f(1) = 0
+    0.25
+    f(2) = 0.25
+    0.08333333333 | 0.33333
+    f(3) = 0.33333333333
+    0.0416666666 | 0.5
+    f(4) = 0.375
+    0.025 | 0.6
+    f(5) = 0.4
+    0.0166666666666 | 0.6666666666
+    f(6) = 0.41666666666
+    0.01190476190475190476190 | 0.71428571424028571
+    f(7) = 0.42857142857
+    0.00892575 | 0.749763
+    f(8) = 0.43749717857142857142857142857143
+    0.006945 | 0.77808587513
+    f(9) = 0.444442178571428571428
+    0.00555555555555555555555 | 0.79999
+    f(10) = 0.45
+
+    It looks like this function is growing less than a logarithmic one
+    */
 }

@@ -547,7 +547,7 @@ async function prepareUi () {
 
     const wasm = await new Promise(resolve => import(/* webpackPrefetch: true */'./crt_3d_sim').then(resolve));
 
-    const videoInput = new wasm.VideoInputWasm(
+    const videoInput = wasm.new_video_input_wasm(
         imageWidth, imageHeight, // to read the image pixels
         backgroundWidth, backgroundHeight, // to calculate model distance to the camera
         canvas.width, canvas.height, // gl.viewport
@@ -555,7 +555,7 @@ async function prepareUi () {
     );
     for (let i = 0; i < rawImgs.length; i++) {
         const rawImg = rawImgs[i];
-        videoInput.add(rawImg.raw.data.buffer, rawImg.delay);
+        wasm.add_buffer_to_video_input(videoInput, rawImg.raw.data.buffer, rawImg.delay);
     }
 
     if (simulationResources === undefined) {

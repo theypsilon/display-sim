@@ -1,8 +1,8 @@
 use web_sys::WebGl2RenderingContext;
 
 use crate::app_events;
-use crate::pixels_render::{PixelsGeometryKind, PixelsUniform};
-use crate::simulation_state::{ColorChannels, Materials, Resources, ScreenLayeringKind, TextureInterpolation};
+use crate::pixels_render::PixelsUniform;
+use crate::simulation_state::{ColorChannels, Materials, Resources, TextureInterpolation};
 use crate::wasm_error::{WasmError, WasmResult};
 
 pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
@@ -12,13 +12,7 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
         materials.pixels_render.load_image(gl, &res.video);
     }
 
-    materials.main_buffer_stack.set_depthbuffer(
-        gl,
-        match res.filters.pixels_geometry_kind {
-            PixelsGeometryKind::Cubes => true,
-            PixelsGeometryKind::Squares => false,
-        },
-    );
+    materials.main_buffer_stack.set_depthbuffer(gl, res.output.pixel_have_depth);
 
     materials
         .main_buffer_stack
@@ -40,55 +34,14 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
     gl.clear_color(0.0, 0.0, 0.0, 0.0);
     gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
 
-    if res.output.showing_diffuse_foreground {
-        let mut extra_light = get_3_f32color_from_int(res.filters.brightness_color);
-        for light in extra_light.iter_mut() {
-            *light *= res.filters.extra_bright;
-        }
-        let vertical_lines_ratio = res.filters.lines_per_pixel;
-        for j in 0..vertical_lines_ratio {
-            let color_splits = match res.filters.color_channels {
-                ColorChannels::Combined => 1,
-                _ => 3,
-            };
-            for i in 0..color_splits {
-                let mut light_color = get_3_f32color_from_int(res.filters.light_color);
-                let pixel_offset = &mut [0.0, 0.0, 0.0];
-                let pixel_scale = &mut [
-                    (res.filters.cur_pixel_scale_x + 1.0) / res.filters.cur_pixel_width,
-                    res.filters.cur_pixel_scale_y + 1.0,
-                    (res.filters.cur_pixel_scale_x + res.filters.cur_pixel_scale_x) * 0.5 + 1.0,
-                ];
-                match res.filters.color_channels {
-                    ColorChannels::Combined => {}
-                    _ => {
-                        light_color[(i + 0) % 3] *= 1.0;
-                        light_color[(i + 1) % 3] = 0.0;
-                        light_color[(i + 2) % 3] = 0.0;
-                        match res.filters.color_channels {
-                            ColorChannels::SplitHorizontal => {
-                                pixel_offset[0] = (i as f32 - 1.0) * (1.0 / 3.0) * res.filters.cur_pixel_width / (res.filters.cur_pixel_scale_x + 1.0);
-                                pixel_scale[0] *= color_splits as f32;
-                            }
-                            ColorChannels::Overlapping => {
-                                pixel_offset[0] = (i as f32 - 1.0) * (1.0 / 3.0) * res.filters.cur_pixel_width / (res.filters.cur_pixel_scale_x + 1.0);
-                                pixel_scale[0] *= 1.5;
-                            }
-                            ColorChannels::SplitVertical => {
-                                pixel_offset[1] = (i as f32 - 1.0) * (1.0 / 3.0) * (1.0 - res.filters.cur_pixel_scale_y);
-                                pixel_scale[1] *= color_splits as f32;
-                            }
-                            _ => unreachable!(),
-                        }
-                    }
-                }
-                if vertical_lines_ratio > 1 {
-                    pixel_offset[0] /= vertical_lines_ratio as f32;
-                    pixel_offset[0] += (j as f32 / vertical_lines_ratio as f32 - calc_stupid_not_extrapoled_function(vertical_lines_ratio))
-                        * res.filters.cur_pixel_width
-                        / (res.filters.cur_pixel_scale_x + 1.0);
-                    pixel_scale[0] *= vertical_lines_ratio as f32;
-                }
+    let view = res.camera.get_view();
+    let projection = res
+        .camera
+        .get_projection(res.video.viewport_size.width as f32, res.video.viewport_size.height as f32);
+
+    if res.output.showing_foreground {
+        for j in 0..res.filters.lines_per_pixel {
+            for i in 0..res.output.color_splits {
                 if let ColorChannels::Overlapping = res.filters.color_channels {
                     materials.main_buffer_stack.push(gl)?;
                     materials.main_buffer_stack.bind_current(gl)?;
@@ -101,25 +54,19 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
                     PixelsUniform {
                         shadow_kind: res.filters.pixel_shadow_shape_kind,
                         geometry_kind: res.filters.pixels_geometry_kind,
-                        view: res.camera.get_view().as_mut_slice(),
-                        projection: res
-                            .camera
-                            .get_projection(res.video.viewport_size.width as f32, res.video.viewport_size.height as f32)
-                            .as_mut_slice(),
-                        ambient_strength: match res.filters.pixels_geometry_kind {
-                            PixelsGeometryKind::Squares => 1.0,
-                            PixelsGeometryKind::Cubes => 0.5,
-                        },
+                        view: view.as_slice(),
+                        projection: projection.as_slice(),
+                        ambient_strength: res.output.ambient_strength,
                         contrast_factor: res.filters.extra_contrast,
-                        light_color: &mut light_color,
-                        extra_light: &mut extra_light,
-                        light_pos: res.camera.get_position().as_mut_slice(),
+                        light_color: &res.output.light_color[i],
+                        extra_light: &res.output.extra_light,
+                        light_pos: res.camera.get_position().as_slice(),
                         screen_curvature: res.output.screen_curvature_factor,
-                        pixel_gap: &mut [(1.0 + res.filters.cur_pixel_gap) * res.filters.cur_pixel_width, 1.0 + res.filters.cur_pixel_gap],
-                        pixel_scale,
+                        pixel_gap: &res.output.pixel_gap,
+                        pixel_scale: &res.output.pixel_scale_foreground.get(j).expect("Bad pixel_scale_foreground")[i],
                         pixel_pulse: res.output.pixels_pulse,
-                        pixel_offset,
-                        height_modifier_factor: 1.0 - res.filters.pixel_shadow_height_factor,
+                        pixel_offset: &res.output.pixel_offset_foreground.get(j).expect("Bad pixel_offset_foreground")[i],
+                        height_modifier_factor: res.output.height_modifier_factor,
                     },
                 );
             }
@@ -149,14 +96,8 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
     materials.main_buffer_stack.bind_current(gl)?;
     gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
 
-    if res.output.showing_solid_background {
-        let diffuse_condition = res.output.showing_diffuse_foreground
-            || if let ScreenLayeringKind::DiffuseOnly = res.filters.layering_kind {
-                true
-            } else {
-                false
-            };
-        if diffuse_condition {
+    if res.output.showing_background {
+        if res.output.is_background_diffuse {
             materials.bg_buffer_stack.set_resolution(gl, 1920 / 2, 1080 / 2);
             materials.bg_buffer_stack.set_depthbuffer(gl, false);
             materials.bg_buffer_stack.set_interpolation(gl, WebGl2RenderingContext::LINEAR);
@@ -169,32 +110,22 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
             PixelsUniform {
                 shadow_kind: 0,
                 geometry_kind: res.filters.pixels_geometry_kind,
-                view: res.camera.get_view().as_mut_slice(),
-                projection: res
-                    .camera
-                    .get_projection(res.video.viewport_size.width as f32, res.video.viewport_size.height as f32)
-                    .as_mut_slice(),
-                ambient_strength: match res.filters.pixels_geometry_kind {
-                    PixelsGeometryKind::Squares => 1.0,
-                    PixelsGeometryKind::Cubes => 0.5,
-                },
+                view: view.as_slice(),
+                projection: projection.as_slice(),
+                ambient_strength: res.output.ambient_strength,
                 contrast_factor: res.filters.extra_contrast,
-                light_color: &mut [res.output.solid_color_weight, res.output.solid_color_weight, res.output.solid_color_weight],
-                extra_light: &mut [0.0, 0.0, 0.0],
-                light_pos: res.camera.get_position().as_mut_slice(),
-                pixel_gap: &mut [(1.0 + res.filters.cur_pixel_gap) * res.filters.cur_pixel_width, 1.0 + res.filters.cur_pixel_gap],
-                pixel_scale: &mut [
-                    (res.filters.cur_pixel_scale_x + 1.0) / res.filters.cur_pixel_width,
-                    res.filters.cur_pixel_scale_y + 1.0,
-                    (res.filters.cur_pixel_scale_x + res.filters.cur_pixel_scale_x) * 0.5 + 1.0,
-                ],
+                light_color: &[res.output.solid_color_weight, res.output.solid_color_weight, res.output.solid_color_weight],
+                extra_light: &[0.0, 0.0, 0.0],
+                light_pos: res.camera.get_position().as_slice(),
+                pixel_gap: &res.output.pixel_gap,
+                pixel_scale: &res.output.pixel_scale_base,
                 screen_curvature: res.output.screen_curvature_factor,
                 pixel_pulse: res.output.pixels_pulse,
-                pixel_offset: &mut [0.0, 0.0, 0.0],
+                pixel_offset: &[0.0, 0.0, 0.0],
                 height_modifier_factor: 0.0,
             },
         );
-        if diffuse_condition {
+        if res.output.is_background_diffuse {
             let source = materials.bg_buffer_stack.get_current()?.clone();
             let target = materials.main_buffer_stack.get_current()?;
             materials.blur_render.render(&gl, &mut materials.bg_buffer_stack, &source, &target, 6)?;
@@ -261,81 +192,4 @@ fn check_error(gl: &WebGl2RenderingContext, line: u32) -> WasmResult<()> {
         return Err(WasmError::Str(error.to_string() + " on line: " + &line.to_string()));
     }
     Ok(())
-}
-
-fn get_3_f32color_from_int(color: i32) -> [f32; 3] {
-    [
-        (color >> 16) as f32 / 255.0,
-        ((color >> 8) & 0xFF) as f32 / 255.0,
-        (color & 0xFF) as f32 / 255.0,
-    ]
-}
-
-fn calc_stupid_not_extrapoled_function(y: usize) -> f32 {
-    match y {
-        1 => (0.0),
-        2 => (0.25),
-        3 => (1.0 / 3.0),
-        4 => (0.375),
-        5 => (0.4),
-        6 => (0.4 + 0.1 / 6.0),
-        7 => (0.4 + 0.1 / 6.0 + 0.1 / 8.4),
-        8 => (0.4 + 0.1 / 6.0 + 0.1 / 8.4 + 0.008_925_75),
-        9 => (0.4 + 0.1 / 6.0 + 0.1 / 8.4 + 0.008_925_75 + 0.006_945),
-        _ => (0.45), // originalmente: 0.4 + 0.1 / 6.0 + 0.1 / 8.4 + 0.00892575 + 0.006945 + 0.0055555555
-    }
-    /*
-    Let's consider this was a function where we find the following points:
-    f(1) = 0
-    0.25
-    f(2) = 0.25
-    0.08333333333 | 0.33333
-    f(3) = 0.33333333333
-    0.0416666666 | 0.5
-    f(4) = 0.375
-    0.025 | 0.6
-    f(5) = 0.4
-    0.0166666666666 | 0.6666666666
-    f(6) = 0.41666666666
-    0.01190476190475190476190 | 0.71428571424028571
-    f(7) = 0.42857142857
-    0.00892575 | 0.749763
-    f(8) = 0.43749717857142857142857142857143
-    0.006945 | 0.77808587513
-    f(9) = 0.444442178571428571428
-    0.00555555555555555555555 | 0.79999
-    f(10) = 0.45
-
-    It looks like this function is growing less than a logarithmic one
-    */
-}
-
-#[cfg(test)]
-mod tests {
-    mod get_3_f32color_from_int {
-        mod gives_good {
-            use super::super::super::*;
-
-            macro_rules! get_3_f32color_from_int_tests {
-        ($($name:ident: $value:expr,)*) => {
-        $(
-            #[test]
-            fn $name() {
-                let (input, expected) = $value;
-                assert_eq!(expected, get_3_f32color_from_int(input));
-            }
-        )*
-        }
-    }
-
-            get_3_f32color_from_int_tests! {
-                white: (0x00FF_FFFF, [1.0, 1.0, 1.0]),
-                black: (0x0000_0000, [0.0, 0.0, 0.0]),
-                red: (0x00FF_0000, [1.0, 0.0, 0.0]),
-                green: (0x0000_FF00, [0.0, 1.0, 0.0]),
-                blue: (0x0000_00FF, [0.0, 0.0, 1.0]),
-                yellow: (0x00eb_f114, [0.92156863, 0.94509804, 0.078431375]),
-            }
-        }
-    }
 }

@@ -13,7 +13,7 @@ use crate::camera::Camera;
 use crate::general_types::Size2D;
 use crate::internal_resolution::InternalResolution;
 use crate::internal_resolution_render::InternalResolutionRender;
-use crate::pixels_render::{PixelsGeometryKind, PixelsRender};
+use crate::pixels_render::PixelsRender;
 use crate::render_types::TextureBufferStack;
 use crate::rgb_render::RgbRender;
 use crate::wasm_error::WasmResult;
@@ -152,9 +152,20 @@ impl Filters {
 pub struct Output {
     pub screen_curvature_factor: f32,
     pub pixels_pulse: f32,
-    pub showing_solid_background: bool,
-    pub showing_diffuse_foreground: bool,
     pub solid_color_weight: f32,
+    pub color_splits: usize,
+    pub light_color: [[f32; 3]; 3],
+    pub extra_light: [f32; 3],
+    pub ambient_strength: f32,
+    pub pixel_have_depth: bool,
+    pub pixel_gap: [f32; 2],
+    pub pixel_scale_base: [f32; 3],
+    pub height_modifier_factor: f32,
+    pub pixel_scale_foreground: Vec<[[f32; 3]; 3]>,
+    pub pixel_offset_foreground: Vec<[[f32; 3]; 3]>,
+    pub is_background_diffuse: bool,
+    pub showing_background: bool,
+    pub showing_foreground: bool,
 }
 
 #[derive(FromPrimitive, ToPrimitive, EnumLen, Copy, Clone)]
@@ -212,6 +223,21 @@ impl std::fmt::Display for TextureInterpolation {
         match *self {
             TextureInterpolation::Nearest => write!(f, "Nearest"),
             TextureInterpolation::Linear => write!(f, "Linear"),
+        }
+    }
+}
+
+#[derive(FromPrimitive, ToPrimitive, EnumLen, Clone, Copy)]
+pub enum PixelsGeometryKind {
+    Squares,
+    Cubes,
+}
+
+impl std::fmt::Display for PixelsGeometryKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match *self {
+            PixelsGeometryKind::Squares => write!(f, "Squares"),
+            PixelsGeometryKind::Cubes => write!(f, "Cubes"),
         }
     }
 }

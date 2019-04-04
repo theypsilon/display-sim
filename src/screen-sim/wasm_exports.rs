@@ -36,46 +36,43 @@ pub struct VideoInputWasm {
 }
 
 #[wasm_bindgen]
-impl VideoInputWasm {
-    #[allow(clippy::too_many_arguments)]
-    #[wasm_bindgen(constructor)]
-    pub fn new(
-        image_width: u32,
-        image_height: u32,
-        background_width: u32,
-        background_height: u32,
-        canvas_width: u32,
-        canvas_height: u32,
-        pixel_width: f32,
-        stretch: bool,
-    ) -> VideoInputWasm {
-        VideoInputWasm {
-            resources: VideoInputResources {
-                image_size: Size2D {
-                    width: image_width,
-                    height: image_height,
-                },
-                background_size: Size2D {
-                    width: background_width,
-                    height: background_height,
-                },
-                viewport_size: Size2D {
-                    width: canvas_width,
-                    height: canvas_height,
-                },
-                steps: Vec::new(),
-                pixel_width,
-                stretch,
-                current_frame: 0,
-                last_frame_change: -100.0,
-                needs_buffer_data_load: true,
+pub fn new_video_input_wasm(
+    image_width: u32,
+    image_height: u32,
+    background_width: u32,
+    background_height: u32,
+    canvas_width: u32,
+    canvas_height: u32,
+    pixel_width: f32,
+    stretch: bool,
+) -> VideoInputWasm {
+    VideoInputWasm {
+        resources: VideoInputResources {
+            image_size: Size2D {
+                width: image_width,
+                height: image_height,
             },
-            materials: VideoInputMaterials { buffers: Vec::new() },
-        }
+            background_size: Size2D {
+                width: background_width,
+                height: background_height,
+            },
+            viewport_size: Size2D {
+                width: canvas_width,
+                height: canvas_height,
+            },
+            steps: Vec::new(),
+            pixel_width,
+            stretch,
+            current_frame: 0,
+            last_frame_change: -100.0,
+            needs_buffer_data_load: true,
+        },
+        materials: VideoInputMaterials { buffers: Vec::new() },
     }
+}
 
-    pub fn add(&mut self, buffer: ArrayBuffer, delay: u32) {
-        self.resources.steps.push(AnimationStep { delay });
-        self.materials.buffers.push(buffer);
-    }
+#[wasm_bindgen]
+pub fn add_buffer_to_video_input(video_input: &mut VideoInputWasm, buffer: ArrayBuffer, delay: u32) {
+    video_input.resources.steps.push(AnimationStep { delay });
+    video_input.materials.buffers.push(buffer);
 }
