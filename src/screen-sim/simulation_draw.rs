@@ -2,7 +2,7 @@ use web_sys::WebGl2RenderingContext;
 
 use crate::app_events;
 use crate::pixels_render::{PixelsGeometryKind, PixelsUniform};
-use crate::simulation_state::{ColorChannels, Materials, Resources, ScreenCurvatureKind, ScreenLayeringKind, TextureInterpolation};
+use crate::simulation_state::{ColorChannels, Materials, Resources, ScreenLayeringKind, TextureInterpolation};
 use crate::wasm_error::{WasmError, WasmResult};
 
 pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
@@ -14,7 +14,7 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
 
     materials.main_buffer_stack.set_depthbuffer(
         gl,
-        match res.crt_filters.pixels_geometry_kind {
+        match res.filters.pixels_geometry_kind {
             PixelsGeometryKind::Cubes => true,
             PixelsGeometryKind::Squares => false,
         },
@@ -22,11 +22,11 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
 
     materials
         .main_buffer_stack
-        .set_resolution(gl, res.crt_filters.internal_resolution.width(), res.crt_filters.internal_resolution.height());
+        .set_resolution(gl, res.filters.internal_resolution.width(), res.filters.internal_resolution.height());
 
     materials.main_buffer_stack.set_interpolation(
         gl,
-        match res.crt_filters.texture_interpolation {
+        match res.filters.texture_interpolation {
             TextureInterpolation::Linear => WebGl2RenderingContext::LINEAR,
             TextureInterpolation::Nearest => WebGl2RenderingContext::NEAREST,
         },
@@ -40,49 +40,42 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
     gl.clear_color(0.0, 0.0, 0.0, 0.0);
     gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
 
-    let screen_curvature = match res.crt_filters.screen_curvature_kind {
-        ScreenCurvatureKind::Curved1 => 0.15,
-        ScreenCurvatureKind::Curved2 => 0.3,
-        ScreenCurvatureKind::Curved3 => 0.45,
-        _ => 0.0,
-    };
-
-    if res.crt_filters.showing_diffuse_foreground {
-        let mut extra_light = get_3_f32color_from_int(res.crt_filters.brightness_color);
+    if res.output.showing_diffuse_foreground {
+        let mut extra_light = get_3_f32color_from_int(res.filters.brightness_color);
         for light in extra_light.iter_mut() {
-            *light *= res.crt_filters.extra_bright;
+            *light *= res.filters.extra_bright;
         }
-        let vertical_lines_ratio = res.crt_filters.lines_per_pixel;
+        let vertical_lines_ratio = res.filters.lines_per_pixel;
         for j in 0..vertical_lines_ratio {
-            let color_splits = match res.crt_filters.color_channels {
+            let color_splits = match res.filters.color_channels {
                 ColorChannels::Combined => 1,
                 _ => 3,
             };
             for i in 0..color_splits {
-                let mut light_color = get_3_f32color_from_int(res.crt_filters.light_color);
+                let mut light_color = get_3_f32color_from_int(res.filters.light_color);
                 let pixel_offset = &mut [0.0, 0.0, 0.0];
                 let pixel_scale = &mut [
-                    (res.crt_filters.cur_pixel_scale_x + 1.0) / res.crt_filters.cur_pixel_width,
-                    res.crt_filters.cur_pixel_scale_y + 1.0,
-                    (res.crt_filters.cur_pixel_scale_x + res.crt_filters.cur_pixel_scale_x) * 0.5 + 1.0,
+                    (res.filters.cur_pixel_scale_x + 1.0) / res.filters.cur_pixel_width,
+                    res.filters.cur_pixel_scale_y + 1.0,
+                    (res.filters.cur_pixel_scale_x + res.filters.cur_pixel_scale_x) * 0.5 + 1.0,
                 ];
-                match res.crt_filters.color_channels {
+                match res.filters.color_channels {
                     ColorChannels::Combined => {}
                     _ => {
                         light_color[(i + 0) % 3] *= 1.0;
                         light_color[(i + 1) % 3] = 0.0;
                         light_color[(i + 2) % 3] = 0.0;
-                        match res.crt_filters.color_channels {
+                        match res.filters.color_channels {
                             ColorChannels::SplitHorizontal => {
-                                pixel_offset[0] = (i as f32 - 1.0) * (1.0 / 3.0) * res.crt_filters.cur_pixel_width / (res.crt_filters.cur_pixel_scale_x + 1.0);
+                                pixel_offset[0] = (i as f32 - 1.0) * (1.0 / 3.0) * res.filters.cur_pixel_width / (res.filters.cur_pixel_scale_x + 1.0);
                                 pixel_scale[0] *= color_splits as f32;
                             }
                             ColorChannels::Overlapping => {
-                                pixel_offset[0] = (i as f32 - 1.0) * (1.0 / 3.0) * res.crt_filters.cur_pixel_width / (res.crt_filters.cur_pixel_scale_x + 1.0);
+                                pixel_offset[0] = (i as f32 - 1.0) * (1.0 / 3.0) * res.filters.cur_pixel_width / (res.filters.cur_pixel_scale_x + 1.0);
                                 pixel_scale[0] *= 1.5;
                             }
                             ColorChannels::SplitVertical => {
-                                pixel_offset[1] = (i as f32 - 1.0) * (1.0 / 3.0) * (1.0 - res.crt_filters.cur_pixel_scale_y);
+                                pixel_offset[1] = (i as f32 - 1.0) * (1.0 / 3.0) * (1.0 - res.filters.cur_pixel_scale_y);
                                 pixel_scale[1] *= color_splits as f32;
                             }
                             _ => unreachable!(),
@@ -92,11 +85,11 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
                 if vertical_lines_ratio > 1 {
                     pixel_offset[0] /= vertical_lines_ratio as f32;
                     pixel_offset[0] += (j as f32 / vertical_lines_ratio as f32 - calc_stupid_not_extrapoled_function(vertical_lines_ratio))
-                        * res.crt_filters.cur_pixel_width
-                        / (res.crt_filters.cur_pixel_scale_x + 1.0);
+                        * res.filters.cur_pixel_width
+                        / (res.filters.cur_pixel_scale_x + 1.0);
                     pixel_scale[0] *= vertical_lines_ratio as f32;
                 }
-                if let ColorChannels::Overlapping = res.crt_filters.color_channels {
+                if let ColorChannels::Overlapping = res.filters.color_channels {
                     materials.main_buffer_stack.push(gl)?;
                     materials.main_buffer_stack.bind_current(gl)?;
                     if j == 0 {
@@ -106,41 +99,38 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
                 materials.pixels_render.render(
                     gl,
                     PixelsUniform {
-                        shadow_kind: res.crt_filters.pixel_shadow_shape_kind,
-                        geometry_kind: res.crt_filters.pixels_geometry_kind,
+                        shadow_kind: res.filters.pixel_shadow_shape_kind,
+                        geometry_kind: res.filters.pixels_geometry_kind,
                         view: res.camera.get_view().as_mut_slice(),
                         projection: res
                             .camera
                             .get_projection(res.video.viewport_size.width as f32, res.video.viewport_size.height as f32)
                             .as_mut_slice(),
-                        ambient_strength: match res.crt_filters.pixels_geometry_kind {
+                        ambient_strength: match res.filters.pixels_geometry_kind {
                             PixelsGeometryKind::Squares => 1.0,
                             PixelsGeometryKind::Cubes => 0.5,
                         },
-                        contrast_factor: res.crt_filters.extra_contrast,
+                        contrast_factor: res.filters.extra_contrast,
                         light_color: &mut light_color,
                         extra_light: &mut extra_light,
                         light_pos: res.camera.get_position().as_mut_slice(),
-                        screen_curvature,
-                        pixel_gap: &mut [
-                            (1.0 + res.crt_filters.cur_pixel_gap) * res.crt_filters.cur_pixel_width,
-                            1.0 + res.crt_filters.cur_pixel_gap,
-                        ],
+                        screen_curvature: res.output.screen_curvature_factor,
+                        pixel_gap: &mut [(1.0 + res.filters.cur_pixel_gap) * res.filters.cur_pixel_width, 1.0 + res.filters.cur_pixel_gap],
                         pixel_scale,
-                        pixel_pulse: res.crt_filters.pixels_pulse,
+                        pixel_pulse: res.output.pixels_pulse,
                         pixel_offset,
-                        height_modifier_factor: 1.0 - res.crt_filters.pixel_shadow_height_factor,
+                        height_modifier_factor: 1.0 - res.filters.pixel_shadow_height_factor,
                     },
                 );
             }
-            if let ColorChannels::Overlapping = res.crt_filters.color_channels {
+            if let ColorChannels::Overlapping = res.filters.color_channels {
                 materials.main_buffer_stack.pop()?;
                 materials.main_buffer_stack.pop()?;
                 materials.main_buffer_stack.pop()?;
             }
         }
 
-        if let ColorChannels::Overlapping = res.crt_filters.color_channels {
+        if let ColorChannels::Overlapping = res.filters.color_channels {
             materials.main_buffer_stack.bind_current(gl)?;
             gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 0);
             gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, materials.main_buffer_stack.get_nth(1)?.texture());
@@ -159,9 +149,9 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
     materials.main_buffer_stack.bind_current(gl)?;
     gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
 
-    if res.crt_filters.showing_solid_background {
-        let diffuse_condition = res.crt_filters.showing_diffuse_foreground
-            || if let ScreenLayeringKind::DiffuseOnly = res.crt_filters.layering_kind {
+    if res.output.showing_solid_background {
+        let diffuse_condition = res.output.showing_diffuse_foreground
+            || if let ScreenLayeringKind::DiffuseOnly = res.filters.layering_kind {
                 true
             } else {
                 false
@@ -178,35 +168,28 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
             gl,
             PixelsUniform {
                 shadow_kind: 0,
-                geometry_kind: res.crt_filters.pixels_geometry_kind,
+                geometry_kind: res.filters.pixels_geometry_kind,
                 view: res.camera.get_view().as_mut_slice(),
                 projection: res
                     .camera
                     .get_projection(res.video.viewport_size.width as f32, res.video.viewport_size.height as f32)
                     .as_mut_slice(),
-                ambient_strength: match res.crt_filters.pixels_geometry_kind {
+                ambient_strength: match res.filters.pixels_geometry_kind {
                     PixelsGeometryKind::Squares => 1.0,
                     PixelsGeometryKind::Cubes => 0.5,
                 },
-                contrast_factor: res.crt_filters.extra_contrast,
-                light_color: &mut [
-                    res.crt_filters.solid_color_weight,
-                    res.crt_filters.solid_color_weight,
-                    res.crt_filters.solid_color_weight,
-                ],
+                contrast_factor: res.filters.extra_contrast,
+                light_color: &mut [res.output.solid_color_weight, res.output.solid_color_weight, res.output.solid_color_weight],
                 extra_light: &mut [0.0, 0.0, 0.0],
                 light_pos: res.camera.get_position().as_mut_slice(),
-                pixel_gap: &mut [
-                    (1.0 + res.crt_filters.cur_pixel_gap) * res.crt_filters.cur_pixel_width,
-                    1.0 + res.crt_filters.cur_pixel_gap,
-                ],
+                pixel_gap: &mut [(1.0 + res.filters.cur_pixel_gap) * res.filters.cur_pixel_width, 1.0 + res.filters.cur_pixel_gap],
                 pixel_scale: &mut [
-                    (res.crt_filters.cur_pixel_scale_x + 1.0) / res.crt_filters.cur_pixel_width,
-                    res.crt_filters.cur_pixel_scale_y + 1.0,
-                    (res.crt_filters.cur_pixel_scale_x + res.crt_filters.cur_pixel_scale_x) * 0.5 + 1.0,
+                    (res.filters.cur_pixel_scale_x + 1.0) / res.filters.cur_pixel_width,
+                    res.filters.cur_pixel_scale_y + 1.0,
+                    (res.filters.cur_pixel_scale_x + res.filters.cur_pixel_scale_x) * 0.5 + 1.0,
                 ],
-                screen_curvature,
-                pixel_pulse: res.crt_filters.pixels_pulse,
+                screen_curvature: res.output.screen_curvature_factor,
+                pixel_pulse: res.output.pixels_pulse,
                 pixel_offset: &mut [0.0, 0.0, 0.0],
                 height_modifier_factor: 0.0,
             },
@@ -230,16 +213,16 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
     materials.background_render.render(gl);
     gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 0);
 
-    if res.crt_filters.blur_passes > 0 {
+    if res.filters.blur_passes > 0 {
         let target = materials.main_buffer_stack.get_current()?.clone();
         materials
             .blur_render
-            .render(&gl, &mut materials.main_buffer_stack, &target, &target, res.crt_filters.blur_passes)?;
+            .render(&gl, &mut materials.main_buffer_stack, &target, &target, res.filters.blur_passes)?;
     }
 
     if res.launch_screenshot {
-        let width = res.crt_filters.internal_resolution.width();
-        let height = res.crt_filters.internal_resolution.height();
+        let width = res.filters.internal_resolution.width();
+        let height = res.filters.internal_resolution.height();
         let pixels = js_sys::Uint8Array::new(&(width * height * 4).into());
         gl.read_pixels_with_opt_array_buffer_view(
             0,
@@ -252,7 +235,7 @@ pub fn draw(materials: &mut Materials, res: &Resources) -> WasmResult<()> {
         )?;
         let array = js_sys::Array::new();
         array.push(&pixels);
-        array.push(&res.crt_filters.internal_resolution.multiplier.into());
+        array.push(&res.filters.internal_resolution.multiplier.into());
         app_events::dispatch_screenshot(&array)?;
     }
 

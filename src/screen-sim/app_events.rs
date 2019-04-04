@@ -20,19 +20,19 @@ pub fn dispatch_change_pixel_spread(size: f32) -> WasmResult<()> {
 }
 
 pub fn dispatch_change_pixel_brightness(res: &Resources) -> WasmResult<()> {
-    dispatch_event_with("app-event.change_pixel_brightness", &format!("{:.02}", res.crt_filters.extra_bright).into())
+    dispatch_event_with("app-event.change_pixel_brightness", &format!("{:.02}", res.filters.extra_bright).into())
 }
 
 pub fn dispatch_change_pixel_contrast(res: &Resources) -> WasmResult<()> {
-    dispatch_event_with("app-event.change_pixel_contrast", &format!("{:.03}", res.crt_filters.extra_contrast).into())
+    dispatch_event_with("app-event.change_pixel_contrast", &format!("{:.03}", res.filters.extra_contrast).into())
 }
 
 pub fn dispatch_change_light_color(res: &Resources) -> WasmResult<()> {
-    dispatch_change_color("app-event.change_light_color", res.crt_filters.light_color)
+    dispatch_change_color("app-event.change_light_color", res.filters.light_color)
 }
 
 pub fn dispatch_change_brightness_color(res: &Resources) -> WasmResult<()> {
-    dispatch_change_color("app-event.change_brightness_color", res.crt_filters.brightness_color)
+    dispatch_change_color("app-event.change_brightness_color", res.filters.brightness_color)
 }
 
 fn dispatch_change_color(id: &str, color: i32) -> WasmResult<()> {
@@ -44,43 +44,43 @@ pub fn dispatch_change_camera_zoom(res: &Resources) -> WasmResult<()> {
 }
 
 pub fn dispatch_change_blur_level(res: &Resources) -> WasmResult<()> {
-    dispatch_event_with("app-event.change_blur_level", &(res.crt_filters.blur_passes as i32).into())
+    dispatch_event_with("app-event.change_blur_level", &(res.filters.blur_passes as i32).into())
 }
 
 pub fn dispatch_change_lines_per_pixel(res: &Resources) -> WasmResult<()> {
-    dispatch_event_with("app-event.change_lines_per_pixel", &(res.crt_filters.lines_per_pixel as i32).into())
+    dispatch_event_with("app-event.change_lines_per_pixel", &(res.filters.lines_per_pixel as i32).into())
 }
 
 pub fn dispatch_color_representation(res: &Resources) -> WasmResult<()> {
-    dispatch_event_with("app-event.color_representation", &(res.crt_filters.color_channels.to_string()).into())
+    dispatch_event_with("app-event.color_representation", &(res.filters.color_channels.to_string()).into())
 }
 
 pub fn dispatch_pixel_geometry(res: &Resources) -> WasmResult<()> {
-    dispatch_event_with("app-event.pixel_geometry", &(res.crt_filters.pixels_geometry_kind.to_string()).into())
+    dispatch_event_with("app-event.pixel_geometry", &(res.filters.pixels_geometry_kind.to_string()).into())
 }
 
 pub fn dispatch_pixel_shadow_shape(res: &Resources) -> WasmResult<()> {
-    dispatch_event_with("app-event.pixel_shadow_shape", &(res.crt_filters.pixel_shadow_shape_kind.to_string()).into())
+    dispatch_event_with("app-event.pixel_shadow_shape", &(res.filters.pixel_shadow_shape_kind.to_string()).into())
 }
 
 pub fn dispatch_pixel_shadow_height(res: &Resources) -> WasmResult<()> {
-    dispatch_event_with("app-event.pixel_shadow_height", &(res.crt_filters.pixel_shadow_height_factor).into())
+    dispatch_event_with("app-event.pixel_shadow_height", &(res.filters.pixel_shadow_height_factor).into())
 }
 
 pub fn dispatch_screen_layering_type(res: &Resources) -> WasmResult<()> {
-    dispatch_event_with("app-event.screen_layering_type", &(res.crt_filters.layering_kind.to_string()).into())
+    dispatch_event_with("app-event.screen_layering_type", &(res.filters.layering_kind.to_string()).into())
 }
 
 pub fn dispatch_screen_curvature(res: &Resources) -> WasmResult<()> {
-    dispatch_event_with("app-event.screen_curvature", &(res.crt_filters.screen_curvature_kind.to_string()).into())
+    dispatch_event_with("app-event.screen_curvature", &(res.filters.screen_curvature_kind.to_string()).into())
 }
 
 pub fn dispatch_internal_resolution(res: &Resources) -> WasmResult<()> {
-    dispatch_event_with("app-event.internal_resolution", &(res.crt_filters.internal_resolution.to_label()).into())
+    dispatch_event_with("app-event.internal_resolution", &(res.filters.internal_resolution.to_label()).into())
 }
 
 pub fn dispatch_texture_interpolation(res: &Resources) -> WasmResult<()> {
-    dispatch_event_with("app-event.texture_interpolation", &(res.crt_filters.texture_interpolation.to_string()).into())
+    dispatch_event_with("app-event.texture_interpolation", &(res.filters.texture_interpolation.to_string()).into())
 }
 
 pub fn dispatch_change_pixel_speed(speed: f32) -> WasmResult<()> {

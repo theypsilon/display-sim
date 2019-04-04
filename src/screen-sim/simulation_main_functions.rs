@@ -46,13 +46,13 @@ pub fn init_resources(res: &mut Resources, video_input: VideoInputResources) -> 
                 camera_position.z = initial_position_z;
             }
             camera.set_position(camera_position);
-            if res.crt_filters.cur_pixel_width != res.video.pixel_width {
-                cur_pixel_width = res.crt_filters.cur_pixel_width;
+            if res.filters.cur_pixel_width != res.video.pixel_width {
+                cur_pixel_width = res.filters.cur_pixel_width;
             }
         }
     }
     res.resetted = true;
-    res.crt_filters.cur_pixel_width = cur_pixel_width;
+    res.filters.cur_pixel_width = cur_pixel_width;
     res.timers = SimulationTimers {
         frame_count: 0,
         last_time: now,
@@ -63,7 +63,7 @@ pub fn init_resources(res: &mut Resources, video_input: VideoInputResources) -> 
         initial_pixel_width: video_input.pixel_width,
         initial_movement_speed: camera.movement_speed,
     };
-    res.crt_filters.internal_resolution.init_viewport_size(video_input.viewport_size);
+    res.filters.internal_resolution.init_viewport_size(video_input.viewport_size);
     res.camera = camera;
     res.video = video_input;
     change_frontend_input_values(res)?;

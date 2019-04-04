@@ -82,7 +82,7 @@ fn web_entrypoint_iteration(owned_state: &StateOwner, window: &Window) -> WasmRe
         }
         Ok(false) => {}
         Err(e) => {
-            resources.crt_filters.internal_resolution = InternalResolution::new(1.0);
+            resources.filters.internal_resolution = InternalResolution::new(1.0);
             return Err(e);
         }
     };

@@ -4,7 +4,7 @@ use crate::camera::CameraDirection;
 use crate::general_types::NextEnumVariant;
 use crate::pixels_shadow::SHADOWS_LEN;
 use crate::simulation_state::{
-    CrtFilters, CustomInputEvent, IncDec, Input, Resources, ScreenCurvatureKind, ScreenLayeringKind, PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
+    CustomInputEvent, Filters, IncDec, Input, Resources, ScreenCurvatureKind, ScreenLayeringKind, PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
 };
 use crate::wasm_error::WasmResult;
 
@@ -26,7 +26,7 @@ pub fn update_simulation(res: &mut Resources, input: &Input) -> WasmResult<bool>
     }
 
     update_pixel_pulse(dt, res, input)?;
-    update_crt_filters(dt, res, input)?;
+    update_filters(dt, res, input)?;
     update_speeds(res, input)?;
     update_camera(dt, res, input)?;
 
@@ -35,7 +35,7 @@ pub fn update_simulation(res: &mut Resources, input: &Input) -> WasmResult<bool>
         res.screenshot_delay -= 1;
     } else if input.screenshot.is_just_released() {
         res.launch_screenshot = true;
-        res.screenshot_delay = (5.0 * res.crt_filters.internal_resolution.multiplier as f32 * (1.0 / dt)) as i32; // 5 seconds aprox.
+        res.screenshot_delay = (5.0 * res.filters.internal_resolution.multiplier as f32 * (1.0 / dt)) as i32; // 5 seconds aprox.
     }
 
     Ok(true)
@@ -76,34 +76,34 @@ fn update_animation_buffer(res: &mut Resources, input: &Input) {
 
 fn update_colors(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> {
     if input.bright.increase {
-        res.crt_filters.extra_bright += 0.01 * dt * res.crt_filters.change_speed;
+        res.filters.extra_bright += 0.01 * dt * res.filters.change_speed;
     }
     if input.bright.decrease {
-        res.crt_filters.extra_bright -= 0.01 * dt * res.crt_filters.change_speed;
+        res.filters.extra_bright -= 0.01 * dt * res.filters.change_speed;
     }
     if input.bright.increase || input.bright.decrease {
-        if res.crt_filters.extra_bright < -1.0 {
-            res.crt_filters.extra_bright = -1.0;
+        if res.filters.extra_bright < -1.0 {
+            res.filters.extra_bright = -1.0;
             app_events::dispatch_top_message("Minimum value is -1.0".into())?;
-        } else if res.crt_filters.extra_bright > 1.0 {
-            res.crt_filters.extra_bright = 1.0;
+        } else if res.filters.extra_bright > 1.0 {
+            res.filters.extra_bright = 1.0;
             app_events::dispatch_top_message("Maximum value is +1.0".into())?;
         } else {
             app_events::dispatch_change_pixel_brightness(&res)?;
         }
     }
     if input.contrast.increase {
-        res.crt_filters.extra_contrast += 0.01 * dt * res.crt_filters.change_speed;
+        res.filters.extra_contrast += 0.01 * dt * res.filters.change_speed;
     }
     if input.contrast.decrease {
-        res.crt_filters.extra_contrast -= 0.01 * dt * res.crt_filters.change_speed;
+        res.filters.extra_contrast -= 0.01 * dt * res.filters.change_speed;
     }
     if input.contrast.increase || input.contrast.decrease {
-        if res.crt_filters.extra_contrast < 0.0 {
-            res.crt_filters.extra_contrast = 0.0;
+        if res.filters.extra_contrast < 0.0 {
+            res.filters.extra_contrast = 0.0;
             app_events::dispatch_top_message("Minimum value is 0.0".into())?;
-        } else if res.crt_filters.extra_contrast > 20.0 {
-            res.crt_filters.extra_contrast = 20.0;
+        } else if res.filters.extra_contrast > 20.0 {
+            res.filters.extra_contrast = 20.0;
             app_events::dispatch_top_message("Maximum value is 20.0".into())?;
         } else {
             app_events::dispatch_change_pixel_contrast(&res)?;
@@ -111,15 +111,15 @@ fn update_colors(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> 
     }
     let color_variable = match input.custom_event.kind.as_ref() {
         "event_kind:pixel_brightness" => {
-            res.crt_filters.extra_bright = input.custom_event.value.as_f64().ok_or("it should be a number")? as f32;
+            res.filters.extra_bright = input.custom_event.value.as_f64().ok_or("it should be a number")? as f32;
             return Ok(());
         }
         "event_kind:pixel_contrast" => {
-            res.crt_filters.extra_contrast = input.custom_event.value.as_f64().ok_or("it should be a number")? as f32;
+            res.filters.extra_contrast = input.custom_event.value.as_f64().ok_or("it should be a number")? as f32;
             return Ok(());
         }
-        "event_kind:light_color" => &mut res.crt_filters.light_color,
-        "event_kind:brightness_color" => &mut res.crt_filters.brightness_color,
+        "event_kind:light_color" => &mut res.filters.light_color,
+        "event_kind:brightness_color" => &mut res.filters.brightness_color,
         _ => return Ok(()),
     };
 
@@ -133,27 +133,27 @@ fn update_colors(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> 
 }
 
 fn update_blur(res: &mut Resources, input: &Input) -> WasmResult<()> {
-    let last_blur_passes = res.crt_filters.blur_passes;
+    let last_blur_passes = res.filters.blur_passes;
     if input.blur.increase.is_just_pressed() {
-        res.crt_filters.blur_passes += 1;
+        res.filters.blur_passes += 1;
     }
     if input.blur.decrease.is_just_pressed() {
-        if res.crt_filters.blur_passes > 0 {
-            res.crt_filters.blur_passes -= 1;
+        if res.filters.blur_passes > 0 {
+            res.filters.blur_passes -= 1;
         } else {
             app_events::dispatch_top_message("Minimum value is 0".into())?;
         }
     }
     if input.custom_event.kind.as_ref() as &str == "event_kind:blur_level" {
-        res.crt_filters.blur_passes = input.custom_event.value.as_f64().ok_or("it should be a number")? as usize;
+        res.filters.blur_passes = input.custom_event.value.as_f64().ok_or("it should be a number")? as usize;
         app_events::dispatch_change_blur_level(res)?;
     }
-    if res.crt_filters.blur_passes > 100 {
-        res.crt_filters.blur_passes = 100;
+    if res.filters.blur_passes > 100 {
+        res.filters.blur_passes = 100;
         app_events::dispatch_top_message("Maximum value is 100".into())?;
     }
-    if last_blur_passes != res.crt_filters.blur_passes {
-        app_events::dispatch_top_message(format!("Blur level: {}", res.crt_filters.blur_passes))?;
+    if last_blur_passes != res.filters.blur_passes {
+        app_events::dispatch_top_message(format!("Blur level: {}", res.filters.blur_passes))?;
         app_events::dispatch_change_blur_level(res)?;
     }
     Ok(())
@@ -161,26 +161,26 @@ fn update_blur(res: &mut Resources, input: &Input) -> WasmResult<()> {
 
 // lines per pixel
 fn update_lpp(res: &mut Resources, input: &Input) -> WasmResult<()> {
-    let last_lpp = res.crt_filters.lines_per_pixel;
+    let last_lpp = res.filters.lines_per_pixel;
     if input.lpp.increase.is_just_pressed() {
-        res.crt_filters.lines_per_pixel += 1;
+        res.filters.lines_per_pixel += 1;
     }
-    if input.lpp.decrease.is_just_pressed() && res.crt_filters.lines_per_pixel > 0 {
-        res.crt_filters.lines_per_pixel -= 1;
+    if input.lpp.decrease.is_just_pressed() && res.filters.lines_per_pixel > 0 {
+        res.filters.lines_per_pixel -= 1;
     }
     if input.custom_event.kind.as_ref() as &str == "event_kind:lines_per_pixel" {
-        res.crt_filters.lines_per_pixel = input.custom_event.value.as_f64().ok_or("it should be a number")? as usize;
+        res.filters.lines_per_pixel = input.custom_event.value.as_f64().ok_or("it should be a number")? as usize;
         app_events::dispatch_change_lines_per_pixel(res)?;
     }
-    if res.crt_filters.lines_per_pixel < 1 {
-        res.crt_filters.lines_per_pixel = 1;
+    if res.filters.lines_per_pixel < 1 {
+        res.filters.lines_per_pixel = 1;
         app_events::dispatch_top_message("Minimum value is 1".into())?;
-    } else if res.crt_filters.lines_per_pixel > 20 {
-        res.crt_filters.lines_per_pixel = 20;
+    } else if res.filters.lines_per_pixel > 20 {
+        res.filters.lines_per_pixel = 20;
         app_events::dispatch_top_message("Maximum value is 20".into())?;
     }
-    if last_lpp != res.crt_filters.lines_per_pixel {
-        app_events::dispatch_top_message(format!("Lines per pixel: {}.", res.crt_filters.lines_per_pixel))?;
+    if last_lpp != res.filters.lines_per_pixel {
+        app_events::dispatch_top_message(format!("Lines per pixel: {}.", res.filters.lines_per_pixel))?;
         app_events::dispatch_change_lines_per_pixel(res)?;
     }
     Ok(())
@@ -189,26 +189,33 @@ fn update_lpp(res: &mut Resources, input: &Input) -> WasmResult<()> {
 fn update_pixel_pulse(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> {
     if input.next_screen_curvature_type.any_just_pressed() {
         if input.next_screen_curvature_type.increase.is_just_pressed() {
-            res.crt_filters.screen_curvature_kind.next_enum_variant()?;
+            res.filters.screen_curvature_kind.next_enum_variant()?;
         } else {
-            res.crt_filters.screen_curvature_kind.previous_enum_variant()?;
+            res.filters.screen_curvature_kind.previous_enum_variant()?;
         }
-        app_events::dispatch_top_message(format!("Screen curvature: {}.", res.crt_filters.screen_curvature_kind))?;
+        app_events::dispatch_top_message(format!("Screen curvature: {}.", res.filters.screen_curvature_kind))?;
         app_events::dispatch_screen_curvature(res)?;
     }
 
-    if let ScreenCurvatureKind::Pulse = res.crt_filters.screen_curvature_kind {
-        res.crt_filters.pixels_pulse += dt * 0.3;
+    res.output.screen_curvature_factor = match res.filters.screen_curvature_kind {
+        ScreenCurvatureKind::Curved1 => 0.15,
+        ScreenCurvatureKind::Curved2 => 0.3,
+        ScreenCurvatureKind::Curved3 => 0.45,
+        _ => 0.0,
+    };
+
+    if let ScreenCurvatureKind::Pulse = res.filters.screen_curvature_kind {
+        res.output.pixels_pulse += dt * 0.3;
     } else {
-        res.crt_filters.pixels_pulse = 0.0;
+        res.output.pixels_pulse = 0.0;
     }
     Ok(())
 }
 
-fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> {
+fn update_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> {
     if input.reset_filters {
-        res.crt_filters = CrtFilters::new(PIXEL_MANIPULATION_BASE_SPEED);
-        res.crt_filters.cur_pixel_width = res.initial_parameters.initial_pixel_width;
+        res.filters = Filters::new(PIXEL_MANIPULATION_BASE_SPEED);
+        res.filters.cur_pixel_width = res.initial_parameters.initial_pixel_width;
         change_frontend_input_values(res)?;
         app_events::dispatch_top_message("All filter options have been reset.".into())?;
         return Ok(());
@@ -216,99 +223,99 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
 
     if input.next_layering_kind.any_just_pressed() {
         if input.next_layering_kind.increase.is_just_pressed() {
-            res.crt_filters.layering_kind.next_enum_variant()?;
+            res.filters.layering_kind.next_enum_variant()?;
         } else {
-            res.crt_filters.layering_kind.previous_enum_variant()?;
+            res.filters.layering_kind.previous_enum_variant()?;
         }
-        app_events::dispatch_top_message(format!("Layering kind: {}.", res.crt_filters.layering_kind))?;
+        app_events::dispatch_top_message(format!("Layering kind: {}.", res.filters.layering_kind))?;
         app_events::dispatch_screen_layering_type(res)?;
     }
 
-    match res.crt_filters.layering_kind {
+    match res.filters.layering_kind {
         ScreenLayeringKind::ShadowOnly => {
-            res.crt_filters.showing_diffuse_foreground = true;
-            res.crt_filters.showing_solid_background = false;
+            res.output.showing_diffuse_foreground = true;
+            res.output.showing_solid_background = false;
         }
         ScreenLayeringKind::SolidOnly => {
-            res.crt_filters.showing_diffuse_foreground = false;
-            res.crt_filters.showing_solid_background = true;
-            res.crt_filters.solid_color_weight = 1.0;
+            res.output.showing_diffuse_foreground = false;
+            res.output.showing_solid_background = true;
+            res.output.solid_color_weight = 1.0;
         }
         ScreenLayeringKind::DiffuseOnly => {
-            res.crt_filters.showing_diffuse_foreground = false;
-            res.crt_filters.showing_solid_background = true;
-            res.crt_filters.solid_color_weight = 1.0;
+            res.output.showing_diffuse_foreground = false;
+            res.output.showing_solid_background = true;
+            res.output.solid_color_weight = 1.0;
         }
         ScreenLayeringKind::ShadowWithSolidBackground75 => {
-            res.crt_filters.showing_diffuse_foreground = true;
-            res.crt_filters.showing_solid_background = true;
-            res.crt_filters.solid_color_weight = 0.75;
+            res.output.showing_diffuse_foreground = true;
+            res.output.showing_solid_background = true;
+            res.output.solid_color_weight = 0.75;
         }
         ScreenLayeringKind::ShadowWithSolidBackground50 => {
-            res.crt_filters.showing_diffuse_foreground = true;
-            res.crt_filters.showing_solid_background = true;
-            res.crt_filters.solid_color_weight = 0.5;
+            res.output.showing_diffuse_foreground = true;
+            res.output.showing_solid_background = true;
+            res.output.solid_color_weight = 0.5;
         }
         ScreenLayeringKind::ShadowWithSolidBackground25 => {
-            res.crt_filters.showing_diffuse_foreground = true;
-            res.crt_filters.showing_solid_background = true;
-            res.crt_filters.solid_color_weight = 0.25;
+            res.output.showing_diffuse_foreground = true;
+            res.output.showing_solid_background = true;
+            res.output.solid_color_weight = 0.25;
         }
     };
 
     if input.next_color_representation_kind.any_just_pressed() {
         if input.next_color_representation_kind.increase.is_just_pressed() {
-            res.crt_filters.color_channels.next_enum_variant()?;
+            res.filters.color_channels.next_enum_variant()?;
         } else {
-            res.crt_filters.color_channels.previous_enum_variant()?;
+            res.filters.color_channels.previous_enum_variant()?;
         }
-        app_events::dispatch_top_message(format!("Pixel color representation: {}.", res.crt_filters.color_channels))?;
+        app_events::dispatch_top_message(format!("Pixel color representation: {}.", res.filters.color_channels))?;
         app_events::dispatch_color_representation(res)?;
     }
 
     if input.next_pixel_geometry_kind.any_just_pressed() {
         if input.next_pixel_geometry_kind.increase.is_just_pressed() {
-            res.crt_filters.pixels_geometry_kind.next_enum_variant()?;
+            res.filters.pixels_geometry_kind.next_enum_variant()?;
         } else {
-            res.crt_filters.pixels_geometry_kind.previous_enum_variant()?;
+            res.filters.pixels_geometry_kind.previous_enum_variant()?;
         }
-        app_events::dispatch_top_message(format!("Pixel geometry: {}.", res.crt_filters.pixels_geometry_kind))?;
+        app_events::dispatch_top_message(format!("Pixel geometry: {}.", res.filters.pixels_geometry_kind))?;
         app_events::dispatch_pixel_geometry(res)?;
     }
 
     if input.next_pixels_shadow_shape_kind.any_just_pressed() {
         if input.next_pixels_shadow_shape_kind.increase.is_just_pressed() {
-            res.crt_filters.pixel_shadow_shape_kind += 1;
-            if res.crt_filters.pixel_shadow_shape_kind >= SHADOWS_LEN {
-                res.crt_filters.pixel_shadow_shape_kind = 0;
+            res.filters.pixel_shadow_shape_kind += 1;
+            if res.filters.pixel_shadow_shape_kind >= SHADOWS_LEN {
+                res.filters.pixel_shadow_shape_kind = 0;
             }
         } else {
-            if res.crt_filters.pixel_shadow_shape_kind == 0 {
-                res.crt_filters.pixel_shadow_shape_kind = SHADOWS_LEN;
+            if res.filters.pixel_shadow_shape_kind == 0 {
+                res.filters.pixel_shadow_shape_kind = SHADOWS_LEN;
             }
-            res.crt_filters.pixel_shadow_shape_kind -= 1;
+            res.filters.pixel_shadow_shape_kind -= 1;
         }
-        app_events::dispatch_top_message(format!("Showing next pixel shadow: {}.", res.crt_filters.pixel_shadow_shape_kind))?;
+        app_events::dispatch_top_message(format!("Showing next pixel shadow: {}.", res.filters.pixel_shadow_shape_kind))?;
         app_events::dispatch_pixel_shadow_shape(res)?;
     }
 
     let received_pixel_shadow_height = input.custom_event.kind.as_ref() as &str == "event_kind:pixel_shadow_height";
     if input.next_pixels_shadow_height_factor.any_active() || received_pixel_shadow_height {
         if input.next_pixels_shadow_height_factor.increase {
-            res.crt_filters.pixel_shadow_height_factor += dt * 0.3;
+            res.filters.pixel_shadow_height_factor += dt * 0.3;
         }
         if input.next_pixels_shadow_height_factor.decrease {
-            res.crt_filters.pixel_shadow_height_factor -= dt * 0.3;
+            res.filters.pixel_shadow_height_factor -= dt * 0.3;
         }
         if received_pixel_shadow_height {
-            res.crt_filters.pixel_shadow_height_factor = input.custom_event.value.as_f64().ok_or("it should be a number")? as f32;
+            res.filters.pixel_shadow_height_factor = input.custom_event.value.as_f64().ok_or("it should be a number")? as f32;
         }
-        if res.crt_filters.pixel_shadow_height_factor < 0.0 {
-            res.crt_filters.pixel_shadow_height_factor = 0.0;
+        if res.filters.pixel_shadow_height_factor < 0.0 {
+            res.filters.pixel_shadow_height_factor = 0.0;
             app_events::dispatch_top_message("Minimum value is 0.0".into())?;
         }
-        if res.crt_filters.pixel_shadow_height_factor > 1.0 {
-            res.crt_filters.pixel_shadow_height_factor = 1.0;
+        if res.filters.pixel_shadow_height_factor > 1.0 {
+            res.filters.pixel_shadow_height_factor = 1.0;
             app_events::dispatch_top_message("Maximum value is 1.0".into())?;
         }
         app_events::dispatch_pixel_shadow_height(&res)?;
@@ -316,12 +323,12 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
 
     if input.next_internal_resolution.any_just_released() {
         if input.next_internal_resolution.increase.is_just_released() {
-            res.crt_filters.internal_resolution.increase();
+            res.filters.internal_resolution.increase();
         }
         if input.next_internal_resolution.decrease.is_just_released() {
-            res.crt_filters.internal_resolution.decrease();
+            res.filters.internal_resolution.decrease();
         }
-        if res.crt_filters.internal_resolution.minimum_reached {
+        if res.filters.internal_resolution.minimum_reached {
             app_events::dispatch_top_message("Minimum internal resolution has been reached.".into())?;
         } else {
             app_events::dispatch_internal_resolution(&res)?;
@@ -330,19 +337,19 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
 
     if input.next_texture_interpolation.any_just_pressed() {
         if input.next_texture_interpolation.increase.is_just_pressed() {
-            res.crt_filters.texture_interpolation.next_enum_variant()?;
+            res.filters.texture_interpolation.next_enum_variant()?;
         }
         if input.next_texture_interpolation.decrease.is_just_pressed() {
-            res.crt_filters.texture_interpolation.previous_enum_variant()?;
+            res.filters.texture_interpolation.previous_enum_variant()?;
         }
         app_events::dispatch_texture_interpolation(&res)?;
     }
 
-    let pixel_velocity = dt * res.crt_filters.change_speed;
+    let pixel_velocity = dt * res.filters.change_speed;
     change_pixel_sizes(
         &input.custom_event,
         input.pixel_scale_x.clone(),
-        &mut res.crt_filters.cur_pixel_scale_x,
+        &mut res.filters.cur_pixel_scale_x,
         pixel_velocity * 0.00125,
         app_events::dispatch_change_pixel_vertical_gap,
         "event_kind:pixel_vertical_gap",
@@ -350,7 +357,7 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
     change_pixel_sizes(
         &input.custom_event,
         input.pixel_scale_y.clone(),
-        &mut res.crt_filters.cur_pixel_scale_y,
+        &mut res.filters.cur_pixel_scale_y,
         pixel_velocity * 0.00125,
         app_events::dispatch_change_pixel_horizontal_gap,
         "event_kind:pixel_horizontal_gap",
@@ -358,7 +365,7 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
     change_pixel_sizes(
         &input.custom_event,
         input.pixel_width.clone(),
-        &mut res.crt_filters.cur_pixel_width,
+        &mut res.filters.cur_pixel_width,
         pixel_velocity * 0.005,
         app_events::dispatch_change_pixel_width,
         "event_kind:pixel_width",
@@ -366,7 +373,7 @@ fn update_crt_filters(dt: f32, res: &mut Resources, input: &Input) -> WasmResult
     change_pixel_sizes(
         &input.custom_event,
         input.pixel_gap.clone(),
-        &mut res.crt_filters.cur_pixel_gap,
+        &mut res.filters.cur_pixel_gap,
         pixel_velocity * 0.005,
         app_events::dispatch_change_pixel_spread,
         "event_kind:pixel_spread",
@@ -414,7 +421,7 @@ fn update_speeds(res: &mut Resources, input: &Input) -> WasmResult<()> {
 
     change_speed(
         &input.filter_speed,
-        &mut res.crt_filters.change_speed,
+        &mut res.filters.change_speed,
         PIXEL_MANIPULATION_BASE_SPEED,
         "Pixel manipulation speed: ",
         app_events::dispatch_change_pixel_speed,
@@ -460,7 +467,7 @@ fn update_speeds(res: &mut Resources, input: &Input) -> WasmResult<()> {
     if input.reset_speeds {
         res.camera.turning_speed = TURNING_BASE_SPEED;
         res.camera.movement_speed = res.initial_parameters.initial_movement_speed;
-        res.crt_filters.change_speed = PIXEL_MANIPULATION_BASE_SPEED;
+        res.filters.change_speed = PIXEL_MANIPULATION_BASE_SPEED;
         app_events::dispatch_top_message("All speeds have been reset.".into())?;
         change_frontend_input_values(res)?;
     }
@@ -593,10 +600,10 @@ fn update_camera(dt: f32, res: &mut Resources, input: &Input) -> WasmResult<()> 
 }
 
 pub fn change_frontend_input_values(res: &Resources) -> WasmResult<()> {
-    app_events::dispatch_change_pixel_horizontal_gap(res.crt_filters.cur_pixel_scale_y)?;
-    app_events::dispatch_change_pixel_vertical_gap(res.crt_filters.cur_pixel_scale_x)?;
-    app_events::dispatch_change_pixel_width(res.crt_filters.cur_pixel_width)?;
-    app_events::dispatch_change_pixel_spread(res.crt_filters.cur_pixel_gap)?;
+    app_events::dispatch_change_pixel_horizontal_gap(res.filters.cur_pixel_scale_y)?;
+    app_events::dispatch_change_pixel_vertical_gap(res.filters.cur_pixel_scale_x)?;
+    app_events::dispatch_change_pixel_width(res.filters.cur_pixel_width)?;
+    app_events::dispatch_change_pixel_spread(res.filters.cur_pixel_gap)?;
     app_events::dispatch_change_pixel_brightness(res)?;
     app_events::dispatch_change_pixel_contrast(res)?;
     app_events::dispatch_change_light_color(res)?;
@@ -612,7 +619,7 @@ pub fn change_frontend_input_values(res: &Resources) -> WasmResult<()> {
     app_events::dispatch_screen_curvature(res)?;
     app_events::dispatch_internal_resolution(res)?;
     app_events::dispatch_texture_interpolation(res)?;
-    app_events::dispatch_change_pixel_speed(res.crt_filters.change_speed / PIXEL_MANIPULATION_BASE_SPEED)?;
+    app_events::dispatch_change_pixel_speed(res.filters.change_speed / PIXEL_MANIPULATION_BASE_SPEED)?;
     app_events::dispatch_change_turning_speed(res.camera.turning_speed / TURNING_BASE_SPEED)?;
     app_events::dispatch_change_movement_speed(res.camera.movement_speed / res.initial_parameters.initial_movement_speed)?;
     Ok(())

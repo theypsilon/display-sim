@@ -49,7 +49,8 @@ pub struct VideoInputMaterials {
 pub struct Resources {
     pub video: VideoInputResources,
     pub camera: Camera,
-    pub crt_filters: CrtFilters,
+    pub filters: Filters,
+    pub output: Output,
     pub timers: SimulationTimers,
     pub initial_parameters: InitialParameters,
     pub launch_screenshot: bool,
@@ -65,7 +66,8 @@ impl Resources {
             timers: SimulationTimers::default(),
             video: VideoInputResources::default(),
             camera: Camera::new(MOVEMENT_BASE_SPEED / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED),
-            crt_filters: CrtFilters::new(PIXEL_MANIPULATION_BASE_SPEED),
+            output: Output::default(),
+            filters: Filters::new(PIXEL_MANIPULATION_BASE_SPEED),
             launch_screenshot: false,
             screenshot_delay: 0,
         }
@@ -98,7 +100,7 @@ pub struct InitialParameters {
     pub initial_pixel_width: f32,
 }
 
-pub struct CrtFilters {
+pub struct Filters {
     pub internal_resolution: InternalResolution,
     pub texture_interpolation: TextureInterpolation,
     pub blur_passes: usize,
@@ -112,16 +114,47 @@ pub struct CrtFilters {
     pub cur_pixel_scale_y: f32,
     pub cur_pixel_gap: f32,
     pub change_speed: f32,
-    pub pixels_pulse: f32,
     pub pixel_shadow_height_factor: f32,
     pub pixels_geometry_kind: PixelsGeometryKind,
     pub color_channels: ColorChannels,
     pub screen_curvature_kind: ScreenCurvatureKind,
+    pub pixel_shadow_shape_kind: usize,
+    pub layering_kind: ScreenLayeringKind,
+}
+
+impl Filters {
+    pub fn new(change_speed: f32) -> Filters {
+        Filters {
+            internal_resolution: InternalResolution::new(1.0),
+            texture_interpolation: TextureInterpolation::Linear,
+            blur_passes: 1,
+            lines_per_pixel: 2,
+            light_color: 0x00FF_FFFF,
+            brightness_color: 0x00FF_FFFF,
+            extra_bright: 0.0,
+            extra_contrast: 1.0,
+            cur_pixel_width: 1.0,
+            cur_pixel_scale_x: 0.0,
+            cur_pixel_scale_y: 0.0,
+            cur_pixel_gap: 0.0,
+            pixel_shadow_height_factor: 0.25,
+            change_speed,
+            pixels_geometry_kind: PixelsGeometryKind::Squares,
+            pixel_shadow_shape_kind: 3,
+            color_channels: ColorChannels::Combined,
+            screen_curvature_kind: ScreenCurvatureKind::Flat,
+            layering_kind: ScreenLayeringKind::ShadowWithSolidBackground50,
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct Output {
+    pub screen_curvature_factor: f32,
+    pub pixels_pulse: f32,
     pub showing_solid_background: bool,
     pub showing_diffuse_foreground: bool,
     pub solid_color_weight: f32,
-    pub pixel_shadow_shape_kind: usize,
-    pub layering_kind: ScreenLayeringKind,
 }
 
 #[derive(FromPrimitive, ToPrimitive, EnumLen, Copy, Clone)]
@@ -198,36 +231,6 @@ impl std::fmt::Display for ColorChannels {
             ColorChannels::Overlapping => write!(f, "Horizontal overlapping"),
             ColorChannels::SplitHorizontal => write!(f, "Horizontal split"),
             ColorChannels::SplitVertical => write!(f, "Vertical split"),
-        }
-    }
-}
-
-impl CrtFilters {
-    pub fn new(change_speed: f32) -> CrtFilters {
-        CrtFilters {
-            internal_resolution: InternalResolution::new(1.0),
-            texture_interpolation: TextureInterpolation::Linear,
-            blur_passes: 1,
-            lines_per_pixel: 2,
-            light_color: 0x00FF_FFFF,
-            brightness_color: 0x00FF_FFFF,
-            extra_bright: 0.0,
-            extra_contrast: 1.0,
-            cur_pixel_width: 1.0,
-            cur_pixel_scale_x: 0.0,
-            cur_pixel_scale_y: 0.0,
-            cur_pixel_gap: 0.0,
-            pixel_shadow_height_factor: 0.25,
-            change_speed,
-            pixels_pulse: 0.0,
-            pixels_geometry_kind: PixelsGeometryKind::Squares,
-            pixel_shadow_shape_kind: 3,
-            color_channels: ColorChannels::Combined,
-            screen_curvature_kind: ScreenCurvatureKind::Flat,
-            showing_diffuse_foreground: true,
-            showing_solid_background: true,
-            solid_color_weight: 0.75,
-            layering_kind: ScreenLayeringKind::ShadowWithSolidBackground50,
         }
     }
 }
