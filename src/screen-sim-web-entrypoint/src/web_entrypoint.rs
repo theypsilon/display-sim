@@ -71,10 +71,7 @@ pub fn web_entrypoint(
 }
 
 pub fn print_error(e: WebError) {
-    match e {
-        WebError::Js(o) => console!(error. "An unexpected error ocurred.", o),
-        WebError::Str(s) => console!(error. "An unexpected error ocurred.", s),
-    };
+    console!(error. "An unexpected error ocurred.", e.to_js());
 }
 
 fn web_entrypoint_iteration<T: AppEventDispatcher + Default>(owned_state: &StateOwner, window: &Window, ctx: &mut SimulationContext<T>) -> WebResult<()> {

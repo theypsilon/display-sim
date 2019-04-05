@@ -211,7 +211,7 @@ impl<'a, T: AppEventDispatcher> SimulationDrawer<'a, T> {
 fn check_error(gl: &WebGl2RenderingContext, line: u32) -> WebResult<()> {
     let error = gl.get_error();
     if error != WebGl2RenderingContext::NO_ERROR {
-        return Err(WebError::Str(error.to_string() + " on line: " + &line.to_string()));
+        return Err(format!("{} on line: {}", error, line).into());
     }
     Ok(())
 }

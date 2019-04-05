@@ -1,12 +1,13 @@
+#[derive(Clone, Debug)]
 pub enum WebError {
     Js(wasm_bindgen::JsValue),
     Str(String),
 }
 
 impl WebError {
-    pub fn to_js(&self) -> wasm_bindgen::JsValue {
+    pub fn to_js(self) -> wasm_bindgen::JsValue {
         match self {
-            WebError::Js(o) => o.clone(),
+            WebError::Js(o) => o,
             WebError::Str(s) => s.into(),
         }
     }
