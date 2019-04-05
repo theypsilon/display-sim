@@ -1,7 +1,7 @@
 use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlShader, WebGlVertexArrayObject};
 
 use web_common::wasm_error::{WasmError, WasmResult};
-use web_common::web_utils::{js_f32_array, js_i32_array};
+use core::general_types::{f32_to_u8, i32_to_u8};
 use std::mem::size_of;
 
 pub fn make_shader(gl: &WebGl2RenderingContext, vertex_shader: &str, fragment_shader: &str) -> WasmResult<WebGlProgram> {
@@ -51,15 +51,15 @@ pub fn make_quad_vao(gl: &WebGl2RenderingContext, shader: &WebGlProgram) -> Wasm
     let quad_vbo = gl.create_buffer().ok_or("cannot create quad_vbo")?;
     let quad_ebo = gl.create_buffer().ok_or("cannot create quad_ebo")?;
     gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&quad_vbo));
-    gl.buffer_data_with_opt_array_buffer(
+    gl.buffer_data_with_u8_array(
         WebGl2RenderingContext::ARRAY_BUFFER,
-        Some(&js_f32_array(&QUAD_GEOMETRY).buffer()),
+        f32_to_u8(&QUAD_GEOMETRY),
         WebGl2RenderingContext::STATIC_DRAW,
     );
     gl.bind_buffer(WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER, Some(&quad_ebo));
-    gl.buffer_data_with_opt_array_buffer(
+    gl.buffer_data_with_u8_array(
         WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER,
-        Some(&js_i32_array(&QUAD_INDICES).buffer()),
+        i32_to_u8(&QUAD_INDICES),
         WebGl2RenderingContext::STATIC_DRAW,
     );
 

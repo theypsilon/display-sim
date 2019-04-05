@@ -39,6 +39,22 @@ fn change_enum_variant<T: FromPrimitive + ToPrimitive + EnumLen>(instance: &mut 
     std::mem::swap(instance, &mut changed);
 }
 
+pub fn f32_to_u8<'a>(v: &'a [f32]) -> &'a [u8] {
+    unsafe { std::slice::from_raw_parts(v.as_ptr() as *const u8, v.len() * 4) }
+}
+
+pub fn i32_to_u8<'a>(v: &'a [i32]) -> &'a [u8] {
+    unsafe { std::slice::from_raw_parts(v.as_ptr() as *const u8, v.len() * 4) }
+}
+
+pub fn transform_u32_to_array_of_u8(x:u32) -> [u8;4] {
+    let b1 : u8 = ((x >> 24) & 0xff) as u8;
+    let b2 : u8 = ((x >> 16) & 0xff) as u8;
+    let b3 : u8 = ((x >> 8) & 0xff) as u8;
+    let b4 : u8 = (x & 0xff) as u8;
+    return [b1, b2, b3, b4]
+}
+
 pub fn get_3_f32color_from_int(color: i32) -> [f32; 3] {
     [
         (color >> 16) as f32 / 255.0,

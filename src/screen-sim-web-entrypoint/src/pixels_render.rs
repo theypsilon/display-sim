@@ -1,10 +1,9 @@
-use js_sys::Float32Array;
 use web_sys::{WebGl2RenderingContext, WebGlBuffer, WebGlProgram, WebGlTexture, WebGlVertexArrayObject};
 
 use crate::shaders::make_shader;
 use crate::simulation_render_state::VideoInputMaterials;
 use web_common::wasm_error::WasmResult;
-use web_common::web_utils::js_f32_array;
+use crate::web_utils::{f32_to_u8, transform_u32_to_array_of_u8};
 use core::pixels_shadow::{get_shadows, TEXTURE_SIZE};
 use core::simulation_core_state::{PixelsGeometryKind, VideoInputResources};
 
@@ -49,9 +48,9 @@ impl PixelsRender {
 
         let pixels_vbo = gl.create_buffer().ok_or("cannot create pixels_vbo")?;
         gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&pixels_vbo));
-        gl.buffer_data_with_opt_array_buffer(
+        gl.buffer_data_with_u8_array(
             WebGl2RenderingContext::ARRAY_BUFFER,
-            Some(&js_f32_array(&CUBE_GEOMETRY).buffer()),
+            f32_to_u8(&CUBE_GEOMETRY),
             WebGl2RenderingContext::STATIC_DRAW,
         );
 
@@ -190,9 +189,9 @@ impl PixelsRender {
             self.offset_inverse_max_length = 1.0 / ((self.width as f32 * 0.5).powi(2) + (self.height as f32 * 0.5).powi(2)).sqrt();
             gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&self.offsets_vbo));
             let offsets = calculate_offsets(self.width, self.height);
-            gl.buffer_data_with_opt_array_buffer(
+            gl.buffer_data_with_u8_array(
                 WebGl2RenderingContext::ARRAY_BUFFER,
-                Some(&offsets.buffer()),
+                &*offsets,
                 WebGl2RenderingContext::STATIC_DRAW,
             );
         }
@@ -246,9 +245,9 @@ impl PixelsRender {
     }
 }
 
-fn calculate_offsets(width: u32, height: u32) -> Float32Array {
+fn calculate_offsets(width: u32, height: u32) -> Box<[u8]> {
     let pixels_total = width * height;
-    let offsets = Float32Array::new(&wasm_bindgen::JsValue::from(pixels_total as u32 * 2));
+    let offsets = vec![0, pixels_total * 2 * 4].into_boxed_slice();
     {
         let half_width: f32 = width as f32 / 2.0;
         let half_height: f32 = height as f32 / 2.0;
@@ -259,8 +258,16 @@ fn calculate_offsets(width: u32, height: u32) -> Float32Array {
                 let index = (pixels_total - width - j * width + i) as u32;
                 let x = i as f32 - half_width + center_dx;
                 let y = j as f32 - half_height + center_dy;
-                offsets.fill(x, index * 2 + 0, index * 2 + 1);
-                offsets.fill(y, index * 2 + 1, index * 2 + 2);
+                let u8_array = transform_u32_to_array_of_u8(x.to_bits());
+                offsets[index * 2 * 4 + 0 * 4 + 0] = u8_array[0];
+                offsets[index * 2 * 4 + 0 * 4 + 1] = u8_array[1];
+                offsets[index * 2 * 4 + 0 * 4 + 2] = u8_array[2];
+                offsets[index * 2 * 4 + 0 * 4 + 3] = u8_array[3];
+                let u8_array = transform_u32_to_array_of_u8(y.to_bits());
+                offsets[index * 2 * 4 + 1 * 4 + 0] = u8_array[0];
+                offsets[index * 2 * 4 + 1 * 4 + 1] = u8_array[1];
+                offsets[index * 2 * 4 + 1 * 4 + 2] = u8_array[2];
+                offsets[index * 2 * 4 + 1 * 4 + 3] = u8_array[3];
             }
         }
     }

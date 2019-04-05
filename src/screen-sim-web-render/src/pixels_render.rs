@@ -4,7 +4,7 @@ use web_sys::{WebGl2RenderingContext, WebGlBuffer, WebGlProgram, WebGlTexture, W
 use crate::shaders::make_shader;
 use crate::simulation_render_state::VideoInputMaterials;
 use web_common::wasm_error::WasmResult;
-use web_common::web_utils::js_f32_array;
+use core::general_types::f32_to_u8;
 use core::pixels_shadow::{get_shadows, TEXTURE_SIZE};
 use core::simulation_core_state::{PixelsGeometryKind, VideoInputResources};
 
@@ -49,9 +49,9 @@ impl PixelsRender {
 
         let pixels_vbo = gl.create_buffer().ok_or("cannot create pixels_vbo")?;
         gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&pixels_vbo));
-        gl.buffer_data_with_opt_array_buffer(
+        gl.buffer_data_with_u8_array(
             WebGl2RenderingContext::ARRAY_BUFFER,
-            Some(&js_f32_array(&CUBE_GEOMETRY).buffer()),
+            f32_to_u8(&CUBE_GEOMETRY),
             WebGl2RenderingContext::STATIC_DRAW,
         );
 

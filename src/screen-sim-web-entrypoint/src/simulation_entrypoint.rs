@@ -18,7 +18,7 @@ use render::rgb_render::RgbRender;
 use render::simulation_draw::SimulationDrawer;
 use render::simulation_render_state::{Materials, VideoInputMaterials};
 use web_common::wasm_error::WasmResult;
-use web_common::web_utils::now;
+use crate::web_utils::now;
 
 #[derive(new)]
 pub struct SimulationTicker<'a, T: AppEventDispatcher> {
