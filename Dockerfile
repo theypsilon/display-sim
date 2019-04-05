@@ -48,8 +48,8 @@ ADD Cargo.* /app/
 RUN cargo clippy \
     && cargo test --release \
     && wasm-pack build \
-    && mkdir -p /wasm && cp -r pkg/crt_3d_sim* /wasm/ \
-    && ./wasm-opt --debug -O3 -o ../wasm/crt_3d_sim_bg.wasm ../wasm/crt_3d_sim_bg.wasm >/dev/null 2>&1 \
+    && mkdir -p /wasm && cp -r pkg/screen_sim* /wasm/ \
+    && ./wasm-opt --debug -O3 -o ../wasm/screen_sim_bg.wasm ../wasm/screen_sim_bg.wasm >/dev/null 2>&1 \
     && cargo clean \
     && rm -rf /app
 
