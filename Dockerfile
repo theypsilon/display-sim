@@ -43,14 +43,8 @@ RUN set -eux; \
 
 FROM rust-wasm as wasm-artifact
 ENV RUST_BACKTRACE=1
-ADD src/crates /app/src/crates
+ADD src/ /app/src/
 ADD Cargo.* /app/
-RUN mkdir -p src && mkdir -p src/screen-sim && touch src/screen-sim/lib.rs \
-    && cargo build --release \
-    && wasm-pack build --debug \
-    && bash -c 'rm -rf ${CARGO_HOME}/registry/src/*/*/{!Cargo.toml}' \
-    && rm -rf target/debug target/wasm32-unknown-unknown/debug
-ADD src/screen-sim /app/src/screen-sim
 RUN cargo clippy \
     && cargo test --release \
     && wasm-pack build \

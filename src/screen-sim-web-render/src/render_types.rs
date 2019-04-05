@@ -86,6 +86,7 @@ impl TextureBuffer {
     }
 }
 
+#[derive(Default)]
 pub struct TextureBufferStack {
     pub stack: Vec<TextureBuffer>,
     width: i32,
@@ -98,15 +99,7 @@ pub struct TextureBufferStack {
 
 impl TextureBufferStack {
     pub fn new() -> TextureBufferStack {
-        TextureBufferStack {
-            stack: Vec::new(),
-            width: 0,
-            interpolation: WebGl2RenderingContext::LINEAR,
-            height: 0,
-            cursor: 0,
-            max_cursor: 0,
-            depthbuffer_active: false,
-        }
+        TextureBufferStack::default()
     }
 
     pub fn set_depthbuffer(&mut self, gl: &WebGl2RenderingContext, new_value: bool) {
