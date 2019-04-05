@@ -10,16 +10,148 @@ body {
 #ui {
     display: block;
 }
+
+h1, h2, h3 {
+    font-family: 'Archivo Black';
+}
+
+p {
+    font-family: 'Lato';
+    font-size: 16px;
+    line-height: 26px;
+    margin-bottom: 0px;
+}
+
+.strong {
+    font-weight: 700
+}
+
+.font-white {
+    font-size: 20px;
+}
+
+section>section, section>footer {
+    padding: 3rem 0;
+}
+
+.block {
+    display: block;
+}
+
+.margin-left {
+    margin-left: 20px
+}
+
+.bg-white {
+    background-color: #ffffff;
+}
+
+.bg-green {
+    background-color: #247E8F;
+}
+
+.bg-warning {
+    background-color: #C1435A;
+}
+
+.bg-footer {
+    background-color: #212425;
+}
+
+.spacing-md {
+    margin-bottom: 10px;
+}
+
+.explanation p {
+    margin-bottom: 20px;
+}
+
+.text-white {
+    color: #ffffff
+}
+
+.jumbotron {
+    border: none;
+}
+
+.jumbotron>.row {
+    display: flex;
+}
+
+.warning {
+    padding: 2rem 0;
+}
+
+.btn-crt {
+    text-transform: uppercase;
+    width: 100%;
+    font-weight: 700;
+    padding: 1rem;
+    transition: color .2s, background-color .2s;
+}
+
+.btn-green {
+    background-color: #247E8F;
+    border-color: #247E8F;
+}
+
+.btn-green:hover {
+    background-color: #ffffff;
+    color: #247E8F;
+}
+
+.btn-white {
+    color: #247E8F;
+    background-color: #ffffff;
+    border-color: #ffffff;
+}
+
+input[disabled] {
+    opacity: .8;
+}
+
+input.btn-white:not([disabled]):hover {
+    background-color: #247E8F;
+    color: #ffffff
+}
+
+.well {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+#drop-zone:hover {
+    border: 2px solid #ffffff;
+    cursor: pointer;
+}
+
+.option-inputs {
+    background: transparent;
+    border: none;
+}
+
+footer {
+    padding: 1rem 0 2rem;
+}
+
+footer label {
+    font-weight: 400;
+    text-transform: uppercase;
+    margin-top: 10px;
+    margin-bottom: 0;
+}
+
 .render-tests {
     text-align: center;
 }
 
 .options {
     display: flex;
-	flex-direction: column;
+    flex-direction: column;
     flex-wrap: nowrap;
-	justify-content: flex-start;
-	align-items: stretch;
+    justify-content: flex-start;
+    align-items: stretch;
     align-content: stretch;
     padding: 0;
 }
@@ -53,10 +185,10 @@ body {
 
 #scaling-custom-inputs {
     display: flex;
-	flex-direction: column;
+    flex-direction: column;
     flex-wrap: nowrap;
-	justify-content: flex-start;
-	align-items: stretch;
+    justify-content: flex-start;
+    align-items: stretch;
     align-content: stretch;
     padding: 0;
 }
@@ -128,10 +260,10 @@ ul.select-image li {
 
 ul.select-image li div {
     display: flex;
-	flex-direction: column;
-	justify-content: center;
-	align-items: center;
-	align-content: center;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
     height: 100%;
 }
 
@@ -161,9 +293,9 @@ ul.select-image li img {
 #drop-zone span {
     color: white;
     display: flex;
-	flex-direction: column;
-	justify-content: center;
-	align-items: center;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
     align-content: center;
     height: 100%;
 }
@@ -205,8 +337,8 @@ canvas:hover {
     display: flex;
     flex-direction: column;
     color: white;
-    background-color: rgba(0.0,0.0,0.0,0.5);
-    border: 1px solid rgba(0.0,0.0,0.0,0.5);
+    background-color: rgba(0.0, 0.0, 0.0, 0.5);
+    border: 1px solid rgba(0.0, 0.0, 0.0, 0.5);
     border-radius: 5px 5px 5px 5px;
     padding-inline-start: 0px;
     padding: 0;
@@ -289,9 +421,11 @@ canvas:hover {
 .key-up-far-right {
     margin-left: 2.6em;
 }
+
 .key-down-far-right {
     margin-left: 0.5em;
 }
+
 .key-down-center {
     margin-left: 0.1em;
     margin-right: 0.1em;
@@ -315,13 +449,13 @@ canvas:hover {
     border: 2px solid red;
 }
 
-.info-options > li {
+.info-options>li {
     margin-bottom: 0px;
     display: flex;
     justify-content: space-between;
 }
 
-.info-options > li:nth-child(even) {
+.info-options>li:nth-child(even) {
     background: #EEE;
     height: 100%;
 }
@@ -351,6 +485,7 @@ canvas:hover {
 }
 
 /* Hide HTML5 Up and Down arrows. */
+
 input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button {
     -webkit-appearance: none;
     margin: 0;
@@ -440,8 +575,7 @@ input[type="number"] {
     margin-left: -20px;
 }
 
-input.camera-field::-webkit-inner-spin-button,
-input.camera-field::-webkit-outer-spin-button {
+input.camera-field::-webkit-inner-spin-button, input.camera-field::-webkit-outer-spin-button {
     -webkit-appearance: none;
     margin: 0;
 }
@@ -493,15 +627,12 @@ input.camera-field::-webkit-outer-spin-button {
     .margin-sm-bottom {
         margin-bottom: 25px;
     }
-
-    .jumbotron > .row {
+    .jumbotron>.row {
         flex-direction: column
     }
-
     .margin-left {
         margin-left: 0;
     }
-
     #fork-me {
         width: 110px;
     }
