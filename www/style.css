@@ -1,17 +1,12 @@
+.display-none {
+    display: none !important;
+}
+
 body {
     margin: 0;
     padding: 0;
 }
-#loading {
-    display: initial;
-    position: fixed;
-    margin-left: -220px;
-    margin-top: -145px;
-    left: 50%;
-    top: 50%;
-    width: 441px;
-    height: 291px;
-}
+
 #ui {
     display: block;
 }
@@ -484,10 +479,6 @@ input.camera-field::-webkit-outer-spin-button {
     border-top: 1px solid rgb(187, 187, 187);
     border-bottom: 1px solid rgb(187, 187, 187);
     margin-bottom: -1px;
-}
-
-.display-none {
-    display: none !important;
 }
 
 #fork-me {
