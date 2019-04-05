@@ -11,10 +11,9 @@ path = "src/lib.rs"
 
 [dependencies]
 glm = { version = "0.1", package = "nalgebra-glm" }
-paste = "0.1.4"
 num-traits = "0.2"
 num-derive = "0.2"
 getters-by-type = "0.2"
-enum-len-derive = { path = "../crates/enum-len-derive" }
-enum-len-trait = { path = "../crates/enum-len-trait" }
+enum-len-derive = { path = "../external_crates/enum-len-derive" }
+enum-len-trait = { path = "../external_crates/enum-len-trait" }
 derive-new = "0.5.6"

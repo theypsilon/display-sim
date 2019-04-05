@@ -2,7 +2,7 @@ use web_sys::WebGl2RenderingContext;
 
 use crate::pixels_render::PixelsUniform;
 use crate::simulation_render_state::Materials;
-use web_base::wasm_error::{WasmError, WasmResult};
+use web_common::wasm_error::{WasmError, WasmResult};
 use core::app_events::AppEventDispatcher;
 use core::simulation_context::SimulationContext;
 use core::simulation_core_state::{ColorChannels, Resources, TextureInterpolation};

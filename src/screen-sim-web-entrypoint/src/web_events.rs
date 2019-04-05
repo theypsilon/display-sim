@@ -3,7 +3,7 @@ use core::app_events::AppEventDispatcher;
 use core::simulation_core_state::Resources;
 use js_sys::{Array, Float32Array};
 use std::cell::RefCell;
-use web_base::wasm_error::{WasmError, WasmResult};
+use web_common::wasm_error::{WasmError, WasmResult};
 
 #[derive(Default)]
 pub struct WebEventDispatcher {

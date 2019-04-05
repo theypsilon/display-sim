@@ -1,4 +1,4 @@
-use web_base::wasm_error::WasmResult;
+use web_common::wasm_error::WasmResult;
 use web_sys::{WebGl2RenderingContext, WebGlFramebuffer, WebGlTexture};
 
 #[derive(Debug, Clone)]

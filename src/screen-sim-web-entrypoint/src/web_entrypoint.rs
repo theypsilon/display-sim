@@ -12,8 +12,8 @@ use core::internal_resolution::InternalResolution;
 use core::simulation_context::SimulationContext;
 use core::simulation_core_state::{Input, InputEventValue, Resources, VideoInputResources};
 use render::simulation_render_state::{Materials, VideoInputMaterials};
-use web_base::wasm_error::{WasmError, WasmResult};
-use web_base::web_utils::{now, window};
+use web_common::wasm_error::{WasmError, WasmResult};
+use web_common::web_utils::{now, window};
 
 pub type OwnedClosure = Option<Closure<FnMut(JsValue)>>;
 

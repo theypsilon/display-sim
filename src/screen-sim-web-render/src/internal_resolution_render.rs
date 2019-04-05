@@ -1,7 +1,7 @@
 use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlVertexArrayObject};
 
 use crate::shaders::{make_quad_vao, make_shader, TEXTURE_FRAGMENT_SHADER, TEXTURE_VERTEX_SHADER};
-use web_base::wasm_error::WasmResult;
+use web_common::wasm_error::WasmResult;
 use web_sys::WebGlTexture;
 
 pub struct InternalResolutionRender {

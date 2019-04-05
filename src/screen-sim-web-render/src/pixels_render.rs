@@ -3,8 +3,8 @@ use web_sys::{WebGl2RenderingContext, WebGlBuffer, WebGlProgram, WebGlTexture, W
 
 use crate::shaders::make_shader;
 use crate::simulation_render_state::VideoInputMaterials;
-use web_base::wasm_error::WasmResult;
-use web_base::web_utils::js_f32_array;
+use web_common::wasm_error::WasmResult;
+use web_common::web_utils::js_f32_array;
 use core::pixels_shadow::{get_shadows, TEXTURE_SIZE};
 use core::simulation_core_state::{PixelsGeometryKind, VideoInputResources};
 
