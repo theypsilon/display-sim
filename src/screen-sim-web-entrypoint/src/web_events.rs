@@ -3,11 +3,11 @@ use core::app_events::AppEventDispatcher;
 use core::simulation_core_state::Resources;
 use js_sys::{Array, Float32Array};
 use std::cell::RefCell;
-use web_common::wasm_error::{WasmError, WasmResult};
+use web_error::{WebError, WebResult};
 
 #[derive(Default)]
 pub struct WebEventDispatcher {
-    error: RefCell<Option<WasmError>>,
+    error: RefCell<Option<WebError>>,
 }
 
 impl AppEventDispatcher for WebEventDispatcher {
@@ -186,14 +186,14 @@ impl WebEventDispatcher {
         self.catch_error(dispatch_event_with(id, &format!("#{:X}", color).into()));
     }
 
-    pub fn check_error(&self) -> WasmResult<()> {
+    pub fn check_error(&self) -> WebResult<()> {
         if let Some(e) = self.error.borrow_mut().take() {
             return Err(e);
         }
         Ok(())
     }
 
-    fn catch_error(&self, result: WasmResult<()>) {
+    fn catch_error(&self, result: WebResult<()>) {
         if self.error.borrow().is_some() {
             return;
         }

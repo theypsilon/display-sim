@@ -1,16 +1,16 @@
 use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlShader, WebGlVertexArrayObject};
 
-use web_common::wasm_error::{WasmError, WasmResult};
+use web_error::{WebResult};
 use core::general_types::{f32_to_u8, i32_to_u8};
 use std::mem::size_of;
 
-pub fn make_shader(gl: &WebGl2RenderingContext, vertex_shader: &str, fragment_shader: &str) -> WasmResult<WebGlProgram> {
+pub fn make_shader(gl: &WebGl2RenderingContext, vertex_shader: &str, fragment_shader: &str) -> WebResult<WebGlProgram> {
     let vert_shader = compile_shader(&gl, WebGl2RenderingContext::VERTEX_SHADER, vertex_shader)?;
     let frag_shader = compile_shader(&gl, WebGl2RenderingContext::FRAGMENT_SHADER, fragment_shader)?;
     link_shader(&gl, [vert_shader, frag_shader].iter())
 }
 
-fn compile_shader(gl: &WebGl2RenderingContext, shader_type: u32, source: &str) -> WasmResult<WebGlShader> {
+fn compile_shader(gl: &WebGl2RenderingContext, shader_type: u32, source: &str) -> WebResult<WebGlShader> {
     let shader = gl.create_shader(shader_type).ok_or("Unable to create shader object")?;
     gl.shader_source(&shader, source);
     gl.compile_shader(&shader);
@@ -22,11 +22,11 @@ fn compile_shader(gl: &WebGl2RenderingContext, shader_type: u32, source: &str) -
     {
         Ok(shader)
     } else {
-        Err(WasmError::Str(gl.get_shader_info_log(&shader).ok_or("Unknown error creating shader")?))
+        Err(gl.get_shader_info_log(&shader).ok_or("Unknown error creating shader")?.into())
     }
 }
 
-fn link_shader<'a, T: IntoIterator<Item = &'a WebGlShader>>(gl: &WebGl2RenderingContext, shaders: T) -> WasmResult<WebGlProgram> {
+fn link_shader<'a, T: IntoIterator<Item = &'a WebGlShader>>(gl: &WebGl2RenderingContext, shaders: T) -> WebResult<WebGlProgram> {
     let program = gl.create_program().ok_or("Unable to create shader object")?;
     for shader in shaders {
         gl.attach_shader(&program, shader)
@@ -40,11 +40,11 @@ fn link_shader<'a, T: IntoIterator<Item = &'a WebGlShader>>(gl: &WebGl2Rendering
     {
         Ok(program)
     } else {
-        Err(WasmError::Str(gl.get_program_info_log(&program).ok_or("cannot get program info log")?))
+        Err(gl.get_program_info_log(&program).ok_or("cannot get program info log")?.into())
     }
 }
 
-pub fn make_quad_vao(gl: &WebGl2RenderingContext, shader: &WebGlProgram) -> WasmResult<Option<WebGlVertexArrayObject>> {
+pub fn make_quad_vao(gl: &WebGl2RenderingContext, shader: &WebGlProgram) -> WebResult<Option<WebGlVertexArrayObject>> {
     let vao = gl.create_vertex_array();
     gl.bind_vertex_array(vao.as_ref());
 

@@ -1,7 +1,7 @@
 use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlVertexArrayObject};
 
 use crate::shaders::{make_quad_vao, make_shader, TEXTURE_VERTEX_SHADER};
-use web_common::wasm_error::WasmResult;
+use web_error::WebResult;
 
 pub struct RgbRender {
     vao: Option<WebGlVertexArrayObject>,
@@ -9,7 +9,7 @@ pub struct RgbRender {
 }
 
 impl RgbRender {
-    pub fn new(gl: &WebGl2RenderingContext) -> WasmResult<RgbRender> {
+    pub fn new(gl: &WebGl2RenderingContext) -> WebResult<RgbRender> {
         let shader = make_shader(gl, TEXTURE_VERTEX_SHADER, RGB_FRAGMENT_SHADER)?;
         let vao = make_quad_vao(gl, &shader)?;
         Ok(RgbRender { vao, shader })

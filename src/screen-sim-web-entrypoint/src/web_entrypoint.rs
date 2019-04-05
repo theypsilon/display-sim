@@ -12,7 +12,7 @@ use core::internal_resolution::InternalResolution;
 use core::simulation_context::SimulationContext;
 use core::simulation_core_state::{Input, InputEventValue, Resources, VideoInputResources};
 use render::simulation_render_state::{Materials, VideoInputMaterials};
-use web_common::wasm_error::{WasmError, WasmResult};
+use web_error::{WebError, WebResult};
 use crate::web_utils::{now, window};
 
 pub type OwnedClosure = Option<Closure<FnMut(JsValue)>>;
@@ -40,7 +40,7 @@ pub fn web_entrypoint(
     res: Rc<RefCell<Resources>>,
     video_input_resources: VideoInputResources,
     video_input_materials: VideoInputMaterials,
-) -> WasmResult<()> {
+) -> WebResult<()> {
     let gl = gl.dyn_into::<WebGl2RenderingContext>()?;
     init_resources(&mut res.borrow_mut(), video_input_resources)?;
     let owned_state = StateOwner::new_rc(res, load_materials(gl, video_input_materials)?, Input::new(now()?));
@@ -70,14 +70,14 @@ pub fn web_entrypoint(
     Ok(())
 }
 
-pub fn print_error(e: WasmError) {
+pub fn print_error(e: WebError) {
     match e {
-        WasmError::Js(o) => console!(error. "An unexpected error ocurred.", o),
-        WasmError::Str(s) => console!(error. "An unexpected error ocurred.", s),
+        WebError::Js(o) => console!(error. "An unexpected error ocurred.", o),
+        WebError::Str(s) => console!(error. "An unexpected error ocurred.", s),
     };
 }
 
-fn web_entrypoint_iteration<T: AppEventDispatcher + Default>(owned_state: &StateOwner, window: &Window, ctx: &mut SimulationContext<T>) -> WasmResult<()> {
+fn web_entrypoint_iteration<T: AppEventDispatcher + Default>(owned_state: &StateOwner, window: &Window, ctx: &mut SimulationContext<T>) -> WebResult<()> {
     let mut input = owned_state.input.borrow_mut();
     let mut resources = owned_state.resources.borrow_mut();
     let mut materials = owned_state.materials.borrow_mut();
@@ -95,7 +95,7 @@ fn web_entrypoint_iteration<T: AppEventDispatcher + Default>(owned_state: &State
     Ok(())
 }
 
-fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<OwnedClosure>> {
+fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WebResult<Vec<OwnedClosure>> {
     let onblur: Closure<FnMut(JsValue)> = {
         let state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |_: JsValue| {
@@ -205,13 +205,13 @@ fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WasmResult<Vec<OwnedClos
     Ok(closures)
 }
 
-pub fn read_custom_event(input: &mut Input, event: JsValue) -> WasmResult<()> {
+pub fn read_custom_event(input: &mut Input, event: JsValue) -> WebResult<()> {
     let event = event.dyn_into::<CustomEvent>()?;
     let object = event.detail();
     let value = js_sys::Reflect::get(&object, &"value".into())?;
     let kind = js_sys::Reflect::get(&object, &"kind".into())?
         .as_string()
-        .ok_or_else(|| WasmError::Str("Could not get kind".into()))?;
+        .ok_or_else(|| WebError::Str("Could not get kind".into()))?;
     input.custom_event.value = match kind.as_ref() as &str {
         "event_kind:pixel_brightness" => InputEventValue::PixelBrighttness(value.as_f64().ok_or("it should be a number")? as f32),
         "event_kind:pixel_contrast" => InputEventValue::PixelContrast(value.as_f64().ok_or("it should be a number")? as f32),

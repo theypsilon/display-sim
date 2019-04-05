@@ -5,10 +5,6 @@ authors = ["José manuel Barroso Galindo <theypsilon@gmail.com>"]
 edition = "2018"
 cargo-features = ["rename-dependency"]
 
-[lib]
-crate-type = ["lib"]
-path = "src/lib.rs"
-
 [dependencies]
 glm = { version = "0.1", package = "nalgebra-glm" }
 num-traits = "0.2"

@@ -2,7 +2,7 @@ use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlVertexArrayObject};
 
 use crate::render_types::{TextureBuffer, TextureBufferStack};
 use crate::shaders::{make_quad_vao, make_shader, TEXTURE_VERTEX_SHADER};
-use web_common::wasm_error::WasmResult;
+use web_error::WebResult;
 use web_sys::WebGlTexture;
 
 pub struct BlurRender {
@@ -11,7 +11,7 @@ pub struct BlurRender {
 }
 
 impl BlurRender {
-    pub fn new(gl: &WebGl2RenderingContext) -> WasmResult<BlurRender> {
+    pub fn new(gl: &WebGl2RenderingContext) -> WebResult<BlurRender> {
         let shader = make_shader(gl, TEXTURE_VERTEX_SHADER, BLUR_FRAGMENT_SHADER)?;
         let vao = make_quad_vao(gl, &shader)?;
         Ok(BlurRender { shader, vao })
@@ -24,7 +24,7 @@ impl BlurRender {
         source: &TextureBuffer,
         target: &TextureBuffer,
         passes: usize,
-    ) -> WasmResult<()> {
+    ) -> WebResult<()> {
         if passes < 1 {
             panic!("Should not be called when passes < 1!");
         }

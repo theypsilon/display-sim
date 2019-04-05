@@ -2,7 +2,7 @@ use web_sys::WebGl2RenderingContext;
 
 use crate::pixels_render::PixelsUniform;
 use crate::simulation_render_state::Materials;
-use web_common::wasm_error::{WasmError, WasmResult};
+use web_error::{WebResult};
 use core::app_events::AppEventDispatcher;
 use core::simulation_context::SimulationContext;
 use core::simulation_core_state::{ColorChannels, Resources, TextureInterpolation};
@@ -16,7 +16,7 @@ pub struct SimulationDrawer<'a, T: AppEventDispatcher> {
 }
 
 impl<'a, T: AppEventDispatcher> SimulationDrawer<'a, T> {
-    pub fn draw(&mut self) -> WasmResult<()> {
+    pub fn draw(&mut self) -> WebResult<()> {
         let gl = &self.materials.gl;
 
         if self.res.video.needs_buffer_data_load {
@@ -208,10 +208,10 @@ impl<'a, T: AppEventDispatcher> SimulationDrawer<'a, T> {
     }
 }
 
-fn check_error(gl: &WebGl2RenderingContext, line: u32) -> WasmResult<()> {
+fn check_error(gl: &WebGl2RenderingContext, line: u32) -> WebResult<()> {
     let error = gl.get_error();
     if error != WebGl2RenderingContext::NO_ERROR {
-        return Err(WasmError::Str(error.to_string() + " on line: " + &line.to_string()));
+        return Err(format!("{} on line: {}", error, line).into());
     }
     Ok(())
 }

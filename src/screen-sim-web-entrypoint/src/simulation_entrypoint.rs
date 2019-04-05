@@ -17,7 +17,7 @@ use render::render_types::TextureBufferStack;
 use render::rgb_render::RgbRender;
 use render::simulation_draw::SimulationDrawer;
 use render::simulation_render_state::{Materials, VideoInputMaterials};
-use web_common::wasm_error::WasmResult;
+use web_error::WebResult;
 use crate::web_utils::now;
 
 #[derive(new)]
@@ -29,7 +29,7 @@ pub struct SimulationTicker<'a, T: AppEventDispatcher> {
 }
 
 impl<'a, T: AppEventDispatcher> SimulationTicker<'a, T> {
-    pub fn tick(&mut self) -> WasmResult<bool> {
+    pub fn tick(&mut self) -> WebResult<bool> {
         self.pre_process_input()?;
 
         if !SimulationUpdater::new(self.ctx, self.resources, self.input).update() {
@@ -43,7 +43,7 @@ impl<'a, T: AppEventDispatcher> SimulationTicker<'a, T> {
         Ok(true)
     }
 
-    fn pre_process_input(&mut self) -> WasmResult<()> {
+    fn pre_process_input(&mut self) -> WebResult<()> {
         self.input.now = now()?;
         self.input.get_mut_fields_booleanbutton().iter_mut().for_each(|button| button.track_input());
         self.input
@@ -61,7 +61,7 @@ impl<'a, T: AppEventDispatcher> SimulationTicker<'a, T> {
     }
 }
 
-pub fn init_resources(res: &mut Resources, video_input: VideoInputResources) -> WasmResult<()> {
+pub fn init_resources(res: &mut Resources, video_input: VideoInputResources) -> WebResult<()> {
     let now = now()?;
     let initial_position_z = calculate_far_away_position(&video_input);
     let mut camera = Camera::new(MOVEMENT_BASE_SPEED * initial_position_z / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED);
@@ -102,7 +102,7 @@ pub fn init_resources(res: &mut Resources, video_input: VideoInputResources) -> 
     Ok(())
 }
 
-pub fn load_materials(gl: WebGl2RenderingContext, video: VideoInputMaterials) -> WasmResult<Materials> {
+pub fn load_materials(gl: WebGl2RenderingContext, video: VideoInputMaterials) -> WebResult<Materials> {
     let pixels_render = PixelsRender::new(&gl, video)?;
     let blur_render = BlurRender::new(&gl)?;
     let internal_resolution_render = InternalResolutionRender::new(&gl)?;

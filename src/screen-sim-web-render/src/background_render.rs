@@ -1,7 +1,7 @@
 use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlVertexArrayObject};
 
 use crate::shaders::{make_quad_vao, make_shader, TEXTURE_VERTEX_SHADER};
-use web_common::wasm_error::WasmResult;
+use web_error::WebResult;
 
 pub struct BackgroundRender {
     vao: Option<WebGlVertexArrayObject>,
@@ -9,7 +9,7 @@ pub struct BackgroundRender {
 }
 
 impl BackgroundRender {
-    pub fn new(gl: &WebGl2RenderingContext) -> WasmResult<BackgroundRender> {
+    pub fn new(gl: &WebGl2RenderingContext) -> WebResult<BackgroundRender> {
         let shader = make_shader(gl, TEXTURE_VERTEX_SHADER, BACKGROUND_FRAGMENT_SHADER)?;
         let vao = make_quad_vao(gl, &shader)?;
         Ok(BackgroundRender { vao, shader })

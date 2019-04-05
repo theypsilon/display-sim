@@ -1,4 +1,4 @@
-use web_common::wasm_error::WasmResult;
+use web_error::WebResult;
 use web_sys::{WebGl2RenderingContext, WebGlFramebuffer, WebGlTexture};
 
 #[derive(Debug, Clone)]
@@ -10,7 +10,7 @@ pub struct TextureBuffer {
 }
 
 impl TextureBuffer {
-    pub fn new(gl: &WebGl2RenderingContext, width: i32, height: i32, interpolation: u32) -> WasmResult<TextureBuffer> {
+    pub fn new(gl: &WebGl2RenderingContext, width: i32, height: i32, interpolation: u32) -> WebResult<TextureBuffer> {
         let framebuffer = gl.create_framebuffer();
         let texture = gl.create_texture();
 
@@ -63,7 +63,7 @@ impl TextureBuffer {
         })
     }
 
-    pub fn new_with_depthbuffer(gl: &WebGl2RenderingContext, width: i32, height: i32, interpolation: u32) -> WasmResult<TextureBuffer> {
+    pub fn new_with_depthbuffer(gl: &WebGl2RenderingContext, width: i32, height: i32, interpolation: u32) -> WebResult<TextureBuffer> {
         let depthbuffer = gl.create_renderbuffer();
         let texture_buffer = Self::new(gl, width, height, interpolation)?;
         gl.bind_renderbuffer(WebGl2RenderingContext::RENDERBUFFER, depthbuffer.as_ref());
@@ -137,7 +137,7 @@ impl TextureBufferStack {
         self.stack.clear();
     }
 
-    pub fn push(&mut self, gl: &WebGl2RenderingContext) -> WasmResult<()> {
+    pub fn push(&mut self, gl: &WebGl2RenderingContext) -> WebResult<()> {
         if self.stack.len() == self.cursor {
             let tb = if self.depthbuffer_active {
                 TextureBuffer::new_with_depthbuffer(gl, self.width, self.height, self.interpolation)?
@@ -153,13 +153,13 @@ impl TextureBufferStack {
         Ok(())
     }
 
-    pub fn pop(&mut self) -> WasmResult<()> {
+    pub fn pop(&mut self) -> WebResult<()> {
         self.get_current()?;
         self.cursor -= 1;
         Ok(())
     }
 
-    pub fn bind_current(&self, gl: &WebGl2RenderingContext) -> WasmResult<()> {
+    pub fn bind_current(&self, gl: &WebGl2RenderingContext) -> WebResult<()> {
         let current = self.get_current()?;
         gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, current.framebuffer());
         gl.viewport(0, 0, self.width, self.height);
@@ -167,14 +167,14 @@ impl TextureBufferStack {
         Ok(())
     }
 
-    pub fn get_current(&self) -> WasmResult<&TextureBuffer> {
+    pub fn get_current(&self) -> WebResult<&TextureBuffer> {
         if self.cursor == 0 {
             return Err("Bad texture buffer stack access on cursor == 0.".into());
         }
         Ok(&self.stack[self.cursor - 1])
     }
 
-    pub fn get_nth(&self, n: i32) -> WasmResult<&TextureBuffer> {
+    pub fn get_nth(&self, n: i32) -> WebResult<&TextureBuffer> {
         let index = self.cursor as i32 + n - 1;
         if index < 0 || index >= self.stack.len() as i32 {
             return Err(format!("Bad texture buffer sttack access on index == {}", index).into());
@@ -182,7 +182,7 @@ impl TextureBufferStack {
         Ok(&self.stack[index as usize])
     }
 
-    pub fn assert_no_stack(&self) -> WasmResult<()> {
+    pub fn assert_no_stack(&self) -> WebResult<()> {
         if self.cursor != 0 {
             return Err(format!("Texture buffer stack cursor not zero, '{}' instead.", self.cursor).into());
         }

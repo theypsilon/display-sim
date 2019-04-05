@@ -1,7 +1,7 @@
 use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlVertexArrayObject};
 
 use crate::shaders::{make_quad_vao, make_shader, TEXTURE_FRAGMENT_SHADER, TEXTURE_VERTEX_SHADER};
-use web_common::wasm_error::WasmResult;
+use web_error::WebResult;
 use web_sys::WebGlTexture;
 
 pub struct InternalResolutionRender {
@@ -10,7 +10,7 @@ pub struct InternalResolutionRender {
 }
 
 impl InternalResolutionRender {
-    pub fn new(gl: &WebGl2RenderingContext) -> WasmResult<InternalResolutionRender> {
+    pub fn new(gl: &WebGl2RenderingContext) -> WebResult<InternalResolutionRender> {
         let shader = make_shader(gl, TEXTURE_VERTEX_SHADER, TEXTURE_FRAGMENT_SHADER)?;
         let vao = make_quad_vao(gl, &shader)?;
         Ok(InternalResolutionRender { vao, shader })
