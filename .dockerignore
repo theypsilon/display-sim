@@ -1,7 +1,7 @@
 .git
 www/node_modules
 www/dist
-www/crt_3d_sim*
+www/screen_sim*
 target
 pkg
 bin

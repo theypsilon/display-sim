@@ -5,7 +5,7 @@
 /bin
 /pkg
 /www/dist
-/www/crt_3d_sim*
+/www/screen_sim*
 wasm-pack.log
 **/*.rs.bk
 /www/node_modules

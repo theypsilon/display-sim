@@ -25,10 +25,10 @@ fi
 
 wasm-pack build ${build_type}
 
-cp pkg/crt_3d_sim* www/
+cp pkg/screen_sim* www/
 
 if ${release} ; then
-    wasm-opt -O3 -o www/crt_3d_sim_bg.wasm www/crt_3d_sim_bg.wasm
+    wasm-opt -O3 -o www/screen_sim_bg.wasm www/screen_sim_bg.wasm
     pushd www
     npm install --dev
     npm run build
