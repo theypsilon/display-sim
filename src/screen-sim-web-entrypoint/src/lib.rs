@@ -1,8 +1,8 @@
 #![allow(clippy::float_cmp)]
 
-pub mod action_bindings;
-pub mod console;
-pub mod dispatch_event;
-pub mod simulation_entrypoint;
+mod action_bindings;
+mod console;
+mod dispatch_event;
+mod simulation_entrypoint;
 pub mod web_entrypoint;
-pub mod web_events;
+mod web_events;
