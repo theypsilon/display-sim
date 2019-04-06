@@ -5,4 +5,8 @@ set -euo pipefail
 cd "$(dirname $0)"
 
 ./build.sh || true
-watchman-make -p 'src/**/*.rs' 'Cargo.toml' 'src/**/Cargo.toml' --make=$(pwd)/build.sh -t build
+
+echo "Setting watcher..."
+echo
+
+watchman-make -p 'src/**/*.rs' 'Cargo.toml' 'src/**/Cargo.toml' --make="echo; $(pwd)/build.sh --dev-server" -t build

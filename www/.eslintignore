@@ -1,5 +1,2 @@
-node_modules/*
-screen_sim.js
-entrypoint.js
-webpack.*.js
-gif.js
+src/wasm/*
+src/third_party/*

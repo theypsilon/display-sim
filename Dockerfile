@@ -47,9 +47,7 @@ ADD src/ /app/src/
 ADD Cargo.* /app/
 RUN cargo clippy \
     && cargo test --release \
-    && wasm-pack build \
-    && mkdir -p /wasm && cp -r pkg/screen_sim* /wasm/ \
-    && ./wasm-opt --debug -O3 -o ../wasm/screen_sim_bg.wasm ../wasm/screen_sim_bg.wasm >/dev/null 2>&1 \
+    && ./build.sh --release-wasm \
     && cargo clean \
     && rm -rf /app
 
@@ -60,10 +58,7 @@ RUN npm install --dev
 ADD www .
 COPY --from=wasm-artifact /wasm/* ./
 RUN npm test \
-    && npm run build \
-    && cp *.css dist/ \
-    && cp favicon.ico dist/ \
-    && mkdir -p dist/assets/ && cp -r assets/ dist/assets/
+    && npm run build
 
 FROM nginx:1.14.0-alpine
 COPY --from=webpack-artifact /www/dist/* /var/www/html/

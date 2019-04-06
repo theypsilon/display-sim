@@ -1,3 +1,5 @@
+import GIF from './third_party/gif';
+
 const scalingAutoHtmlId = 'scaling-auto';
 const scaling43HtmlId = 'scaling-4:3';
 const scalingCustomHtmlId = 'scaling-custom';
@@ -392,7 +394,7 @@ async function prepareUi () {
     const rawImgs = await (async function () {
         if (previewDeo.id === firstPreviewImageId) {
             const img = new Image();
-            img.src = 'assets/wwix_spritesheet.png';
+            img.src = 'assets/pics/wwix_spritesheet.png';
             await new Promise((resolve, reject) => {
                 img.onload = resolve;
                 img.onerror = reject;
@@ -424,8 +426,7 @@ async function prepareUi () {
             const gifKey = img.isAsset ? img.src : canvas.toDataURL();
             let gif = gifCache[gifKey];
             if (!gif) {
-                const GIF = await new Promise(resolve => import(/* webpackPrefetch: true */ './gif.js').then(resolve));
-                gif = GIF.default();
+                gif = new GIF();
                 gif.load(img.src);
                 await new Promise(resolve => {
                     gif.onload = () => resolve();
@@ -545,7 +546,7 @@ async function prepareUi () {
         return;
     }
 
-    const wasm = await new Promise(resolve => import(/* webpackPrefetch: true */'./screen_sim').then(resolve));
+    const wasm = await new Promise(resolve => import('./wasm/screen_sim').then(resolve));
 
     const videoInput = wasm.new_video_input_wasm(
         imageWidth, imageHeight, // to read the image pixels

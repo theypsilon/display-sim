@@ -3,10 +3,8 @@
 .build-hash
 /target
 /bin
-/pkg
+/www/src/wasm
 /www/dist
-/www/screen_sim*
 wasm-pack.log
 **/*.rs.bk
 /www/node_modules
-/www/.bin
