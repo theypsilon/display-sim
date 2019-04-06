@@ -41,6 +41,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
 
         self.update_curvature();
         self.update_filters(dt);
+        self.update_pixel_sizes(dt);
         self.update_speeds();
         self.update_camera(dt);
 
@@ -339,7 +340,9 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             }
             self.ctx.dispatcher.dispatch_texture_interpolation(self.res);
         }
+    }
 
+    fn update_pixel_sizes(&mut self, dt: f32) {
         let pixel_velocity = dt * self.res.filters.change_speed;
         let ctx = &self.ctx;
         change_pixel_sizes(

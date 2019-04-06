@@ -6,7 +6,7 @@ module.exports = {
     entry: { bundle: './src/entrypoint.js' },
     output: {
         path: path.resolve(__dirname, 'dist'),
-        filename: '[name].[chunkhash].js',
+        filename: '[name].[contenthash].js',
     },
     target: 'web',
     plugins: [
