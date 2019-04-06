@@ -50,6 +50,7 @@ RUN cargo clippy \
     && cargo test --release \
     && ./build.sh --release-wasm \
     && cargo clean \
+    && cp -r /app/www/src/wasm /wasm \
     && rm -rf /app
 
 FROM node:8.12.0-alpine as webpack-artifact
@@ -57,7 +58,7 @@ WORKDIR /www
 ADD www/package*.json ./
 RUN npm install --dev
 ADD www .
-COPY --from=wasm-artifact /app/www/src/wasm ./src/
+COPY --from=wasm-artifact /wasm ./src/wasm
 RUN npm test \
     && npm run build
 
