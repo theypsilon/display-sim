@@ -13,7 +13,11 @@ build() {
     local new_hash="foo"
     local old_hash="bar"
 
-    if [[ "$@" =~ "--release" ]]; then
+    if [[ "$@" =~ "--release-wasm" ]] ; then
+        echo -n "[RELEASE WASM BUILD] "
+        optimize_wasm=true
+        build_type=""
+    elif [[ "$@" =~ "--release" ]]; then
         echo -n "[RELEASE BUILD] "
         optimize_wasm=true
         npm_deps=true
@@ -22,10 +26,6 @@ build() {
 
         cargo clean
         rm -rf www/node_modules || true
-    elif [[ "$@" =~ "--release-wasm" ]] ; then
-        echo -n "[RELEASE WASM BUILD] "
-        optimize_wasm=true
-        build_type=""
     elif [[ "$@" =~ "--dev-server" ]] ; then
         echo -n "[DEV SERVER BUILD] "
         dev_watch=true
