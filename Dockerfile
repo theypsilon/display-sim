@@ -36,7 +36,7 @@ RUN set -eux; \
     rustup target add wasm32-unknown-unknown --toolchain ${RUST_TOOLCHAIN}; \
     rustup component add clippy; \
     wget -qO- https://github.com/WebAssembly/binaryen/releases/download/${BINARYEN_VER}/binaryen-${BINARYEN_VER}-x86-linux.tar.gz | tar xvz binaryen-${BINARYEN_VER}/wasm-opt ; \
-    mv binaryen-${BINARYEN_VER}/wasm-opt /ust/bin/wasm-opt; \
+    mv binaryen-${BINARYEN_VER}/wasm-opt /usr/bin/; \
     apt-get remove -y --auto-remove wget; \
     rm -rf /var/lib/apt/lists/*; \
     bash -c 'rm -rf ${RUSTUP_HOME}/toolchains/*/share'
