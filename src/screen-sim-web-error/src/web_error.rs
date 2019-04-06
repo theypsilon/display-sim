@@ -5,7 +5,7 @@ pub enum WebError {
 }
 
 impl WebError {
-    pub fn to_js(self) -> wasm_bindgen::JsValue {
+    pub fn into_js(self) -> wasm_bindgen::JsValue {
         match self {
             WebError::Js(o) => o,
             WebError::Str(s) => s.into(),

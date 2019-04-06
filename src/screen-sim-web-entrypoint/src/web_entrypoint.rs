@@ -50,13 +50,13 @@ pub fn web_entrypoint(
         Closure::wrap(Box::new(move |_| {
             let mut ctx: SimulationContext<WebEventDispatcher> = SimulationContext::default();
             if let Err(e) = web_entrypoint_iteration(&owned_state, &window, &mut ctx) {
-                console!(error. "An unexpected error happened during web_entrypoint_iteration.", e.to_js());
+                console!(error. "An unexpected error happened during web_entrypoint_iteration.", e.into_js());
                 ctx.dispatcher.dispatch_exiting_session();
                 ctx.dispatcher
                     .dispatch_top_message("Error! Try restarting your browser. Contact me if this problem persists!");
             }
             if let Err(e) = ctx.dispatcher.check_error() {
-                console!(error. "Error dispatching some events: ", e.to_js());
+                console!(error. "Error dispatching some events: ", e.into_js());
             }
         }))
     };
@@ -71,7 +71,7 @@ pub fn web_entrypoint(
 }
 
 pub fn print_error(e: WebError) {
-    console!(error. "An unexpected error ocurred.", e.to_js());
+    console!(error. "An unexpected error ocurred.", e.into_js());
 }
 
 fn web_entrypoint_iteration<T: AppEventDispatcher + Default>(owned_state: &StateOwner, window: &Window, ctx: &mut SimulationContext<T>) -> WebResult<()> {
@@ -167,7 +167,7 @@ fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WebResult<Vec<OwnedClosu
         Closure::wrap(Box::new(move |event: JsValue| {
             let mut input = state_owner.input.borrow_mut();
             if let Err(e) = read_custom_event(&mut input, event) {
-                console!(error. "Could not read custom event.", e.to_js());
+                console!(error. "Could not read custom event.", e.into_js());
             }
         }))
     };
