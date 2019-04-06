@@ -73,6 +73,6 @@ build() {
     fi
 }
 
-build
+build $@
 
 echo
