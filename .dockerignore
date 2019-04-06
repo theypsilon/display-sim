@@ -1,7 +1,7 @@
 .git
 www/node_modules
 www/dist
-www/screen_sim*
+www/src/wasm
 target
 pkg
 bin
