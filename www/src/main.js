@@ -1,4 +1,5 @@
 import GIF from './third_party/gif';
+import FontFaceObserver from 'fontfaceobserver';
 
 const scalingAutoHtmlId = 'scaling-auto';
 const scaling43HtmlId = 'scaling-4:3';
@@ -374,7 +375,14 @@ restoreDefaultOptionsDeo.onclick = () => {
     loadInputValuesFromStorage();
 };
 
-prepareUi();
+Promise.all([
+    new FontFaceObserver('Archivo Black', { weight: 400 }).load(null, 10000),
+    new FontFaceObserver('Lato', { weight: 400 }).load(null, 10000),
+    new FontFaceObserver('Lato', { weight: 700 }).load(null, 10000)
+]).then(prepareUi).catch(e => {
+    console.error(e);
+    prepareUi();
+});
 
 async function prepareUi () {
     loadInputValuesFromStorage();
