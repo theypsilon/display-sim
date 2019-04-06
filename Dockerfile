@@ -45,6 +45,7 @@ FROM rust-wasm as wasm-artifact
 ENV RUST_BACKTRACE=1
 ADD src/ /app/src/
 ADD Cargo.* /app/
+ADD build.sh /app/
 RUN cargo clippy \
     && cargo test --release \
     && ./build.sh --release-wasm \
