@@ -401,12 +401,7 @@ async function prepareUi () {
 
     const rawImgs = await (async function () {
         if (previewDeo.id === firstPreviewImageId) {
-            const img = new Image();
-            img.src = 'assets/pics/wwix_spritesheet.png';
-            await new Promise((resolve, reject) => {
-                img.onload = resolve;
-                img.onerror = reject;
-            });
+            const img = await loadImage(require('../assets/pics/wwix_spritesheet.png'));
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             canvas.width = img.width;
@@ -421,17 +416,22 @@ async function prepareUi () {
             }
             return rawImgs;
         } else {
-            const img = previewDeo.querySelector('img');
+            let img = previewDeo.querySelector('img');
+            const isAsset = !!img.isAsset;
+            const isGif = !!img.isGif;
+            if (isAsset) {
+                img = await loadImage(require(img.dataset.hq));
+            }
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             canvas.width = img.width;
             canvas.height = img.height;
             ctx.drawImage(img, 0, 0);
-            if (!img.isGif) {
+            if (!isGif) {
                 return [{ raw: ctx.getImageData(0, 0, img.width, img.height), delay: 16 }];
             }
             benchmark('loading gif');
-            const gifKey = img.isAsset ? img.src : canvas.toDataURL();
+            const gifKey = isAsset ? img.src : canvas.toDataURL();
             let gif = gifCache[gifKey];
             if (!gif) {
                 gif = new GIF();
@@ -608,13 +608,8 @@ async function processFileToUpload (url) {
     });
 
     const previewUrl = URL.createObjectURL(xhr.response);
-    const img = new Image();
-    img.src = previewUrl;
+    const img = await loadImage(previewUrl);
     img.isGif = xhr.response.type === 'image/gif';
-
-    await new Promise(resolve => {
-        img.onload = () => resolve();
-    });
 
     const width = img.width;
     const height = img.height;
@@ -635,6 +630,15 @@ async function processFileToUpload (url) {
     li.click();
     selectImageList.insertBefore(li, dropZoneDeo);
     visibility.showScalingCustomResButton();
+}
+
+function loadImage (src) {
+    const img = new Image();
+    img.src = src;
+    return new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+    });
 }
 
 function makeStorage () {
