@@ -62,7 +62,7 @@ COPY --from=wasm-artifact /wasm ./src/wasm
 RUN npm test \
     && npm run build
 
-FROM nginx:1.14.0-alpine
+FROM nginx:1.15.10-alpine
 COPY --from=webpack-artifact /www/dist/* /var/www/html/
 ADD nginx/* /etc/nginx/
 CMD ["nginx","-g", "daemon off;"]
