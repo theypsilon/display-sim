@@ -11,7 +11,7 @@ before_script:
 build-master:
   stage: build
   script:
-    - ./docker-build.sh --extract-dist
+    - REGISTRY_IMAGE="$CI_REGISTRY_IMAGE" ./docker-build.sh --extract-dist
     - mv dist public
   only:
     - master
