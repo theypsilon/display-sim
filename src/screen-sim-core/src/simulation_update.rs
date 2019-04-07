@@ -18,6 +18,7 @@ pub struct SimulationUpdater<'a, T: AppEventDispatcher> {
 }
 
 impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
+
     pub fn update(&mut self) -> bool {
         if self.res.resetted {
             self.change_frontend_input_values();
@@ -25,10 +26,6 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         let dt = self.update_timers_and_dt();
 
         self.update_animation_buffer();
-        self.update_colors(dt);
-
-        self.update_blur();
-        self.update_lpp();
 
         if self.input.esc.is_just_pressed() {
             self.ctx.dispatcher.dispatch_exiting_session();
@@ -39,9 +36,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             self.ctx.dispatcher.dispatch_toggle_info_panel();
         }
 
-        self.update_curvature();
         self.update_filters(dt);
-        self.update_pixel_shape(dt);
         self.update_speeds();
         self.update_camera(dt);
 
@@ -57,9 +52,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             }
         }
 
-        update_colors_output(self.res);
-        update_curvature_output(dt, self.res);
-        update_filters_output(self.res);
+        update_outputs(self.res, dt);
 
         self.res.resetted = false;
         true
@@ -97,7 +90,30 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         }
     }
 
-    fn update_colors(&mut self, dt: f32) {
+    fn update_filters(&mut self, dt: f32) {
+        if self.input.reset_filters {
+            self.res.filters = Filters::new(PIXEL_MANIPULATION_BASE_SPEED);
+            self.res.filters.cur_pixel_width = self.res.initial_parameters.initial_pixel_width;
+            self.res
+                .filters
+                .internal_resolution
+                .initialize(self.res.video.viewport_size, self.res.video.max_texture_size);
+            self.change_frontend_input_values();
+            self.ctx.dispatcher.dispatch_top_message("All filter options have been reset.");
+            return;
+        }
+        self.update_filter_curvature();
+        self.update_filter_source_colors(dt);
+        self.update_filter_blur();
+        self.update_filter_lpp();
+        self.update_filter_pixel_shape(dt);
+        self.update_filter_layering_kind();
+        self.update_filter_color_representation();
+        self.update_filter_internal_resolution();
+        self.update_filter_texture_interpolation();
+    }
+
+    fn update_filter_source_colors(&mut self, dt: f32) {
         if self.input.bright.increase {
             self.res.filters.extra_bright += 0.01 * dt * self.res.filters.change_speed;
         }
@@ -152,7 +168,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         }
     }
 
-    fn update_blur(&mut self) {
+    fn update_filter_blur(&mut self) {
         let last_blur_passes = self.res.filters.blur_passes;
         if self.input.blur.increase.is_just_pressed() {
             self.res.filters.blur_passes += 1;
@@ -181,7 +197,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
     }
 
     // lines per pixel
-    fn update_lpp(&mut self) {
+    fn update_filter_lpp(&mut self) {
         let last_lpp = self.res.filters.lines_per_pixel;
         if self.input.lpp.increase.is_just_pressed() {
             self.res.filters.lines_per_pixel += 1;
@@ -208,7 +224,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         }
     }
 
-    fn update_curvature(&mut self) {
+    fn update_filter_curvature(&mut self) {
         if self.input.next_screen_curvature_type.any_just_pressed() {
             if self.input.next_screen_curvature_type.increase.is_just_pressed() {
                 self.res.filters.screen_curvature_kind.next_enum_variant();
@@ -222,19 +238,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         }
     }
 
-    fn update_filters(&mut self, dt: f32) {
-        if self.input.reset_filters {
-            self.res.filters = Filters::new(PIXEL_MANIPULATION_BASE_SPEED);
-            self.res.filters.cur_pixel_width = self.res.initial_parameters.initial_pixel_width;
-            self.res
-                .filters
-                .internal_resolution
-                .initialize(self.res.video.viewport_size, self.res.video.max_texture_size);
-            self.change_frontend_input_values();
-            self.ctx.dispatcher.dispatch_top_message("All filter options have been reset.");
-            return;
-        }
-
+    fn update_filter_layering_kind(&mut self) {
         if self.input.next_layering_kind.any_just_pressed() {
             if self.input.next_layering_kind.increase.is_just_pressed() {
                 self.res.filters.layering_kind.next_enum_variant();
@@ -246,7 +250,9 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
                 .dispatch_top_message(&format!("Layering kind: {}.", self.res.filters.layering_kind));
             self.ctx.dispatcher.dispatch_screen_layering_type(self.res);
         }
+    }
 
+    fn update_filter_color_representation(&mut self) {
         if self.input.next_color_representation_kind.any_just_pressed() {
             if self.input.next_color_representation_kind.increase.is_just_pressed() {
                 self.res.filters.color_channels.next_enum_variant();
@@ -258,7 +264,9 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
                 .dispatch_top_message(&format!("Pixel color representation: {}.", self.res.filters.color_channels));
             self.ctx.dispatcher.dispatch_color_representation(self.res);
         }
+    }
 
+    fn update_filter_internal_resolution(&mut self) {
         if self.input.next_internal_resolution.any_just_released() {
             if self.input.next_internal_resolution.increase.is_just_released() {
                 self.res.filters.internal_resolution.increase();
@@ -274,7 +282,9 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
                 self.ctx.dispatcher.dispatch_internal_resolution(self.res);
             }
         }
+    }
 
+    fn update_filter_texture_interpolation(&mut self) {
         if self.input.next_texture_interpolation.any_just_pressed() {
             if self.input.next_texture_interpolation.increase.is_just_pressed() {
                 self.res.filters.texture_interpolation.next_enum_variant();
@@ -286,7 +296,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         }
     }
 
-    fn update_pixel_shape(&mut self, dt: f32) {
+    fn update_filter_pixel_shape(&mut self, dt: f32) {
 
         if self.input.next_pixel_geometry_kind.any_just_pressed() {
             if self.input.next_pixel_geometry_kind.increase.is_just_pressed() {
@@ -638,7 +648,24 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
     }
 }
 
-fn update_colors_output(res: &mut Resources) {
+fn update_outputs(res: &mut Resources, dt: f32) {
+
+    update_output_filter_source_colors(res);
+    update_output_filter_curvature(res, dt);
+    update_output_filter_layering_kind(res);
+
+    let (ambient_strength, pixel_have_depth) = match res.filters.pixels_geometry_kind {
+        PixelsGeometryKind::Squares => (1.0, false),
+        PixelsGeometryKind::Cubes => (0.5, true),
+    };
+    res.output.ambient_strength = ambient_strength;
+    res.output.pixel_have_depth = pixel_have_depth;
+    res.output.height_modifier_factor = 1.0 - res.filters.pixel_shadow_height_factor;
+
+    update_output_pixel_scale_gap_offset(res);
+}
+
+fn update_output_filter_source_colors(res: &mut Resources) {
     res.output.color_splits = match res.filters.color_channels {
         ColorChannels::Combined => 1,
         _ => 3,
@@ -661,7 +688,7 @@ fn update_colors_output(res: &mut Resources) {
     }
 }
 
-fn update_curvature_output(dt: f32, res: &mut Resources) {
+fn update_output_filter_curvature(res: &mut Resources, dt: f32) {
     res.output.screen_curvature_factor = match res.filters.screen_curvature_kind {
         ScreenCurvatureKind::Curved1 => 0.15,
         ScreenCurvatureKind::Curved2 => 0.3,
@@ -676,7 +703,7 @@ fn update_curvature_output(dt: f32, res: &mut Resources) {
     }
 }
 
-fn update_filters_output(res: &mut Resources) {
+fn update_output_filter_layering_kind(res: &mut Resources) {
     match res.filters.layering_kind {
         ScreenLayeringKind::ShadowOnly => {
             res.output.showing_foreground = true;
@@ -708,27 +735,22 @@ fn update_filters_output(res: &mut Resources) {
             res.output.solid_color_weight = 0.25;
         }
     };
+
     res.output.is_background_diffuse = res.output.showing_foreground
         || if let ScreenLayeringKind::DiffuseOnly = res.filters.layering_kind {
             true
         } else {
             false
         };
-    let (ambient_strength, pixel_have_depth) = match res.filters.pixels_geometry_kind {
-        PixelsGeometryKind::Squares => (1.0, false),
-        PixelsGeometryKind::Cubes => (0.5, true),
-    };
-    res.output.ambient_strength = ambient_strength;
-    res.output.pixel_have_depth = pixel_have_depth;
+}
 
+fn update_output_pixel_scale_gap_offset(res: &mut Resources) {
     res.output.pixel_gap = [(1.0 + res.filters.cur_pixel_gap) * res.filters.cur_pixel_width, 1.0 + res.filters.cur_pixel_gap];
     res.output.pixel_scale_base = [
         (res.filters.cur_pixel_scale_x + 1.0) / res.filters.cur_pixel_width,
         res.filters.cur_pixel_scale_y + 1.0,
         (res.filters.cur_pixel_scale_x + res.filters.cur_pixel_scale_x) * 0.5 + 1.0,
     ];
-
-    res.output.height_modifier_factor = 1.0 - res.filters.pixel_shadow_height_factor;
 
     res.output.pixel_scale_foreground.resize_with(res.filters.lines_per_pixel, Default::default);
     res.output.pixel_offset_foreground.resize_with(res.filters.lines_per_pixel, Default::default);
