@@ -56,7 +56,7 @@ RUN cargo clippy \
 FROM node:8.12.0-alpine as webpack-artifact
 WORKDIR /www
 ADD www/package*.json ./
-RUN npm install --dev
+RUN npm install
 ADD www .
 COPY --from=wasm-artifact /wasm ./src/wasm
 RUN npm test \

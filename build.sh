@@ -58,7 +58,7 @@ build() {
 
     if ${npm_deps} && [ ! -d www/node_modules ]; then
         pushd www
-        npm install --dev
+        npm install
         popd
     fi
 
