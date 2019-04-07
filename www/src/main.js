@@ -401,7 +401,12 @@ async function prepareUi () {
 
     const rawImgs = await (async function () {
         if (previewDeo.id === firstPreviewImageId) {
-            const img = loadImage(require('../assets/pics/wwix_spritesheet.png'));
+            const img = new Image();
+            img.src = require('../assets/pics/wwix_spritesheet.png');
+            await new Promise((resolve, reject) => {
+                img.onload = resolve;
+                img.onerror = reject;
+            });
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             canvas.width = img.width;
@@ -420,7 +425,6 @@ async function prepareUi () {
             const isAsset = !!img.isAsset;
             const isGif = !!img.isGif;
             if (isAsset) {
-                img = loadImage(img.dataset.hq);
                 const imgHqSrc = img.dataset.hq;
                 img = new Image();
                 img.src = imgHqSrc;
@@ -615,7 +619,14 @@ async function processFileToUpload (url) {
     });
 
     const previewUrl = URL.createObjectURL(xhr.response);
-    const img = await loadImage(previewUrl);
+    const img = new Image();
+    img.src = previewUrl;
+
+    await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+    });
+
     img.isGif = xhr.response.type === 'image/gif';
 
     const width = img.width;
@@ -637,15 +648,6 @@ async function processFileToUpload (url) {
     li.click();
     selectImageList.insertBefore(li, dropZoneDeo);
     visibility.showScalingCustomResButton();
-}
-
-function loadImage (src) {
-    const img = new Image();
-    img.src = src;
-    return new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
-    });
 }
 
 function makeStorage () {
