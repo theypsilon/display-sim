@@ -62,7 +62,10 @@ COPY --from=wasm-artifact /wasm ./src/wasm
 RUN npm test \
     && npm run build
 
-FROM nginx:1.14.0-alpine
-COPY --from=webpack-artifact /www/dist/* /var/www/html/
+FROM nginx:1.15.10-alpine
+RUN addgroup -g 82 -S www-data \
+    && adduser -u 82 -D -S -G www-data www-data
+ADD nginx/h5bp/ /etc/nginx/h5bp/
 ADD nginx/* /etc/nginx/
+COPY --from=webpack-artifact /www/dist/* /var/www/html/
 CMD ["nginx","-g", "daemon off;"]
