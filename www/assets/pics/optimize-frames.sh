@@ -12,6 +12,6 @@ for i in * ; do
     elif [[ $i =~ \.png$ ]] ; then
         convert $i -strip -resize 100x100 -alpha Remove $i
     elif [[ $i =~ \.gif$ ]] ; then
-        convert $i -coalesce -scale 100X100 +dither -remap $i[0] -layers Optimize $i
+        convert $i -coalesce -scale 100x100 +dither -remap $i[0] -layers Optimize $i
     fi
 done
