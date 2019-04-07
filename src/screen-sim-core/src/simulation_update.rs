@@ -41,7 +41,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
 
         self.update_curvature();
         self.update_filters(dt);
-        self.update_pixel_sizes(dt);
+        self.update_pixel_shape(dt);
         self.update_speeds();
         self.update_camera(dt);
 
@@ -259,6 +259,35 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             self.ctx.dispatcher.dispatch_color_representation(self.res);
         }
 
+        if self.input.next_internal_resolution.any_just_released() {
+            if self.input.next_internal_resolution.increase.is_just_released() {
+                self.res.filters.internal_resolution.increase();
+            }
+            if self.input.next_internal_resolution.decrease.is_just_released() {
+                self.res.filters.internal_resolution.decrease();
+            }
+            if self.res.filters.internal_resolution.minimum_reached {
+                self.ctx.dispatcher.dispatch_top_message("Minimum internal resolution has been reached.");
+            } else if self.res.filters.internal_resolution.maximium_reached {
+                self.ctx.dispatcher.dispatch_top_message("Maximum internal resolution has been reached.");
+            } else {
+                self.ctx.dispatcher.dispatch_internal_resolution(self.res);
+            }
+        }
+
+        if self.input.next_texture_interpolation.any_just_pressed() {
+            if self.input.next_texture_interpolation.increase.is_just_pressed() {
+                self.res.filters.texture_interpolation.next_enum_variant();
+            }
+            if self.input.next_texture_interpolation.decrease.is_just_pressed() {
+                self.res.filters.texture_interpolation.previous_enum_variant();
+            }
+            self.ctx.dispatcher.dispatch_texture_interpolation(self.res);
+        }
+    }
+
+    fn update_pixel_shape(&mut self, dt: f32) {
+
         if self.input.next_pixel_geometry_kind.any_just_pressed() {
             if self.input.next_pixel_geometry_kind.increase.is_just_pressed() {
                 self.res.filters.pixels_geometry_kind.next_enum_variant();
@@ -294,6 +323,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         } else {
             None
         };
+
         if self.input.next_pixels_shadow_height_factor.any_active() || received_pixel_shadow_height.is_some() {
             if self.input.next_pixels_shadow_height_factor.increase {
                 self.res.filters.pixel_shadow_height_factor += dt * 0.3;
@@ -315,34 +345,6 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             self.ctx.dispatcher.dispatch_pixel_shadow_height(self.res);
         }
 
-        if self.input.next_internal_resolution.any_just_released() {
-            if self.input.next_internal_resolution.increase.is_just_released() {
-                self.res.filters.internal_resolution.increase();
-            }
-            if self.input.next_internal_resolution.decrease.is_just_released() {
-                self.res.filters.internal_resolution.decrease();
-            }
-            if self.res.filters.internal_resolution.minimum_reached {
-                self.ctx.dispatcher.dispatch_top_message("Minimum internal resolution has been reached.");
-            } else if self.res.filters.internal_resolution.maximium_reached {
-                self.ctx.dispatcher.dispatch_top_message("Maximum internal resolution has been reached.");
-            } else {
-                self.ctx.dispatcher.dispatch_internal_resolution(self.res);
-            }
-        }
-
-        if self.input.next_texture_interpolation.any_just_pressed() {
-            if self.input.next_texture_interpolation.increase.is_just_pressed() {
-                self.res.filters.texture_interpolation.next_enum_variant();
-            }
-            if self.input.next_texture_interpolation.decrease.is_just_pressed() {
-                self.res.filters.texture_interpolation.previous_enum_variant();
-            }
-            self.ctx.dispatcher.dispatch_texture_interpolation(self.res);
-        }
-    }
-
-    fn update_pixel_sizes(&mut self, dt: f32) {
         let pixel_velocity = dt * self.res.filters.change_speed;
         let ctx = &self.ctx;
         change_pixel_sizes(
