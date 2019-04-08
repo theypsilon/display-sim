@@ -4,7 +4,6 @@ services:
   - docker:dind
 
 before_script:
-  - apk add --no-cache bash
   - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
 
 build:
@@ -12,14 +11,13 @@ build:
   script:
     - docker build --pull -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" .
     - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
-  except:
+  only:
     - master
 
 pages:
   stage: deploy
   script:
-    - REGISTRY_IMAGE="$CI_REGISTRY_IMAGE" ./docker-build.sh --extract-dist
-    - mv dist public
+    - docker run --rm -v $(pwd)/public:/tmp "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" sh -c "cp -r /var/www/html/* /tmp"
   artifacts:
     paths:
     - public
