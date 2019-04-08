@@ -18,8 +18,7 @@ build:
 pages:
   stage: deploy
   script:
-    - REGISTRY_IMAGE="$CI_REGISTRY_IMAGE" ./docker-build.sh --extract-dist
-    - mv dist public
+    - docker run --rm -v $(pwd)/public:/tmp "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" sh -c "cp -r /var/www/html/* /tmp && chown -R $UID:$UID /tmp"
   artifacts:
     paths:
     - public
