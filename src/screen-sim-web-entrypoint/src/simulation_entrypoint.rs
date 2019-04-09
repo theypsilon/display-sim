@@ -103,23 +103,17 @@ pub fn init_resources(res: &mut Resources, video_input: VideoInputResources) -> 
 }
 
 pub fn load_materials(gl: WebGl2RenderingContext, video: VideoInputMaterials) -> WebResult<Materials> {
-    let pixels_render = PixelsRender::new(&gl, video)?;
-    let blur_render = BlurRender::new(&gl)?;
-    let internal_resolution_render = InternalResolutionRender::new(&gl)?;
-    let rgb_render = RgbRender::new(&gl)?;
-    let background_render = BackgroundRender::new(&gl)?;
-    let materials = Materials {
-        gl,
+    Ok(Materials {
         main_buffer_stack: TextureBufferStack::new(),
         bg_buffer_stack: TextureBufferStack::new(),
-        pixels_render,
-        blur_render,
-        internal_resolution_render,
-        rgb_render,
-        background_render,
+        pixels_render: PixelsRender::new(&gl, video)?,
+        blur_render: BlurRender::new(&gl)?,
+        internal_resolution_render: InternalResolutionRender::new(&gl)?,
+        rgb_render: RgbRender::new(&gl)?,
+        background_render: BackgroundRender::new(&gl)?,
         screenshot_pixels: None,
-    };
-    Ok(materials)
+        gl,
+    })
 }
 
 fn calculate_far_away_position(video_input: &VideoInputResources) -> f32 {

@@ -565,7 +565,7 @@ async function prepareUi () {
         return;
     }
 
-    const wasm = await new Promise(resolve => import('./wasm/screen_sim').then(resolve));
+    const wasm = await new Promise(resolve => import(/* webpackPrefetch: true */'./wasm/screen_sim').then(resolve));
 
     const videoInput = wasm.new_video_input_wasm(
         imageWidth, imageHeight, // to read the image pixels

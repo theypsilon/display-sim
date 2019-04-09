@@ -74,7 +74,7 @@ pub fn print_error(e: WebError) {
     console!(error. "An unexpected error ocurred.", e.into_js());
 }
 
-fn web_entrypoint_iteration<T: AppEventDispatcher + Default>(owned_state: &StateOwner, window: &Window, ctx: &mut SimulationContext<T>) -> WebResult<()> {
+fn web_entrypoint_iteration<T: AppEventDispatcher>(owned_state: &StateOwner, window: &Window, ctx: &mut SimulationContext<T>) -> WebResult<()> {
     let mut input = owned_state.input.borrow_mut();
     let mut resources = owned_state.resources.borrow_mut();
     let mut materials = owned_state.materials.borrow_mut();

@@ -45,8 +45,6 @@ build() {
         npm_deps=true
     fi
 
-    rm -rf www/src/wasm || true
-
     echo "wasm-pack buld ${build_type}:"
     wasm-pack build ${build_type} --out-dir www/src/wasm
 
