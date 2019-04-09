@@ -17,6 +17,9 @@ derive-new = "0.5.6"
 [dependencies.render]
 path = "../screen-sim-web-render"
 package = "screen-sim-web-render"
+features = [
+  "web"
+]
 
 [dependencies.web-sys]
 version = "0.3.17"

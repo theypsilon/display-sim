@@ -6,7 +6,7 @@ edition = "2018"
 cargo-features = ["rename-dependency"]
 
 [features]
-default = ["web"]
+default = []
 web = []
 native = []
 
