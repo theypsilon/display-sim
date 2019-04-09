@@ -1,0 +1,17 @@
+[package]
+name = "screen-sim-integration-test"
+version = "0.1.0"
+authors = ["José manuel Barroso Galindo <theypsilon@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+glm = { version = "0.1", package = "nalgebra-glm" }
+native-stub = { path = "../../src/screen-sim-web-stubs", package = "screen-sim-web-stubs" }
+core = { path = "../../src/screen-sim-core", package = "screen-sim-core" }
+
+[dependencies.render]
+path = "../../src/screen-sim-web-render"
+package = "screen-sim-web-render"
+features = [
+  'web_stubs',
+]

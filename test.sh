@@ -10,5 +10,10 @@ fi
 pushd www
 npm test
 popd
-cargo clippy
-cargo test
+cargo clippy --all
+cargo test --all
+
+pushd test
+cargo clippy --all
+cargo test --all
+popd

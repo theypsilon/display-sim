@@ -3,7 +3,6 @@ name = "screen-sim"
 version = "0.1.0"
 authors = ["José manuel Barroso Galindo <theypsilon@gmail.com>"]
 edition = "2018"
-cargo-features = ["rename-dependency"]
 
 [lib]
 crate-type = ["cdylib"]
@@ -14,9 +13,13 @@ debug = false
 lto = true
 
 [dependencies]
-wasm-bindgen = "0.2.40"
-js-sys = "0.3.17"
-console_error_panic_hook = "0.1"
-core = { path = "src/screen-sim-core", package = "screen-sim-core" }
-render = { path = "src/screen-sim-web-render", package = "screen-sim-web-render" }
-web = { path = "src/screen-sim-web-entrypoint", package = "screen-sim-web-entrypoint" }
+screen-sim-web-exports = { path = "src/screen-sim-web-exports" }
+
+[workspace]
+members = [
+    "src/screen-sim-core",
+    "src/screen-sim-web-exports",
+    "src/screen-sim-web-error",
+    "src/screen-sim-web-render",
+    "src/screen-sim-web-stubs",
+]

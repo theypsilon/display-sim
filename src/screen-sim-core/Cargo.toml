@@ -3,7 +3,6 @@ name = "screen-sim-core"
 version = "0.1.0"
 authors = ["José manuel Barroso Galindo <theypsilon@gmail.com>"]
 edition = "2018"
-cargo-features = ["rename-dependency"]
 
 [dependencies]
 glm = { version = "0.1", package = "nalgebra-glm" }

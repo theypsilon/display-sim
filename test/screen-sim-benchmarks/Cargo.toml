@@ -3,11 +3,10 @@ name = "screen-sim-benchmarks"
 version = "0.1.0"
 authors = ["José manuel Barroso Galindo <theypsilon@gmail.com>"]
 edition = "2018"
-cargo-features = ["rename-dependency"]
 
 [dependencies]
 criterion = "0.2.11"
-screen-sim-native = { path = "../src/screen-sim-native", package = "screen-sim-native" }
+screen-sim-integration-test = { path = "../screen-sim-integration-test" }
 
 [[bench]]
 name = "whole_sim_bench"

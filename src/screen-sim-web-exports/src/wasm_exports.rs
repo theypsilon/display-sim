@@ -8,7 +8,7 @@ use core::simulation_core_state::{AnimationStep, Resources, VideoInputResources}
 use render::simulation_render_state::VideoInputMaterials;
 use std::cell::RefCell;
 use std::rc::Rc;
-use web::web_entrypoint::{print_error, web_entrypoint};
+use crate::web_entrypoint::{print_error, web_entrypoint};
 
 #[wasm_bindgen]
 pub fn load_simulation_resources() -> ResourcesWasm {
