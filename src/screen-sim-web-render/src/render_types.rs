@@ -140,8 +140,8 @@ impl TextureBufferStack {
         self.cursor = 0;
         self.max_cursor = 0;
         for tb in self.stack.iter() {
-            &self.gl.delete_framebuffer(tb.framebuffer());
-            &self.gl.delete_texture(tb.texture());
+            self.gl.delete_framebuffer(tb.framebuffer());
+            self.gl.delete_texture(tb.texture());
         }
         self.stack.clear();
     }
@@ -170,8 +170,8 @@ impl TextureBufferStack {
 
     pub fn bind_current(&self) -> WebResult<()> {
         let current = self.get_current()?;
-        &self.gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, current.framebuffer());
-        &self.gl.viewport(0, 0, self.width, self.height);
+        self.gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, current.framebuffer());
+        self.gl.viewport(0, 0, self.width, self.height);
         Ok(())
     }
 
