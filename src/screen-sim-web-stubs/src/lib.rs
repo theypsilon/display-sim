@@ -67,6 +67,7 @@ impl WebGl2RenderingContext {
     pub fn bind_buffer(&self, _: u32, _: Option<&WebGlBuffer>) {}
     pub fn create_texture(&self) -> Option<WebGlTexture> { Some(WebGlTexture{})}
     pub fn delete_texture(&self, _: Option<&WebGlTexture>) {}
+    #[allow(clippy::too_many_arguments)]
     pub fn read_pixels_with_opt_u8_array(&self, _: u32, _: u32, _: i32, _: i32, _: u32, _: u32, _: Option<&mut [u8]>) -> WebResult<()> { Ok(()) }
     pub fn buffer_data_with_u8_array(&self, _: u32, _: &[u8], _: u32) {}
     pub fn buffer_data_with_opt_array_buffer(&self, _: u32, _: Option<&ArrayBuffer>, _: u32) {}
@@ -81,6 +82,7 @@ impl WebGl2RenderingContext {
     pub fn get_attrib_location(&self, _: &WebGlProgram, _: &str) -> u32 { 0 }
     pub fn framebuffer_texture_2d(&self, _: u32, _: u32, _: u32, _: Option<&WebGlTexture>, _: u32) {}
     pub fn tex_parameteri(&self, _: u32, _: u32, _: i32) {}
+    #[allow(clippy::too_many_arguments)]
     pub fn tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(&self, _: u32, _: u32, _: i32, _: i32, _: i32, _: u32, _: u32, _: u32, _: Option<&[u8]>) -> WebResult<()> { Ok(()) }
 }
 

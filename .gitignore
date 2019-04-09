@@ -2,7 +2,7 @@
 .idea
 .build-hash
 /target
-/benchmarks/target
+/test/target
 /bin
 /www/src/wasm
 /www/dist
