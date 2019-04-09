@@ -1,6 +1,8 @@
 import GIF from './third_party/gif';
 import FontFaceObserver from 'fontfaceobserver';
 
+const wasmPromise = import('./wasm/screen_sim');
+
 const scalingAutoHtmlId = 'scaling-auto';
 const scaling43HtmlId = 'scaling-4:3';
 const scalingCustomHtmlId = 'scaling-custom';
@@ -565,7 +567,7 @@ async function prepareUi () {
         return;
     }
 
-    const wasm = await new Promise(resolve => import(/* webpackPrefetch: true */'./wasm/screen_sim').then(resolve));
+    const wasm = await wasmPromise;
 
     const videoInput = wasm.new_video_input_wasm(
         imageWidth, imageHeight, // to read the image pixels
