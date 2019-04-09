@@ -6,24 +6,25 @@ use web_error::WebResult;
 pub struct RgbRender {
     vao: Option<WebGlVertexArrayObject>,
     shader: WebGlProgram,
+    gl: WebGl2RenderingContext,
 }
 
 impl RgbRender {
     pub fn new(gl: &WebGl2RenderingContext) -> WebResult<RgbRender> {
         let shader = make_shader(gl, TEXTURE_VERTEX_SHADER, RGB_FRAGMENT_SHADER)?;
         let vao = make_quad_vao(gl, &shader)?;
-        Ok(RgbRender { vao, shader })
+        Ok(RgbRender { vao, shader, gl: gl.clone() })
     }
 
-    pub fn render(&self, gl: &WebGl2RenderingContext) {
-        gl.bind_vertex_array(self.vao.as_ref());
-        gl.use_program(Some(&self.shader));
+    pub fn render(&self) {
+        self.gl.bind_vertex_array(self.vao.as_ref());
+        self.gl.use_program(Some(&self.shader));
 
-        gl.uniform1i(gl.get_uniform_location(&self.shader, "redImage").as_ref(), 0);
-        gl.uniform1i(gl.get_uniform_location(&self.shader, "greenImage").as_ref(), 1);
-        gl.uniform1i(gl.get_uniform_location(&self.shader, "blueImage").as_ref(), 2);
+        self.gl.uniform1i(self.gl.get_uniform_location(&self.shader, "redImage").as_ref(), 0);
+        self.gl.uniform1i(self.gl.get_uniform_location(&self.shader, "greenImage").as_ref(), 1);
+        self.gl.uniform1i(self.gl.get_uniform_location(&self.shader, "blueImage").as_ref(), 2);
 
-        gl.draw_elements_with_i32(WebGl2RenderingContext::TRIANGLES, 6, WebGl2RenderingContext::UNSIGNED_INT, 0);
+        self.gl.draw_elements_with_i32(WebGl2RenderingContext::TRIANGLES, 6, WebGl2RenderingContext::UNSIGNED_INT, 0);
     }
 }
 

@@ -104,8 +104,8 @@ pub fn init_resources(res: &mut Resources, video_input: VideoInputResources) -> 
 
 pub fn load_materials(gl: WebGl2RenderingContext, video: VideoInputMaterials) -> WebResult<Materials> {
     Ok(Materials {
-        main_buffer_stack: TextureBufferStack::new(),
-        bg_buffer_stack: TextureBufferStack::new(),
+        main_buffer_stack: TextureBufferStack::new(&gl),
+        bg_buffer_stack: TextureBufferStack::new(&gl),
         pixels_render: PixelsRender::new(&gl, video)?,
         blur_render: BlurRender::new(&gl)?,
         internal_resolution_render: InternalResolutionRender::new(&gl)?,

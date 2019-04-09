@@ -6,21 +6,22 @@ use web_error::WebResult;
 pub struct BackgroundRender {
     vao: Option<WebGlVertexArrayObject>,
     shader: WebGlProgram,
+    gl: WebGl2RenderingContext,
 }
 
 impl BackgroundRender {
     pub fn new(gl: &WebGl2RenderingContext) -> WebResult<BackgroundRender> {
         let shader = make_shader(gl, TEXTURE_VERTEX_SHADER, BACKGROUND_FRAGMENT_SHADER)?;
         let vao = make_quad_vao(gl, &shader)?;
-        Ok(BackgroundRender { vao, shader })
+        Ok(BackgroundRender { vao, shader, gl: gl.clone() })
     }
 
-    pub fn render(&self, gl: &WebGl2RenderingContext) {
-        gl.bind_vertex_array(self.vao.as_ref());
-        gl.use_program(Some(&self.shader));
-        gl.uniform1i(gl.get_uniform_location(&self.shader, "foregroundImage").as_ref(), 0);
-        gl.uniform1i(gl.get_uniform_location(&self.shader, "backgroundImage").as_ref(), 1);
-        gl.draw_elements_with_i32(WebGl2RenderingContext::TRIANGLES, 6, WebGl2RenderingContext::UNSIGNED_INT, 0);
+    pub fn render(&self) {
+        self.gl.bind_vertex_array(self.vao.as_ref());
+        self.gl.use_program(Some(&self.shader));
+        self.gl.uniform1i(self.gl.get_uniform_location(&self.shader, "foregroundImage").as_ref(), 0);
+        self.gl.uniform1i(self.gl.get_uniform_location(&self.shader, "backgroundImage").as_ref(), 1);
+        self.gl.draw_elements_with_i32(WebGl2RenderingContext::TRIANGLES, 6, WebGl2RenderingContext::UNSIGNED_INT, 0);
     }
 }
 

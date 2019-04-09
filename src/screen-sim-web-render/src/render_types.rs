@@ -86,7 +86,6 @@ impl TextureBuffer {
     }
 }
 
-#[derive(Default)]
 pub struct TextureBufferStack {
     pub stack: Vec<TextureBuffer>,
     width: i32,
@@ -95,54 +94,64 @@ pub struct TextureBufferStack {
     cursor: usize,
     max_cursor: usize,
     depthbuffer_active: bool,
+    gl: WebGl2RenderingContext,
 }
 
 impl TextureBufferStack {
-    pub fn new() -> TextureBufferStack {
-        TextureBufferStack::default()
-    }
-
-    pub fn set_depthbuffer(&mut self, gl: &WebGl2RenderingContext, new_value: bool) {
-        if self.depthbuffer_active != new_value {
-            self.depthbuffer_active = new_value;
-            self.reset_stack(gl);
+    pub fn new(gl: &WebGl2RenderingContext) -> TextureBufferStack {
+        TextureBufferStack {
+            stack: Vec::<TextureBuffer>::default(),
+            width: i32::default(),
+            height: i32::default(),
+            interpolation: u32::default(),
+            cursor: usize::default(),
+            max_cursor: usize::default(),
+            depthbuffer_active: bool::default(),
+            gl: gl.clone(),
         }
     }
 
-    pub fn set_resolution(&mut self, gl: &WebGl2RenderingContext, width: i32, height: i32) {
+    pub fn set_depthbuffer(&mut self, new_value: bool) {
+        if self.depthbuffer_active != new_value {
+            self.depthbuffer_active = new_value;
+            self.reset_stack();
+        }
+    }
+
+    pub fn set_resolution(&mut self, width: i32, height: i32) {
         if width <= 0 || height <= 0 {
             return;
         }
         if self.width != width || self.height != height {
             self.width = width;
             self.height = height;
-            self.reset_stack(gl);
+            self.reset_stack();
         }
     }
 
-    pub fn set_interpolation(&mut self, gl: &WebGl2RenderingContext, interpolation: u32) {
+    pub fn set_interpolation(&mut self, interpolation: u32) {
         if self.interpolation != interpolation {
             self.interpolation = interpolation;
-            self.reset_stack(gl);
+            self.reset_stack();
         }
     }
 
-    fn reset_stack(&mut self, gl: &WebGl2RenderingContext) {
+    fn reset_stack(&mut self) {
         self.cursor = 0;
         self.max_cursor = 0;
         for tb in self.stack.iter() {
-            gl.delete_framebuffer(tb.framebuffer());
-            gl.delete_texture(tb.texture());
+            &self.gl.delete_framebuffer(tb.framebuffer());
+            &self.gl.delete_texture(tb.texture());
         }
         self.stack.clear();
     }
 
-    pub fn push(&mut self, gl: &WebGl2RenderingContext) -> WebResult<()> {
+    pub fn push(&mut self) -> WebResult<()> {
         if self.stack.len() == self.cursor {
             let tb = if self.depthbuffer_active {
-                TextureBuffer::new_with_depthbuffer(gl, self.width, self.height, self.interpolation)?
+                TextureBuffer::new_with_depthbuffer(&self.gl, self.width, self.height, self.interpolation)?
             } else {
-                TextureBuffer::new(gl, self.width, self.height, self.interpolation)?
+                TextureBuffer::new(&self.gl, self.width, self.height, self.interpolation)?
             };
             self.stack.push(tb);
         }
@@ -159,11 +168,10 @@ impl TextureBufferStack {
         Ok(())
     }
 
-    pub fn bind_current(&self, gl: &WebGl2RenderingContext) -> WebResult<()> {
+    pub fn bind_current(&self) -> WebResult<()> {
         let current = self.get_current()?;
-        gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, current.framebuffer());
-        gl.viewport(0, 0, self.width, self.height);
-        //console!(log. "current binding = ", (self.cursor as f32 - 1.0));
+        &self.gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, current.framebuffer());
+        &self.gl.viewport(0, 0, self.width, self.height);
         Ok(())
     }
 

@@ -8,18 +8,18 @@ use web_sys::WebGlTexture;
 pub struct BlurRender {
     shader: WebGlProgram,
     vao: Option<WebGlVertexArrayObject>,
+    gl: WebGl2RenderingContext,
 }
 
 impl BlurRender {
     pub fn new(gl: &WebGl2RenderingContext) -> WebResult<BlurRender> {
         let shader = make_shader(gl, TEXTURE_VERTEX_SHADER, BLUR_FRAGMENT_SHADER)?;
         let vao = make_quad_vao(gl, &shader)?;
-        Ok(BlurRender { shader, vao })
+        Ok(BlurRender { shader, vao, gl: gl.clone() })
     }
 
     pub fn render(
         &self,
-        gl: &WebGl2RenderingContext,
         stack: &mut TextureBufferStack,
         source: &TextureBuffer,
         target: &TextureBuffer,
@@ -29,22 +29,22 @@ impl BlurRender {
             panic!("Should not be called when passes < 1!");
         }
 
-        stack.push(gl)?;
-        stack.push(gl)?;
+        stack.push()?;
+        stack.push()?;
 
         let texture_buffers = [stack.get_nth(0)?, stack.get_nth(-1)?];
 
         let blur_iteration = |texture: Option<&WebGlTexture>, tb: &TextureBuffer, horizontal: bool| {
-            gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, tb.framebuffer());
-            gl.viewport(0, 0, tb.width, tb.height);
-            gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, texture);
-            gl.uniform1i(gl.get_uniform_location(&self.shader, "horizontal").as_ref(), if horizontal { 1 } else { 0 });
-            gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
-            gl.draw_elements_with_i32(WebGl2RenderingContext::TRIANGLES, 6, WebGl2RenderingContext::UNSIGNED_INT, 0);
+            self.gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, tb.framebuffer());
+            self.gl.viewport(0, 0, tb.width, tb.height);
+            self.gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, texture);
+            self.gl.uniform1i(self.gl.get_uniform_location(&self.shader, "horizontal").as_ref(), if horizontal { 1 } else { 0 });
+            self.gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
+            self.gl.draw_elements_with_i32(WebGl2RenderingContext::TRIANGLES, 6, WebGl2RenderingContext::UNSIGNED_INT, 0);
         };
 
-        gl.use_program(Some(&self.shader));
-        gl.bind_vertex_array(self.vao.as_ref());
+        self.gl.use_program(Some(&self.shader));
+        self.gl.bind_vertex_array(self.vao.as_ref());
 
         blur_iteration(source.texture(), texture_buffers[0], true);
         for i in 1..passes {
@@ -55,8 +55,8 @@ impl BlurRender {
         let buffer_index = passes % 2;
         let texture_index = (passes + 1) % 2;
         blur_iteration(texture_buffers[texture_index].texture(), target, buffer_index == 0);
-        gl.bind_vertex_array(None);
-        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, None);
+        self.gl.bind_vertex_array(None);
+        self.gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, None);
         stack.pop()?;
         stack.pop()?;
         Ok(())

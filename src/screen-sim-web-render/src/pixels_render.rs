@@ -20,6 +20,7 @@ pub struct PixelsRender {
     offset_inverse_max_length: f32,
     shadows: Vec<Option<WebGlTexture>>,
     video_buffers: Vec<Box<[u8]>>,
+    gl: WebGl2RenderingContext,
 }
 
 pub struct PixelsUniform<'a> {
@@ -101,6 +102,7 @@ impl PixelsRender {
             height: 0,
             offset_inverse_max_length: 0.0,
             shadows,
+            gl: gl.clone(),
         })
     }
 
@@ -183,58 +185,58 @@ impl PixelsRender {
         Ok(pixel_shadow_texture)
     }
 
-    pub fn load_image(&mut self, gl: &WebGl2RenderingContext, video_res: &VideoInputResources) {
+    pub fn load_image(&mut self, video_res: &VideoInputResources) {
         if video_res.image_size.width != self.width || video_res.image_size.height != self.height {
             self.width = video_res.image_size.width;
             self.height = video_res.image_size.height;
             self.offset_inverse_max_length = 1.0 / ((self.width as f32 * 0.5).powi(2) + (self.height as f32 * 0.5).powi(2)).sqrt();
-            gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&self.offsets_vbo));
+            self.gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&self.offsets_vbo));
             let offsets = calculate_offsets(self.width, self.height);
-            gl.buffer_data_with_opt_array_buffer(
+            self.gl.buffer_data_with_opt_array_buffer(
                 WebGl2RenderingContext::ARRAY_BUFFER,
                 Some(&offsets.buffer()),
                 WebGl2RenderingContext::STATIC_DRAW,
             );
         }
-        gl.bind_vertex_array(self.vao.as_ref());
-        gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&self.colors_vbo));
+        self.gl.bind_vertex_array(self.vao.as_ref());
+        self.gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&self.colors_vbo));
 
-        gl.buffer_data_with_u8_array(
+        self.gl.buffer_data_with_u8_array(
             WebGl2RenderingContext::ARRAY_BUFFER,
             &self.video_buffers[video_res.current_frame],
             WebGl2RenderingContext::STATIC_DRAW,
         );
     }
 
-    pub fn render(&self, gl: &WebGl2RenderingContext, uniforms: PixelsUniform) {
-        gl.use_program(Some(&self.shader));
+    pub fn render(&self, uniforms: PixelsUniform) {
+        self.gl.use_program(Some(&self.shader));
         if uniforms.shadow_kind >= self.shadows.len() {
             panic!("Bug on shadow_kind!")
         }
-        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, self.shadows[uniforms.shadow_kind].as_ref());
-        gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&self.shader, "view").as_ref(), false, uniforms.view);
-        gl.uniform_matrix4fv_with_f32_array(gl.get_uniform_location(&self.shader, "projection").as_ref(), false, uniforms.projection);
-        gl.uniform3fv_with_f32_array(gl.get_uniform_location(&self.shader, "lightPos").as_ref(), uniforms.light_pos);
-        gl.uniform3fv_with_f32_array(gl.get_uniform_location(&self.shader, "lightColor").as_ref(), uniforms.light_color);
-        gl.uniform3fv_with_f32_array(gl.get_uniform_location(&self.shader, "extraLight").as_ref(), uniforms.extra_light);
-        gl.uniform1f(gl.get_uniform_location(&self.shader, "ambientStrength").as_ref(), uniforms.ambient_strength);
-        gl.uniform1f(gl.get_uniform_location(&self.shader, "contrastFactor").as_ref(), uniforms.contrast_factor);
-        gl.uniform1f(
-            gl.get_uniform_location(&self.shader, "offset_inverse_max_length").as_ref(),
+        self.gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, self.shadows[uniforms.shadow_kind].as_ref());
+        self.gl.uniform_matrix4fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "view").as_ref(), false, uniforms.view);
+        self.gl.uniform_matrix4fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "projection").as_ref(), false, uniforms.projection);
+        self.gl.uniform3fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "lightPos").as_ref(), uniforms.light_pos);
+        self.gl.uniform3fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "lightColor").as_ref(), uniforms.light_color);
+        self.gl.uniform3fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "extraLight").as_ref(), uniforms.extra_light);
+        self.gl.uniform1f(self.gl.get_uniform_location(&self.shader, "ambientStrength").as_ref(), uniforms.ambient_strength);
+        self.gl.uniform1f(self.gl.get_uniform_location(&self.shader, "contrastFactor").as_ref(), uniforms.contrast_factor);
+        self.gl.uniform1f(
+            self.gl.get_uniform_location(&self.shader, "offset_inverse_max_length").as_ref(),
             self.offset_inverse_max_length,
         );
-        gl.uniform1f(gl.get_uniform_location(&self.shader, "screen_curvature").as_ref(), uniforms.screen_curvature);
-        gl.uniform2fv_with_f32_array(gl.get_uniform_location(&self.shader, "pixel_gap").as_ref(), uniforms.pixel_gap);
-        gl.uniform3fv_with_f32_array(gl.get_uniform_location(&self.shader, "pixel_scale").as_ref(), uniforms.pixel_scale);
-        gl.uniform3fv_with_f32_array(gl.get_uniform_location(&self.shader, "pixel_offset").as_ref(), uniforms.pixel_offset);
-        gl.uniform1f(gl.get_uniform_location(&self.shader, "pixel_pulse").as_ref(), uniforms.pixel_pulse);
-        gl.uniform1f(
-            gl.get_uniform_location(&self.shader, "heightModifierFactor").as_ref(),
+        self.gl.uniform1f(self.gl.get_uniform_location(&self.shader, "screen_curvature").as_ref(), uniforms.screen_curvature);
+        self.gl.uniform2fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "pixel_gap").as_ref(), uniforms.pixel_gap);
+        self.gl.uniform3fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "pixel_scale").as_ref(), uniforms.pixel_scale);
+        self.gl.uniform3fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "pixel_offset").as_ref(), uniforms.pixel_offset);
+        self.gl.uniform1f(self.gl.get_uniform_location(&self.shader, "pixel_pulse").as_ref(), uniforms.pixel_pulse);
+        self.gl.uniform1f(
+            self.gl.get_uniform_location(&self.shader, "heightModifierFactor").as_ref(),
             uniforms.height_modifier_factor,
         );
 
-        gl.bind_vertex_array(self.vao.as_ref());
-        gl.draw_arrays_instanced(
+        self.gl.bind_vertex_array(self.vao.as_ref());
+        self.gl.draw_arrays_instanced(
             WebGl2RenderingContext::TRIANGLES,
             0,
             match uniforms.geometry_kind {

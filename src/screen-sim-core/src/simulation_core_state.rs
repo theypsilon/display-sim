@@ -43,8 +43,8 @@ pub struct Resources {
     pub resetted: bool,
 }
 
-impl Resources {
-    pub fn new() -> Resources {
+impl Default for Resources {
+    fn default() -> Self {
         Resources {
             resetted: true,
             initial_parameters: InitialParameters::default(),

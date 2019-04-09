@@ -13,7 +13,7 @@ use web::web_entrypoint::{print_error, web_entrypoint};
 #[wasm_bindgen]
 pub fn load_simulation_resources() -> ResourcesWasm {
     ResourcesWasm {
-        data: Rc::new(RefCell::new(Resources::new())),
+        data: Rc::new(RefCell::new(Resources::default())),
     }
 }
 

@@ -20,26 +20,25 @@ impl<'a, T: AppEventDispatcher> SimulationDrawer<'a, T> {
         let gl = &self.materials.gl;
 
         if self.res.video.needs_buffer_data_load {
-            self.materials.pixels_render.load_image(gl, &self.res.video);
+            self.materials.pixels_render.load_image(&self.res.video);
         }
 
-        self.materials.main_buffer_stack.set_depthbuffer(gl, self.res.output.pixel_have_depth);
+        self.materials.main_buffer_stack.set_depthbuffer(self.res.output.pixel_have_depth);
 
         self.materials
             .main_buffer_stack
-            .set_resolution(gl, self.res.filters.internal_resolution.width(), self.res.filters.internal_resolution.height());
+            .set_resolution(self.res.filters.internal_resolution.width(), self.res.filters.internal_resolution.height());
 
         self.materials.main_buffer_stack.set_interpolation(
-            gl,
             match self.res.filters.texture_interpolation {
                 TextureInterpolation::Linear => WebGl2RenderingContext::LINEAR,
                 TextureInterpolation::Nearest => WebGl2RenderingContext::NEAREST,
             },
         );
 
-        self.materials.main_buffer_stack.push(gl)?;
-        self.materials.main_buffer_stack.push(gl)?;
-        self.materials.main_buffer_stack.bind_current(gl)?;
+        self.materials.main_buffer_stack.push()?;
+        self.materials.main_buffer_stack.push()?;
+        self.materials.main_buffer_stack.bind_current()?;
 
         gl.enable(WebGl2RenderingContext::DEPTH_TEST);
         gl.clear_color(0.0, 0.0, 0.0, 0.0);
@@ -56,14 +55,13 @@ impl<'a, T: AppEventDispatcher> SimulationDrawer<'a, T> {
             for j in 0..self.res.filters.lines_per_pixel {
                 for i in 0..self.res.output.color_splits {
                     if let ColorChannels::Overlapping = self.res.filters.color_channels {
-                        self.materials.main_buffer_stack.push(gl)?;
-                        self.materials.main_buffer_stack.bind_current(gl)?;
+                        self.materials.main_buffer_stack.push()?;
+                        self.materials.main_buffer_stack.bind_current()?;
                         if j == 0 {
                             gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
                         }
                     }
                     self.materials.pixels_render.render(
-                        gl,
                         PixelsUniform {
                             shadow_kind: self.res.filters.pixel_shadow_shape_kind,
                             geometry_kind: self.res.filters.pixels_geometry_kind,
@@ -91,7 +89,7 @@ impl<'a, T: AppEventDispatcher> SimulationDrawer<'a, T> {
             }
 
             if let ColorChannels::Overlapping = self.res.filters.color_channels {
-                self.materials.main_buffer_stack.bind_current(gl)?;
+                self.materials.main_buffer_stack.bind_current()?;
                 gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 0);
                 gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, self.materials.main_buffer_stack.get_nth(1)?.texture());
                 gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 1);
@@ -99,27 +97,26 @@ impl<'a, T: AppEventDispatcher> SimulationDrawer<'a, T> {
                 gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 2);
                 gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, self.materials.main_buffer_stack.get_nth(3)?.texture());
 
-                self.materials.rgb_render.render(gl);
+                self.materials.rgb_render.render();
 
                 gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 0);
             }
         }
 
-        self.materials.main_buffer_stack.push(gl)?;
-        self.materials.main_buffer_stack.bind_current(gl)?;
+        self.materials.main_buffer_stack.push()?;
+        self.materials.main_buffer_stack.bind_current()?;
         gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
 
         if self.res.output.showing_background {
             if self.res.output.is_background_diffuse {
-                self.materials.bg_buffer_stack.set_resolution(gl, 1920 / 2, 1080 / 2);
-                self.materials.bg_buffer_stack.set_depthbuffer(gl, false);
-                self.materials.bg_buffer_stack.set_interpolation(gl, WebGl2RenderingContext::LINEAR);
-                self.materials.bg_buffer_stack.push(gl)?;
-                self.materials.bg_buffer_stack.bind_current(gl)?;
+                self.materials.bg_buffer_stack.set_resolution(1920 / 2, 1080 / 2);
+                self.materials.bg_buffer_stack.set_depthbuffer(false);
+                self.materials.bg_buffer_stack.set_interpolation(WebGl2RenderingContext::LINEAR);
+                self.materials.bg_buffer_stack.push()?;
+                self.materials.bg_buffer_stack.bind_current()?;
                 gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
             }
             self.materials.pixels_render.render(
-                gl,
                 PixelsUniform {
                     shadow_kind: 0,
                     geometry_kind: self.res.filters.pixels_geometry_kind,
@@ -147,27 +144,27 @@ impl<'a, T: AppEventDispatcher> SimulationDrawer<'a, T> {
                 let target = self.materials.main_buffer_stack.get_current()?;
                 self.materials
                     .blur_render
-                    .render(&gl, &mut self.materials.bg_buffer_stack, &source, &target, 6)?;
+                    .render(&mut self.materials.bg_buffer_stack, &source, &target, 6)?;
                 self.materials.bg_buffer_stack.pop()?;
             }
         }
         self.materials.main_buffer_stack.pop()?;
         self.materials.main_buffer_stack.pop()?;
-        self.materials.main_buffer_stack.bind_current(gl)?;
+        self.materials.main_buffer_stack.bind_current()?;
         gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
 
         gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 0);
         gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, self.materials.main_buffer_stack.get_nth(1)?.texture());
         gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 1);
         gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, self.materials.main_buffer_stack.get_nth(2)?.texture());
-        self.materials.background_render.render(gl);
+        self.materials.background_render.render();
         gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 0);
 
         if self.res.filters.blur_passes > 0 {
             let target = self.materials.main_buffer_stack.get_current()?.clone();
             self.materials
                 .blur_render
-                .render(&gl, &mut self.materials.main_buffer_stack, &target, &target, self.res.filters.blur_passes)?;
+                .render(&mut self.materials.main_buffer_stack, &target, &target, self.res.filters.blur_passes)?;
         }
 
         self.materials.screenshot_pixels = None;
@@ -200,7 +197,7 @@ impl<'a, T: AppEventDispatcher> SimulationDrawer<'a, T> {
 
         self.materials
             .internal_resolution_render
-            .render(gl, self.materials.main_buffer_stack.get_nth(1)?.texture());
+            .render(self.materials.main_buffer_stack.get_nth(1)?.texture());
 
         check_error(&gl, line!())?;
 
