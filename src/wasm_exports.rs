@@ -71,7 +71,7 @@ pub fn new_video_input_wasm(
             last_frame_change: -100.0,
             needs_buffer_data_load: true,
         },
-        materials: VideoInputMaterials { buffers: Vec::new() },
+        materials: VideoInputMaterials::default(),
     }
 }
 

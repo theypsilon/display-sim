@@ -1,7 +1,7 @@
-use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlVertexArrayObject};
+use crate::web::{WebGl2RenderingContext, WebGlProgram, WebGlVertexArrayObject};
 
 use crate::shaders::{make_quad_vao, make_shader, TEXTURE_VERTEX_SHADER};
-use web_error::WebResult;
+use crate::error::WebResult;
 
 pub struct BackgroundRender {
     vao: Option<WebGlVertexArrayObject>,

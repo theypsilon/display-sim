@@ -1,8 +1,8 @@
-use web_sys::WebGl2RenderingContext;
+use crate::web::WebGl2RenderingContext;
 
 use crate::pixels_render::PixelsUniform;
 use crate::simulation_render_state::Materials;
-use web_error::{WebResult};
+use crate::error::{WebResult};
 use core::app_events::AppEventDispatcher;
 use core::simulation_context::SimulationContext;
 use core::simulation_core_state::{ColorChannels, Resources, TextureInterpolation};

@@ -5,12 +5,12 @@ use web_sys::{CustomEvent, EventTarget, KeyboardEvent, MouseEvent, WebGl2Renderi
 
 use crate::action_bindings::on_button_action;
 use crate::console;
-use crate::simulation_entrypoint::{init_resources, load_materials, SimulationTicker};
+use crate::simulation_entrypoint::{load_materials, SimulationTicker};
 use crate::web_events::WebEventDispatcher;
 use core::app_events::AppEventDispatcher;
 use core::internal_resolution::InternalResolution;
 use core::simulation_context::SimulationContext;
-use core::simulation_core_state::{Input, InputEventValue, Resources, VideoInputResources};
+use core::simulation_core_state::{init_resources, Input, InputEventValue, Resources, VideoInputResources};
 use render::simulation_render_state::{Materials, VideoInputMaterials};
 use web_error::{WebError, WebResult};
 use crate::web_utils::{now, window};
@@ -42,7 +42,7 @@ pub fn web_entrypoint(
     video_input_materials: VideoInputMaterials,
 ) -> WebResult<()> {
     let gl = gl.dyn_into::<WebGl2RenderingContext>()?;
-    init_resources(&mut res.borrow_mut(), video_input_resources)?;
+    init_resources(&mut res.borrow_mut(), video_input_resources, now()?);
     let owned_state = StateOwner::new_rc(res, load_materials(gl, video_input_materials)?, Input::new(now()?));
     let frame_closure: Closure<FnMut(JsValue)> = {
         let owned_state = Rc::clone(&owned_state);
@@ -74,7 +74,7 @@ pub fn print_error(e: WebError) {
     console!(error. "An unexpected error ocurred.", e.into_js());
 }
 
-fn web_entrypoint_iteration<T: AppEventDispatcher>(owned_state: &StateOwner, window: &Window, ctx: &mut SimulationContext<T>) -> WebResult<()> {
+fn web_entrypoint_iteration<T: AppEventDispatcher + Default>(owned_state: &StateOwner, window: &Window, ctx: &mut SimulationContext<T>) -> WebResult<()> {
     let mut input = owned_state.input.borrow_mut();
     let mut resources = owned_state.resources.borrow_mut();
     let mut materials = owned_state.materials.borrow_mut();

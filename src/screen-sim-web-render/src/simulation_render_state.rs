@@ -1,4 +1,4 @@
-use web_sys::WebGl2RenderingContext;
+use crate::web::WebGl2RenderingContext;
 
 use crate::background_render::BackgroundRender;
 use crate::blur_render::BlurRender;
@@ -7,6 +7,7 @@ use crate::pixels_render::PixelsRender;
 use crate::render_types::TextureBufferStack;
 use crate::rgb_render::RgbRender;
 
+#[derive(Default)]
 pub struct VideoInputMaterials {
     pub buffers: Vec<Box<[u8]>>,
 }

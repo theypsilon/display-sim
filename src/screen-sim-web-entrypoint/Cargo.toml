@@ -12,8 +12,11 @@ glm = { version = "0.1", package = "nalgebra-glm" }
 paste = "0.1.4"
 core = { path = "../screen-sim-core", package = "screen-sim-core" }
 web-error = { path = "../screen-sim-web-error", package = "screen-sim-web-error" }
-render = { path = "../screen-sim-web-render", package = "screen-sim-web-render" }
 derive-new = "0.5.6"
+
+[dependencies.render]
+path = "../screen-sim-web-render"
+package = "screen-sim-web-render"
 
 [dependencies.web-sys]
 version = "0.3.17"

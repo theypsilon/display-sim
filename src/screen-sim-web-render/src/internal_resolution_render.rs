@@ -1,8 +1,7 @@
-use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlVertexArrayObject};
+use crate::web::{WebGl2RenderingContext, WebGlProgram, WebGlVertexArrayObject, WebGlTexture};
 
 use crate::shaders::{make_quad_vao, make_shader, TEXTURE_FRAGMENT_SHADER, TEXTURE_VERTEX_SHADER};
-use web_error::WebResult;
-use web_sys::WebGlTexture;
+use crate::error::WebResult;
 
 pub struct InternalResolutionRender {
     vao: Option<WebGlVertexArrayObject>,

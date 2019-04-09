@@ -1,9 +1,10 @@
-use js_sys::Float32Array;
-use web_sys::{WebGl2RenderingContext, WebGlBuffer, WebGlProgram, WebGlTexture, WebGlVertexArrayObject};
+use crate::js::Float32Array;
+use crate::bindgen::JsValue;
+use crate::web::{WebGl2RenderingContext, WebGlBuffer, WebGlProgram, WebGlTexture, WebGlVertexArrayObject};
 
 use crate::shaders::make_shader;
 use crate::simulation_render_state::VideoInputMaterials;
-use web_error::WebResult;
+use crate::error::WebResult;
 use core::general_types::f32_to_u8;
 use core::pixels_shadow::{get_shadows, TEXTURE_SIZE};
 use core::simulation_core_state::{PixelsGeometryKind, VideoInputResources};
@@ -250,7 +251,7 @@ impl PixelsRender {
 
 fn calculate_offsets(width: u32, height: u32) -> Float32Array {
     let pixels_total = width * height;
-    let offsets = Float32Array::new(&wasm_bindgen::JsValue::from(pixels_total as u32 * 2));
+    let offsets = Float32Array::new(&JsValue::from(pixels_total as u32 * 2));
     {
         let half_width: f32 = width as f32 / 2.0;
         let half_height: f32 = height as f32 / 2.0;

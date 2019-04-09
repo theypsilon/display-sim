@@ -1,5 +1,5 @@
-use web_error::WebResult;
-use web_sys::{WebGl2RenderingContext, WebGlFramebuffer, WebGlTexture};
+use crate::error::WebResult;
+use crate::web::{WebGl2RenderingContext, WebGlFramebuffer, WebGlTexture};
 
 #[derive(Debug, Clone)]
 pub struct TextureBuffer {

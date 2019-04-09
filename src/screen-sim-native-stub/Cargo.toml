@@ -1,0 +1,5 @@
+[package]
+name = "screen-sim-native-stub"
+version = "0.1.0"
+authors = ["José manuel Barroso Galindo <theypsilon@gmail.com>"]
+edition = "2018"

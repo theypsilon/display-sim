@@ -5,13 +5,19 @@ authors = ["José manuel Barroso Galindo <theypsilon@gmail.com>"]
 edition = "2018"
 cargo-features = ["rename-dependency"]
 
+[features]
+default = ["web"]
+web = []
+native = []
+
 [dependencies]
 wasm-bindgen = "0.2.40"
 js-sys = "0.3.17"
 glm = { version = "0.1", package = "nalgebra-glm" }
 core = { path = "../screen-sim-core", package = "screen-sim-core" }
-web-error = { path = "../screen-sim-web-error", package = "screen-sim-web-error" }
 derive-new = "0.5.6"
+web-error = { path = "../screen-sim-web-error", package = "screen-sim-web-error" }
+native-stub = { path = "../screen-sim-native-stub", package = "screen-sim-native-stub" }
 
 [dependencies.web-sys]
 version = "0.3.17"
@@ -24,5 +30,5 @@ features = [
   'WebGlUniformLocation',
   'WebGlTexture',
   'WebGlFramebuffer',
-  'WebGlRenderbuffer',
+  'WebGlRenderbuffer'
 ]

@@ -447,6 +447,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "screen-sim-native-stub"
+version = "0.1.0"
+
+[[package]]
 name = "screen-sim-web-entrypoint"
 version = "0.1.0"
 dependencies = [
@@ -476,6 +480,7 @@ dependencies = [
  "js-sys 0.3.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra-glm 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "screen-sim-core 0.1.0",
+ "screen-sim-native-stub 0.1.0",
  "screen-sim-web-error 0.1.0",
  "wasm-bindgen 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)",
  "web-sys 0.3.17 (registry+https://github.com/rust-lang/crates.io-index)",
