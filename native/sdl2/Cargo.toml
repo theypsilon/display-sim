@@ -1,0 +1,18 @@
+[package]
+name = "screen-sim-native-sdl2"
+version = "0.1.0"
+authors = ["José manuel Barroso Galindo <theypsilon@gmail.com>"]
+edition = "2018"
+
+[profile.release]
+debug = false
+lto = true
+
+[dependencies]
+gl = "0.12.0"
+libc = "0.2.51"
+glm = { version = "0.1", package = "nalgebra-glm" }
+
+[dependencies.sdl2]
+version = "0.31.0"
+features = ["bundled", "static-link"]
