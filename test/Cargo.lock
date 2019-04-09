@@ -625,7 +625,7 @@ dependencies = [
  "nalgebra-glm 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "screen-sim-core 0.1.0",
  "screen-sim-web-render 0.1.0",
- "screen-sim-web-stubs 0.1.0",
+ "screen-sim-webgl-stubs 0.1.0",
 ]
 
 [[package]]
@@ -643,12 +643,17 @@ dependencies = [
  "nalgebra-glm 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "screen-sim-core 0.1.0",
  "screen-sim-web-error 0.1.0",
- "screen-sim-web-stubs 0.1.0",
+ "screen-sim-webgl-stubs 0.1.0",
+ "screen-sim-webgl-to-sdl2 0.1.0",
  "web-sys 0.3.17 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
-name = "screen-sim-web-stubs"
+name = "screen-sim-webgl-stubs"
+version = "0.1.0"
+
+[[package]]
+name = "screen-sim-webgl-to-sdl2"
 version = "0.1.0"
 
 [[package]]

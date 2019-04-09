@@ -5,15 +5,18 @@ authors = ["José manuel Barroso Galindo <theypsilon@gmail.com>"]
 edition = "2018"
 
 [features]
-default = []
-web_stubs = []
+default = ["webgl_api"]
+webgl_api = []
+webgl_stubs = []
+webgl_to_sdl2 = []
 
 [dependencies]
 glm = { version = "0.1", package = "nalgebra-glm" }
 core = { path = "../screen-sim-core", package = "screen-sim-core" }
 derive-new = "0.5.6"
 web-error = { path = "../screen-sim-web-error", package = "screen-sim-web-error" }
-native-stub = { path = "../screen-sim-web-stubs", package = "screen-sim-web-stubs" }
+webgl-stubs = { path = "../screen-sim-webgl-stubs", package = "screen-sim-webgl-stubs" }
+webgl-to-sdl2 = { path = "../screen-sim-webgl-to-sdl2", package = "screen-sim-webgl-to-sdl2" }
 
 [dependencies.web-sys]
 version = "0.3.17"

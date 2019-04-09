@@ -1,4 +1,4 @@
-use native_stub::WebGl2RenderingContext;
+use webgl_stubs::WebGl2RenderingContext;
 
 use core::app_events::AppEventDispatcher;
 use core::simulation_context::SimulationContext;
@@ -15,7 +15,7 @@ use render::render_types::TextureBufferStack;
 use render::rgb_render::RgbRender;
 use render::simulation_draw::SimulationDrawer;
 use render::simulation_render_state::{Materials, VideoInputMaterials};
-use native_stub::WebResult;
+use webgl_stubs::WebResult;
 
 #[test]
 fn test_simulation_initializes_fine() {

@@ -21,5 +21,5 @@ members = [
     "src/screen-sim-web-exports",
     "src/screen-sim-web-error",
     "src/screen-sim-web-render",
-    "src/screen-sim-web-stubs",
+    "src/screen-sim-webgl-stubs",
 ]

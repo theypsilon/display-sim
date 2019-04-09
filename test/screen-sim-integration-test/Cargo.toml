@@ -6,12 +6,13 @@ edition = "2018"
 
 [dependencies]
 glm = { version = "0.1", package = "nalgebra-glm" }
-native-stub = { path = "../../src/screen-sim-web-stubs", package = "screen-sim-web-stubs" }
+webgl-stubs = { path = "../../src/screen-sim-webgl-stubs", package = "screen-sim-webgl-stubs" }
 core = { path = "../../src/screen-sim-core", package = "screen-sim-core" }
 
 [dependencies.render]
 path = "../../src/screen-sim-web-render"
 package = "screen-sim-web-render"
+default-features = false
 features = [
-  'web_stubs',
+  'webgl_stubs',
 ]

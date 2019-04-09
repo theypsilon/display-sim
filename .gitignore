@@ -3,6 +3,7 @@
 .build-hash
 /target
 /test/target
+/native/target
 /bin
 /www/src/wasm
 /www/dist

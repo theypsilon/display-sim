@@ -11,17 +11,23 @@ pub mod simulation_draw;
 pub mod simulation_render_state;
 
 mod web {
-    #[cfg(not(feature = "web_stubs"))]
+    #[cfg(feature = "webgl_api")]
     pub use web_sys::*;
 
-    #[cfg(feature = "web_stubs")]
-    pub use native_stub::*;
+    #[cfg(feature = "webgl_stubs")]
+    pub use webgl_stubs::*;
+
+    #[cfg(feature = "webgl_to_sdl2")]
+    pub use webgl_to_sdl2::*;
 }
 
 mod error {
-    #[cfg(not(feature = "web_stubs"))]
+    #[cfg(feature = "webgl_api")]
     pub use web_error::*;
 
-    #[cfg(feature = "web_stubs")]
-    pub use native_stub::*;
+    #[cfg(feature = "webgl_stubs")]
+    pub use webgl_stubs::*;
+
+    #[cfg(feature = "webgl_to_sdl2")]
+    pub use webgl_to_sdl2::*;
 }
