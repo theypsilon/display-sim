@@ -1,8 +1,8 @@
 use crate::web::WebGl2RenderingContext;
 
+use crate::error::WebResult;
 use crate::pixels_render::PixelsUniform;
 use crate::simulation_render_state::Materials;
-use crate::error::{WebResult};
 use core::app_events::AppEventDispatcher;
 use core::simulation_context::SimulationContext;
 use core::simulation_core_state::{ColorChannels, Resources, TextureInterpolation};
@@ -29,12 +29,12 @@ impl<'a, T: AppEventDispatcher> SimulationDrawer<'a, T> {
             .main_buffer_stack
             .set_resolution(self.res.filters.internal_resolution.width(), self.res.filters.internal_resolution.height());
 
-        self.materials.main_buffer_stack.set_interpolation(
-            match self.res.filters.texture_interpolation {
+        self.materials
+            .main_buffer_stack
+            .set_interpolation(match self.res.filters.texture_interpolation {
                 TextureInterpolation::Linear => WebGl2RenderingContext::LINEAR,
                 TextureInterpolation::Nearest => WebGl2RenderingContext::NEAREST,
-            },
-        );
+            });
 
         self.materials.main_buffer_stack.push()?;
         self.materials.main_buffer_stack.push()?;
@@ -61,25 +61,23 @@ impl<'a, T: AppEventDispatcher> SimulationDrawer<'a, T> {
                             gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
                         }
                     }
-                    self.materials.pixels_render.render(
-                        PixelsUniform {
-                            shadow_kind: self.res.filters.pixel_shadow_shape_kind,
-                            geometry_kind: self.res.filters.pixels_geometry_kind,
-                            view: view.as_slice(),
-                            projection: projection.as_slice(),
-                            ambient_strength: self.res.output.ambient_strength,
-                            contrast_factor: self.res.filters.extra_contrast,
-                            light_color: &self.res.output.light_color[i],
-                            extra_light: &self.res.output.extra_light,
-                            light_pos: position.as_slice(),
-                            screen_curvature: self.res.output.screen_curvature_factor,
-                            pixel_gap: &self.res.output.pixel_gap,
-                            pixel_scale: &self.res.output.pixel_scale_foreground.get(j).expect("Bad pixel_scale_foreground")[i],
-                            pixel_pulse: self.res.output.pixels_pulse,
-                            pixel_offset: &self.res.output.pixel_offset_foreground.get(j).expect("Bad pixel_offset_foreground")[i],
-                            height_modifier_factor: self.res.output.height_modifier_factor,
-                        },
-                    );
+                    self.materials.pixels_render.render(PixelsUniform {
+                        shadow_kind: self.res.filters.pixel_shadow_shape_kind,
+                        geometry_kind: self.res.filters.pixels_geometry_kind,
+                        view: view.as_slice(),
+                        projection: projection.as_slice(),
+                        ambient_strength: self.res.output.ambient_strength,
+                        contrast_factor: self.res.filters.extra_contrast,
+                        light_color: &self.res.output.light_color[i],
+                        extra_light: &self.res.output.extra_light,
+                        light_pos: position.as_slice(),
+                        screen_curvature: self.res.output.screen_curvature_factor,
+                        pixel_gap: &self.res.output.pixel_gap,
+                        pixel_scale: &self.res.output.pixel_scale_foreground.get(j).expect("Bad pixel_scale_foreground")[i],
+                        pixel_pulse: self.res.output.pixels_pulse,
+                        pixel_offset: &self.res.output.pixel_offset_foreground.get(j).expect("Bad pixel_offset_foreground")[i],
+                        height_modifier_factor: self.res.output.height_modifier_factor,
+                    });
                 }
                 if let ColorChannels::Overlapping = self.res.filters.color_channels {
                     self.materials.main_buffer_stack.pop()?;
@@ -116,35 +114,31 @@ impl<'a, T: AppEventDispatcher> SimulationDrawer<'a, T> {
                 self.materials.bg_buffer_stack.bind_current()?;
                 gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
             }
-            self.materials.pixels_render.render(
-                PixelsUniform {
-                    shadow_kind: 0,
-                    geometry_kind: self.res.filters.pixels_geometry_kind,
-                    view: view.as_slice(),
-                    projection: projection.as_slice(),
-                    ambient_strength: self.res.output.ambient_strength,
-                    contrast_factor: self.res.filters.extra_contrast,
-                    light_color: &[
-                        self.res.output.solid_color_weight,
-                        self.res.output.solid_color_weight,
-                        self.res.output.solid_color_weight,
-                    ],
-                    extra_light: &[0.0, 0.0, 0.0],
-                    light_pos: position.as_slice(),
-                    pixel_gap: &self.res.output.pixel_gap,
-                    pixel_scale: &self.res.output.pixel_scale_base,
-                    screen_curvature: self.res.output.screen_curvature_factor,
-                    pixel_pulse: self.res.output.pixels_pulse,
-                    pixel_offset: &[0.0, 0.0, 0.0],
-                    height_modifier_factor: 0.0,
-                },
-            );
+            self.materials.pixels_render.render(PixelsUniform {
+                shadow_kind: 0,
+                geometry_kind: self.res.filters.pixels_geometry_kind,
+                view: view.as_slice(),
+                projection: projection.as_slice(),
+                ambient_strength: self.res.output.ambient_strength,
+                contrast_factor: self.res.filters.extra_contrast,
+                light_color: &[
+                    self.res.output.solid_color_weight,
+                    self.res.output.solid_color_weight,
+                    self.res.output.solid_color_weight,
+                ],
+                extra_light: &[0.0, 0.0, 0.0],
+                light_pos: position.as_slice(),
+                pixel_gap: &self.res.output.pixel_gap,
+                pixel_scale: &self.res.output.pixel_scale_base,
+                screen_curvature: self.res.output.screen_curvature_factor,
+                pixel_pulse: self.res.output.pixels_pulse,
+                pixel_offset: &[0.0, 0.0, 0.0],
+                height_modifier_factor: 0.0,
+            });
             if self.res.output.is_background_diffuse {
                 let source = self.materials.bg_buffer_stack.get_current()?.clone();
                 let target = self.materials.main_buffer_stack.get_current()?;
-                self.materials
-                    .blur_render
-                    .render(&mut self.materials.bg_buffer_stack, &source, &target, 6)?;
+                self.materials.blur_render.render(&mut self.materials.bg_buffer_stack, &source, &target, 6)?;
                 self.materials.bg_buffer_stack.pop()?;
             }
         }

@@ -1,8 +1,8 @@
-use crate::web::{WebGl2RenderingContext, WebGlProgram, WebGlVertexArrayObject, WebGlTexture};
+use crate::web::{WebGl2RenderingContext, WebGlProgram, WebGlTexture, WebGlVertexArrayObject};
 
+use crate::error::WebResult;
 use crate::render_types::{TextureBuffer, TextureBufferStack};
 use crate::shaders::{make_quad_vao, make_shader, TEXTURE_VERTEX_SHADER};
-use crate::error::WebResult;
 
 pub struct BlurRender {
     shader: WebGlProgram,
@@ -17,13 +17,7 @@ impl BlurRender {
         Ok(BlurRender { shader, vao, gl: gl.clone() })
     }
 
-    pub fn render(
-        &self,
-        stack: &mut TextureBufferStack,
-        source: &TextureBuffer,
-        target: &TextureBuffer,
-        passes: usize,
-    ) -> WebResult<()> {
+    pub fn render(&self, stack: &mut TextureBufferStack, source: &TextureBuffer, target: &TextureBuffer, passes: usize) -> WebResult<()> {
         if passes < 1 {
             panic!("Should not be called when passes < 1!");
         }
@@ -37,9 +31,14 @@ impl BlurRender {
             self.gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, tb.framebuffer());
             self.gl.viewport(0, 0, tb.width, tb.height);
             self.gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, texture);
-            self.gl.uniform1i(self.gl.get_uniform_location(&self.shader, "horizontal").as_ref(), if horizontal { 1 } else { 0 });
-            self.gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
-            self.gl.draw_elements_with_i32(WebGl2RenderingContext::TRIANGLES, 6, WebGl2RenderingContext::UNSIGNED_INT, 0);
+            self.gl.uniform1i(
+                self.gl.get_uniform_location(&self.shader, "horizontal").as_ref(),
+                if horizontal { 1 } else { 0 },
+            );
+            self.gl
+                .clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
+            self.gl
+                .draw_elements_with_i32(WebGl2RenderingContext::TRIANGLES, 6, WebGl2RenderingContext::UNSIGNED_INT, 0);
         };
 
         self.gl.use_program(Some(&self.shader));

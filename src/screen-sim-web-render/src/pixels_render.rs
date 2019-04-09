@@ -1,10 +1,8 @@
-use crate::js::Float32Array;
-use crate::bindgen::JsValue;
 use crate::web::{WebGl2RenderingContext, WebGlBuffer, WebGlProgram, WebGlTexture, WebGlVertexArrayObject};
 
+use crate::error::WebResult;
 use crate::shaders::make_shader;
 use crate::simulation_render_state::VideoInputMaterials;
-use crate::error::WebResult;
 use core::general_types::f32_to_u8;
 use core::pixels_shadow::{get_shadows, TEXTURE_SIZE};
 use core::simulation_core_state::{PixelsGeometryKind, VideoInputResources};
@@ -193,11 +191,8 @@ impl PixelsRender {
             self.offset_inverse_max_length = 1.0 / ((self.width as f32 * 0.5).powi(2) + (self.height as f32 * 0.5).powi(2)).sqrt();
             self.gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&self.offsets_vbo));
             let offsets = calculate_offsets(self.width, self.height);
-            self.gl.buffer_data_with_opt_array_buffer(
-                WebGl2RenderingContext::ARRAY_BUFFER,
-                Some(&offsets.buffer()),
-                WebGl2RenderingContext::STATIC_DRAW,
-            );
+            self.gl
+                .buffer_data_with_u8_array(WebGl2RenderingContext::ARRAY_BUFFER, f32_to_u8(&offsets), WebGl2RenderingContext::STATIC_DRAW);
         }
         self.gl.bind_vertex_array(self.vao.as_ref());
         self.gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&self.colors_vbo));
@@ -214,23 +209,40 @@ impl PixelsRender {
         if uniforms.shadow_kind >= self.shadows.len() {
             panic!("Bug on shadow_kind!")
         }
-        self.gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, self.shadows[uniforms.shadow_kind].as_ref());
-        self.gl.uniform_matrix4fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "view").as_ref(), false, uniforms.view);
-        self.gl.uniform_matrix4fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "projection").as_ref(), false, uniforms.projection);
-        self.gl.uniform3fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "lightPos").as_ref(), uniforms.light_pos);
-        self.gl.uniform3fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "lightColor").as_ref(), uniforms.light_color);
-        self.gl.uniform3fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "extraLight").as_ref(), uniforms.extra_light);
-        self.gl.uniform1f(self.gl.get_uniform_location(&self.shader, "ambientStrength").as_ref(), uniforms.ambient_strength);
-        self.gl.uniform1f(self.gl.get_uniform_location(&self.shader, "contrastFactor").as_ref(), uniforms.contrast_factor);
+        self.gl
+            .bind_texture(WebGl2RenderingContext::TEXTURE_2D, self.shadows[uniforms.shadow_kind].as_ref());
+        self.gl
+            .uniform_matrix4fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "view").as_ref(), false, uniforms.view);
+        self.gl
+            .uniform_matrix4fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "projection").as_ref(), false, uniforms.projection);
+        self.gl
+            .uniform3fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "lightPos").as_ref(), uniforms.light_pos);
+        self.gl
+            .uniform3fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "lightColor").as_ref(), uniforms.light_color);
+        self.gl
+            .uniform3fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "extraLight").as_ref(), uniforms.extra_light);
+        self.gl.uniform1f(
+            self.gl.get_uniform_location(&self.shader, "ambientStrength").as_ref(),
+            uniforms.ambient_strength,
+        );
+        self.gl
+            .uniform1f(self.gl.get_uniform_location(&self.shader, "contrastFactor").as_ref(), uniforms.contrast_factor);
         self.gl.uniform1f(
             self.gl.get_uniform_location(&self.shader, "offset_inverse_max_length").as_ref(),
             self.offset_inverse_max_length,
         );
-        self.gl.uniform1f(self.gl.get_uniform_location(&self.shader, "screen_curvature").as_ref(), uniforms.screen_curvature);
-        self.gl.uniform2fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "pixel_gap").as_ref(), uniforms.pixel_gap);
-        self.gl.uniform3fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "pixel_scale").as_ref(), uniforms.pixel_scale);
-        self.gl.uniform3fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "pixel_offset").as_ref(), uniforms.pixel_offset);
-        self.gl.uniform1f(self.gl.get_uniform_location(&self.shader, "pixel_pulse").as_ref(), uniforms.pixel_pulse);
+        self.gl.uniform1f(
+            self.gl.get_uniform_location(&self.shader, "screen_curvature").as_ref(),
+            uniforms.screen_curvature,
+        );
+        self.gl
+            .uniform2fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "pixel_gap").as_ref(), uniforms.pixel_gap);
+        self.gl
+            .uniform3fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "pixel_scale").as_ref(), uniforms.pixel_scale);
+        self.gl
+            .uniform3fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "pixel_offset").as_ref(), uniforms.pixel_offset);
+        self.gl
+            .uniform1f(self.gl.get_uniform_location(&self.shader, "pixel_pulse").as_ref(), uniforms.pixel_pulse);
         self.gl.uniform1f(
             self.gl.get_uniform_location(&self.shader, "heightModifierFactor").as_ref(),
             uniforms.height_modifier_factor,
@@ -249,9 +261,9 @@ impl PixelsRender {
     }
 }
 
-fn calculate_offsets(width: u32, height: u32) -> Float32Array {
+fn calculate_offsets(width: u32, height: u32) -> Vec<f32> {
     let pixels_total = width * height;
-    let offsets = Float32Array::new(&JsValue::from(pixels_total as u32 * 2));
+    let mut offsets: Vec<f32> = vec![0.0; pixels_total as usize * 2];
     {
         let half_width: f32 = width as f32 / 2.0;
         let half_height: f32 = height as f32 / 2.0;
@@ -259,11 +271,11 @@ fn calculate_offsets(width: u32, height: u32) -> Float32Array {
         let center_dy = if height % 2 == 0 { 0.5 } else { 0.0 };
         for i in 0..width {
             for j in 0..height {
-                let index = (pixels_total - width - j * width + i) as u32;
+                let index = (pixels_total - width - j * width + i) as usize;
                 let x = i as f32 - half_width + center_dx;
                 let y = j as f32 - half_height + center_dy;
-                offsets.fill(x, index * 2 + 0, index * 2 + 1);
-                offsets.fill(y, index * 2 + 1, index * 2 + 2);
+                offsets[index * 2 + 0] = x;
+                offsets[index * 2 + 1] = y;
             }
         }
     }

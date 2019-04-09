@@ -98,7 +98,6 @@ pub fn init_resources(res: &mut Resources, video_input: VideoInputResources, now
     res.video = video_input;
 }
 
-
 fn calculate_far_away_position(video_input: &VideoInputResources) -> f32 {
     let width = video_input.background_size.width as f32;
     let height = video_input.background_size.height as f32;

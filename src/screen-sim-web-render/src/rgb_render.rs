@@ -1,7 +1,7 @@
 use crate::web::{WebGl2RenderingContext, WebGlProgram, WebGlVertexArrayObject};
 
-use crate::shaders::{make_quad_vao, make_shader, TEXTURE_VERTEX_SHADER};
 use crate::error::WebResult;
+use crate::shaders::{make_quad_vao, make_shader, TEXTURE_VERTEX_SHADER};
 
 pub struct RgbRender {
     vao: Option<WebGlVertexArrayObject>,
@@ -24,7 +24,8 @@ impl RgbRender {
         self.gl.uniform1i(self.gl.get_uniform_location(&self.shader, "greenImage").as_ref(), 1);
         self.gl.uniform1i(self.gl.get_uniform_location(&self.shader, "blueImage").as_ref(), 2);
 
-        self.gl.draw_elements_with_i32(WebGl2RenderingContext::TRIANGLES, 6, WebGl2RenderingContext::UNSIGNED_INT, 0);
+        self.gl
+            .draw_elements_with_i32(WebGl2RenderingContext::TRIANGLES, 6, WebGl2RenderingContext::UNSIGNED_INT, 0);
     }
 }
 

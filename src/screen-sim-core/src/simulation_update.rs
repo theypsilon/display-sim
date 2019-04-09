@@ -18,7 +18,6 @@ pub struct SimulationUpdater<'a, T: AppEventDispatcher> {
 }
 
 impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
-
     pub fn update(&mut self) -> bool {
         if self.res.resetted {
             self.change_frontend_input_values();
@@ -297,7 +296,6 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
     }
 
     fn update_filter_pixel_shape(&mut self, dt: f32) {
-
         if self.input.next_pixel_geometry_kind.any_just_pressed() {
             if self.input.next_pixel_geometry_kind.increase.is_just_pressed() {
                 self.res.filters.pixels_geometry_kind.next_enum_variant();
@@ -649,7 +647,6 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
 }
 
 fn update_outputs(res: &mut Resources, dt: f32) {
-
     update_output_filter_source_colors(res);
     update_output_filter_curvature(res, dt);
     update_output_filter_layering_kind(res);

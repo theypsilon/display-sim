@@ -9,8 +9,7 @@ pub mod boolean_button;
 pub mod camera;
 pub mod general_types;
 pub mod internal_resolution;
+pub mod pixels_shadow;
 pub mod simulation_context;
 pub mod simulation_core_state;
 pub mod simulation_update;
-pub mod pixels_shadow;
-

@@ -1,11 +1,10 @@
 use web_sys::WebGl2RenderingContext;
 
 use crate::console;
+use crate::web_utils::now;
 use core::app_events::AppEventDispatcher;
 use core::simulation_context::SimulationContext;
-use core::simulation_core_state::{
-    Input, Resources
-};
+use core::simulation_core_state::{Input, Resources};
 use core::simulation_update::SimulationUpdater;
 use derive_new::new;
 use render::background_render::BackgroundRender;
@@ -17,7 +16,6 @@ use render::rgb_render::RgbRender;
 use render::simulation_draw::SimulationDrawer;
 use render::simulation_render_state::{Materials, VideoInputMaterials};
 use web_error::WebResult;
-use crate::web_utils::now;
 
 #[derive(new)]
 pub struct SimulationTicker<'a, T: AppEventDispatcher> {

@@ -1,6 +1,6 @@
 use crate::web::{WebGl2RenderingContext, WebGlProgram, WebGlShader, WebGlVertexArrayObject};
 
-use crate::error::{WebResult};
+use crate::error::WebResult;
 use core::general_types::{f32_to_u8, i32_to_u8};
 use std::mem::size_of;
 

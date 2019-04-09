@@ -10,14 +10,6 @@ mod shaders;
 pub mod simulation_draw;
 pub mod simulation_render_state;
 
-mod js {
-    #[cfg(not(feature = "web_stubs"))]
-    pub use js_sys::*;
-
-    #[cfg(feature = "web_stubs")]
-    pub use native_stub::*;
-}
-
 mod web {
     #[cfg(not(feature = "web_stubs"))]
     pub use web_sys::*;
@@ -29,14 +21,6 @@ mod web {
 mod error {
     #[cfg(not(feature = "web_stubs"))]
     pub use web_error::*;
-
-    #[cfg(feature = "web_stubs")]
-    pub use native_stub::*;
-}
-
-mod bindgen {
-    #[cfg(not(feature = "web_stubs"))]
-    pub use wasm_bindgen::*;
 
     #[cfg(feature = "web_stubs")]
     pub use native_stub::*;

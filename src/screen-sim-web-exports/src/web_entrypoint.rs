@@ -7,13 +7,13 @@ use crate::action_bindings::on_button_action;
 use crate::console;
 use crate::simulation_entrypoint::{load_materials, SimulationTicker};
 use crate::web_events::WebEventDispatcher;
+use crate::web_utils::{now, window};
 use core::app_events::AppEventDispatcher;
 use core::internal_resolution::InternalResolution;
 use core::simulation_context::SimulationContext;
 use core::simulation_core_state::{init_resources, Input, InputEventValue, Resources, VideoInputResources};
 use render::simulation_render_state::{Materials, VideoInputMaterials};
 use web_error::{WebError, WebResult};
-use crate::web_utils::{now, window};
 
 pub type OwnedClosure = Option<Closure<FnMut(JsValue)>>;
 

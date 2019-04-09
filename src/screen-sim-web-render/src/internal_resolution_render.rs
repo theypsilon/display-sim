@@ -1,7 +1,7 @@
-use crate::web::{WebGl2RenderingContext, WebGlProgram, WebGlVertexArrayObject, WebGlTexture};
+use crate::web::{WebGl2RenderingContext, WebGlProgram, WebGlTexture, WebGlVertexArrayObject};
 
-use crate::shaders::{make_quad_vao, make_shader, TEXTURE_FRAGMENT_SHADER, TEXTURE_VERTEX_SHADER};
 use crate::error::WebResult;
+use crate::shaders::{make_quad_vao, make_shader, TEXTURE_FRAGMENT_SHADER, TEXTURE_VERTEX_SHADER};
 
 pub struct InternalResolutionRender {
     vao: Option<WebGlVertexArrayObject>,
@@ -20,6 +20,7 @@ impl InternalResolutionRender {
         self.gl.use_program(Some(&self.shader));
         self.gl.bind_vertex_array(self.vao.as_ref());
         self.gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, texture);
-        self.gl.draw_elements_with_i32(WebGl2RenderingContext::TRIANGLES, 6, WebGl2RenderingContext::UNSIGNED_INT, 0);
+        self.gl
+            .draw_elements_with_i32(WebGl2RenderingContext::TRIANGLES, 6, WebGl2RenderingContext::UNSIGNED_INT, 0);
     }
 }
