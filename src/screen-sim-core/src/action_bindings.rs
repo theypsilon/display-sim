@@ -1,7 +1,6 @@
-use crate::console;
-use core::simulation_core_state::{DefaultReset, Input};
+use crate::simulation_core_state::{DefaultReset, Input};
 
-pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
+pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) -> bool {
     match button_action {
         "," => {
             if !input.input_focused {
@@ -30,10 +29,10 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
         "s" => input.walk_backward = pressed,
         "q" => input.walk_up = pressed,
         "e" => input.walk_down = pressed,
-        "arrowleft" | "←" | "◀" => input.turn_left = pressed,
-        "arrowright" | "→" | "▶" => input.turn_right = pressed,
-        "arrowup" | "↑" | "▲" => input.turn_up = pressed,
-        "arrowdown" | "↓" | "▼" => input.turn_down = pressed,
+        "arrowleft" | "left" | "←" | "◀" => input.turn_left = pressed,
+        "arrowright" | "right" | "→" | "▶" => input.turn_right = pressed,
+        "arrowup" | "up" | "↑" | "▲" => input.turn_up = pressed,
+        "arrowdown" | "down" | "↓" | "▼" => input.turn_down = pressed,
         "f" => {
             if input.shift {
                 input.filter_speed.increase.input = pressed
@@ -97,7 +96,7 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
         "feature-texture-interpolation-dec" => input.next_texture_interpolation.decrease.input = pressed,
         "g" | "lines-per-pixel-inc" => input.lpp.increase.input = pressed,
         "h" | "lines-per-pixel-dec" => input.lpp.decrease.input = pressed,
-        "shift" => {
+        "shift" | "left shift" | "right shift" => {
             input.shift = pressed;
             input.pixel_width.reset();
             input.pixel_gap.reset();
@@ -108,6 +107,7 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) {
         "f4" | "feature-capture-framebuffer" => input.screenshot.input = pressed,
         "reset-camera" => input.reset_position = pressed,
         "reset-filters" => input.reset_filters = pressed,
-        _ => console!(log. "Ignored key: ", button_action),
+        _ => return false,
     }
+    true
 }

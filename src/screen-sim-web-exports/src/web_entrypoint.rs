@@ -3,7 +3,7 @@ use std::rc::Rc;
 use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
 use web_sys::{CustomEvent, EventTarget, KeyboardEvent, MouseEvent, WebGl2RenderingContext, WheelEvent, Window};
 
-use crate::action_bindings::on_button_action;
+use core::action_bindings::on_button_action;
 use crate::console;
 use crate::simulation_entrypoint::{load_materials, SimulationTicker};
 use crate::web_events::WebEventDispatcher;
@@ -106,7 +106,10 @@ fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WebResult<Vec<OwnedClosu
         Closure::wrap(Box::new(move |event: JsValue| {
             if let Ok(e) = event.dyn_into::<KeyboardEvent>() {
                 let mut input = state_owner.input.borrow_mut();
-                on_button_action(&mut input, e.key().to_lowercase().as_ref(), true);
+                let used = on_button_action(&mut input, e.key().to_lowercase().as_ref(), true);
+                if !used {
+                    console!(log. "Ignored key: ", e.key());
+                }
             }
         }))
     };
