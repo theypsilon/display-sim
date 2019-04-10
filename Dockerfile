@@ -46,8 +46,8 @@ ENV RUST_BACKTRACE=1
 ADD src/ /app/src/
 ADD Cargo.* /app/
 ADD build.sh /app/
-RUN cargo clippy --all \
-    && cargo test --release --all \
+RUN cargo clippy \
+    && cargo test --release -p screen-sim-core \
     && ./build.sh --release-wasm \
     && cargo clean \
     && cp -r /app/www/src/wasm /wasm \
