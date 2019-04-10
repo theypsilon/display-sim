@@ -6,9 +6,7 @@ use crate::simulation_render_state::Materials;
 use core::app_events::AppEventDispatcher;
 use core::simulation_context::SimulationContext;
 use core::simulation_core_state::{ColorChannels, Resources, TextureInterpolation};
-use derive_new::new;
 
-#[derive(new)]
 pub struct SimulationDrawer<'a, T: AppEventDispatcher> {
     ctx: &'a mut SimulationContext<T>,
     materials: &'a mut Materials,
@@ -16,6 +14,13 @@ pub struct SimulationDrawer<'a, T: AppEventDispatcher> {
 }
 
 impl<'a, T: AppEventDispatcher> SimulationDrawer<'a, T> {
+    pub fn new(ctx: &'a mut SimulationContext<T>, materials: &'a mut Materials, res: &'a Resources) -> Self {
+        materials.gl.enable(WebGl2RenderingContext::DEPTH_TEST);
+        SimulationDrawer {
+            ctx, materials, res
+        }
+    }
+
     pub fn draw(&mut self) -> WebResult<()> {
         let gl = &self.materials.gl;
 
@@ -40,7 +45,6 @@ impl<'a, T: AppEventDispatcher> SimulationDrawer<'a, T> {
         self.materials.main_buffer_stack.push()?;
         self.materials.main_buffer_stack.bind_current()?;
 
-        gl.enable(WebGl2RenderingContext::DEPTH_TEST);
         gl.clear_color(0.0, 0.0, 0.0, 0.0);
         gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
 

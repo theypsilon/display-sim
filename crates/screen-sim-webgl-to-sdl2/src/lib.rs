@@ -223,7 +223,8 @@ impl WebGl2RenderingContext {
         let _scoped = self.guard_call("bind_framebuffer");
         let fb = if let Some(fb) = fb { fb.0 } else { 0 };
         unsafe {
-            gl::BindFramebuffer(bit, fb);
+            println!("BindFramebufer {}", fb);
+            gl::BindFramebuffer(gl::DRAW_FRAMEBUFFER, fb);
         }
     }
     pub fn bind_renderbuffer(&self, bit: u32, rb: Option<&WebGlRenderbuffer>) {
@@ -237,8 +238,9 @@ impl WebGl2RenderingContext {
         let _scoped = self.guard_call("create_framebuffer");
         let mut value: u32 = 324;
         unsafe {
-            gl::CreateFramebuffers(1, &mut value);
+            gl::GenFramebuffers(1, &mut value);
         }
+        println!("CreateFramebuffer {}", value);
         Some(WebGlFramebuffer(value))
     }
     pub fn delete_framebuffer(&self, fb: Option<&WebGlFramebuffer>) {

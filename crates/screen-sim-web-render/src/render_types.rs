@@ -12,10 +12,11 @@ pub struct TextureBuffer {
 impl TextureBuffer {
     pub fn new(gl: &WebGl2RenderingContext, width: i32, height: i32, interpolation: u32) -> WebResult<TextureBuffer> {
         let framebuffer = gl.create_framebuffer();
-        let texture = gl.create_texture();
-
         gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, framebuffer.as_ref());
+
+        let texture = gl.create_texture();
         gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, texture.as_ref());
+        
         gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
             WebGl2RenderingContext::TEXTURE_2D,
             0,
