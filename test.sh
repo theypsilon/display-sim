@@ -10,10 +10,6 @@ fi
 pushd www
 npm test
 popd
-cargo clippy --all
-cargo test --all
+cargo clippy
+cargo test -p screen-sim-core -p screen-sim-web-error -p screen-sim-web-render -p screen-sim-webgl-stubs -p screen-sim-webgl-to-sdl2 -p screen-sim-benchmarks
 
-pushd test
-cargo clippy --all
-cargo test --all
-popd

@@ -1,5 +1,0 @@
-[workspace]
-members = [
-    "screen-sim-benchmarks",
-    "screen-sim-integration-test",
-]

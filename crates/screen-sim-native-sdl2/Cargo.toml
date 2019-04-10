@@ -1,0 +1,26 @@
+[package]
+name = "screen-sim-native-sdl2"
+version = "0.1.0"
+authors = ["José manuel Barroso Galindo <theypsilon@gmail.com>"]
+edition = "2018"
+
+[lib]
+test = false
+
+[dependencies]
+image = "0.21.0"
+gl = "0.10.0"
+glm = { version = "0.1", package = "nalgebra-glm" }
+webgl-to-sdl2 = { path = "../screen-sim-webgl-to-sdl2", package = "screen-sim-webgl-to-sdl2" }
+core = { path = "../screen-sim-core", package = "screen-sim-core" }
+
+[dependencies.render]
+path = "../screen-sim-web-render"
+package = "screen-sim-web-render"
+features = [
+  "webgl_to_sdl2_hooks",
+]
+
+[dependencies.sdl2]
+version = "0.31.0"
+features = ["bundled", "static-link"]

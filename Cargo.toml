@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["José manuel Barroso Galindo <theypsilon@gmail.com>"]
 edition = "2018"
 
+#[cfg(target_arch = "wasm32")]
 [lib]
 crate-type = ["cdylib"]
 path = "src/lib.rs"
@@ -12,14 +13,21 @@ path = "src/lib.rs"
 debug = false
 lto = true
 
-[dependencies]
-screen-sim-web-exports = { path = "src/screen-sim-web-exports" }
+[target.wasm32-unknown-unknown.dependencies]
+screen-sim-web-exports = { path = "crates/screen-sim-web-exports" }
+
+[target.'cfg(target_arch = "x86_64")'.dependencies]
+screen-sim-native-sdl2 = { path = "crates/screen-sim-native-sdl2" }
 
 [workspace]
 members = [
-    "src/screen-sim-core",
-    "src/screen-sim-web-exports",
-    "src/screen-sim-web-error",
-    "src/screen-sim-web-render",
-    "src/screen-sim-webgl-stubs",
+    "crates/screen-sim-core",
+    "crates/screen-sim-web-error",
+    "crates/screen-sim-web-render",
+    "crates/screen-sim-webgl-stubs",
+    "crates/screen-sim-webgl-to-sdl2",
+    "crates/screen-sim-web-exports",
+    "crates/screen-sim-benchmarks",
+    "crates/screen-sim-integration-test",
+    "crates/screen-sim-native-sdl2",
 ]
