@@ -224,7 +224,7 @@ impl WebGl2RenderingContext {
         let fb = if let Some(fb) = fb { fb.0 } else { 0 };
         unsafe {
             println!("BindFramebufer {}", fb);
-            gl::BindFramebuffer(gl::DRAW_FRAMEBUFFER, fb);
+            gl::BindFramebuffer(bit, fb);
         }
     }
     pub fn bind_renderbuffer(&self, bit: u32, rb: Option<&WebGlRenderbuffer>) {
