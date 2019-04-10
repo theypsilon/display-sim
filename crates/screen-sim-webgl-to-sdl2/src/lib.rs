@@ -7,7 +7,7 @@ macro_rules! some {
         if let Some(x) = $x {
             x
         } else {
-            panic!()
+            panic!("some wasn't the case!");
         }
     }};
 }
