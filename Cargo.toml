@@ -4,10 +4,13 @@ version = "0.1.0"
 authors = ["José manuel Barroso Galindo <theypsilon@gmail.com>"]
 edition = "2018"
 
-#[cfg(target_arch = "wasm32")]
 [lib]
 crate-type = ["cdylib"]
 path = "src/lib.rs"
+
+[[bin]]
+name = "screen-sim-native"
+path = "src/main.rs"
 
 [profile.release]
 debug = false
@@ -31,6 +34,5 @@ members = [
     "crates/screen-sim-opengl-render",
     "crates/screen-sim-native-sdl2",
     "crates/screen-sim-build-tools",
-    "crates/screen-sim-integration-test",
-    "crates/screen-sim-benchmarks",
+    "crates/screen-sim-testing",
 ]

@@ -1,5 +1,5 @@
 [package]
-name = "screen-sim-integration-test"
+name = "screen-sim-testing"
 version = "0.1.0"
 authors = ["José manuel Barroso Galindo <theypsilon@gmail.com>"]
 edition = "2018"
@@ -8,3 +8,10 @@ edition = "2018"
 glm = { version = "0.1", package = "nalgebra-glm" }
 render = { path = "../screen-sim-stub-render", package = "screen-sim-stub-render" }
 core = { path = "../screen-sim-core", package = "screen-sim-core" }
+
+[dev-dependencies]
+criterion = "0.2.11"
+
+[[bench]]
+name = "whole_sim_bench"
+harness = false
