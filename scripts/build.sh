@@ -45,7 +45,7 @@ build() {
         npm_deps=true
     fi
 
-    echo "wasm-pack buld ${build_type}:"
+    echo "wasm-pack build ${build_type}:"
     wasm-pack build ${build_type} --out-dir www/src/wasm
 
     if ${optimize_wasm} ; then

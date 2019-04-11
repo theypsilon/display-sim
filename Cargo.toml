@@ -21,13 +21,14 @@ screen-sim-native-sdl2 = { path = "crates/screen-sim-native-sdl2" }
 
 [workspace]
 members = [
+    "crates/enum-len-derive",
+    "crates/enum-len-trait",
     "crates/screen-sim-core",
     "crates/screen-sim-webgl-render",
     "crates/screen-sim-web-error",
     "crates/screen-sim-web-exports",
     "crates/screen-sim-stub-render",
     "crates/screen-sim-opengl-render",
-    "crates/screen-sim-web-exports",
     "crates/screen-sim-native-sdl2",
     "crates/screen-sim-build-tools",
     "crates/screen-sim-integration-test",
