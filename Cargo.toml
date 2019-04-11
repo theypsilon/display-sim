@@ -22,7 +22,7 @@ screen-sim-native-sdl2 = { path = "crates/screen-sim-native-sdl2" }
 [workspace]
 members = [
     "crates/screen-sim-core",
-    "crates/screen-sim-web-render",
+    "crates/screen-sim-webgl-render",
     "crates/screen-sim-web-error",
     "crates/screen-sim-web-exports",
     "crates/screen-sim-stub-render",

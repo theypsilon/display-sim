@@ -1,5 +1,5 @@
 [package]
-name = "screen-sim-web-render"
+name = "screen-sim-webgl-render"
 version = "0.1.0"
 authors = ["José manuel Barroso Galindo <theypsilon@gmail.com>"]
 edition = "2018"

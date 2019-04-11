@@ -11,4 +11,4 @@ mod error {
 }
 
 
-include!(concat!(env!("OUT_DIR"), "/screen-sim-web-render-modules.rs"));
+include!(concat!(env!("OUT_DIR"), "/screen-sim-webgl-render-modules.rs"));

@@ -3,12 +3,12 @@ use std::{fs, env};
 use std::io::{Read, Write};
 use glob::glob;
 
-pub fn copy_screen_sim_web_render_modules_to_out_folder(output_filename: &str) {
+pub fn copy_screen_sim_webgl_render_modules_to_out_folder(output_filename: &str) {
     let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
     let out_dir = env::var("OUT_DIR").unwrap();
 
     let mut file = fs::File::create(&Path::new(&out_dir).join(output_filename)).unwrap();
-    let path = manifest_dir + "/../screen-sim-web-render/src/*.rs";
+    let path = manifest_dir + "/../screen-sim-webgl-render/src/*.rs";
 
     let mut sources: Vec<String> = vec![];
     for node in glob(&path).unwrap() {

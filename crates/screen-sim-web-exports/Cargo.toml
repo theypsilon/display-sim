@@ -18,8 +18,8 @@ web-error = { path = "../screen-sim-web-error", package = "screen-sim-web-error"
 derive-new = "0.5.6"
 
 [dependencies.render]
-path = "../screen-sim-web-render"
-package = "screen-sim-web-render"
+path = "../screen-sim-webgl-render"
+package = "screen-sim-webgl-render"
 features = [
   'web_api'
 ]
