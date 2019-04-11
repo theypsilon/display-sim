@@ -1,12 +1,12 @@
-use std::path::Path;
-use std::{fs, env};
-use std::io::{Read, Write};
 use glob::glob;
+use std::io::{Read, Write};
+use std::path::Path;
+use std::{env, fs};
 
 pub struct CopyWebglRenderParams {
     pub output_file: &'static str,
     pub web_sys_replacement: &'static str,
-    pub web_error_replacement: &'static str
+    pub web_error_replacement: &'static str,
 }
 
 pub fn copy_webgl_render_crate_to_file(params: &CopyWebglRenderParams) {
@@ -37,25 +37,16 @@ pub fn copy_webgl_render_crate_to_file(params: &CopyWebglRenderParams) {
         panic!("lib.rs has not been found.");
     }
 
-    lib_rs_source = lib_rs_source.replace(
-        "web_sys", 
-        params.web_sys_replacement
-    );
+    lib_rs_source = lib_rs_source.replace("web_sys", params.web_sys_replacement);
 
-    lib_rs_source = lib_rs_source.replace(
-        "web_error", 
-        params.web_error_replacement
-    );
+    lib_rs_source = lib_rs_source.replace("web_error", params.web_error_replacement);
 
     // @TODO Check if compiler error has been fixed. This should not be needed, but
     // if I don't put it, I got an error. So I need to put that macro manually.
     lib_rs_source = lib_rs_source.replace("#![allow(clippy::identity_op)]", "");
 
     for source in sources.iter() {
-        lib_rs_source = lib_rs_source.replace(
-            &format!("mod {};", &source.0),
-            &format!("mod {} {{\n{}\n}}\n", &source.0, &source.1)
-        );
+        lib_rs_source = lib_rs_source.replace(&format!("mod {};", &source.0), &format!("mod {} {{\n{}\n}}\n", &source.0, &source.1));
     }
 
     file.write_fmt(format_args!("{}", lib_rs_source)).unwrap();

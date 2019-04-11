@@ -11,7 +11,7 @@ use render::render_types::TextureBufferStack;
 use render::rgb_render::RgbRender;
 use render::simulation_draw::SimulationDrawer;
 use render::simulation_render_state::{Materials, VideoInputMaterials};
-use render::stubs::{WebResult, WebGl2RenderingContext};
+use render::stubs::{WebGl2RenderingContext, WebResult};
 
 #[test]
 fn test_simulation_initializes_fine() {

@@ -16,9 +16,7 @@ pub struct SimulationDrawer<'a, T: AppEventDispatcher> {
 impl<'a, T: AppEventDispatcher> SimulationDrawer<'a, T> {
     pub fn new(ctx: &'a mut SimulationContext<T>, materials: &'a mut Materials, res: &'a Resources) -> Self {
         materials.gl.enable(WebGl2RenderingContext::DEPTH_TEST);
-        SimulationDrawer {
-            ctx, materials, res
-        }
+        SimulationDrawer { ctx, materials, res }
     }
 
     pub fn draw(&mut self) -> WebResult<()> {

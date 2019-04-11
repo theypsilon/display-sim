@@ -11,3 +11,4 @@ core = { path = "../screen-sim-core", package = "screen-sim-core" }
 
 [build-dependencies]
 build-tools = { path = "../screen-sim-build-tools", package = "screen-sim-build-tools" }
+webgl-render = { path = "../screen-sim-webgl-render", package = "screen-sim-webgl-render" }
