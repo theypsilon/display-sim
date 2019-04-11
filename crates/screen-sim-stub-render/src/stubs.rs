@@ -162,5 +162,4 @@ impl ProgramParameter {
     }
 }
 
-pub struct ArrayBuffer {}
 pub struct WebGlBuffer {}

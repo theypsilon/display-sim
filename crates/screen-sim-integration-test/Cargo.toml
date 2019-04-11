@@ -4,14 +4,7 @@ version = "0.1.0"
 authors = ["José manuel Barroso Galindo <theypsilon@gmail.com>"]
 edition = "2018"
 
-[dev-dependencies]
+[dependencies]
 glm = { version = "0.1", package = "nalgebra-glm" }
-webgl-stubs = { path = "../screen-sim-webgl-stubs", package = "screen-sim-webgl-stubs" }
+render = { path = "../screen-sim-stub-render", package = "screen-sim-stub-render" }
 core = { path = "../screen-sim-core", package = "screen-sim-core" }
-
-[dev-dependencies.render]
-path = "../screen-sim-web-render"
-package = "screen-sim-web-render"
-features = [
-  'webgl_stubs'
-]

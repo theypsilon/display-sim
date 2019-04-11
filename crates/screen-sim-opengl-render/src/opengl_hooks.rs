@@ -2,16 +2,6 @@ use std::cell::RefCell;
 use std::ffi::CString;
 use std::rc::Rc;
 
-macro_rules! some {
-    ( $x:expr ) => {{
-        if let Some(x) = $x {
-            x
-        } else {
-            panic!("some wasn't the case!");
-        }
-    }};
-}
-
 #[derive(Default, Clone)]
 struct GlData {
     last_shader_type: RefCell<u32>,
@@ -139,7 +129,7 @@ impl WebGl2RenderingContext {
     pub fn use_program(&self, program: Option<&WebGlProgram>) {
         let _scoped = self.guard_call("use_program");
         unsafe {
-            gl::UseProgram(some!(program).0);
+            gl::UseProgram(program.unwrap().0);
         }
     }
     pub fn link_program(&self, program: &WebGlProgram) {
@@ -246,7 +236,7 @@ impl WebGl2RenderingContext {
     pub fn delete_framebuffer(&self, fb: Option<&WebGlFramebuffer>) {
         let _scoped = self.guard_call("delete_framebuffer");
         unsafe {
-            gl::DeleteFramebuffers(1, &some!(fb).0);
+            gl::DeleteFramebuffers(1, &fb.unwrap().0);
         }
     }
     pub fn active_texture(&self, tex_number: u32) {
@@ -280,7 +270,7 @@ impl WebGl2RenderingContext {
     pub fn delete_texture(&self, tex: Option<&WebGlTexture>) {
         let _scoped = self.guard_call("delete_texture");
         unsafe {
-            gl::DeleteTextures(1, &some!(tex).0);
+            gl::DeleteTextures(1, &tex.unwrap().0);
         }
     }
     #[allow(clippy::too_many_arguments)]
@@ -297,7 +287,7 @@ impl WebGl2RenderingContext {
     pub fn framebuffer_renderbuffer(&self, target: u32, attachment: u32, renderbuffertarget: u32, rb: Option<&WebGlRenderbuffer>) {
         let _scoped = self.guard_call("framebuffer_renderbuffer");
         unsafe {
-            gl::FramebufferRenderbuffer(target, attachment, renderbuffertarget, some!(rb).0);
+            gl::FramebufferRenderbuffer(target, attachment, renderbuffertarget, rb.unwrap().0);
         }
     }
     pub fn renderbuffer_storage(&self, target: u32, internalformat: u32, width: i32, height: i32) {
@@ -367,7 +357,7 @@ impl WebGl2RenderingContext {
     pub fn framebuffer_texture_2d(&self, target: u32, attachment: u32, textarget: u32, tex: Option<&WebGlTexture>, level: i32) {
         let _scoped = self.guard_call("framebuffer_texture_2d");
         unsafe {
-            gl::FramebufferTexture2D(target, attachment, textarget, some!(tex).0, level);
+            gl::FramebufferTexture2D(target, attachment, textarget, tex.unwrap().0, level);
         }
     }
     pub fn tex_parameteri(&self, target: u32, pname: u32, param: i32) {

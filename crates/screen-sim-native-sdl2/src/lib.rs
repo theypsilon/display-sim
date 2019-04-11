@@ -1,4 +1,4 @@
-use webgl_to_sdl2::{WebGl2RenderingContext, WebResult};
+use render::opengl_hooks::{WebGl2RenderingContext, WebResult};
 
 use core::action_bindings::on_button_action;
 use core::app_events::AppEventDispatcher;

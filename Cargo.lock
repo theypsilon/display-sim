@@ -170,7 +170,7 @@ version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "cfg-if 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "wasm-bindgen 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)",
+ "wasm-bindgen 0.2.41 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -513,6 +513,11 @@ dependencies = [
 ]
 
 [[package]]
+name = "glob"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
 name = "heck"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -642,10 +647,10 @@ dependencies = [
 
 [[package]]
 name = "js-sys"
-version = "0.3.17"
+version = "0.3.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "wasm-bindgen 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)",
+ "wasm-bindgen 0.2.41 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1389,6 +1394,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "screen-sim-build-tools"
+version = "0.1.0"
+dependencies = [
+ "glob 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "screen-sim-core"
 version = "0.1.0"
 dependencies = [
@@ -1407,8 +1419,7 @@ version = "0.1.0"
 dependencies = [
  "nalgebra-glm 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "screen-sim-core 0.1.0",
- "screen-sim-web-render 0.1.0",
- "screen-sim-webgl-stubs 0.1.0",
+ "screen-sim-stub-render 0.1.0",
 ]
 
 [[package]]
@@ -1419,16 +1430,36 @@ dependencies = [
  "image 0.21.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra-glm 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "screen-sim-core 0.1.0",
- "screen-sim-web-render 0.1.0",
- "screen-sim-webgl-to-sdl2 0.1.0",
+ "screen-sim-opengl-render 0.1.0",
  "sdl2 0.31.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "screen-sim-opengl-render"
+version = "0.1.0"
+dependencies = [
+ "derive-new 0.5.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gl 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "nalgebra-glm 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "screen-sim-build-tools 0.1.0",
+ "screen-sim-core 0.1.0",
+]
+
+[[package]]
+name = "screen-sim-stub-render"
+version = "0.1.0"
+dependencies = [
+ "derive-new 0.5.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "nalgebra-glm 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "screen-sim-build-tools 0.1.0",
+ "screen-sim-core 0.1.0",
 ]
 
 [[package]]
 name = "screen-sim-web-error"
 version = "0.1.0"
 dependencies = [
- "wasm-bindgen 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)",
+ "wasm-bindgen 0.2.41 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1437,39 +1468,25 @@ version = "0.1.0"
 dependencies = [
  "console_error_panic_hook 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "derive-new 0.5.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "js-sys 0.3.17 (registry+https://github.com/rust-lang/crates.io-index)",
+ "js-sys 0.3.18 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra-glm 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "paste 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "screen-sim-core 0.1.0",
  "screen-sim-web-error 0.1.0",
  "screen-sim-web-render 0.1.0",
- "wasm-bindgen 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)",
- "web-sys 0.3.17 (registry+https://github.com/rust-lang/crates.io-index)",
+ "wasm-bindgen 0.2.41 (registry+https://github.com/rust-lang/crates.io-index)",
+ "web-sys 0.3.18 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "screen-sim-web-render"
 version = "0.1.0"
 dependencies = [
- "cfg-if 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "derive-new 0.5.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra-glm 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "screen-sim-core 0.1.0",
  "screen-sim-web-error 0.1.0",
- "screen-sim-webgl-stubs 0.1.0",
- "screen-sim-webgl-to-sdl2 0.1.0",
- "web-sys 0.3.17 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "screen-sim-webgl-stubs"
-version = "0.1.0"
-
-[[package]]
-name = "screen-sim-webgl-to-sdl2"
-version = "0.1.0"
-dependencies = [
- "gl 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "web-sys 0.3.18 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -2039,15 +2056,15 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen"
-version = "0.2.40"
+version = "0.2.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "wasm-bindgen-macro 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)",
+ "wasm-bindgen-macro 0.2.41 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "wasm-bindgen-backend"
-version = "0.2.40"
+version = "0.2.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "bumpalo 2.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2056,38 +2073,38 @@ dependencies = [
  "proc-macro2 0.4.27 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 0.6.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "syn 0.15.30 (registry+https://github.com/rust-lang/crates.io-index)",
- "wasm-bindgen-shared 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)",
+ "wasm-bindgen-shared 0.2.41 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "wasm-bindgen-macro"
-version = "0.2.40"
+version = "0.2.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "quote 0.6.12 (registry+https://github.com/rust-lang/crates.io-index)",
- "wasm-bindgen-macro-support 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)",
+ "wasm-bindgen-macro-support 0.2.41 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "wasm-bindgen-macro-support"
-version = "0.2.40"
+version = "0.2.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "proc-macro2 0.4.27 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 0.6.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "syn 0.15.30 (registry+https://github.com/rust-lang/crates.io-index)",
- "wasm-bindgen-backend 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)",
- "wasm-bindgen-shared 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)",
+ "wasm-bindgen-backend 0.2.41 (registry+https://github.com/rust-lang/crates.io-index)",
+ "wasm-bindgen-shared 0.2.41 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "wasm-bindgen-shared"
-version = "0.2.40"
+version = "0.2.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "wasm-bindgen-webidl"
-version = "0.2.40"
+version = "0.2.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2096,21 +2113,21 @@ dependencies = [
  "proc-macro2 0.4.27 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 0.6.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "syn 0.15.30 (registry+https://github.com/rust-lang/crates.io-index)",
- "wasm-bindgen-backend 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)",
+ "wasm-bindgen-backend 0.2.41 (registry+https://github.com/rust-lang/crates.io-index)",
  "weedle 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "web-sys"
-version = "0.3.17"
+version = "0.3.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "env_logger 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "js-sys 0.3.17 (registry+https://github.com/rust-lang/crates.io-index)",
+ "js-sys 0.3.18 (registry+https://github.com/rust-lang/crates.io-index)",
  "sourcefile 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "wasm-bindgen 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)",
- "wasm-bindgen-webidl 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)",
+ "wasm-bindgen 0.2.41 (registry+https://github.com/rust-lang/crates.io-index)",
+ "wasm-bindgen-webidl 0.2.41 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -2253,6 +2270,7 @@ dependencies = [
 "checksum gif 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)" = "dd4bca55ac1f213920ce3527ccd62386f1f15fa3f1714aeee1cf93f2c416903f"
 "checksum gl 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)" = "81457bb802910ad5b535eb48541c51830a761804aa5b7087adbc9d049aa57aca"
 "checksum gl_generator 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)" = "7a795170cbd85b5a7baa58d6d7525cae6a03e486859860c220f7ebbbdd379d0a"
+"checksum glob 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "9b919933a397b79c37e33b77bb2aa3dc8eb6e165ad809e58ff75bc7db2e34574"
 "checksum heck 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "20564e78d53d2bb135c343b3f47714a56af2061f1c928fdb541dc7b9fdd94205"
 "checksum httparse 1.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "e8734b0cfd3bc3e101ec59100e101c2eecd19282202e87808b3037b442777a83"
 "checksum humantime 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "3ca7e5f2e110db35f93b837c81797f3714500b81d517bf20c431b16d3ca4f114"
@@ -2265,7 +2283,7 @@ dependencies = [
 "checksum itertools 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "5b8467d9c1cebe26feb08c640139247fac215782d35371ade9a2136ed6085358"
 "checksum itoa 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)" = "1306f3464951f30e30d12373d31c79fbd52d236e5e896fd92f96ec7babbbe60b"
 "checksum jpeg-decoder 0.1.15 (registry+https://github.com/rust-lang/crates.io-index)" = "c8b7d43206b34b3f94ea9445174bda196e772049b9bddbc620c9d29b2d20110d"
-"checksum js-sys 0.3.17 (registry+https://github.com/rust-lang/crates.io-index)" = "d4bda84b98977341bb6ba1086ecbd9eab8bc929de0f2923c118baf76c21dd0c8"
+"checksum js-sys 0.3.18 (registry+https://github.com/rust-lang/crates.io-index)" = "ed224b5078596117af3c5fa9fb6e2225d47209e318f02d69161ce9e65351819f"
 "checksum kernel32-sys 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "7507624b29483431c0ba2d82aece8ca6cdba9382bff4ddd0f7490560c056098d"
 "checksum khronos_api 2.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "037ab472c33f67b5fbd3e9163a2645319e5356fcd355efa6d4eb7fff4bbcb554"
 "checksum language-tags 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "a91d884b6667cd606bb5a69aa0c99ba811a115fc68915e7056ec08a46e93199a"
@@ -2412,13 +2430,13 @@ dependencies = [
 "checksum version_check 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)" = "914b1a6776c4c929a602fafd8bc742e06365d4bcbe48c30f9cca5824f70dc9dd"
 "checksum walkdir 2.2.7 (registry+https://github.com/rust-lang/crates.io-index)" = "9d9d7ed3431229a144296213105a390676cc49c9b6a72bd19f3176c98e129fa1"
 "checksum want 0.0.4 (registry+https://github.com/rust-lang/crates.io-index)" = "a05d9d966753fa4b5c8db73fcab5eed4549cfe0e1e4e66911e5564a0085c35d1"
-"checksum wasm-bindgen 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)" = "9742fc4860f47bede1090a5e4b0cfc33afcd70cfdf45dd28f2cfb02d4662b0dd"
-"checksum wasm-bindgen-backend 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)" = "c6d7f35ecbb4180513cdb9b298543321bcb278670730415cbb3205ff2c66a477"
-"checksum wasm-bindgen-macro 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)" = "e3c86b06bcd28e92e87d2c2ad208889b2f69ea33f79810b91ef660cc3de65a4c"
-"checksum wasm-bindgen-macro-support 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)" = "81d7338dd8c67e193d8ef18e5802dc03d8710456baa792c1c2e66847e57fd389"
-"checksum wasm-bindgen-shared 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)" = "0d57c3b66f2f3e4d96b50f49b7b7e2f4cfcddc88b15744433c98c5c105b26672"
-"checksum wasm-bindgen-webidl 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)" = "fc7052a577eefce17a439edfce5c2eedc8432fe7457bbe949624cdf946233fa7"
-"checksum web-sys 0.3.17 (registry+https://github.com/rust-lang/crates.io-index)" = "72d02003924c77af871ad74216f828b6e32af776cbb3f5dab3dcde2f2713c012"
+"checksum wasm-bindgen 0.2.41 (registry+https://github.com/rust-lang/crates.io-index)" = "b47cc2bf0081a6d86ab185de23f5f97e1474cb0c7dfb139a39ae395654bf37de"
+"checksum wasm-bindgen-backend 0.2.41 (registry+https://github.com/rust-lang/crates.io-index)" = "3d5486debf94bb598eba93ba5fc163b90673a33d6a1f7d5b5c461e6c8e05ff15"
+"checksum wasm-bindgen-macro 0.2.41 (registry+https://github.com/rust-lang/crates.io-index)" = "5596b617514491dfe10315e67cfacd008f5e588391a3de94bc4451c6248c0edc"
+"checksum wasm-bindgen-macro-support 0.2.41 (registry+https://github.com/rust-lang/crates.io-index)" = "e891bd35c6a3bb72f7419feeeed39d06c18f6f53ae9830221908fe07d98d5261"
+"checksum wasm-bindgen-shared 0.2.41 (registry+https://github.com/rust-lang/crates.io-index)" = "9ae6a37aef68f3e62a67f0b2778b8d475efd59231e23f347e06858bd84002f24"
+"checksum wasm-bindgen-webidl 0.2.41 (registry+https://github.com/rust-lang/crates.io-index)" = "84cc5fa9e29b47f89e676dd7fafa5bb7ad9da44bbded037ee62aace09e4da6e7"
+"checksum web-sys 0.3.18 (registry+https://github.com/rust-lang/crates.io-index)" = "e69c41abbda573c92d6f6cddd1c143d47649470706a7a56e0a63712060c54c32"
 "checksum weedle 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "26a4c67f132386d965390b8a734d5d10adbcd30eb5cc74bd9229af8b83f10044"
 "checksum winapi 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)" = "167dc9d6949a9b857f3451275e911c3f44255842c1f7a76f33c55103a909087a"
 "checksum winapi 0.3.7 (registry+https://github.com/rust-lang/crates.io-index)" = "f10e386af2b13e47c89e7236a7a14a086791a2b88ebad6df9bf42040195cf770"
