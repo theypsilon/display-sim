@@ -1,14 +1,5 @@
 #![allow(clippy::identity_op)]
 
+include!(concat!(env!("OUT_DIR"), "/screen-sim-webgl-render-copy.rs"));
+
 pub mod opengl_hooks;
-
-mod web {
-    pub use crate::opengl_hooks::*;
-}
-
-mod error {
-    pub use crate::opengl_hooks::*;
-}
-
-
-include!(concat!(env!("OUT_DIR"), "/screen-sim-webgl-render-modules.rs"));

@@ -1,3 +1,8 @@
+use build_tools::{copy_webgl_render_crate_to_file, CopyWebglRenderParams};
 fn main() {
-    build_tools::copy_screen_sim_webgl_render_modules_to_out_folder("screen-sim-webgl-render-modules.rs");
+    copy_webgl_render_crate_to_file(&CopyWebglRenderParams{
+        output_file: "screen-sim-webgl-render-copy.rs",
+        web_sys_replacement: "crate::stubs",
+        web_error_replacement: "crate::stubs",
+    });
 }
