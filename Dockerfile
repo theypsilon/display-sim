@@ -44,6 +44,7 @@ RUN set -eux; \
 FROM rust-wasm as wasm-artifact
 ENV RUST_BACKTRACE=1
 ADD src/ /app/src/
+ADD crates/ /app/crates/
 ADD Cargo.* /app/
 ADD build.sh /app/
 RUN cargo clippy --all \
