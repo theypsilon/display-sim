@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-cd "$(dirname $0)"
+cd "$(dirname $0)/.."
 
 build() {        
     local optimize_wasm=false

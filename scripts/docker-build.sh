@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+cd "$(dirname $0)/.."
+
 export REGISTRY_IMAGE="${REGISTRY_IMAGE:-crt-3d-sim}"
 export TAG="${TAG:-latest}"
 export IMAGE_NAME="${REGISTRY_IMAGE}:${TAG}"

@@ -4,7 +4,7 @@ set -euo pipefail
 
 cd "$(dirname $0)"
 
-./build.sh
+./scripts/build.sh
 cd www
 npm install
 npm run start

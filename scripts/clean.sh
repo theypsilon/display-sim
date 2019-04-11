@@ -2,7 +2,7 @@
 
 set -xeuo pipefail
 
-cd "$(dirname $0)"
+cd "$(dirname $0)/.."
 
 cargo clean
 rm -rf target || true

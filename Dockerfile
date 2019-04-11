@@ -11,8 +11,12 @@ RUN set -eux; \
         ca-certificates \
         gcc \
         libc6-dev \
-	libssl-dev \
         wget \
+        pkgconf \
+        libsdl2-dev \
+        cmake \
+        build-essential \
+        libssl-dev \
         ; \
     \
     dpkgArch="$(dpkg --print-architecture)"; \
@@ -47,10 +51,9 @@ ENV RUST_BACKTRACE=1
 ADD src/ /app/src/
 ADD crates/ /app/crates/
 ADD Cargo.* /app/
-ADD build.sh /app/
-RUN cargo clippy --all \
-    && cargo test --release --all \
-    && ./build.sh --release-wasm \
+ADD scripts/ /app/scripts/
+RUN ./scripts/test.sh --rust-only \
+    && ./scripts/build.sh --release-wasm \
     && cargo clean \
     && cp -r /app/www/src/wasm /wasm \
     && rm -rf /app
