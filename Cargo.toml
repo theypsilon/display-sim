@@ -16,7 +16,7 @@ path = "src/main.rs"
 debug = false
 lto = true
 
-[target.wasm32-unknown-unknown.dependencies]
+[dependencies]
 screen-sim-web-exports = { path = "crates/screen-sim-web-exports" }
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
