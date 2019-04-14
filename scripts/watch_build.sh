@@ -4,7 +4,7 @@ set -euo pipefail
 
 cd "$(dirname $0)/.."
 
-./build.sh || true
+./scripts/build.sh || true
 
 echo "Setting watcher..."
 echo
