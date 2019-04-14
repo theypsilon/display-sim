@@ -51,8 +51,8 @@ fn program() -> WebResult<()> {
             height: img_size.1,
         },
         viewport_size: Size2D {
-            width: display_mode.w as u32,
-            height: display_mode.h as u32,
+            width: (display_mode.w as f32 * 0.8) as u32,
+            height: (display_mode.h as f32 * 0.8) as u32,
         },
         pixel_width: 1.0,
         stretch: false,
@@ -65,7 +65,6 @@ fn program() -> WebResult<()> {
     let window = video_subsystem
         .window("Screen Sim", res_input.viewport_size.width, res_input.viewport_size.height)
         .opengl()
-        .fullscreen()
         .build()
         .unwrap();
 

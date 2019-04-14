@@ -42,11 +42,16 @@ impl<'a, T: AppEventDispatcher> SimulationTicker<'a, T> {
 
     fn pre_process_input(&mut self) -> WebResult<()> {
         self.input.now = now()?;
-        self.input.get_mut_fields_booleanbutton().iter_mut().for_each(|button| button.track_input());
+        let mut my_iter = self.input.get_mut_fields_booleanbutton().into_iter();
         self.input
             .get_mut_fields_incdec_booleanbutton_()
             .iter_mut()
-            .for_each(|incdec| incdec.get_mut_fields_t().iter_mut().for_each(|button| button.track_input()));
+            .for_each(|incdec| incdec.get_mut_fields_t().iter_mut().for_each(|button| my_iter.chain(button)))
+        /*self.input.get_mut_fields_booleanbutton().iter_mut().for_each(|button| button.track_input());
+        self.input
+            .get_mut_fields_incdec_booleanbutton_()
+            .iter_mut()
+            .for_each(|incdec| incdec.get_mut_fields_t().iter_mut().for_each(|button| button.track_input()));*/
         Ok(())
     }
 
