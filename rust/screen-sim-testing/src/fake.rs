@@ -16,8 +16,8 @@ use std::time::SystemTime;
 
 pub struct FakeVideoInput(VideoInputResources, VideoInputMaterials);
 
-impl FakeVideoInput {
-    pub fn new() -> FakeVideoInput {
+impl Default for FakeVideoInput {
+    pub fn default() -> FakeVideoInput {
         FakeVideoInput(
             VideoInputResources {
                 steps: vec![AnimationStep { delay: 60 }],
@@ -36,6 +36,9 @@ impl FakeVideoInput {
             },
         )
     }
+}
+
+impl FakeVideoInput {
     pub fn iterate_times(self, times: u128) -> WebResult<()> {
         let mut res = Resources::default();
         init_resources(&mut res, self.0, 0.0);
