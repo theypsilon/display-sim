@@ -13,7 +13,10 @@ build() {
     local new_hash="foo"
     local old_hash="bar"
 
-    if [[ "$@" =~ "--release-wasm" ]] ; then
+    if [[ "$@" =~ "--release-wasm-no-opt" ]] ; then
+	echo -n "[RELEASE WASM BUILD NO OPT] "
+	build_type=""
+    elif [[ "$@" =~ "--release-wasm" ]] ; then
         echo -n "[RELEASE WASM BUILD] "
         optimize_wasm=true
         build_type=""

@@ -52,8 +52,9 @@ ENV RUST_BACKTRACE=1
 ADD rust/ /app/rust/
 ADD Cargo.* /app/
 ADD scripts/ /app/scripts/
+ARG BUILD_WASM_PARAMS="--release-wasm"
 RUN ./scripts/test.sh --rust-only \
-    && ./scripts/build.sh --release-wasm \
+    && ./scripts/build.sh ${BUILD_WASM_PARAMS} \
     && cargo clean \
     && cp -r /app/www/src/wasm /wasm \
     && rm -rf /app
