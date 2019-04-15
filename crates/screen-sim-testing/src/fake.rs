@@ -14,16 +14,6 @@ use render::simulation_render_state::{Materials, VideoInputMaterials};
 use render::stubs::{WebGl2RenderingContext, WebResult};
 use std::time::SystemTime;
 
-#[test]
-fn test_simulation_initializes_fine() {
-    assert_eq!(FakeVideoInput::new().iterate_times(0), Ok(()));
-}
-
-#[test]
-fn test_simulation_run_2_iterations_fine() {
-    assert_eq!(FakeVideoInput::new().iterate_times(2), Ok(()));
-}
-
 pub struct FakeVideoInput(VideoInputResources, VideoInputMaterials);
 
 impl FakeVideoInput {
