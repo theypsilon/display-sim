@@ -15,7 +15,6 @@ RUN set -eux; \
         pkgconf \
         libsdl2-dev \
         cmake \
-        curl \
         build-essential \
         libssl-dev \
         ; \
