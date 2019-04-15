@@ -65,12 +65,12 @@ fn program() -> WebResult<()> {
     let _gl_context = window.gl_create_context().unwrap();
     gl::load_with(|s| video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void);
 
-    let now = SystemTime::now();
+    let starting_time = SystemTime::now();
     let mut res = Resources::default();
-    init_resources(&mut res, res_input, now.elapsed().map_err(|e| format!("{}", e))?.as_millis() as f64);
+    init_resources(&mut res, res_input, get_millis_since(&starting_time)?);
     let mut materials = load_materials(WebGl2RenderingContext::default(), materials_input)?;
 
-    let mut input = Input::new(now.elapsed().map_err(|e| format!("{}", e))?.as_millis() as f64);
+    let mut input = Input::new(get_millis_since(&starting_time)?);
     let mut ctx: SimulationContext<NativeEventDispatcher> = SimulationContext::default();
 
     let mut event_pump = sdl.event_pump().unwrap();
@@ -88,7 +88,7 @@ fn program() -> WebResult<()> {
             }
         }
 
-        pre_process_input(&mut input, now.elapsed().map_err(|e| format!("{}", e))?.as_millis() as f64);
+        pre_process_input(&mut input, get_millis_since(&starting_time)?);
         if !SimulationUpdater::new(&mut ctx, &mut res, &input).update() {
             println!("User closed the simulation.");
             return Ok(());
@@ -101,6 +101,10 @@ fn program() -> WebResult<()> {
         window.gl_swap_window();
     }
     Ok(())
+}
+
+fn get_millis_since(time: &SystemTime) -> Result<f64, String> {
+    Ok(time.elapsed().map_err(|e| format!("{}", e))?.as_millis() as f64)
 }
 
 pub fn read_key(input: &mut Input, key: Keycode, pressed: bool) {
