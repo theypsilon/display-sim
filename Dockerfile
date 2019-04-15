@@ -49,8 +49,7 @@ RUN set -eux; \
 
 FROM rust-wasm as wasm-artifact
 ENV RUST_BACKTRACE=1
-ADD src/ /app/src/
-ADD crates/ /app/crates/
+ADD rust/ /app/rust/
 ADD Cargo.* /app/
 ADD scripts/ /app/scripts/
 RUN ./scripts/test.sh --rust-only \

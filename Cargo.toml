@@ -6,33 +6,33 @@ edition = "2018"
 
 [lib]
 crate-type = ["cdylib"]
-path = "src/lib.rs"
+path = "rust/screen-sim-wasm.rs"
 
 [[bin]]
 name = "screen-sim-native"
-path = "src/main.rs"
+path = "rust/screen-sim-native-main.rs"
 
 [profile.release]
 debug = false
 lto = true
 
 [dependencies]
-screen-sim-web-exports = { path = "crates/screen-sim-web-exports" }
+screen-sim-web-exports = { path = "rust/screen-sim-web-exports" }
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
-screen-sim-native-sdl2 = { path = "crates/screen-sim-native-sdl2" }
+screen-sim-native-sdl2 = { path = "rust/screen-sim-native-sdl2" }
 
 [workspace]
 members = [
-    "crates/enum-len-derive",
-    "crates/enum-len-trait",
-    "crates/screen-sim-core",
-    "crates/screen-sim-webgl-render",
-    "crates/screen-sim-web-error",
-    "crates/screen-sim-web-exports",
-    "crates/screen-sim-stub-render",
-    "crates/screen-sim-opengl-render",
-    "crates/screen-sim-native-sdl2",
-    "crates/screen-sim-build-tools",
-    "crates/screen-sim-testing",
+    "rust/enum-len-derive",
+    "rust/enum-len-trait",
+    "rust/screen-sim-core",
+    "rust/screen-sim-webgl-render",
+    "rust/screen-sim-web-error",
+    "rust/screen-sim-web-exports",
+    "rust/screen-sim-stub-render",
+    "rust/screen-sim-opengl-render",
+    "rust/screen-sim-native-sdl2",
+    "rust/screen-sim-build-tools",
+    "rust/screen-sim-testing",
 ]
