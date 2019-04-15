@@ -3,7 +3,7 @@ WORKDIR /app
 ENV RUSTUP_HOME=/usr/local/rustup \
     CARGO_HOME=/usr/local/cargo \
     PATH=/usr/local/cargo/bin:$PATH \
-    BINARYEN_VER="1.38.13" \
+    BINARYEN_VER="1.38.29" \
     RUST_TOOLCHAIN="1.34.0"
 RUN set -eux; \
     apt-get update || true; \
