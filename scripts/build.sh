@@ -33,7 +33,7 @@ build() {
 
         cargo fmt
 
-        new_hash="$(find src/ -type f -name *.rs -print0 | xargs -0 sha1sum | sha1sum)"
+        new_hash="$(find src/ crates/ -type f -name *.rs -print0 | xargs -0 sha1sum | sha1sum)"
         old_hash="$(cat .build-hash || true)"
 
         if [[ "$new_hash" == "$old_hash" ]] ; then

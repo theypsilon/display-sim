@@ -751,10 +751,10 @@ fn update_output_pixel_scale_gap_offset(res: &mut Resources) {
 
     res.output.pixel_scale_foreground.resize_with(res.filters.lines_per_pixel, Default::default);
     res.output.pixel_offset_foreground.resize_with(res.filters.lines_per_pixel, Default::default);
-    for j in 0..res.filters.lines_per_pixel {
-        for i in 0..res.output.color_splits {
-            let pixel_offset = &mut res.output.pixel_offset_foreground[j][i];
-            let pixel_scale = &mut res.output.pixel_scale_foreground[j][i];
+    for vl_idx in 0..res.filters.lines_per_pixel {
+        for color_idx in 0..res.output.color_splits {
+            let pixel_offset = &mut res.output.pixel_offset_foreground[vl_idx][color_idx];
+            let pixel_scale = &mut res.output.pixel_scale_foreground[vl_idx][color_idx];
 
             *pixel_offset = [0.0, 0.0, 0.0];
             *pixel_scale = [
@@ -766,15 +766,15 @@ fn update_output_pixel_scale_gap_offset(res: &mut Resources) {
                 ColorChannels::Combined => {}
                 _ => match res.filters.color_channels {
                     ColorChannels::SplitHorizontal => {
-                        pixel_offset[0] = (i as f32 - 1.0) * (1.0 / 3.0) * res.filters.cur_pixel_width / (res.filters.cur_pixel_scale_x + 1.0);
+                        pixel_offset[0] = (color_idx as f32 - 1.0) * (1.0 / 3.0) * res.filters.cur_pixel_width / (res.filters.cur_pixel_scale_x + 1.0);
                         pixel_scale[0] *= res.output.color_splits as f32;
                     }
                     ColorChannels::Overlapping => {
-                        pixel_offset[0] = (i as f32 - 1.0) * (1.0 / 3.0) * res.filters.cur_pixel_width / (res.filters.cur_pixel_scale_x + 1.0);
+                        pixel_offset[0] = (color_idx as f32 - 1.0) * (1.0 / 3.0) * res.filters.cur_pixel_width / (res.filters.cur_pixel_scale_x + 1.0);
                         pixel_scale[0] *= 1.5;
                     }
                     ColorChannels::SplitVertical => {
-                        pixel_offset[1] = (i as f32 - 1.0) * (1.0 / 3.0) * (1.0 - res.filters.cur_pixel_scale_y);
+                        pixel_offset[1] = (color_idx as f32 - 1.0) * (1.0 / 3.0) * (1.0 - res.filters.cur_pixel_scale_y);
                         pixel_scale[1] *= res.output.color_splits as f32;
                     }
                     _ => unreachable!(),
@@ -782,7 +782,7 @@ fn update_output_pixel_scale_gap_offset(res: &mut Resources) {
             }
             if res.filters.lines_per_pixel > 1 {
                 pixel_offset[0] /= res.filters.lines_per_pixel as f32;
-                pixel_offset[0] += (j as f32 / res.filters.lines_per_pixel as f32 - calc_stupid_not_extrapoled_function(res.filters.lines_per_pixel))
+                pixel_offset[0] += (vl_idx as f32 / res.filters.lines_per_pixel as f32 - calc_stupid_not_extrapoled_function(res.filters.lines_per_pixel))
                     * res.filters.cur_pixel_width
                     / (res.filters.cur_pixel_scale_x + 1.0);
                 pixel_scale[0] *= res.filters.lines_per_pixel as f32;
