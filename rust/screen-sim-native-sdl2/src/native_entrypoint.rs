@@ -5,15 +5,9 @@ use core::app_events::AppEventDispatcher;
 use core::general_types::Size2D;
 use core::simulation_context::SimulationContext;
 use core::simulation_core_state::{init_resources, AnimationStep, Input, Resources, VideoInputResources};
-use core::simulation_update::SimulationUpdater;
-use render::background_render::BackgroundRender;
-use render::blur_render::BlurRender;
-use render::internal_resolution_render::InternalResolutionRender;
-use render::pixels_render::PixelsRender;
-use render::render_types::TextureBufferStack;
-use render::rgb_render::RgbRender;
+use core::simulation_update::{post_process_input, pre_process_input, SimulationUpdater};
 use render::simulation_draw::SimulationDrawer;
-use render::simulation_render_state::{Materials, VideoInputMaterials};
+use render::simulation_render_state::{load_materials, VideoInputMaterials};
 
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
@@ -74,18 +68,7 @@ fn program() -> WebResult<()> {
     let now = SystemTime::now();
     let mut res = Resources::default();
     init_resources(&mut res, res_input, now.elapsed().map_err(|e| format!("{}", e))?.as_millis() as f64);
-    let gl = WebGl2RenderingContext::default();
-    let mut materials = Materials {
-        main_buffer_stack: TextureBufferStack::new(&gl),
-        bg_buffer_stack: TextureBufferStack::new(&gl),
-        pixels_render: PixelsRender::new(&gl, materials_input)?,
-        blur_render: BlurRender::new(&gl)?,
-        internal_resolution_render: InternalResolutionRender::new(&gl)?,
-        rgb_render: RgbRender::new(&gl)?,
-        background_render: BackgroundRender::new(&gl)?,
-        screenshot_pixels: None,
-        gl,
-    };
+    let mut materials = load_materials(WebGl2RenderingContext::default(), materials_input)?;
 
     let mut input = Input::new(now.elapsed().map_err(|e| format!("{}", e))?.as_millis() as f64);
     let mut ctx: SimulationContext<NativeEventDispatcher> = SimulationContext::default();
@@ -105,13 +88,12 @@ fn program() -> WebResult<()> {
             }
         }
 
-        input.now = now.elapsed().map_err(|e| format!("{}", e))?.as_millis() as f64;
-
+        pre_process_input(&mut input, now.elapsed().map_err(|e| format!("{}", e))?.as_millis() as f64);
         if !SimulationUpdater::new(&mut ctx, &mut res, &input).update() {
             println!("User closed the simulation.");
             return Ok(());
         }
-
+        post_process_input(&mut input);
         if res.launch_screenshot || res.screenshot_delay <= 0 {
             SimulationDrawer::new(&mut ctx, &mut materials, &res).draw()?;
         }

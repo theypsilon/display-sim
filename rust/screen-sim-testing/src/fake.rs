@@ -17,7 +17,7 @@ use std::time::SystemTime;
 pub struct FakeVideoInput(VideoInputResources, VideoInputMaterials);
 
 impl Default for FakeVideoInput {
-    pub fn default() -> FakeVideoInput {
+    fn default() -> FakeVideoInput {
         FakeVideoInput(
             VideoInputResources {
                 steps: vec![AnimationStep { delay: 60 }],

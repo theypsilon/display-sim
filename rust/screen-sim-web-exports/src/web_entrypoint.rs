@@ -4,7 +4,6 @@ use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
 use web_sys::{CustomEvent, EventTarget, KeyboardEvent, MouseEvent, WebGl2RenderingContext, WheelEvent, Window};
 
 use crate::console;
-use crate::simulation_entrypoint::{load_materials, SimulationTicker};
 use crate::web_events::WebEventDispatcher;
 use crate::web_utils::{now, window};
 use core::action_bindings::on_button_action;
@@ -12,7 +11,9 @@ use core::app_events::AppEventDispatcher;
 use core::internal_resolution::InternalResolution;
 use core::simulation_context::SimulationContext;
 use core::simulation_core_state::{init_resources, Input, InputEventValue, Resources, VideoInputResources};
-use render::simulation_render_state::{Materials, VideoInputMaterials};
+use core::simulation_update::{post_process_input, pre_process_input, SimulationUpdater};
+use render::simulation_draw::SimulationDrawer;
+use render::simulation_render_state::{load_materials, Materials, VideoInputMaterials};
 use web_error::{WebError, WebResult};
 
 pub type OwnedClosure = Option<Closure<FnMut(JsValue)>>;
@@ -74,12 +75,12 @@ pub fn print_error(e: WebError) {
     console!(error. "An unexpected error ocurred.", e.into_js());
 }
 
-fn web_entrypoint_iteration<T: AppEventDispatcher + Default>(owned_state: &StateOwner, window: &Window, ctx: &mut SimulationContext<T>) -> WebResult<()> {
+fn web_entrypoint_iteration<T: AppEventDispatcher>(owned_state: &StateOwner, window: &Window, ctx: &mut SimulationContext<T>) -> WebResult<()> {
     let mut input = owned_state.input.borrow_mut();
     let mut resources = owned_state.resources.borrow_mut();
     let mut materials = owned_state.materials.borrow_mut();
     let closures = owned_state.closures.borrow();
-    match SimulationTicker::new(ctx, &mut input, &mut resources, &mut materials).tick() {
+    match tick(ctx, &mut input, &mut resources, &mut materials) {
         Ok(true) => {
             window.request_animation_frame(closures[0].as_ref().ok_or("Wrong closure.")?.as_ref().unchecked_ref())?;
         }
@@ -90,6 +91,20 @@ fn web_entrypoint_iteration<T: AppEventDispatcher + Default>(owned_state: &State
         }
     };
     Ok(())
+}
+
+fn tick<T: AppEventDispatcher>(ctx: &mut SimulationContext<T>, input: &mut Input, res: &mut Resources, materials: &mut Materials) -> WebResult<bool> {
+    pre_process_input(input, now()?);
+
+    if !SimulationUpdater::new(ctx, res, input).update() {
+        console!(log. "User closed the simulation.");
+        return Ok(false);
+    }
+    post_process_input(input);
+    if res.launch_screenshot || res.screenshot_delay <= 0 {
+        SimulationDrawer::new(ctx, materials, res).draw()?;
+    }
+    Ok(true)
 }
 
 fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WebResult<Vec<OwnedClosure>> {

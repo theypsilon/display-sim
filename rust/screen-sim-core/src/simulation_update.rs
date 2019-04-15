@@ -10,6 +10,22 @@ use crate::simulation_core_state::{
     PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
 };
 
+pub fn pre_process_input(input: &mut Input, now: f64) {
+    input.now = now;
+    input.get_mut_fields_booleanbutton().iter_mut().for_each(|button| button.track_input());
+    input
+        .get_mut_fields_incdec_booleanbutton_()
+        .iter_mut()
+        .for_each(|incdec| incdec.get_mut_fields_t().iter_mut().for_each(|button| button.track_input()));
+}
+
+pub fn post_process_input(input: &mut Input) {
+    input.mouse_scroll_y = 0.0;
+    input.mouse_position_x = 0;
+    input.mouse_position_y = 0;
+    input.custom_event.kind = String::new();
+}
+
 #[derive(new)]
 pub struct SimulationUpdater<'a, T: AppEventDispatcher> {
     ctx: &'a mut SimulationContext<T>,
