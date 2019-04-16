@@ -35,7 +35,7 @@ pub struct Resources {
     pub video: VideoInputResources,
     pub camera: Camera,
     pub filters: Filters,
-    pub output: Output,
+    pub output: ViewModel,
     pub timers: SimulationTimers,
     pub initial_parameters: InitialParameters,
     pub screenshot_trigger: ScreenshotTrigger,
@@ -56,7 +56,7 @@ impl Default for Resources {
             timers: SimulationTimers::default(),
             video: VideoInputResources::default(),
             camera: Camera::new(MOVEMENT_BASE_SPEED / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED),
-            output: Output::default(),
+            output: ViewModel::default(),
             filters: Filters::new(PIXEL_MANIPULATION_BASE_SPEED),
             screenshot_trigger: ScreenshotTrigger { is_triggered: false, delay: 0 },
             drawable: false,
@@ -201,7 +201,7 @@ impl Filters {
 }
 
 #[derive(Default)]
-pub struct Output {
+pub struct ViewModel {
     pub screen_curvature_factor: f32,
     pub pixels_pulse: f32,
     pub solid_color_weight: f32,
