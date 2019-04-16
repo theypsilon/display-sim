@@ -11,7 +11,7 @@ use core::app_events::AppEventDispatcher;
 use core::internal_resolution::InternalResolution;
 use core::simulation_context::SimulationContext;
 use core::simulation_core_state::{Input, InputEventValue, Resources, VideoInputResources};
-use core::simulation_update::{post_process_input, pre_process_input, SimulationUpdater};
+use core::simulation_core_ticker::SimulationCoreTicker;
 use render::simulation_draw::SimulationDrawer;
 use render::simulation_render_state::{Materials, VideoInputMaterials};
 use web_error::{WebError, WebResult};
@@ -94,13 +94,10 @@ fn web_entrypoint_iteration<T: AppEventDispatcher>(owned_state: &StateOwner, win
 }
 
 fn tick<T: AppEventDispatcher>(ctx: &mut SimulationContext<T>, input: &mut Input, res: &mut Resources, materials: &mut Materials) -> WebResult<bool> {
-    pre_process_input(input, now()?);
-
-    if !SimulationUpdater::new(ctx, res, input).update() {
+    if !SimulationCoreTicker::new(ctx, res, input).tick(now()?) {
         console!(log. "User closed the simulation.");
         return Ok(false);
     }
-    post_process_input(input);
     if res.drawable {
         SimulationDrawer::new(ctx, materials, res).draw()?;
     }

@@ -5,7 +5,7 @@ use core::app_events::AppEventDispatcher;
 use core::general_types::Size2D;
 use core::simulation_context::SimulationContext;
 use core::simulation_core_state::{AnimationStep, Input, Resources, VideoInputResources};
-use core::simulation_update::{post_process_input, pre_process_input, SimulationUpdater};
+use core::simulation_core_ticker::SimulationCoreTicker;
 use render::simulation_draw::SimulationDrawer;
 use render::simulation_render_state::{Materials, VideoInputMaterials};
 
@@ -88,12 +88,10 @@ fn program() -> WebResult<()> {
             }
         }
 
-        pre_process_input(&mut input, get_millis_since(&starting_time)?);
-        if !SimulationUpdater::new(&mut ctx, &mut res, &input).update() {
+        if !SimulationCoreTicker::new(&mut ctx, &mut res, &mut input).tick(get_millis_since(&starting_time)?) {
             println!("User closed the simulation.");
             return Ok(());
         }
-        post_process_input(&mut input);
         if res.drawable {
             SimulationDrawer::new(&mut ctx, &mut materials, &res).draw()?;
         }

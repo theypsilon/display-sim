@@ -2,7 +2,7 @@ use core::app_events::AppEventDispatcher;
 use core::general_types::Size2D;
 use core::simulation_context::SimulationContext;
 use core::simulation_core_state::{AnimationStep, Input, Resources, VideoInputResources};
-use core::simulation_update::SimulationUpdater;
+use core::simulation_core_ticker::SimulationCoreTicker;
 use render::background_render::BackgroundRender;
 use render::blur_render::BlurRender;
 use render::internal_resolution_render::InternalResolutionRender;
@@ -59,14 +59,13 @@ impl FakeVideoInput {
         let mut input = Input::new(0.0);
         let mut ctx: SimulationContext<FakeEventDispatcher> = SimulationContext::default();
         for _ in 0..times {
-            if !SimulationUpdater::new(&mut ctx, &mut res, &input).update() {
+            if !SimulationCoreTicker::new(&mut ctx, &mut res, &mut input).tick(now.elapsed().map_err(|e| e.to_string())?.as_millis() as f64 * 0.05) {
                 println!("User closed the simulation.");
                 return Ok(());
             }
-            if res.launch_screenshot || res.screenshot_delay <= 0 {
+            if res.drawable {
                 SimulationDrawer::new(&mut ctx, &mut materials, &res).draw()?;
             }
-            input.now = now.elapsed().map_err(|e| e.to_string())?.as_millis() as f64 * 0.05;
         }
         Ok(())
     }

@@ -1,7 +1,6 @@
 use crate::app_events::AppEventDispatcher;
 use crate::boolean_button::BooleanButton;
 use crate::camera::CameraDirection;
-use crate::derive_new::new;
 use crate::general_types::{get_3_f32color_from_int, NextEnumVariant};
 use crate::pixels_shadow::SHADOWS_LEN;
 use crate::simulation_context::SimulationContext;
@@ -9,36 +8,62 @@ use crate::simulation_core_state::{
     ColorChannels, CustomInputEvent, Filters, IncDec, Input, InputEventValue, PixelsGeometryKind, Resources, ScreenCurvatureKind, ScreenLayeringKind,
     PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
 };
-
-pub fn pre_process_input(input: &mut Input, now: f64) {
-    input.now = now;
-    input.get_mut_fields_booleanbutton().iter_mut().for_each(|button| button.track_input());
-    input
-        .get_mut_fields_incdec_booleanbutton_()
-        .iter_mut()
-        .for_each(|incdec| incdec.get_mut_fields_t().iter_mut().for_each(|button| button.track_input()));
-}
-
-pub fn post_process_input(input: &mut Input) {
-    input.mouse_scroll_y = 0.0;
-    input.mouse_position_x = 0;
-    input.mouse_position_y = 0;
-    input.custom_event.kind = String::new();
-}
+use derive_new::new;
 
 #[derive(new)]
-pub struct SimulationUpdater<'a, T: AppEventDispatcher> {
+pub struct SimulationCoreTicker<'a, T: AppEventDispatcher> {
+    ctx: &'a mut SimulationContext<T>,
+    res: &'a mut Resources,
+    input: &'a mut Input,
+}
+
+impl<'a, T: AppEventDispatcher> SimulationCoreTicker<'a, T> {
+    pub fn tick(&mut self, now: f64) -> bool {
+        self.pre_process_input(now);
+        let request_more_updates = SimulationUpdater::new(self.ctx, self.res, self.input).update();
+        self.post_process_input();
+        request_more_updates
+    }
+
+    fn pre_process_input(&mut self, now: f64) {
+        self.input.now = now;
+        self.input.get_mut_fields_booleanbutton().iter_mut().for_each(|button| button.track_input());
+        self.input
+            .get_mut_fields_incdec_booleanbutton_()
+            .iter_mut()
+            .for_each(|incdec| incdec.get_mut_fields_t().iter_mut().for_each(|button| button.track_input()));
+    }
+
+    fn post_process_input(&mut self) {
+        self.input.mouse_scroll_y = 0.0;
+        self.input.mouse_position_x = 0;
+        self.input.mouse_position_y = 0;
+        self.input.custom_event.kind = String::new();
+    }
+}
+
+struct SimulationUpdater<'a, T: AppEventDispatcher> {
     ctx: &'a mut SimulationContext<T>,
     res: &'a mut Resources,
     input: &'a Input,
+    dt: f32,
 }
 
 impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
+    pub fn new(ctx: &'a mut SimulationContext<T>, res: &'a mut Resources, input: &'a Input) -> SimulationUpdater<'a, T> {
+        SimulationUpdater {
+            dt: ((input.now - res.timers.last_time) / 1000.0) as f32,
+            ctx,
+            res,
+            input,
+        }
+    }
+
     pub fn update(&mut self) -> bool {
         if self.res.resetted {
             self.change_frontend_input_values();
         }
-        let dt = self.update_timers_and_dt();
+        self.update_timers();
 
         self.update_animation_buffer();
 
@@ -51,34 +76,33 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             self.ctx.dispatcher.dispatch_toggle_info_panel();
         }
 
-        self.update_filters(dt);
+        self.update_filters();
         self.update_speeds();
-        self.update_camera(dt);
-        self.update_screenshot(dt);
+        self.update_camera();
+        self.update_screenshot();
 
-        update_outputs(self.res, dt);
+        self.update_outputs();
 
         self.res.resetted = false;
         self.res.drawable = self.res.screenshot_trigger.is_triggered || self.res.screenshot_trigger.delay <= 0;
         true
     }
 
-    fn update_screenshot(&mut self, dt: f32) {
+    fn update_screenshot(&mut self) {
         self.res.screenshot_trigger.is_triggered = false;
         if self.res.screenshot_trigger.delay > 0 {
             self.res.screenshot_trigger.delay -= 1;
         } else if self.input.screenshot.is_just_released() {
             self.res.screenshot_trigger.is_triggered = true;
             let multiplier = self.res.filters.internal_resolution.multiplier as f32;
-            self.res.screenshot_trigger.delay = (2.0 * multiplier * multiplier * (1.0 / dt)) as i32; // 2 seconds aprox.
-            if self.res.screenshot_trigger.delay as f32 * dt > 2.0 {
+            self.res.screenshot_trigger.delay = (2.0 * multiplier * multiplier * (1.0 / self.dt)) as i32; // 2 seconds aprox.
+            if self.res.screenshot_trigger.delay as f32 * self.dt > 2.0 {
                 self.ctx.dispatcher.dispatch_top_message("Screenshot about to be downloaded, please wait.");
             }
         }
     }
 
-    fn update_timers_and_dt(&mut self) -> f32 {
-        let dt: f32 = ((self.input.now - self.res.timers.last_time) / 1000.0) as f32;
+    fn update_timers(&mut self) {
         let ellapsed = self.input.now - self.res.timers.last_second;
         self.res.timers.last_time = self.input.now;
 
@@ -90,7 +114,6 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         } else {
             self.res.timers.frame_count += 1;
         }
-        dt
     }
 
     fn update_animation_buffer(&mut self) {
@@ -109,7 +132,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         }
     }
 
-    fn update_filters(&mut self, dt: f32) {
+    fn update_filters(&mut self) {
         if self.input.reset_filters {
             self.res.filters = Filters::new(PIXEL_MANIPULATION_BASE_SPEED);
             self.res.filters.cur_pixel_width = self.res.initial_parameters.initial_pixel_width;
@@ -122,22 +145,22 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             return;
         }
         self.update_filter_curvature();
-        self.update_filter_source_colors(dt);
+        self.update_filter_source_colors();
         self.update_filter_blur();
         self.update_filter_lpp();
-        self.update_filter_pixel_shape(dt);
+        self.update_filter_pixel_shape();
         self.update_filter_layering_kind();
         self.update_filter_color_representation();
         self.update_filter_internal_resolution();
         self.update_filter_texture_interpolation();
     }
 
-    fn update_filter_source_colors(&mut self, dt: f32) {
+    fn update_filter_source_colors(&mut self) {
         if self.input.bright.increase {
-            self.res.filters.extra_bright += 0.01 * dt * self.res.filters.change_speed;
+            self.res.filters.extra_bright += 0.01 * self.dt * self.res.filters.change_speed;
         }
         if self.input.bright.decrease {
-            self.res.filters.extra_bright -= 0.01 * dt * self.res.filters.change_speed;
+            self.res.filters.extra_bright -= 0.01 * self.dt * self.res.filters.change_speed;
         }
         if self.input.bright.increase || self.input.bright.decrease {
             if self.res.filters.extra_bright < -1.0 {
@@ -151,10 +174,10 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             }
         }
         if self.input.contrast.increase {
-            self.res.filters.extra_contrast += 0.01 * dt * self.res.filters.change_speed;
+            self.res.filters.extra_contrast += 0.01 * self.dt * self.res.filters.change_speed;
         }
         if self.input.contrast.decrease {
-            self.res.filters.extra_contrast -= 0.01 * dt * self.res.filters.change_speed;
+            self.res.filters.extra_contrast -= 0.01 * self.dt * self.res.filters.change_speed;
         }
         if self.input.contrast.increase || self.input.contrast.decrease {
             if self.res.filters.extra_contrast < 0.0 {
@@ -315,7 +338,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         }
     }
 
-    fn update_filter_pixel_shape(&mut self, dt: f32) {
+    fn update_filter_pixel_shape(&mut self) {
         if self.input.next_pixel_geometry_kind.any_just_pressed() {
             if self.input.next_pixel_geometry_kind.increase.is_just_pressed() {
                 self.res.filters.pixels_geometry_kind.next_enum_variant();
@@ -354,10 +377,10 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
 
         if self.input.next_pixels_shadow_height_factor.any_active() || received_pixel_shadow_height.is_some() {
             if self.input.next_pixels_shadow_height_factor.increase {
-                self.res.filters.pixel_shadow_height_factor += dt * 0.3;
+                self.res.filters.pixel_shadow_height_factor += self.dt * 0.3;
             }
             if self.input.next_pixels_shadow_height_factor.decrease {
-                self.res.filters.pixel_shadow_height_factor -= dt * 0.3;
+                self.res.filters.pixel_shadow_height_factor -= self.dt * 0.3;
             }
             if let Some(height) = received_pixel_shadow_height {
                 self.res.filters.pixel_shadow_height_factor = height;
@@ -373,7 +396,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             self.ctx.dispatcher.dispatch_pixel_shadow_height(self.res);
         }
 
-        let pixel_velocity = dt * self.res.filters.change_speed;
+        let pixel_velocity = self.dt * self.res.filters.change_speed;
         let ctx = &self.ctx;
         change_pixel_sizes(
             ctx,
@@ -510,44 +533,44 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         }
     }
 
-    fn update_camera(&mut self, dt: f32) {
+    fn update_camera(&mut self) {
         if self.input.walk_left {
-            self.res.camera.advance(CameraDirection::Left, dt);
+            self.res.camera.advance(CameraDirection::Left, self.dt);
         }
         if self.input.walk_right {
-            self.res.camera.advance(CameraDirection::Right, dt);
+            self.res.camera.advance(CameraDirection::Right, self.dt);
         }
         if self.input.walk_up {
-            self.res.camera.advance(CameraDirection::Up, dt);
+            self.res.camera.advance(CameraDirection::Up, self.dt);
         }
         if self.input.walk_down {
-            self.res.camera.advance(CameraDirection::Down, dt);
+            self.res.camera.advance(CameraDirection::Down, self.dt);
         }
         if self.input.walk_forward {
-            self.res.camera.advance(CameraDirection::Forward, dt);
+            self.res.camera.advance(CameraDirection::Forward, self.dt);
         }
         if self.input.walk_backward {
-            self.res.camera.advance(CameraDirection::Backward, dt);
+            self.res.camera.advance(CameraDirection::Backward, self.dt);
         }
 
         if self.input.turn_left {
-            self.res.camera.turn(CameraDirection::Left, dt);
+            self.res.camera.turn(CameraDirection::Left, self.dt);
         }
         if self.input.turn_right {
-            self.res.camera.turn(CameraDirection::Right, dt);
+            self.res.camera.turn(CameraDirection::Right, self.dt);
         }
         if self.input.turn_up {
-            self.res.camera.turn(CameraDirection::Up, dt);
+            self.res.camera.turn(CameraDirection::Up, self.dt);
         }
         if self.input.turn_down {
-            self.res.camera.turn(CameraDirection::Down, dt);
+            self.res.camera.turn(CameraDirection::Down, self.dt);
         }
 
         if self.input.rotate_left {
-            self.res.camera.rotate(CameraDirection::Left, dt);
+            self.res.camera.rotate(CameraDirection::Left, self.dt);
         }
         if self.input.rotate_right {
-            self.res.camera.rotate(CameraDirection::Right, dt);
+            self.res.camera.rotate(CameraDirection::Right, self.dt);
         }
 
         if self.input.mouse_click.is_just_pressed() {
@@ -559,9 +582,9 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         }
 
         if self.input.camera_zoom.increase {
-            self.res.camera.change_zoom(dt * -100.0, &self.ctx.dispatcher);
+            self.res.camera.change_zoom(self.dt * -100.0, &self.ctx.dispatcher);
         } else if self.input.camera_zoom.decrease {
-            self.res.camera.change_zoom(dt * 100.0, &self.ctx.dispatcher);
+            self.res.camera.change_zoom(self.dt * 100.0, &self.ctx.dispatcher);
         } else if self.input.mouse_scroll_y != 0.0 {
             self.res.camera.change_zoom(self.input.mouse_scroll_y, &self.ctx.dispatcher);
         }
@@ -634,7 +657,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         self.res.camera.update_view(&self.ctx.dispatcher)
     }
 
-    pub fn change_frontend_input_values(&self) {
+    fn change_frontend_input_values(&self) {
         self.ctx.dispatcher.dispatch_change_pixel_horizontal_gap(self.res.filters.cur_pixel_scale_y);
         self.ctx.dispatcher.dispatch_change_pixel_vertical_gap(self.res.filters.cur_pixel_scale_x);
         self.ctx.dispatcher.dispatch_change_pixel_width(self.res.filters.cur_pixel_width);
@@ -664,148 +687,160 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             .dispatcher
             .dispatch_change_movement_speed(self.res.camera.movement_speed / self.res.initial_parameters.initial_movement_speed);
     }
-}
 
-fn update_outputs(res: &mut Resources, dt: f32) {
-    update_output_filter_source_colors(res);
-    update_output_filter_curvature(res, dt);
-    update_output_filter_layering_kind(res);
+    fn update_outputs(&mut self) {
+        self.update_output_filter_source_colors();
+        self.update_output_filter_curvature();
+        self.update_output_filter_layering_kind();
 
-    let (ambient_strength, pixel_have_depth) = match res.filters.pixels_geometry_kind {
-        PixelsGeometryKind::Squares => (1.0, false),
-        PixelsGeometryKind::Cubes => (0.5, true),
-    };
-    res.output.ambient_strength = ambient_strength;
-    res.output.pixel_have_depth = pixel_have_depth;
-    res.output.height_modifier_factor = 1.0 - res.filters.pixel_shadow_height_factor;
-
-    update_output_pixel_scale_gap_offset(res);
-}
-
-fn update_output_filter_source_colors(res: &mut Resources) {
-    res.output.color_splits = match res.filters.color_channels {
-        ColorChannels::Combined => 1,
-        _ => 3,
-    };
-    for i in 0..res.output.color_splits {
-        let mut light_color = get_3_f32color_from_int(res.filters.light_color);
-        match res.filters.color_channels {
-            ColorChannels::Combined => {}
-            _ => {
-                light_color[(i + 0) % 3] *= 1.0;
-                light_color[(i + 1) % 3] = 0.0;
-                light_color[(i + 2) % 3] = 0.0;
-            }
-        }
-        res.output.light_color[i] = light_color;
-    }
-    res.output.extra_light = get_3_f32color_from_int(res.filters.brightness_color);
-    for light in res.output.extra_light.iter_mut() {
-        *light *= res.filters.extra_bright;
-    }
-}
-
-fn update_output_filter_curvature(res: &mut Resources, dt: f32) {
-    res.output.screen_curvature_factor = match res.filters.screen_curvature_kind {
-        ScreenCurvatureKind::Curved1 => 0.15,
-        ScreenCurvatureKind::Curved2 => 0.3,
-        ScreenCurvatureKind::Curved3 => 0.45,
-        _ => 0.0,
-    };
-
-    if let ScreenCurvatureKind::Pulse = res.filters.screen_curvature_kind {
-        res.output.pixels_pulse += dt * 0.3;
-    } else {
-        res.output.pixels_pulse = 0.0;
-    }
-}
-
-fn update_output_filter_layering_kind(res: &mut Resources) {
-    match res.filters.layering_kind {
-        ScreenLayeringKind::ShadowOnly => {
-            res.output.showing_foreground = true;
-            res.output.showing_background = false;
-        }
-        ScreenLayeringKind::SolidOnly => {
-            res.output.showing_foreground = false;
-            res.output.showing_background = true;
-            res.output.solid_color_weight = 1.0;
-        }
-        ScreenLayeringKind::DiffuseOnly => {
-            res.output.showing_foreground = false;
-            res.output.showing_background = true;
-            res.output.solid_color_weight = 1.0;
-        }
-        ScreenLayeringKind::ShadowWithSolidBackground75 => {
-            res.output.showing_foreground = true;
-            res.output.showing_background = true;
-            res.output.solid_color_weight = 0.75;
-        }
-        ScreenLayeringKind::ShadowWithSolidBackground50 => {
-            res.output.showing_foreground = true;
-            res.output.showing_background = true;
-            res.output.solid_color_weight = 0.5;
-        }
-        ScreenLayeringKind::ShadowWithSolidBackground25 => {
-            res.output.showing_foreground = true;
-            res.output.showing_background = true;
-            res.output.solid_color_weight = 0.25;
-        }
-    };
-
-    res.output.is_background_diffuse = res.output.showing_foreground
-        || if let ScreenLayeringKind::DiffuseOnly = res.filters.layering_kind {
-            true
-        } else {
-            false
+        let (ambient_strength, pixel_have_depth) = match self.res.filters.pixels_geometry_kind {
+            PixelsGeometryKind::Squares => (1.0, false),
+            PixelsGeometryKind::Cubes => (0.5, true),
         };
-}
+        self.res.output.ambient_strength = ambient_strength;
+        self.res.output.pixel_have_depth = pixel_have_depth;
+        self.res.output.height_modifier_factor = 1.0 - self.res.filters.pixel_shadow_height_factor;
 
-fn update_output_pixel_scale_gap_offset(res: &mut Resources) {
-    res.output.pixel_gap = [(1.0 + res.filters.cur_pixel_gap) * res.filters.cur_pixel_width, 1.0 + res.filters.cur_pixel_gap];
-    res.output.pixel_scale_base = [
-        (res.filters.cur_pixel_scale_x + 1.0) / res.filters.cur_pixel_width,
-        res.filters.cur_pixel_scale_y + 1.0,
-        (res.filters.cur_pixel_scale_x + res.filters.cur_pixel_scale_x) * 0.5 + 1.0,
-    ];
+        self.update_output_pixel_scale_gap_offset();
+    }
 
-    res.output.pixel_scale_foreground.resize_with(res.filters.lines_per_pixel, Default::default);
-    res.output.pixel_offset_foreground.resize_with(res.filters.lines_per_pixel, Default::default);
-    for vl_idx in 0..res.filters.lines_per_pixel {
-        for color_idx in 0..res.output.color_splits {
-            let pixel_offset = &mut res.output.pixel_offset_foreground[vl_idx][color_idx];
-            let pixel_scale = &mut res.output.pixel_scale_foreground[vl_idx][color_idx];
-
-            *pixel_offset = [0.0, 0.0, 0.0];
-            *pixel_scale = [
-                (res.filters.cur_pixel_scale_x + 1.0) / res.filters.cur_pixel_width,
-                res.filters.cur_pixel_scale_y + 1.0,
-                (res.filters.cur_pixel_scale_x + res.filters.cur_pixel_scale_x) * 0.5 + 1.0,
-            ];
-            match res.filters.color_channels {
+    fn update_output_filter_source_colors(&mut self) {
+        self.res.output.color_splits = match self.res.filters.color_channels {
+            ColorChannels::Combined => 1,
+            _ => 3,
+        };
+        for i in 0..self.res.output.color_splits {
+            let mut light_color = get_3_f32color_from_int(self.res.filters.light_color);
+            match self.res.filters.color_channels {
                 ColorChannels::Combined => {}
-                _ => match res.filters.color_channels {
-                    ColorChannels::SplitHorizontal => {
-                        pixel_offset[0] = (color_idx as f32 - 1.0) * (1.0 / 3.0) * res.filters.cur_pixel_width / (res.filters.cur_pixel_scale_x + 1.0);
-                        pixel_scale[0] *= res.output.color_splits as f32;
-                    }
-                    ColorChannels::Overlapping => {
-                        pixel_offset[0] = (color_idx as f32 - 1.0) * (1.0 / 3.0) * res.filters.cur_pixel_width / (res.filters.cur_pixel_scale_x + 1.0);
-                        pixel_scale[0] *= 1.5;
-                    }
-                    ColorChannels::SplitVertical => {
-                        pixel_offset[1] = (color_idx as f32 - 1.0) * (1.0 / 3.0) * (1.0 - res.filters.cur_pixel_scale_y);
-                        pixel_scale[1] *= res.output.color_splits as f32;
-                    }
-                    _ => unreachable!(),
-                },
+                _ => {
+                    light_color[(i + 0) % 3] *= 1.0;
+                    light_color[(i + 1) % 3] = 0.0;
+                    light_color[(i + 2) % 3] = 0.0;
+                }
             }
-            if res.filters.lines_per_pixel > 1 {
-                pixel_offset[0] /= res.filters.lines_per_pixel as f32;
-                pixel_offset[0] += (vl_idx as f32 / res.filters.lines_per_pixel as f32 - calc_stupid_not_extrapoled_function(res.filters.lines_per_pixel))
-                    * res.filters.cur_pixel_width
-                    / (res.filters.cur_pixel_scale_x + 1.0);
-                pixel_scale[0] *= res.filters.lines_per_pixel as f32;
+            self.res.output.light_color[i] = light_color;
+        }
+        self.res.output.extra_light = get_3_f32color_from_int(self.res.filters.brightness_color);
+        for light in self.res.output.extra_light.iter_mut() {
+            *light *= self.res.filters.extra_bright;
+        }
+    }
+
+    fn update_output_filter_curvature(&mut self) {
+        self.res.output.screen_curvature_factor = match self.res.filters.screen_curvature_kind {
+            ScreenCurvatureKind::Curved1 => 0.15,
+            ScreenCurvatureKind::Curved2 => 0.3,
+            ScreenCurvatureKind::Curved3 => 0.45,
+            _ => 0.0,
+        };
+
+        if let ScreenCurvatureKind::Pulse = self.res.filters.screen_curvature_kind {
+            self.res.output.pixels_pulse += self.dt * 0.3;
+        } else {
+            self.res.output.pixels_pulse = 0.0;
+        }
+    }
+
+    fn update_output_filter_layering_kind(&mut self) {
+        match self.res.filters.layering_kind {
+            ScreenLayeringKind::ShadowOnly => {
+                self.res.output.showing_foreground = true;
+                self.res.output.showing_background = false;
+            }
+            ScreenLayeringKind::SolidOnly => {
+                self.res.output.showing_foreground = false;
+                self.res.output.showing_background = true;
+                self.res.output.solid_color_weight = 1.0;
+            }
+            ScreenLayeringKind::DiffuseOnly => {
+                self.res.output.showing_foreground = false;
+                self.res.output.showing_background = true;
+                self.res.output.solid_color_weight = 1.0;
+            }
+            ScreenLayeringKind::ShadowWithSolidBackground75 => {
+                self.res.output.showing_foreground = true;
+                self.res.output.showing_background = true;
+                self.res.output.solid_color_weight = 0.75;
+            }
+            ScreenLayeringKind::ShadowWithSolidBackground50 => {
+                self.res.output.showing_foreground = true;
+                self.res.output.showing_background = true;
+                self.res.output.solid_color_weight = 0.5;
+            }
+            ScreenLayeringKind::ShadowWithSolidBackground25 => {
+                self.res.output.showing_foreground = true;
+                self.res.output.showing_background = true;
+                self.res.output.solid_color_weight = 0.25;
+            }
+        };
+
+        self.res.output.is_background_diffuse = self.res.output.showing_foreground
+            || if let ScreenLayeringKind::DiffuseOnly = self.res.filters.layering_kind {
+                true
+            } else {
+                false
+            };
+    }
+
+    fn update_output_pixel_scale_gap_offset(&mut self) {
+        self.res.output.pixel_gap = [
+            (1.0 + self.res.filters.cur_pixel_gap) * self.res.filters.cur_pixel_width,
+            1.0 + self.res.filters.cur_pixel_gap,
+        ];
+        self.res.output.pixel_scale_base = [
+            (self.res.filters.cur_pixel_scale_x + 1.0) / self.res.filters.cur_pixel_width,
+            self.res.filters.cur_pixel_scale_y + 1.0,
+            (self.res.filters.cur_pixel_scale_x + self.res.filters.cur_pixel_scale_x) * 0.5 + 1.0,
+        ];
+
+        self.res
+            .output
+            .pixel_scale_foreground
+            .resize_with(self.res.filters.lines_per_pixel, Default::default);
+        self.res
+            .output
+            .pixel_offset_foreground
+            .resize_with(self.res.filters.lines_per_pixel, Default::default);
+        for vl_idx in 0..self.res.filters.lines_per_pixel {
+            for color_idx in 0..self.res.output.color_splits {
+                let pixel_offset = &mut self.res.output.pixel_offset_foreground[vl_idx][color_idx];
+                let pixel_scale = &mut self.res.output.pixel_scale_foreground[vl_idx][color_idx];
+
+                *pixel_offset = [0.0, 0.0, 0.0];
+                *pixel_scale = [
+                    (self.res.filters.cur_pixel_scale_x + 1.0) / self.res.filters.cur_pixel_width,
+                    self.res.filters.cur_pixel_scale_y + 1.0,
+                    (self.res.filters.cur_pixel_scale_x + self.res.filters.cur_pixel_scale_x) * 0.5 + 1.0,
+                ];
+                match self.res.filters.color_channels {
+                    ColorChannels::Combined => {}
+                    _ => match self.res.filters.color_channels {
+                        ColorChannels::SplitHorizontal => {
+                            pixel_offset[0] =
+                                (color_idx as f32 - 1.0) * (1.0 / 3.0) * self.res.filters.cur_pixel_width / (self.res.filters.cur_pixel_scale_x + 1.0);
+                            pixel_scale[0] *= self.res.output.color_splits as f32;
+                        }
+                        ColorChannels::Overlapping => {
+                            pixel_offset[0] =
+                                (color_idx as f32 - 1.0) * (1.0 / 3.0) * self.res.filters.cur_pixel_width / (self.res.filters.cur_pixel_scale_x + 1.0);
+                            pixel_scale[0] *= 1.5;
+                        }
+                        ColorChannels::SplitVertical => {
+                            pixel_offset[1] = (color_idx as f32 - 1.0) * (1.0 / 3.0) * (1.0 - self.res.filters.cur_pixel_scale_y);
+                            pixel_scale[1] *= self.res.output.color_splits as f32;
+                        }
+                        _ => unreachable!(),
+                    },
+                }
+                if self.res.filters.lines_per_pixel > 1 {
+                    pixel_offset[0] /= self.res.filters.lines_per_pixel as f32;
+                    pixel_offset[0] += (vl_idx as f32 / self.res.filters.lines_per_pixel as f32
+                        - calc_stupid_not_extrapoled_function(self.res.filters.lines_per_pixel))
+                        * self.res.filters.cur_pixel_width
+                        / (self.res.filters.cur_pixel_scale_x + 1.0);
+                    pixel_scale[0] *= self.res.filters.lines_per_pixel as f32;
+                }
             }
         }
     }
