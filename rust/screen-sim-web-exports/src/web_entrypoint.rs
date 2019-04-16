@@ -10,10 +10,10 @@ use core::action_bindings::on_button_action;
 use core::app_events::AppEventDispatcher;
 use core::internal_resolution::InternalResolution;
 use core::simulation_context::SimulationContext;
-use core::simulation_core_state::{init_resources, Input, InputEventValue, Resources, VideoInputResources};
+use core::simulation_core_state::{Input, InputEventValue, Resources, VideoInputResources};
 use core::simulation_update::{post_process_input, pre_process_input, SimulationUpdater};
 use render::simulation_draw::SimulationDrawer;
-use render::simulation_render_state::{load_materials, Materials, VideoInputMaterials};
+use render::simulation_render_state::{Materials, VideoInputMaterials};
 use web_error::{WebError, WebResult};
 
 pub type OwnedClosure = Option<Closure<FnMut(JsValue)>>;
@@ -43,8 +43,8 @@ pub fn web_entrypoint(
     video_input_materials: VideoInputMaterials,
 ) -> WebResult<()> {
     let gl = gl.dyn_into::<WebGl2RenderingContext>()?;
-    init_resources(&mut res.borrow_mut(), video_input_resources, now()?);
-    let owned_state = StateOwner::new_rc(res, load_materials(gl, video_input_materials)?, Input::new(now()?));
+    res.borrow_mut().initialize(video_input_resources, now()?);
+    let owned_state = StateOwner::new_rc(res, Materials::new(gl, video_input_materials)?, Input::new(now()?));
     let frame_closure: Closure<FnMut(JsValue)> = {
         let owned_state = Rc::clone(&owned_state);
         let window = window()?;

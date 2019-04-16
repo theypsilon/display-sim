@@ -26,16 +26,18 @@ pub struct Materials {
     pub screenshot_pixels: Option<Box<[u8]>>,
 }
 
-pub fn load_materials(gl: WebGl2RenderingContext, video: VideoInputMaterials) -> WebResult<Materials> {
-    Ok(Materials {
-        main_buffer_stack: TextureBufferStack::new(&gl),
-        bg_buffer_stack: TextureBufferStack::new(&gl),
-        pixels_render: PixelsRender::new(&gl, video)?,
-        blur_render: BlurRender::new(&gl)?,
-        internal_resolution_render: InternalResolutionRender::new(&gl)?,
-        rgb_render: RgbRender::new(&gl)?,
-        background_render: BackgroundRender::new(&gl)?,
-        screenshot_pixels: None,
-        gl,
-    })
+impl Materials {
+    pub fn new(gl: WebGl2RenderingContext, video: VideoInputMaterials) -> WebResult<Materials> {
+        Ok(Materials {
+            main_buffer_stack: TextureBufferStack::new(&gl),
+            bg_buffer_stack: TextureBufferStack::new(&gl),
+            pixels_render: PixelsRender::new(&gl, video)?,
+            blur_render: BlurRender::new(&gl)?,
+            internal_resolution_render: InternalResolutionRender::new(&gl)?,
+            rgb_render: RgbRender::new(&gl)?,
+            background_render: BackgroundRender::new(&gl)?,
+            screenshot_pixels: None,
+            gl,
+        })
+    }
 }

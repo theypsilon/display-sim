@@ -4,10 +4,10 @@ use core::action_bindings::on_button_action;
 use core::app_events::AppEventDispatcher;
 use core::general_types::Size2D;
 use core::simulation_context::SimulationContext;
-use core::simulation_core_state::{init_resources, AnimationStep, Input, Resources, VideoInputResources};
+use core::simulation_core_state::{AnimationStep, Input, Resources, VideoInputResources};
 use core::simulation_update::{post_process_input, pre_process_input, SimulationUpdater};
 use render::simulation_draw::SimulationDrawer;
-use render::simulation_render_state::{load_materials, VideoInputMaterials};
+use render::simulation_render_state::{Materials, VideoInputMaterials};
 
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
@@ -67,8 +67,8 @@ fn program() -> WebResult<()> {
 
     let starting_time = SystemTime::now();
     let mut res = Resources::default();
-    init_resources(&mut res, res_input, get_millis_since(&starting_time)?);
-    let mut materials = load_materials(WebGl2RenderingContext::default(), materials_input)?;
+    res.initialize(res_input, get_millis_since(&starting_time)?);
+    let mut materials = Materials::new(WebGl2RenderingContext::default(), materials_input)?;
 
     let mut input = Input::new(get_millis_since(&starting_time)?);
     let mut ctx: SimulationContext<NativeEventDispatcher> = SimulationContext::default();

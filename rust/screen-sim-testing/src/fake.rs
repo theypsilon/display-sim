@@ -1,7 +1,7 @@
 use core::app_events::AppEventDispatcher;
 use core::general_types::Size2D;
 use core::simulation_context::SimulationContext;
-use core::simulation_core_state::{init_resources, AnimationStep, Input, Resources, VideoInputResources};
+use core::simulation_core_state::{AnimationStep, Input, Resources, VideoInputResources};
 use core::simulation_update::SimulationUpdater;
 use render::background_render::BackgroundRender;
 use render::blur_render::BlurRender;
@@ -41,7 +41,7 @@ impl Default for FakeVideoInput {
 impl FakeVideoInput {
     pub fn iterate_times(self, times: u128) -> WebResult<()> {
         let mut res = Resources::default();
-        init_resources(&mut res, self.0, 0.0);
+        res.initialize(self.0, 0.0);
         let gl = WebGl2RenderingContext {};
         let mut materials = Materials {
             main_buffer_stack: TextureBufferStack::new(&gl),
