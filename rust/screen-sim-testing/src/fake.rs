@@ -59,13 +59,15 @@ impl FakeVideoInput {
         let mut input = Input::new(0.0);
         let mut ctx: SimulationContext<FakeEventDispatcher> = SimulationContext::default();
         for _ in 0..times {
-            if !SimulationCoreTicker::new(&mut ctx, &mut res, &mut input).tick(now.elapsed().map_err(|e| e.to_string())?.as_millis() as f64 * 0.05) {
+            SimulationCoreTicker::new(&mut ctx, &mut res, &mut input).tick(now.elapsed().map_err(|e| e.to_string())?.as_millis() as f64 * 0.05);
+            if res.quit {
                 println!("User closed the simulation.");
                 return Ok(());
             }
-            if res.drawable {
-                SimulationDrawer::new(&mut ctx, &mut materials, &res).draw()?;
+            if !res.drawable {
+                continue;
             }
+            SimulationDrawer::new(&mut ctx, &mut materials, &res).draw()?;
         }
         Ok(())
     }

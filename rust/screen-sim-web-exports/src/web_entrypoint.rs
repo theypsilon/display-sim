@@ -94,7 +94,8 @@ fn web_entrypoint_iteration<T: AppEventDispatcher>(owned_state: &StateOwner, win
 }
 
 fn tick<T: AppEventDispatcher>(ctx: &mut SimulationContext<T>, input: &mut Input, res: &mut Resources, materials: &mut Materials) -> WebResult<bool> {
-    if !SimulationCoreTicker::new(ctx, res, input).tick(now()?) {
+    SimulationCoreTicker::new(ctx, res, input).tick(now()?);
+    if res.quit {
         console!(log. "User closed the simulation.");
         return Ok(false);
     }

@@ -18,11 +18,10 @@ pub struct SimulationCoreTicker<'a, T: AppEventDispatcher> {
 }
 
 impl<'a, T: AppEventDispatcher> SimulationCoreTicker<'a, T> {
-    pub fn tick(&mut self, now: f64) -> bool {
+    pub fn tick(&mut self, now: f64) {
         self.pre_process_input(now);
-        let request_more_updates = SimulationUpdater::new(self.ctx, self.res, self.input).update();
+        SimulationUpdater::new(self.ctx, self.res, self.input).update();
         self.post_process_input();
-        request_more_updates
     }
 
     fn pre_process_input(&mut self, now: f64) {
@@ -59,7 +58,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         }
     }
 
-    pub fn update(&mut self) -> bool {
+    pub fn update(&mut self) {
         if self.res.resetted {
             self.change_frontend_input_values();
         }
@@ -69,7 +68,8 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
 
         if self.input.esc.is_just_pressed() {
             self.ctx.dispatcher.dispatch_exiting_session();
-            return false;
+            self.res.quit = true;
+            return;
         }
 
         if self.input.space.is_just_pressed() {
@@ -85,7 +85,6 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
 
         self.res.resetted = false;
         self.res.drawable = self.res.screenshot_trigger.is_triggered || self.res.screenshot_trigger.delay <= 0;
-        true
     }
 
     fn update_screenshot(&mut self) {

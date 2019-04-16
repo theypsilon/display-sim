@@ -41,6 +41,7 @@ pub struct Resources {
     pub screenshot_trigger: ScreenshotTrigger,
     pub drawable: bool,
     pub resetted: bool,
+    pub quit: bool,
 }
 
 pub struct ScreenshotTrigger {
@@ -60,6 +61,7 @@ impl Default for Resources {
             screenshot_trigger: ScreenshotTrigger { is_triggered: false, delay: 0 },
             drawable: false,
             resetted: true,
+            quit: false,
         }
     }
 }
@@ -85,6 +87,7 @@ impl Resources {
                 }
             }
         }
+        self.quit = false;
         self.resetted = true;
         self.filters.cur_pixel_width = cur_pixel_width;
         self.timers = SimulationTimers {

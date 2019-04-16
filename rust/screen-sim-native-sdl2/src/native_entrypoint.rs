@@ -88,7 +88,8 @@ fn program() -> WebResult<()> {
             }
         }
 
-        if !SimulationCoreTicker::new(&mut ctx, &mut res, &mut input).tick(get_millis_since(&starting_time)?) {
+        SimulationCoreTicker::new(&mut ctx, &mut res, &mut input).tick(get_millis_since(&starting_time)?);
+        if res.quit {
             println!("User closed the simulation.");
             return Ok(());
         }
