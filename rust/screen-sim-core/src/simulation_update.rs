@@ -54,23 +54,27 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         self.update_filters(dt);
         self.update_speeds();
         self.update_camera(dt);
-
-        self.res.launch_screenshot = false;
-        if self.res.screenshot_delay > 0 {
-            self.res.screenshot_delay -= 1;
-        } else if self.input.screenshot.is_just_released() {
-            self.res.launch_screenshot = true;
-            let multiplier = self.res.filters.internal_resolution.multiplier as f32;
-            self.res.screenshot_delay = (2.0 * multiplier * multiplier * (1.0 / dt)) as i32; // 2 seconds aprox.
-            if self.res.screenshot_delay as f32 * dt > 2.0 {
-                self.ctx.dispatcher.dispatch_top_message("Screenshot about to be downloaded, please wait.");
-            }
-        }
+        self.update_screenshot(dt);
 
         update_outputs(self.res, dt);
 
         self.res.resetted = false;
+        self.res.drawable = self.res.screenshot_trigger.is_triggered || self.res.screenshot_trigger.delay <= 0;
         true
+    }
+
+    fn update_screenshot(&mut self, dt: f32) {
+        self.res.screenshot_trigger.is_triggered = false;
+        if self.res.screenshot_trigger.delay > 0 {
+            self.res.screenshot_trigger.delay -= 1;
+        } else if self.input.screenshot.is_just_released() {
+            self.res.screenshot_trigger.is_triggered = true;
+            let multiplier = self.res.filters.internal_resolution.multiplier as f32;
+            self.res.screenshot_trigger.delay = (2.0 * multiplier * multiplier * (1.0 / dt)) as i32; // 2 seconds aprox.
+            if self.res.screenshot_trigger.delay as f32 * dt > 2.0 {
+                self.ctx.dispatcher.dispatch_top_message("Screenshot about to be downloaded, please wait.");
+            }
+        }
     }
 
     fn update_timers_and_dt(&mut self) -> f32 {

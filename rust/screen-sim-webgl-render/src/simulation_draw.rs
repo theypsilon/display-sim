@@ -164,7 +164,7 @@ impl<'a, T: AppEventDispatcher> SimulationDrawer<'a, T> {
         }
 
         self.materials.screenshot_pixels = None;
-        if self.res.launch_screenshot {
+        if self.res.screenshot_trigger.is_triggered {
             let width = self.res.filters.internal_resolution.width();
             let height = self.res.filters.internal_resolution.height();
             let mut pixels: Box<[u8]> = vec![0; (width * height * 4) as usize].into_boxed_slice();

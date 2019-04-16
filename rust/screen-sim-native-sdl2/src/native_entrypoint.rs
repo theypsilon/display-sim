@@ -94,7 +94,7 @@ fn program() -> WebResult<()> {
             return Ok(());
         }
         post_process_input(&mut input);
-        if res.launch_screenshot || res.screenshot_delay <= 0 {
+        if res.drawable {
             SimulationDrawer::new(&mut ctx, &mut materials, &res).draw()?;
         }
 

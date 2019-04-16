@@ -38,23 +38,28 @@ pub struct Resources {
     pub output: Output,
     pub timers: SimulationTimers,
     pub initial_parameters: InitialParameters,
-    pub launch_screenshot: bool,
-    pub screenshot_delay: i32,
+    pub screenshot_trigger: ScreenshotTrigger,
+    pub drawable: bool,
     pub resetted: bool,
+}
+
+pub struct ScreenshotTrigger {
+    pub is_triggered: bool,
+    pub delay: i32,
 }
 
 impl Default for Resources {
     fn default() -> Self {
         Resources {
-            resetted: true,
             initial_parameters: InitialParameters::default(),
             timers: SimulationTimers::default(),
             video: VideoInputResources::default(),
             camera: Camera::new(MOVEMENT_BASE_SPEED / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED),
             output: Output::default(),
             filters: Filters::new(PIXEL_MANIPULATION_BASE_SPEED),
-            launch_screenshot: false,
-            screenshot_delay: 0,
+            screenshot_trigger: ScreenshotTrigger { is_triggered: false, delay: 0 },
+            drawable: false,
+            resetted: true,
         }
     }
 }

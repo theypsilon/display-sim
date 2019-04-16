@@ -101,7 +101,7 @@ fn tick<T: AppEventDispatcher>(ctx: &mut SimulationContext<T>, input: &mut Input
         return Ok(false);
     }
     post_process_input(input);
-    if res.launch_screenshot || res.screenshot_delay <= 0 {
+    if res.drawable {
         SimulationDrawer::new(ctx, materials, res).draw()?;
     }
     Ok(true)
