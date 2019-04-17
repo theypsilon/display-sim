@@ -835,11 +835,10 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
                     },
                 }
                 if self.res.filters.lines_per_pixel > 1 {
-                    pixel_offset[0] /= self.res.filters.lines_per_pixel as f32;
                     let beginning = -(self.res.filters.lines_per_pixel as f32 - 1.0) / 2.0;
                     let current = beginning + vl_idx as f32;
-                    let unit = 1.0 / (self.res.filters.lines_per_pixel as f32);
-                    pixel_offset[0] += current * unit * self.res.filters.cur_pixel_width;
+                    let by_lpp = 1.0 / (self.res.filters.lines_per_pixel as f32);
+                    pixel_offset[0] = (pixel_offset[0] + current * self.res.filters.cur_pixel_width) * by_lpp;
                     pixel_scale[0] *= self.res.filters.lines_per_pixel as f32;
                 }
             }
