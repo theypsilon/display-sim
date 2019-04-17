@@ -54,12 +54,12 @@ impl<'a, T: AppEventDispatcher> SimulationDrawer<'a, T> {
             .get_projection(self.res.video.viewport_size.width as f32, self.res.video.viewport_size.height as f32);
 
         if self.res.output.showing_foreground {
-            for j in 0..self.res.filters.lines_per_pixel {
-                for i in 0..self.res.output.color_splits {
+            for vl_idx in 0..self.res.filters.lines_per_pixel {
+                for color_idx in 0..self.res.output.color_splits {
                     if let ColorChannels::Overlapping = self.res.filters.color_channels {
                         self.materials.main_buffer_stack.push()?;
                         self.materials.main_buffer_stack.bind_current()?;
-                        if j == 0 {
+                        if vl_idx == 0 {
                             gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
                         }
                     }
@@ -70,14 +70,14 @@ impl<'a, T: AppEventDispatcher> SimulationDrawer<'a, T> {
                         projection: projection.as_slice(),
                         ambient_strength: self.res.output.ambient_strength,
                         contrast_factor: self.res.filters.extra_contrast,
-                        light_color: &self.res.output.light_color[i],
+                        light_color: &self.res.output.light_color[color_idx],
                         extra_light: &self.res.output.extra_light,
                         light_pos: position.as_slice(),
                         screen_curvature: self.res.output.screen_curvature_factor,
                         pixel_spread: &self.res.output.pixel_spread,
-                        pixel_scale: &self.res.output.pixel_scale_foreground.get(j).expect("Bad pixel_scale_foreground")[i],
+                        pixel_scale: &self.res.output.pixel_scale_foreground.get(vl_idx).expect("Bad pixel_scale_foreground")[color_idx],
                         pixel_pulse: self.res.output.pixels_pulse,
-                        pixel_offset: &self.res.output.pixel_offset_foreground.get(j).expect("Bad pixel_offset_foreground")[i],
+                        pixel_offset: &self.res.output.pixel_offset_foreground.get(vl_idx).expect("Bad pixel_offset_foreground")[color_idx],
                         height_modifier_factor: self.res.output.height_modifier_factor,
                     });
                 }
@@ -116,27 +116,29 @@ impl<'a, T: AppEventDispatcher> SimulationDrawer<'a, T> {
                 self.materials.bg_buffer_stack.bind_current()?;
                 gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
             }
-            self.materials.pixels_render.render(PixelsUniform {
-                shadow_kind: 0,
-                geometry_kind: self.res.filters.pixels_geometry_kind,
-                view: view.as_slice(),
-                projection: projection.as_slice(),
-                ambient_strength: self.res.output.ambient_strength,
-                contrast_factor: self.res.filters.extra_contrast,
-                light_color: &[
-                    self.res.output.solid_color_weight,
-                    self.res.output.solid_color_weight,
-                    self.res.output.solid_color_weight,
-                ],
-                extra_light: &[0.0, 0.0, 0.0],
-                light_pos: position.as_slice(),
-                pixel_spread: &self.res.output.pixel_spread,
-                pixel_scale: &self.res.output.pixel_scale_base,
-                screen_curvature: self.res.output.screen_curvature_factor,
-                pixel_pulse: self.res.output.pixels_pulse,
-                pixel_offset: &[0.0, 0.0, 0.0],
-                height_modifier_factor: 0.0,
-            });
+            for vl_idx in 0..self.res.filters.lines_per_pixel {
+                self.materials.pixels_render.render(PixelsUniform {
+                    shadow_kind: 0,
+                    geometry_kind: self.res.filters.pixels_geometry_kind,
+                    view: view.as_slice(),
+                    projection: projection.as_slice(),
+                    ambient_strength: self.res.output.ambient_strength,
+                    contrast_factor: self.res.filters.extra_contrast,
+                    light_color: &[
+                        self.res.output.solid_color_weight,
+                        self.res.output.solid_color_weight,
+                        self.res.output.solid_color_weight,
+                    ],
+                    extra_light: &[0.0, 0.0, 0.0],
+                    light_pos: position.as_slice(),
+                    pixel_spread: &self.res.output.pixel_spread,
+                    pixel_scale: &self.res.output.pixel_scale_background[vl_idx],
+                    screen_curvature: self.res.output.screen_curvature_factor,
+                    pixel_pulse: self.res.output.pixels_pulse,
+                    pixel_offset: &self.res.output.pixel_offset_background[vl_idx],
+                    height_modifier_factor: 0.0,
+                });
+            }
             if self.res.output.is_background_diffuse {
                 let source = self.materials.bg_buffer_stack.get_current()?.clone();
                 let target = self.materials.main_buffer_stack.get_current()?;

@@ -215,6 +215,8 @@ pub struct ViewModel {
     pub height_modifier_factor: f32,
     pub pixel_scale_foreground: Vec<[[f32; 3]; 3]>,
     pub pixel_offset_foreground: Vec<[[f32; 3]; 3]>,
+    pub pixel_scale_background: Vec<[f32; 3]>,
+    pub pixel_offset_background: Vec<[f32; 3]>,
     pub is_background_diffuse: bool,
     pub showing_background: bool,
     pub showing_foreground: bool,

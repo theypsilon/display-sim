@@ -843,5 +843,32 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
                 }
             }
         }
+
+        self.res
+            .output
+            .pixel_scale_background
+            .resize_with(self.res.filters.lines_per_pixel, Default::default);
+        self.res
+            .output
+            .pixel_offset_background
+            .resize_with(self.res.filters.lines_per_pixel, Default::default);
+        for vl_idx in 0..self.res.filters.lines_per_pixel {
+            let pixel_offset = &mut self.res.output.pixel_offset_background[vl_idx];
+            let pixel_scale = &mut self.res.output.pixel_scale_background[vl_idx];
+
+            *pixel_offset = [0.0, 0.0, 0.0];
+            *pixel_scale = [
+                (self.res.filters.cur_pixel_vertical_gap + 1.0) / self.res.filters.cur_pixel_width,
+                self.res.filters.cur_pixel_horizontal_gap + 1.0,
+                (self.res.filters.cur_pixel_vertical_gap + self.res.filters.cur_pixel_vertical_gap) * 0.5 + 1.0,
+            ];
+            if self.res.filters.lines_per_pixel > 1 {
+                let beginning = -(self.res.filters.lines_per_pixel as f32 - 1.0) / 2.0;
+                let current = beginning + vl_idx as f32;
+                let by_lpp = 1.0 / (self.res.filters.lines_per_pixel as f32);
+                pixel_offset[0] = (pixel_offset[0] + current * self.res.filters.cur_pixel_width) * by_lpp;
+                pixel_scale[0] *= self.res.filters.lines_per_pixel as f32;
+            }
+        }
     }
 }
