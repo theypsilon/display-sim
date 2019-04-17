@@ -400,8 +400,8 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         change_pixel_sizes(
             ctx,
             &self.input.custom_event,
-            self.input.pixel_scale_x.clone(),
-            &mut self.res.filters.cur_pixel_scale_x,
+            self.input.pixel_vertical_gap.clone(),
+            &mut self.res.filters.cur_pixel_vertical_gap,
             pixel_velocity * 0.00125,
             |n| ctx.dispatcher.dispatch_change_pixel_vertical_gap(n),
             "event_kind:pixel_vertical_gap",
@@ -409,8 +409,8 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         change_pixel_sizes(
             ctx,
             &self.input.custom_event,
-            self.input.pixel_scale_y.clone(),
-            &mut self.res.filters.cur_pixel_scale_y,
+            self.input.pixel_horizontal_gap.clone(),
+            &mut self.res.filters.cur_pixel_horizontal_gap,
             pixel_velocity * 0.00125,
             |n| ctx.dispatcher.dispatch_change_pixel_horizontal_gap(n),
             "event_kind:pixel_horizontal_gap",
@@ -427,8 +427,8 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         change_pixel_sizes(
             ctx,
             &self.input.custom_event,
-            self.input.pixel_gap.clone(),
-            &mut self.res.filters.cur_pixel_gap,
+            self.input.pixel_spread.clone(),
+            &mut self.res.filters.cur_pixel_spread,
             pixel_velocity * 0.005,
             |n| ctx.dispatcher.dispatch_change_pixel_spread(n),
             "event_kind:pixel_spread",
@@ -657,10 +657,12 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
     }
 
     fn change_frontend_input_values(&self) {
-        self.ctx.dispatcher.dispatch_change_pixel_horizontal_gap(self.res.filters.cur_pixel_scale_y);
-        self.ctx.dispatcher.dispatch_change_pixel_vertical_gap(self.res.filters.cur_pixel_scale_x);
+        self.ctx
+            .dispatcher
+            .dispatch_change_pixel_horizontal_gap(self.res.filters.cur_pixel_horizontal_gap);
+        self.ctx.dispatcher.dispatch_change_pixel_vertical_gap(self.res.filters.cur_pixel_vertical_gap);
         self.ctx.dispatcher.dispatch_change_pixel_width(self.res.filters.cur_pixel_width);
-        self.ctx.dispatcher.dispatch_change_pixel_spread(self.res.filters.cur_pixel_gap);
+        self.ctx.dispatcher.dispatch_change_pixel_spread(self.res.filters.cur_pixel_spread);
         self.ctx.dispatcher.dispatch_change_pixel_brightness(self.res);
         self.ctx.dispatcher.dispatch_change_pixel_contrast(self.res);
         self.ctx.dispatcher.dispatch_change_light_color(self.res);
@@ -783,14 +785,14 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
     }
 
     fn update_output_pixel_scale_gap_offset(&mut self) {
-        self.res.output.pixel_gap = [
-            (1.0 + self.res.filters.cur_pixel_gap) * self.res.filters.cur_pixel_width,
-            1.0 + self.res.filters.cur_pixel_gap,
+        self.res.output.pixel_spread = [
+            (1.0 + self.res.filters.cur_pixel_spread) * self.res.filters.cur_pixel_width,
+            1.0 + self.res.filters.cur_pixel_spread,
         ];
         self.res.output.pixel_scale_base = [
-            (self.res.filters.cur_pixel_scale_x + 1.0) / self.res.filters.cur_pixel_width,
-            self.res.filters.cur_pixel_scale_y + 1.0,
-            (self.res.filters.cur_pixel_scale_x + self.res.filters.cur_pixel_scale_x) * 0.5 + 1.0,
+            (self.res.filters.cur_pixel_vertical_gap + 1.0) / self.res.filters.cur_pixel_width,
+            self.res.filters.cur_pixel_horizontal_gap + 1.0,
+            (self.res.filters.cur_pixel_vertical_gap + self.res.filters.cur_pixel_vertical_gap) * 0.5 + 1.0,
         ];
 
         self.res
@@ -808,36 +810,41 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
 
                 *pixel_offset = [0.0, 0.0, 0.0];
                 *pixel_scale = [
-                    (self.res.filters.cur_pixel_scale_x + 1.0) / self.res.filters.cur_pixel_width,
-                    self.res.filters.cur_pixel_scale_y + 1.0,
-                    (self.res.filters.cur_pixel_scale_x + self.res.filters.cur_pixel_scale_x) * 0.5 + 1.0,
+                    (self.res.filters.cur_pixel_vertical_gap + 1.0) / self.res.filters.cur_pixel_width,
+                    self.res.filters.cur_pixel_horizontal_gap + 1.0,
+                    (self.res.filters.cur_pixel_vertical_gap + self.res.filters.cur_pixel_vertical_gap) * 0.5 + 1.0,
                 ];
                 match self.res.filters.color_channels {
                     ColorChannels::Combined => {}
                     _ => match self.res.filters.color_channels {
                         ColorChannels::SplitHorizontal => {
                             pixel_offset[0] =
-                                (color_idx as f32 - 1.0) * (1.0 / 3.0) * self.res.filters.cur_pixel_width / (self.res.filters.cur_pixel_scale_x + 1.0);
+                                (color_idx as f32 - 1.0) * (1.0 / 3.0) * self.res.filters.cur_pixel_width / (self.res.filters.cur_pixel_vertical_gap + 1.0);
                             pixel_scale[0] *= self.res.output.color_splits as f32;
                         }
                         ColorChannels::Overlapping => {
                             pixel_offset[0] =
-                                (color_idx as f32 - 1.0) * (1.0 / 3.0) * self.res.filters.cur_pixel_width / (self.res.filters.cur_pixel_scale_x + 1.0);
+                                (color_idx as f32 - 1.0) * (1.0 / 3.0) * self.res.filters.cur_pixel_width / (self.res.filters.cur_pixel_vertical_gap + 1.0);
                             pixel_scale[0] *= 1.5;
                         }
                         ColorChannels::SplitVertical => {
-                            pixel_offset[1] = (color_idx as f32 - 1.0) * (1.0 / 3.0) * (1.0 - self.res.filters.cur_pixel_scale_y);
+                            pixel_offset[1] = (color_idx as f32 - 1.0) * (1.0 / 3.0) * (1.0 - self.res.filters.cur_pixel_horizontal_gap);
                             pixel_scale[1] *= self.res.output.color_splits as f32;
                         }
                         _ => unreachable!(),
                     },
                 }
                 if self.res.filters.lines_per_pixel > 1 {
+                    let offset_partial = self.res.filters.cur_pixel_width / (self.res.filters.cur_pixel_vertical_gap + 1.0);
                     pixel_offset[0] /= self.res.filters.lines_per_pixel as f32;
                     pixel_offset[0] += (vl_idx as f32 / self.res.filters.lines_per_pixel as f32
                         - calc_stupid_not_extrapoled_function(self.res.filters.lines_per_pixel))
-                        * self.res.filters.cur_pixel_width
-                        / (self.res.filters.cur_pixel_scale_x + 1.0);
+                        * offset_partial;
+                    /*let beginning = -(self.res.filters.lines_per_pixel as f32 - 1.0) / 2.0;
+                    let current = beginning + vl_idx as f32;
+                    let unit = 1.0 / (self.res.filters.lines_per_pixel as f32);
+                    //let wtf = offset_partial * ;
+                    pixel_offset[0] += current * unit * offset_partial;*/
                     pixel_scale[0] *= self.res.filters.lines_per_pixel as f32;
                 }
             }

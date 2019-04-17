@@ -54,20 +54,20 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) -
         "t" | "reset-speeds" => input.reset_speeds = pressed,
         "camera-zoom-inc" => input.camera_zoom.increase = pressed,
         "camera-zoom-dec" => input.camera_zoom.decrease = pressed,
-        "u" | "pixel-vertical-gap-inc" => input.pixel_scale_x.increase = pressed,
-        "i" | "pixel-vertical-gap-dec" => input.pixel_scale_x.decrease = pressed,
-        "j" | "pixel-horizontal-gap-inc" => input.pixel_scale_y.increase = pressed,
-        "k" | "pixel-horizontal-gap-dec" => input.pixel_scale_y.decrease = pressed,
+        "u" | "pixel-vertical-gap-inc" => input.pixel_vertical_gap.increase = pressed,
+        "i" | "pixel-vertical-gap-dec" => input.pixel_vertical_gap.decrease = pressed,
+        "j" | "pixel-horizontal-gap-inc" => input.pixel_horizontal_gap.increase = pressed,
+        "k" | "pixel-horizontal-gap-dec" => input.pixel_horizontal_gap.decrease = pressed,
         "n" | "pixel-width-inc" => {
             if input.shift {
-                input.pixel_gap.increase = pressed;
+                input.pixel_spread.increase = pressed;
             } else {
                 input.pixel_width.increase = pressed;
             }
         }
         "m" | "pixel-width-dec" => {
             if input.shift {
-                input.pixel_gap.decrease = pressed;
+                input.pixel_spread.decrease = pressed;
             } else {
                 input.pixel_width.decrease = pressed;
             }
@@ -99,7 +99,7 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) -
         "shift" | "left shift" | "right shift" => {
             input.shift = pressed;
             input.pixel_width.reset();
-            input.pixel_gap.reset();
+            input.pixel_spread.reset();
         }
         "alt" => input.alt = pressed,
         " " | "space" => input.space.input = pressed,

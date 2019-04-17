@@ -33,7 +33,7 @@ pub struct PixelsUniform<'a> {
     pub ambient_strength: f32,
     pub contrast_factor: f32,
     pub screen_curvature: f32,
-    pub pixel_gap: &'a [f32],
+    pub pixel_spread: &'a [f32],
     pub pixel_scale: &'a [f32],
     pub pixel_offset: &'a [f32],
     pub pixel_pulse: f32,
@@ -236,7 +236,7 @@ impl PixelsRender {
             uniforms.screen_curvature,
         );
         self.gl
-            .uniform2fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "pixel_gap").as_ref(), uniforms.pixel_gap);
+            .uniform2fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "pixel_spread").as_ref(), uniforms.pixel_spread);
         self.gl
             .uniform3fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "pixel_scale").as_ref(), uniforms.pixel_scale);
         self.gl
@@ -346,7 +346,7 @@ uniform mat4 projection;
 
 uniform float offset_inverse_max_length;
 uniform float screen_curvature;
-uniform vec2 pixel_gap;
+uniform vec2 pixel_spread;
 uniform vec3 pixel_scale;
 uniform float pixel_pulse;
 uniform vec3 pixel_offset;
@@ -371,7 +371,7 @@ void main()
 
     vec3 modPos = (1.0 - heightModifierFactor) * aPos + heightModifierFactor * vec3(aPos.x, aPos.y * height_mod, aPos.z);
 
-    vec3 pos = modPos / pixel_scale + vec3(aOffset * pixel_gap, 0);
+    vec3 pos = modPos / pixel_scale + vec3(aOffset * pixel_spread, 0);
 
     if (pixel_pulse > 0.0) {
         float radius = length(aOffset);
