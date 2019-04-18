@@ -204,9 +204,9 @@ impl Filters {
 pub struct ViewModel {
     pub screen_curvature_factor: f32,
     pub pixels_pulse: f32,
-    pub solid_color_weight: f32,
     pub color_splits: usize,
     pub light_color: [[f32; 3]; 3],
+    pub light_color_background: [f32; 3],
     pub extra_light: [f32; 3],
     pub ambient_strength: f32,
     pub pixel_have_depth: bool,

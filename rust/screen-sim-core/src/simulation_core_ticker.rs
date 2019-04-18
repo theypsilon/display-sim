@@ -664,8 +664,9 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             ColorChannels::Combined => 1,
             _ => 3,
         };
+        self.res.output.light_color_background = get_3_f32color_from_int(self.res.filters.light_color);
         for i in 0..self.res.output.color_splits {
-            let mut light_color = get_3_f32color_from_int(self.res.filters.light_color);
+            let mut light_color = self.res.output.light_color_background.clone();
             match self.res.filters.color_channels {
                 ColorChannels::Combined => {}
                 _ => {
@@ -698,6 +699,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
     }
 
     fn update_output_filter_layering_kind(&mut self) {
+        let mut solid_color_weight = 1.0;
         match self.res.filters.layering_kind {
             ScreenLayeringKind::ShadowOnly => {
                 self.res.output.showing_foreground = true;
@@ -706,29 +708,31 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             ScreenLayeringKind::SolidOnly => {
                 self.res.output.showing_foreground = false;
                 self.res.output.showing_background = true;
-                self.res.output.solid_color_weight = 1.0;
             }
             ScreenLayeringKind::DiffuseOnly => {
                 self.res.output.showing_foreground = false;
                 self.res.output.showing_background = true;
-                self.res.output.solid_color_weight = 1.0;
             }
             ScreenLayeringKind::ShadowWithSolidBackground75 => {
                 self.res.output.showing_foreground = true;
                 self.res.output.showing_background = true;
-                self.res.output.solid_color_weight = 0.75;
+                solid_color_weight = 0.75;
             }
             ScreenLayeringKind::ShadowWithSolidBackground50 => {
                 self.res.output.showing_foreground = true;
                 self.res.output.showing_background = true;
-                self.res.output.solid_color_weight = 0.5;
+                solid_color_weight = 0.5;
             }
             ScreenLayeringKind::ShadowWithSolidBackground25 => {
                 self.res.output.showing_foreground = true;
                 self.res.output.showing_background = true;
-                self.res.output.solid_color_weight = 0.25;
+                solid_color_weight = 0.25;
             }
         };
+
+        for i in 0..3 {
+            self.res.output.light_color_background[i] *= solid_color_weight;
+        }
 
         self.res.output.is_background_diffuse = self.res.output.showing_foreground
             || if let ScreenLayeringKind::DiffuseOnly = self.res.filters.layering_kind {

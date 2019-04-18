@@ -124,11 +124,7 @@ impl<'a, T: AppEventDispatcher> SimulationDrawer<'a, T> {
                     projection: projection.as_slice(),
                     ambient_strength: self.res.output.ambient_strength,
                     contrast_factor: self.res.filters.extra_contrast,
-                    light_color: &[
-                        self.res.output.solid_color_weight,
-                        self.res.output.solid_color_weight,
-                        self.res.output.solid_color_weight,
-                    ],
+                    light_color: &self.res.output.light_color_background,
                     extra_light: &[0.0, 0.0, 0.0],
                     light_pos: position.as_slice(),
                     pixel_spread: &self.res.output.pixel_spread,
