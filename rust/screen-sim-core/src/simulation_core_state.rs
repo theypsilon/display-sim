@@ -315,6 +315,7 @@ impl std::fmt::Display for ColorChannels {
     }
 }
 
+#[derive(Clone, Copy)]
 pub enum InputEventValue {
     None,
     PixelBrighttness(f32),
@@ -331,14 +332,9 @@ pub enum InputEventValue {
     Camera(CameraChange),
 }
 
-pub struct CustomInputEvent {
-    pub value: InputEventValue,
-    pub kind: String,
-}
-
-impl CustomInputEvent {
-    pub fn get_f32(&self) -> f32 {
-        match self.value {
+impl InputEventValue {
+    pub fn get_f32(self) -> f32 {
+        match self {
             InputEventValue::PixelBrighttness(n) => n,
             InputEventValue::PixelContrast(n) => n,
             InputEventValue::PixelShadowHeight(n) => n,
@@ -352,12 +348,42 @@ impl CustomInputEvent {
     }
 }
 
+pub struct CustomInputEvent {
+    values: Vec<InputEventValue>,
+    kinds: Vec<String>,
+}
+
+// @Todo very bad impl, because makes it using it subpar.
+// In the future, this should take a k-v approach probably.
+// So, get_values should go away then.
+// This was made like this, because it's an incremental from a single event struct.
+impl CustomInputEvent {
+    pub fn add_value(&mut self, kind: String, value: InputEventValue) {
+        self.values.push(value);
+        self.kinds.push(kind);
+    }
+    pub fn get_value(&self, kind: &str) -> InputEventValue {
+        let mut i = 0;
+        for k in &self.kinds {
+            if k == kind {
+                return self.values[i];
+            }
+            i += 1;
+        }
+        return InputEventValue::None;
+    }
+    pub fn get_values(&self) -> &Vec<InputEventValue> {
+        &self.values
+    }
+    pub fn reset(&mut self) {
+        self.values.resize(0, InputEventValue::None);
+        self.kinds.resize_with(0, Default::default);
+    }
+}
+
 impl Default for CustomInputEvent {
     fn default() -> Self {
-        CustomInputEvent {
-            value: InputEventValue::None,
-            kind: String::new(),
-        }
+        CustomInputEvent { values: vec![], kinds: vec![] }
     }
 }
 

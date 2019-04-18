@@ -1,3 +1,1 @@
-· Bug when clicking on input, and then trying to change clicking on the arrows (lines per pixel).
-· Bug on input Pixel variable height, can't modify the value by typing.
 · Bug responsive mess.

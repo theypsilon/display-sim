@@ -223,10 +223,10 @@ pub fn read_custom_event(input: &mut Input, event: JsValue) -> WebResult<()> {
     let event = event.dyn_into::<CustomEvent>()?;
     let object = event.detail();
     let value = js_sys::Reflect::get(&object, &"value".into())?;
-    let kind = js_sys::Reflect::get(&object, &"kind".into())?
+    let event_kind = js_sys::Reflect::get(&object, &"kind".into())?
         .as_string()
         .ok_or_else(|| WebError::Str("Could not get kind".into()))?;
-    input.custom_event.value = match kind.as_ref() as &str {
+    let event_value = match event_kind.as_ref() as &str {
         "event_kind:pixel_brightness" => InputEventValue::PixelBrighttness(value.as_f64().ok_or("it should be a number")? as f32),
         "event_kind:pixel_contrast" => InputEventValue::PixelContrast(value.as_f64().ok_or("it should be a number")? as f32),
         "event_kind:light_color" => InputEventValue::LightColor(value.as_f64().ok_or("it should be a number")? as i32),
@@ -250,6 +250,6 @@ pub fn read_custom_event(input: &mut Input, event: JsValue) -> WebResult<()> {
         "event_kind:camera_direction_z" => InputEventValue::Camera(CameraChange::DirectionZ(value.as_f64().ok_or("it should be a number")? as f32)),
         _ => InputEventValue::None,
     };
-    input.custom_event.kind = kind;
+    input.custom_event.add_value(event_kind, event_value);
     Ok(())
 }

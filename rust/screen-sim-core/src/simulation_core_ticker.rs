@@ -37,7 +37,7 @@ impl<'a, T: AppEventDispatcher> SimulationCoreTicker<'a, T> {
         self.input.mouse_scroll_y = 0.0;
         self.input.mouse_position_x = 0;
         self.input.mouse_position_y = 0;
-        self.input.custom_event.kind = String::new();
+        self.input.custom_event.reset();
     }
 }
 
@@ -190,22 +190,24 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             }
         }
 
-        let (color_pick, color_variable) = match self.input.custom_event.value {
-            InputEventValue::PixelBrighttness(brightness) => {
-                self.res.filters.extra_bright = brightness;
-                return;
+        for event_value in self.input.custom_event.get_values() {
+            let (color_pick, color_variable) = match *event_value {
+                InputEventValue::PixelBrighttness(brightness) => {
+                    self.res.filters.extra_bright = brightness;
+                    return;
+                }
+                InputEventValue::PixelContrast(contrast) => {
+                    self.res.filters.extra_contrast = contrast;
+                    return;
+                }
+                InputEventValue::LightColor(light_color) => (light_color, &mut self.res.filters.light_color),
+                InputEventValue::BrightnessColor(brightness_color) => (brightness_color, &mut self.res.filters.brightness_color),
+                _ => return,
+            };
+            if color_pick != *color_variable {
+                *color_variable = color_pick;
+                self.ctx.dispatcher.dispatch_top_message("Color changed.");
             }
-            InputEventValue::PixelContrast(contrast) => {
-                self.res.filters.extra_contrast = contrast;
-                return;
-            }
-            InputEventValue::LightColor(light_color) => (light_color, &mut self.res.filters.light_color),
-            InputEventValue::BrightnessColor(brightness_color) => (brightness_color, &mut self.res.filters.brightness_color),
-            _ => return,
-        };
-        if color_pick != *color_variable {
-            *color_variable = color_pick;
-            self.ctx.dispatcher.dispatch_top_message("Color changed.");
         }
     }
 
@@ -221,9 +223,11 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
                 self.ctx.dispatcher.dispatch_top_message("Minimum value is 0");
             }
         }
-        if let InputEventValue::BlurLevel(blur_passes) = self.input.custom_event.value {
-            self.res.filters.blur_passes = blur_passes;
-            self.ctx.dispatcher.dispatch_change_blur_level(self.res);
+        for event_value in self.input.custom_event.get_values() {
+            if let InputEventValue::BlurLevel(blur_passes) = *event_value {
+                self.res.filters.blur_passes = blur_passes;
+                self.ctx.dispatcher.dispatch_change_blur_level(self.res);
+            }
         }
         if self.res.filters.blur_passes > 100 {
             self.res.filters.blur_passes = 100;
@@ -246,9 +250,11 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         if self.input.lpp.decrease.is_just_pressed() && self.res.filters.lines_per_pixel > 0 {
             self.res.filters.lines_per_pixel -= 1;
         }
-        if let InputEventValue::LinersPerPixel(lpp) = self.input.custom_event.value {
-            self.res.filters.lines_per_pixel = lpp;
-            self.ctx.dispatcher.dispatch_change_lines_per_pixel(self.res);
+        for event_value in self.input.custom_event.get_values() {
+            if let InputEventValue::LinersPerPixel(lpp) = *event_value {
+                self.res.filters.lines_per_pixel = lpp;
+                self.ctx.dispatcher.dispatch_change_lines_per_pixel(self.res);
+            }
         }
         if self.res.filters.lines_per_pixel < 1 {
             self.res.filters.lines_per_pixel = 1;
@@ -368,11 +374,12 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             self.ctx.dispatcher.dispatch_pixel_shadow_shape(self.res);
         }
 
-        let received_pixel_shadow_height = if let InputEventValue::PixelShadowHeight(height) = self.input.custom_event.value {
-            Some(height)
-        } else {
-            None
-        };
+        let mut received_pixel_shadow_height = None;
+        for event_value in self.input.custom_event.get_values() {
+            if let InputEventValue::PixelShadowHeight(height) = *event_value {
+                received_pixel_shadow_height = Some(height)
+            }
+        }
 
         if self.input.next_pixels_shadow_height_factor.any_active() || received_pixel_shadow_height.is_some() {
             if self.input.next_pixels_shadow_height_factor.increase {
@@ -450,8 +457,10 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             if controller.decrease {
                 *cur_size -= velocity;
             }
-            if custom_event.kind.as_ref() as &str == event_kind {
-                *cur_size = custom_event.get_f32();
+            let event_value = custom_event.get_value(event_kind);
+            if let InputEventValue::None = event_value {
+            } else {
+                *cur_size = event_value.get_f32();
             }
             if *cur_size != before_size {
                 if *cur_size < 0.0 {
@@ -602,8 +611,10 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             camera.change_zoom(self.input.mouse_scroll_y, &self.ctx.dispatcher);
         }
 
-        if let InputEventValue::Camera(change) = self.input.custom_event.value {
-            camera.handle_camera_change(change);
+        for event_value in self.input.custom_event.get_values() {
+            if let InputEventValue::Camera(change) = *event_value {
+                camera.handle_camera_change(change);
+            }
         }
 
         camera.update_view(self.dt)
