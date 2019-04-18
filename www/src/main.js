@@ -3,6 +3,7 @@ import FontFaceObserver from 'fontfaceobserver';
 
 const wasmPromise = import('./wasm/screen_sim');
 
+const displayNoneClassName = 'display-none';
 const scalingAutoHtmlId = 'scaling-auto';
 const scaling43HtmlId = 'scaling-4:3';
 const scalingCustomHtmlId = 'scaling-custom';
@@ -33,6 +34,7 @@ const optionPowerPreferenceSelect = document.getElementById('option-powerPrefere
 const optionScalingSelect = document.getElementById('option-scaling');
 
 const toggleInfoPanelClass = document.querySelectorAll('.toggle-info-panel');
+const freeModeControlsClas = document.querySelectorAll('.free-mode-only-controls');
 const simulationUiDeo = document.getElementById('simulation-ui');
 const infoPanelDeo = document.getElementById('info-panel');
 const fpsCounterDeo = document.getElementById('fps-counter');
@@ -234,11 +236,11 @@ window.addEventListener('app-event.camera_update', event => {
         switch (event.detail) {
             case 'Lock on Display':
                 deo.title = 'The camera will move around the picture, always looking at it';
-                document.querySelectorAll('.free-mode-only-controls').forEach(deo => deo.classList.add('display-none'));
+                freeModeControlsClas.forEach(deo => deo.classList.add(displayNoneClassName));
                 break;
             case 'Free Flight':
                 deo.title = 'The camera can move without any restriction in the whole 3D space with plane-like controls';
-                document.querySelectorAll('.free-mode-only-controls').forEach(deo => deo.classList.remove('display-none'));
+                freeModeControlsClas.forEach(deo => deo.classList.remove(displayNoneClassName));
                 break;
             default:
                 deo.title = event.detail;
@@ -723,13 +725,13 @@ function makeVisibility () {
         hideScaleCustomInputs: () => hideElement(scalingCustomInputsDeo)
     };
     function showElement (element) {
-        element.classList.remove('display-none');
+        element.classList.remove(displayNoneClassName);
     }
     function hideElement (element) {
-        element.classList.add('display-none');
+        element.classList.add(displayNoneClassName);
     }
     function isVisible (element) {
-        return element.classList.contains('display-none') === false;
+        return element.classList.contains(displayNoneClassName) === false;
     }
 }
 
