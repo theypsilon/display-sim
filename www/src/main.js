@@ -234,17 +234,17 @@ window.addEventListener('app-event.camera_update', event => {
     window.addEventListener(eventId, event => {
         deo.value = event.detail;
         switch (event.detail) {
-            case 'Lock on Display':
-                deo.title = 'The camera will move around the picture, always looking at it';
-                freeModeControlsClas.forEach(deo => deo.classList.add(displayNoneClassName));
-                break;
-            case 'Free Flight':
-                deo.title = 'The camera can move without any restriction in the whole 3D space with plane-like controls';
-                freeModeControlsClas.forEach(deo => deo.classList.remove(displayNoneClassName));
-                break;
-            default:
-                deo.title = event.detail;
-                break;
+        case 'Lock on Display':
+            deo.title = 'The camera will move around the picture, always looking at it';
+            freeModeControlsClas.forEach(deo => deo.classList.add(displayNoneClassName));
+            break;
+        case 'Free Flight':
+            deo.title = 'The camera can move without any restriction in the whole 3D space with plane-like controls';
+            freeModeControlsClas.forEach(deo => deo.classList.remove(displayNoneClassName));
+            break;
+        default:
+            deo.title = event.detail;
+            break;
         }
     }, false);
 });
