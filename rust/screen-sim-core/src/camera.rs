@@ -42,7 +42,6 @@ impl CameraChange {
 
 pub struct CameraData {
     pub position_destiny: glm::Vec3,
-    pub position_delta: glm::Vec3,
     pub position_eye: glm::Vec3,
     pub direction: glm::Vec3,
     pub axis_up: glm::Vec3,
@@ -55,13 +54,13 @@ pub struct CameraData {
     pub turning_speed: f32,
     pub sending_camera_update_event: bool,
     pub locked_mode: bool,
+    pub position_changed: bool,
 }
 
 impl CameraData {
     pub fn new(movement_speed: f32, turning_speed: f32) -> CameraData {
         CameraData {
             position_destiny: glm::vec3(0.0, 0.0, 0.0),
-            position_delta: glm::vec3(0.0, 0.0, 0.0),
             position_eye: glm::vec3(0.0, 0.0, 0.0),
             direction: glm::vec3(0.0, 0.0, -1.0),
             axis_up: glm::vec3(0.0, 1.0, 0.0),
@@ -72,14 +71,16 @@ impl CameraData {
             zoom: 45.0,
             movement_speed,
             turning_speed,
+            position_changed: true,
             sending_camera_update_event: true,
             locked_mode: true,
         }
     }
 
     pub fn set_position(&mut self, new_position: glm::Vec3) {
-        self.position_delta = new_position - self.position_destiny;
+        self.position_destiny = new_position;
         self.position_eye = new_position;
+        self.position_changed = true;
     }
 
     pub fn get_position(&self) -> glm::Vec3 {
@@ -115,7 +116,7 @@ impl<'a, Dispatcher: AppEventDispatcher> CameraSystem<'a, Dispatcher> {
             CameraDirection::Forward => self.data.direction * velocity,
             CameraDirection::Backward => -self.data.direction * velocity,
         };
-        self.data.position_delta += position_delta;
+        self.data.position_destiny += position_delta;
     }
 
     pub fn turn(&mut self, direction: CameraDirection, dt: f32) {
@@ -145,21 +146,9 @@ impl<'a, Dispatcher: AppEventDispatcher> CameraSystem<'a, Dispatcher> {
 
     pub fn handle_camera_change(&mut self, change: CameraChange) {
         match change {
-            CameraChange::PosX(x) => {
-                let mut position = self.data.get_position();
-                position.x = x;
-                self.data.set_position(position);
-            }
-            CameraChange::PosY(y) => {
-                let mut position = self.data.get_position();
-                position.y = y;
-                self.data.set_position(position);
-            }
-            CameraChange::PosZ(z) => {
-                let mut position = self.data.get_position();
-                position.z = z;
-                self.data.set_position(position);
-            }
+            CameraChange::PosX(x) => self.data.position_destiny.x = x,
+            CameraChange::PosY(y) => self.data.position_destiny.y = y,
+            CameraChange::PosZ(z) => self.data.position_destiny.z = z,
             CameraChange::Zoom(zoom) => self.data.zoom = zoom,
             CameraChange::AxisUpX(x) => self.data.axis_up.x = x,
             CameraChange::AxisUpY(y) => self.data.axis_up.y = y,
@@ -189,9 +178,11 @@ impl<'a, Dispatcher: AppEventDispatcher> CameraSystem<'a, Dispatcher> {
     }
 
     pub fn update_view(&mut self, dt: f32) {
-        if self.data.pitch == 0.0 && self.data.heading == 0.0 && self.data.rotate == 0.0 && self.data.position_delta == glm::vec3(0.0, 0.0, 0.0) {
+        if self.data.pitch == 0.0 && self.data.heading == 0.0 && self.data.rotate == 0.0 && self.data.position_changed {
             return;
         }
+        self.data.position_changed = false;
+
         let old_direction = self.data.direction;
 
         let pitch_quat = glm::quat_angle_axis(self.data.pitch, &self.data.axis_up);
@@ -211,10 +202,6 @@ impl<'a, Dispatcher: AppEventDispatcher> CameraSystem<'a, Dispatcher> {
         self.data.heading *= 0.5;
         self.data.pitch *= 0.5;
         self.data.rotate *= 0.5;
-
-        let position_delta = self.data.position_delta;
-        self.data.position_destiny += position_delta;
-        self.data.position_delta = glm::vec3(0.0, 0.0, 0.0);
 
         if self.data.locked_mode {
             if self.data.pitch.abs() > std::f32::EPSILON || self.data.heading.abs() > std::f32::EPSILON {
