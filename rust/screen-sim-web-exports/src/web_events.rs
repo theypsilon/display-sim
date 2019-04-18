@@ -51,7 +51,7 @@ impl AppEventDispatcher for WebEventDispatcher {
     fn dispatch_change_pixel_contrast(&self, res: &Resources) {
         self.catch_error(dispatch_event_with(
             "app-event.change_pixel_contrast",
-            &format!("{:.03}", res.filters.extra_contrast).into(),
+            &format!("{:.02}", res.filters.extra_contrast).into(),
         ));
     }
 

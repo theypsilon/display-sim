@@ -278,7 +278,7 @@ customEventOnChange(pixelVerticalGapDeo, 'pixel_vertical_gap', a => +a);
 customEventOnChange(blurLevelDeo, 'blur_level', a => +a);
 customEventOnChange(lppDeo, 'lines_per_pixel', a => +a);
 customEventOnChange(pixelBrigthnessDeo, 'pixel_brightness', a => +a);
-customEventOnChange(pixelContrastDeo, 'pixel_brightness', a => +a);
+customEventOnChange(pixelContrastDeo, 'pixel_contrast', a => +a);
 customEventOnChange(featureChangePixelShadowHeightDeo, 'pixel_shadow_height', a => +a);
 const parseColor = (value) => parseInt('0x' + value.substring(1));
 customEventOnChange(lightColorDeo, 'light_color', parseColor);
@@ -292,7 +292,6 @@ function customEventOnChange (deo, kind, parse) {
             }
         }));
     };
-    deo.onclick = changed;
     deo.onchange = changed;
 }
 

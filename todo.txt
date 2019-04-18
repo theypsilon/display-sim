@@ -1,1 +1,2 @@
-· Bug responsive mess.
+· Improve texts.
+· X in the corner of info panel for closing.

@@ -155,59 +155,57 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
     }
 
     fn update_filter_source_colors(&mut self) {
-        if self.input.bright.increase {
-            self.res.filters.extra_bright += 0.01 * self.dt * self.res.filters.change_speed;
-        }
-        if self.input.bright.decrease {
-            self.res.filters.extra_bright -= 0.01 * self.dt * self.res.filters.change_speed;
-        }
-        if self.input.bright.increase || self.input.bright.decrease {
-            if self.res.filters.extra_bright < -1.0 {
-                self.res.filters.extra_bright = -1.0;
-                self.ctx.dispatcher.dispatch_top_message("Minimum value is -1.0");
-            } else if self.res.filters.extra_bright > 1.0 {
-                self.res.filters.extra_bright = 1.0;
-                self.ctx.dispatcher.dispatch_top_message("Maximum value is +1.0");
-            } else {
+        {
+            let last_extra_bright = self.res.filters.extra_bright;
+            if self.input.bright.increase {
+                self.res.filters.extra_bright += 0.01 * self.dt * self.res.filters.change_speed;
+            }
+            if self.input.bright.decrease {
+                self.res.filters.extra_bright -= 0.01 * self.dt * self.res.filters.change_speed;
+            }
+            if let InputEventValue::PixelBrighttness(brightness) = self.input.custom_event.get_value(event_kind::PIXEL_BRIGHTNESS) {
+                self.res.filters.extra_bright = brightness;
+            }
+            if last_extra_bright != self.res.filters.extra_bright {
+                if self.res.filters.extra_bright < -1.0 {
+                    self.res.filters.extra_bright = -1.0;
+                    self.ctx.dispatcher.dispatch_top_message("Minimum value is -1.0");
+                } else if self.res.filters.extra_bright > 1.0 {
+                    self.res.filters.extra_bright = 1.0;
+                    self.ctx.dispatcher.dispatch_top_message("Maximum value is +1.0");
+                }
                 self.ctx.dispatcher.dispatch_change_pixel_brightness(self.res);
             }
         }
-        if self.input.contrast.increase {
-            self.res.filters.extra_contrast += 0.01 * self.dt * self.res.filters.change_speed;
-        }
-        if self.input.contrast.decrease {
-            self.res.filters.extra_contrast -= 0.01 * self.dt * self.res.filters.change_speed;
-        }
-        if self.input.contrast.increase || self.input.contrast.decrease {
-            if self.res.filters.extra_contrast < 0.0 {
-                self.res.filters.extra_contrast = 0.0;
-                self.ctx.dispatcher.dispatch_top_message("Minimum value is 0.0");
-            } else if self.res.filters.extra_contrast > 20.0 {
-                self.res.filters.extra_contrast = 20.0;
-                self.ctx.dispatcher.dispatch_top_message("Maximum value is 20.0");
-            } else {
+        {
+            let last_extra_contrast = self.res.filters.extra_contrast;
+            if self.input.contrast.increase {
+                self.res.filters.extra_contrast += 0.01 * self.dt * self.res.filters.change_speed;
+            }
+            if self.input.contrast.decrease {
+                self.res.filters.extra_contrast -= 0.01 * self.dt * self.res.filters.change_speed;
+            }
+            if let InputEventValue::PixelContrast(contrast) = self.input.custom_event.get_value(event_kind::PIXEL_CONTRAST) {
+                self.res.filters.extra_contrast = contrast;
+            }
+            if last_extra_contrast != self.res.filters.extra_contrast {
+                if self.res.filters.extra_contrast < 0.0 {
+                    self.res.filters.extra_contrast = 0.0;
+                    self.ctx.dispatcher.dispatch_top_message("Minimum value is 0.0");
+                } else if self.res.filters.extra_contrast > 20.0 {
+                    self.res.filters.extra_contrast = 20.0;
+                    self.ctx.dispatcher.dispatch_top_message("Maximum value is 20.0");
+                }
                 self.ctx.dispatcher.dispatch_change_pixel_contrast(self.res);
             }
         }
-
-        for event_value in self.input.custom_event.get_values() {
-            let (color_pick, color_variable) = match *event_value {
-                InputEventValue::PixelBrighttness(brightness) => {
-                    self.res.filters.extra_bright = brightness;
-                    return;
-                }
-                InputEventValue::PixelContrast(contrast) => {
-                    self.res.filters.extra_contrast = contrast;
-                    return;
-                }
-                InputEventValue::LightColor(light_color) => (light_color, &mut self.res.filters.light_color),
-                InputEventValue::BrightnessColor(brightness_color) => (brightness_color, &mut self.res.filters.brightness_color),
-                _ => return,
-            };
-            if color_pick != *color_variable {
-                *color_variable = color_pick;
-                self.ctx.dispatcher.dispatch_top_message("Color changed.");
-            }
+        if let InputEventValue::LightColor(light_color) = self.input.custom_event.get_value(event_kind::LIGHT_COLOR) {
+            self.res.filters.light_color = light_color;
+            self.ctx.dispatcher.dispatch_top_message("Light Color changed.");
+        }
+        if let InputEventValue::BrightnessColor(brightness_color) = self.input.custom_event.get_value(event_kind::LIGHT_COLOR) {
+            self.res.filters.brightness_color = brightness_color;
+            self.ctx.dispatcher.dispatch_top_message("Brightness Color changed.");
         }
     }
 

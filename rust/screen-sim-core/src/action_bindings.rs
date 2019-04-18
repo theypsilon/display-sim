@@ -22,6 +22,26 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) -
                 input.rotate_right = pressed
             }
         }
+        "arrowleft" | "left" | "←" | "◀" => {
+            if !input.input_focused {
+                input.turn_left = pressed
+            }
+        }
+        "arrowright" | "right" | "→" | "▶" => {
+            if !input.input_focused {
+                input.turn_right = pressed
+            }
+        }
+        "arrowup" | "up" | "↑" | "▲" => {
+            if !input.input_focused {
+                input.turn_up = pressed
+            }
+        }
+        "arrowdown" | "down" | "↓" | "▼" => {
+            if !input.input_focused {
+                input.turn_down = pressed
+            }
+        }
         "input_focused" => input.input_focused = pressed,
         "a" => input.walk_left = pressed,
         "d" => input.walk_right = pressed,
@@ -29,10 +49,6 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) -
         "s" => input.walk_backward = pressed,
         "q" => input.walk_up = pressed,
         "e" => input.walk_down = pressed,
-        "arrowleft" | "left" | "←" | "◀" => input.turn_left = pressed,
-        "arrowright" | "right" | "→" | "▶" => input.turn_right = pressed,
-        "arrowup" | "up" | "↑" | "▲" => input.turn_up = pressed,
-        "arrowdown" | "down" | "↓" | "▼" => input.turn_down = pressed,
         "f" => {
             if input.shift {
                 input.filter_speed.increase.input = pressed
