@@ -11,7 +11,7 @@ use core::app_events::AppEventDispatcher;
 use core::camera::CameraChange;
 use core::internal_resolution::InternalResolution;
 use core::simulation_context::SimulationContext;
-use core::simulation_core_state::{Input, InputEventValue, Resources, VideoInputResources};
+use core::simulation_core_state::{event_kind, Input, InputEventValue, Resources, VideoInputResources};
 use core::simulation_core_ticker::SimulationCoreTicker;
 use render::simulation_draw::SimulationDrawer;
 use render::simulation_render_state::{Materials, VideoInputMaterials};
@@ -227,27 +227,27 @@ pub fn read_custom_event(input: &mut Input, event: JsValue) -> WebResult<()> {
         .as_string()
         .ok_or_else(|| WebError::Str("Could not get kind".into()))?;
     let event_value = match event_kind.as_ref() as &str {
-        "event_kind:pixel_brightness" => InputEventValue::PixelBrighttness(value.as_f64().ok_or("it should be a number")? as f32),
-        "event_kind:pixel_contrast" => InputEventValue::PixelContrast(value.as_f64().ok_or("it should be a number")? as f32),
-        "event_kind:light_color" => InputEventValue::LightColor(value.as_f64().ok_or("it should be a number")? as i32),
-        "event_kind:brightness_color" => InputEventValue::BrightnessColor(value.as_f64().ok_or("it should be a number")? as i32),
-        "event_kind:blur_level" => InputEventValue::BlurLevel(value.as_f64().ok_or("it should be a number")? as usize),
-        "event_kind:lines_per_pixel" => InputEventValue::LinersPerPixel(value.as_f64().ok_or("it should be a number")? as usize),
-        "event_kind:pixel_shadow_height" => InputEventValue::PixelShadowHeight(value.as_f64().ok_or("it should be a number")? as f32),
-        "event_kind:pixel_vertical_gap" => InputEventValue::PixelVerticalGap(value.as_f64().ok_or("it should be a number")? as f32),
-        "event_kind:pixel_horizontal_gap" => InputEventValue::PixelHorizontalGap(value.as_f64().ok_or("it should be a number")? as f32),
-        "event_kind:pixel_width" => InputEventValue::PixelWidth(value.as_f64().ok_or("it should be a number")? as f32),
-        "event_kind:pixel_spread" => InputEventValue::PixelSpread(value.as_f64().ok_or("it should be a number")? as f32),
-        "event_kind:camera_zoom" => InputEventValue::Camera(CameraChange::Zoom(value.as_f64().ok_or("it should be a number")? as f32)),
-        "event_kind:camera_pos_x" => InputEventValue::Camera(CameraChange::PosX(value.as_f64().ok_or("it should be a number")? as f32)),
-        "event_kind:camera_pos_y" => InputEventValue::Camera(CameraChange::PosY(value.as_f64().ok_or("it should be a number")? as f32)),
-        "event_kind:camera_pos_z" => InputEventValue::Camera(CameraChange::PosZ(value.as_f64().ok_or("it should be a number")? as f32)),
-        "event_kind:camera_axis_up_x" => InputEventValue::Camera(CameraChange::AxisUpX(value.as_f64().ok_or("it should be a number")? as f32)),
-        "event_kind:camera_axis_up_y" => InputEventValue::Camera(CameraChange::AxisUpY(value.as_f64().ok_or("it should be a number")? as f32)),
-        "event_kind:camera_axis_up_z" => InputEventValue::Camera(CameraChange::AxisUpZ(value.as_f64().ok_or("it should be a number")? as f32)),
-        "event_kind:camera_direction_x" => InputEventValue::Camera(CameraChange::DirectionX(value.as_f64().ok_or("it should be a number")? as f32)),
-        "event_kind:camera_direction_y" => InputEventValue::Camera(CameraChange::DirectionY(value.as_f64().ok_or("it should be a number")? as f32)),
-        "event_kind:camera_direction_z" => InputEventValue::Camera(CameraChange::DirectionZ(value.as_f64().ok_or("it should be a number")? as f32)),
+        event_kind::PIXEL_BRIGHTNESS => InputEventValue::PixelBrighttness(value.as_f64().ok_or("it should be a number")? as f32),
+        event_kind::PIXEL_CONTRAST => InputEventValue::PixelContrast(value.as_f64().ok_or("it should be a number")? as f32),
+        event_kind::LIGHT_COLOR => InputEventValue::LightColor(value.as_f64().ok_or("it should be a number")? as i32),
+        event_kind::BRIGHTNESS_COLOR => InputEventValue::BrightnessColor(value.as_f64().ok_or("it should be a number")? as i32),
+        event_kind::BLUR_LEVEL => InputEventValue::BlurLevel(value.as_f64().ok_or("it should be a number")? as usize),
+        event_kind::LINES_PER_PIXEL => InputEventValue::LinersPerPixel(value.as_f64().ok_or("it should be a number")? as usize),
+        event_kind::PIXEL_SHADOW_HEIGHT => InputEventValue::PixelShadowHeight(value.as_f64().ok_or("it should be a number")? as f32),
+        event_kind::PIXEL_VERTICAL_GAP => InputEventValue::PixelVerticalGap(value.as_f64().ok_or("it should be a number")? as f32),
+        event_kind::PIXEL_HORIZONTAL_GAP => InputEventValue::PixelHorizontalGap(value.as_f64().ok_or("it should be a number")? as f32),
+        event_kind::PIXEL_WIDTH => InputEventValue::PixelWidth(value.as_f64().ok_or("it should be a number")? as f32),
+        event_kind::PIXEL_SPREAD => InputEventValue::PixelSpread(value.as_f64().ok_or("it should be a number")? as f32),
+        event_kind::CAMERA_ZOOM => InputEventValue::Camera(CameraChange::Zoom(value.as_f64().ok_or("it should be a number")? as f32)),
+        event_kind::CAMERA_POS_X => InputEventValue::Camera(CameraChange::PosX(value.as_f64().ok_or("it should be a number")? as f32)),
+        event_kind::CAMERA_POS_Y => InputEventValue::Camera(CameraChange::PosY(value.as_f64().ok_or("it should be a number")? as f32)),
+        event_kind::CAMERA_POS_Z => InputEventValue::Camera(CameraChange::PosZ(value.as_f64().ok_or("it should be a number")? as f32)),
+        event_kind::CAMERA_AXIS_UP_X => InputEventValue::Camera(CameraChange::AxisUpX(value.as_f64().ok_or("it should be a number")? as f32)),
+        event_kind::CAMERA_AXIS_UP_Y => InputEventValue::Camera(CameraChange::AxisUpY(value.as_f64().ok_or("it should be a number")? as f32)),
+        event_kind::CAMERA_AXIS_UP_Z => InputEventValue::Camera(CameraChange::AxisUpZ(value.as_f64().ok_or("it should be a number")? as f32)),
+        event_kind::CAMERA_DIRECTION_X => InputEventValue::Camera(CameraChange::DirectionX(value.as_f64().ok_or("it should be a number")? as f32)),
+        event_kind::CAMERA_DIRECTION_Y => InputEventValue::Camera(CameraChange::DirectionY(value.as_f64().ok_or("it should be a number")? as f32)),
+        event_kind::CAMERA_DIRECTION_Z => InputEventValue::Camera(CameraChange::DirectionZ(value.as_f64().ok_or("it should be a number")? as f32)),
         _ => InputEventValue::None,
     };
     input.custom_event.add_value(event_kind, event_value);

@@ -5,8 +5,8 @@ use crate::general_types::{get_3_f32color_from_int, NextEnumVariant};
 use crate::pixels_shadow::SHADOWS_LEN;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::{
-    ColorChannels, CustomInputEvent, Filters, IncDec, Input, InputEventValue, PixelsGeometryKind, Resources, ScreenCurvatureKind, ScreenLayeringKind,
-    PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
+    event_kind, ColorChannels, CustomInputEvent, Filters, IncDec, Input, InputEventValue, PixelsGeometryKind, Resources, ScreenCurvatureKind,
+    ScreenLayeringKind, PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
 };
 use derive_new::new;
 
@@ -411,7 +411,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             &mut self.res.filters.cur_pixel_vertical_gap,
             pixel_velocity * 0.00125,
             |n| ctx.dispatcher.dispatch_change_pixel_vertical_gap(n),
-            "event_kind:pixel_vertical_gap",
+            event_kind::PIXEL_VERTICAL_GAP,
         );
         change_pixel_sizes(
             ctx,
@@ -420,7 +420,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             &mut self.res.filters.cur_pixel_horizontal_gap,
             pixel_velocity * 0.00125,
             |n| ctx.dispatcher.dispatch_change_pixel_horizontal_gap(n),
-            "event_kind:pixel_horizontal_gap",
+            event_kind::PIXEL_HORIZONTAL_GAP,
         );
         change_pixel_sizes(
             ctx,
@@ -429,7 +429,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             &mut self.res.filters.cur_pixel_width,
             pixel_velocity * 0.005,
             |n| ctx.dispatcher.dispatch_change_pixel_width(n),
-            "event_kind:pixel_width",
+            event_kind::PIXEL_WIDTH,
         );
         change_pixel_sizes(
             ctx,
@@ -438,7 +438,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             &mut self.res.filters.cur_pixel_spread,
             pixel_velocity * 0.005,
             |n| ctx.dispatcher.dispatch_change_pixel_spread(n),
-            "event_kind:pixel_spread",
+            event_kind::PIXEL_SPREAD,
         );
 
         fn change_pixel_sizes<T: AppEventDispatcher>(

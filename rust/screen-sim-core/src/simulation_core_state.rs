@@ -315,6 +315,30 @@ impl std::fmt::Display for ColorChannels {
     }
 }
 
+pub mod event_kind {
+    pub const PIXEL_BRIGHTNESS: &str = "event_kind:pixel_brightness";
+    pub const PIXEL_CONTRAST: &str = "event_kind:pixel_contrast";
+    pub const LIGHT_COLOR: &str = "event_kind:light_color";
+    pub const BRIGHTNESS_COLOR: &str = "event_kind:brightness_color";
+    pub const BLUR_LEVEL: &str = "event_kind:blur_level";
+    pub const LINES_PER_PIXEL: &str = "event_kind:lines_per_pixel";
+    pub const PIXEL_SHADOW_HEIGHT: &str = "event_kind:pixel_shadow_height";
+    pub const PIXEL_VERTICAL_GAP: &str = "event_kind:pixel_vertical_gap";
+    pub const PIXEL_HORIZONTAL_GAP: &str = "event_kind:pixel_horizontal_gap";
+    pub const PIXEL_WIDTH: &str = "event_kind:pixel_width";
+    pub const PIXEL_SPREAD: &str = "event_kind:pixel_spread";
+    pub const CAMERA_ZOOM: &str = "event_kind:camera_zoom";
+    pub const CAMERA_POS_X: &str = "event_kind:camera_pos_x";
+    pub const CAMERA_POS_Y: &str = "event_kind:camera_pos_y";
+    pub const CAMERA_POS_Z: &str = "event_kind:camera_pos_z";
+    pub const CAMERA_AXIS_UP_X: &str = "event_kind:camera_axis_up_x";
+    pub const CAMERA_AXIS_UP_Y: &str = "event_kind:camera_axis_up_y";
+    pub const CAMERA_AXIS_UP_Z: &str = "event_kind:camera_axis_up_z";
+    pub const CAMERA_DIRECTION_X: &str = "event_kind:camera_direction_x";
+    pub const CAMERA_DIRECTION_Y: &str = "event_kind:camera_direction_y";
+    pub const CAMERA_DIRECTION_Z: &str = "event_kind:camera_direction_z";
+}
+
 #[derive(Clone, Copy)]
 pub enum InputEventValue {
     None,
@@ -370,7 +394,7 @@ impl CustomInputEvent {
             }
             i += 1;
         }
-        return InputEventValue::None;
+        InputEventValue::None
     }
     pub fn get_values(&self) -> &Vec<InputEventValue> {
         &self.values
