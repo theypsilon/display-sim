@@ -1,4 +1,3 @@
 · Bug when clicking on input, and then trying to change clicking on the arrows.
 · Bug on input Pixel variable height, can't modify the value by typing.
-· Bug en el hide panel tab en firefox, al pulsar espacio después.
 · Bug responsive mess.
