@@ -4,5 +4,3 @@
 · Bug el input zoom no se actualiza.
 · Bug backlight does not use input source light color.
 · Bug responsive mess.
-· Bug firefox not moving camera.
-· Feature: Change moving type between Locked and Free.

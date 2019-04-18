@@ -16,7 +16,7 @@ core = { path = "../screen-sim-core", package = "screen-sim-core" }
 web-error = { path = "../screen-sim-web-error", package = "screen-sim-web-error" }
 
 [dependencies.web-sys]
-version = "0.3.17"
+version = "0.3.19"
 features = [
   'WebGlBuffer',
   'WebGl2RenderingContext',
