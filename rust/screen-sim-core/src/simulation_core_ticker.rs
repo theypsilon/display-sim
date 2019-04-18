@@ -597,58 +597,8 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             camera.change_zoom(self.input.mouse_scroll_y, &self.ctx.dispatcher);
         }
 
-        // @Refactor too much code for too little stuff done in this match.
-        match self.input.custom_event.value {
-            InputEventValue::CameraZoom(zoom) => camera.set_zoom(zoom),
-            InputEventValue::CameraPosX(x) => {
-                let mut position = camera.get_position();
-                position.x = x;
-                camera.set_position(position);
-            }
-            InputEventValue::CameraPosY(y) => {
-                let mut position = camera.get_position();
-                position.y = y;
-                camera.set_position(position);
-            }
-            InputEventValue::CameraPosZ(z) => {
-                let mut position = camera.get_position();
-                position.z = z;
-                camera.set_position(position);
-            }
-
-            InputEventValue::CameraAxisUpX(x) => {
-                let mut axis_up = camera.get_axis_up();
-                axis_up.x = x;
-                camera.set_axis_up(axis_up);
-            }
-            InputEventValue::CameraAxisUpY(y) => {
-                let mut axis_up = camera.get_axis_up();
-                axis_up.y = y;
-                camera.set_axis_up(axis_up);
-            }
-            InputEventValue::CameraAxisUpZ(z) => {
-                let mut axis_up = camera.get_axis_up();
-                axis_up.z = z;
-                camera.set_axis_up(axis_up);
-            }
-
-            InputEventValue::CameraDirectionX(x) => {
-                let mut direction = camera.get_direction();
-                direction.x = x;
-                camera.set_direction(direction);
-            }
-            InputEventValue::CameraDirectionY(y) => {
-                let mut direction = camera.get_direction();
-                direction.y = y;
-                camera.set_direction(direction);
-            }
-            InputEventValue::CameraDirectionZ(z) => {
-                let mut direction = camera.get_direction();
-                direction.z = z;
-                camera.set_direction(direction);
-            }
-
-            _ => {}
+        if let InputEventValue::Camera(change) = self.input.custom_event.value {
+            camera.handle_camera_change(change);
         }
 
         camera.update_view(self.dt)

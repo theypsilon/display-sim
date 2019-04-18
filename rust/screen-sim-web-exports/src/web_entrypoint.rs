@@ -8,6 +8,7 @@ use crate::web_events::WebEventDispatcher;
 use crate::web_utils::{now, window};
 use core::action_bindings::on_button_action;
 use core::app_events::AppEventDispatcher;
+use core::camera::CameraChange;
 use core::internal_resolution::InternalResolution;
 use core::simulation_context::SimulationContext;
 use core::simulation_core_state::{Input, InputEventValue, Resources, VideoInputResources};
@@ -237,16 +238,16 @@ pub fn read_custom_event(input: &mut Input, event: JsValue) -> WebResult<()> {
         "event_kind:pixel_horizontal_gap" => InputEventValue::PixelHorizontalGap(value.as_f64().ok_or("it should be a number")? as f32),
         "event_kind:pixel_width" => InputEventValue::PixelWidth(value.as_f64().ok_or("it should be a number")? as f32),
         "event_kind:pixel_spread" => InputEventValue::PixelSpread(value.as_f64().ok_or("it should be a number")? as f32),
-        "event_kind:camera_zoom" => InputEventValue::CameraZoom(value.as_f64().ok_or("it should be a number")? as f32),
-        "event_kind:camera_pos_x" => InputEventValue::CameraPosX(value.as_f64().ok_or("it should be a number")? as f32),
-        "event_kind:camera_pos_y" => InputEventValue::CameraPosY(value.as_f64().ok_or("it should be a number")? as f32),
-        "event_kind:camera_pos_z" => InputEventValue::CameraPosZ(value.as_f64().ok_or("it should be a number")? as f32),
-        "event_kind:camera_axis_up_x" => InputEventValue::CameraAxisUpX(value.as_f64().ok_or("it should be a number")? as f32),
-        "event_kind:camera_axis_up_y" => InputEventValue::CameraAxisUpY(value.as_f64().ok_or("it should be a number")? as f32),
-        "event_kind:camera_axis_up_z" => InputEventValue::CameraAxisUpZ(value.as_f64().ok_or("it should be a number")? as f32),
-        "event_kind:camera_direction_x" => InputEventValue::CameraDirectionX(value.as_f64().ok_or("it should be a number")? as f32),
-        "event_kind:camera_direction_y" => InputEventValue::CameraDirectionY(value.as_f64().ok_or("it should be a number")? as f32),
-        "event_kind:camera_direction_z" => InputEventValue::CameraDirectionZ(value.as_f64().ok_or("it should be a number")? as f32),
+        "event_kind:camera_zoom" => InputEventValue::Camera(CameraChange::Zoom(value.as_f64().ok_or("it should be a number")? as f32)),
+        "event_kind:camera_pos_x" => InputEventValue::Camera(CameraChange::PosX(value.as_f64().ok_or("it should be a number")? as f32)),
+        "event_kind:camera_pos_y" => InputEventValue::Camera(CameraChange::PosY(value.as_f64().ok_or("it should be a number")? as f32)),
+        "event_kind:camera_pos_z" => InputEventValue::Camera(CameraChange::PosZ(value.as_f64().ok_or("it should be a number")? as f32)),
+        "event_kind:camera_axis_up_x" => InputEventValue::Camera(CameraChange::AxisUpX(value.as_f64().ok_or("it should be a number")? as f32)),
+        "event_kind:camera_axis_up_y" => InputEventValue::Camera(CameraChange::AxisUpY(value.as_f64().ok_or("it should be a number")? as f32)),
+        "event_kind:camera_axis_up_z" => InputEventValue::Camera(CameraChange::AxisUpZ(value.as_f64().ok_or("it should be a number")? as f32)),
+        "event_kind:camera_direction_x" => InputEventValue::Camera(CameraChange::DirectionX(value.as_f64().ok_or("it should be a number")? as f32)),
+        "event_kind:camera_direction_y" => InputEventValue::Camera(CameraChange::DirectionY(value.as_f64().ok_or("it should be a number")? as f32)),
+        "event_kind:camera_direction_z" => InputEventValue::Camera(CameraChange::DirectionZ(value.as_f64().ok_or("it should be a number")? as f32)),
         _ => InputEventValue::None,
     };
     input.custom_event.kind = kind;

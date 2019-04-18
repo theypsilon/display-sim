@@ -3,7 +3,7 @@ use getters_by_type::GettersMutByType;
 use num_derive::{FromPrimitive, ToPrimitive};
 
 use crate::boolean_button::BooleanButton;
-use crate::camera::CameraData;
+use crate::camera::{CameraChange, CameraData};
 use crate::general_types::Size2D;
 use crate::internal_resolution::InternalResolution;
 
@@ -328,16 +328,7 @@ pub enum InputEventValue {
     PixelHorizontalGap(f32),
     PixelWidth(f32),
     PixelSpread(f32),
-    CameraZoom(f32),
-    CameraPosX(f32),
-    CameraPosY(f32),
-    CameraPosZ(f32),
-    CameraAxisUpX(f32),
-    CameraAxisUpY(f32),
-    CameraAxisUpZ(f32),
-    CameraDirectionX(f32),
-    CameraDirectionY(f32),
-    CameraDirectionZ(f32),
+    Camera(CameraChange),
 }
 
 pub struct CustomInputEvent {
@@ -355,16 +346,7 @@ impl CustomInputEvent {
             InputEventValue::PixelHorizontalGap(n) => n,
             InputEventValue::PixelWidth(n) => n,
             InputEventValue::PixelSpread(n) => n,
-            InputEventValue::CameraZoom(n) => n,
-            InputEventValue::CameraPosX(n) => n,
-            InputEventValue::CameraPosY(n) => n,
-            InputEventValue::CameraPosZ(n) => n,
-            InputEventValue::CameraAxisUpX(n) => n,
-            InputEventValue::CameraAxisUpY(n) => n,
-            InputEventValue::CameraAxisUpZ(n) => n,
-            InputEventValue::CameraDirectionX(n) => n,
-            InputEventValue::CameraDirectionY(n) => n,
-            InputEventValue::CameraDirectionZ(n) => n,
+            InputEventValue::Camera(change) => change.get_f32(),
             _ => 0.0,
         }
     }
