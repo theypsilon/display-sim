@@ -377,10 +377,6 @@ pub struct CustomInputEvent {
     kinds: Vec<String>,
 }
 
-// @Todo very bad impl, because makes it using it subpar.
-// In the future, this should take a k-v approach probably.
-// So, get_values should go away then.
-// This was made like this, because it's an incremental from a single event struct.
 impl CustomInputEvent {
     pub fn add_value(&mut self, kind: String, value: InputEventValue) {
         if self.kinds.contains(&kind) {
