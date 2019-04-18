@@ -12,6 +12,7 @@ pub enum CameraDirection {
 pub struct CameraData {
     pub position: glm::Vec3,
     pub position_delta: glm::Vec3,
+    pub position_temp: glm::Vec3,
     pub direction: glm::Vec3,
     pub axis_up: glm::Vec3,
     pub axis_right: glm::Vec3,
@@ -30,6 +31,7 @@ impl CameraData {
         CameraData {
             position: glm::vec3(0.0, 0.0, 0.0),
             position_delta: glm::vec3(0.0, 0.0, 0.0),
+            position_temp: glm::vec3(0.0, 0.0, 0.0),
             direction: glm::vec3(0.0, 0.0, -1.0),
             axis_up: glm::vec3(0.0, 1.0, 0.0),
             axis_right: glm::vec3(1.0, 0.0, 0.0),
@@ -46,6 +48,7 @@ impl CameraData {
 
     pub fn set_position(&mut self, new_position: glm::Vec3) {
         self.position_delta = new_position - self.position;
+        self.position_temp = new_position;
     }
 
     pub fn get_position(&self) -> glm::Vec3 {
@@ -69,7 +72,7 @@ impl CameraData {
     }
 
     pub fn get_view(&self) -> glm::TMat4<f32> {
-        glm::look_at(&self.position, &(self.position + self.direction), &self.axis_up)
+        glm::look_at(&self.position_temp, &(self.position_temp + self.direction), &self.axis_up)
     }
 
     pub fn get_projection(&self, width: f32, height: f32) -> glm::TMat4<f32> {
@@ -133,7 +136,7 @@ impl<'a, Dispatcher: AppEventDispatcher> CameraSystem<'a, Dispatcher> {
     }
 
     pub fn turn(&mut self, direction: CameraDirection, dt: f32) {
-        let velocity = dt * if self.data.locked_mode { 0.1 } else { 0.06 * self.data.turning_speed };
+        let velocity = dt * self.data.turning_speed * if self.data.locked_mode { 0.03 } else { 0.06 };
         match direction {
             CameraDirection::Up => self.data.heading += velocity,
             CameraDirection::Down => self.data.heading -= velocity,
@@ -175,19 +178,25 @@ impl<'a, Dispatcher: AppEventDispatcher> CameraSystem<'a, Dispatcher> {
         }
     }
 
-    pub fn update_view(&mut self) {
+    pub fn update_view(&mut self, dt: f32) {
         if self.data.pitch == 0.0 && self.data.heading == 0.0 && self.data.rotate == 0.0 && self.data.position_delta == glm::vec3(0.0, 0.0, 0.0) {
             return;
         }
+        let old_direction = self.data.direction;
+
         let pitch_quat = glm::quat_angle_axis(self.data.pitch, &self.data.axis_up);
         let heading_quat = glm::quat_angle_axis(self.data.heading, &self.data.axis_right);
-        let rotate_quat = glm::quat_angle_axis(self.data.rotate, &self.data.direction);
+        let rotate_quat = glm::quat_angle_axis(self.data.rotate, &old_direction);
 
         let temp = glm::quat_cross(&glm::quat_cross(&pitch_quat, &heading_quat), &rotate_quat);
 
-        self.data.direction = glm::quat_cross_vec(&temp, &self.data.direction);
-        self.data.axis_up = glm::quat_cross_vec(&temp, &self.data.axis_up);
-        self.data.axis_right = glm::quat_cross_vec(&temp, &self.data.axis_right);
+        self.data.direction = glm::quat_cross_vec(&temp, &old_direction);
+        if self.data.locked_mode && self.data.direction.z > -0.01 {
+            self.data.direction = old_direction;
+        } else {
+            self.data.axis_up = glm::quat_cross_vec(&temp, &self.data.axis_up);
+            self.data.axis_right = glm::quat_cross_vec(&temp, &self.data.axis_right);
+        }
 
         self.data.heading *= 0.5;
         self.data.pitch *= 0.5;
@@ -219,12 +228,19 @@ impl<'a, Dispatcher: AppEventDispatcher> CameraSystem<'a, Dispatcher> {
             }
         }
 
+        let position_movement = (self.data.position - self.data.position_temp) * dt * 10.0;
+        if glm::length(&position_movement) < 5.0 * dt * self.data.turning_speed {
+            self.data.position_temp = self.data.position;
+        } else {
+            self.data.position_temp += position_movement;
+        }
+
         if !self.data.sending_camera_update_event {
             return;
         }
 
         self.dispatcher
-            .dispatch_camera_update(&self.data.position, &self.data.direction, &self.data.axis_up);
+            .dispatch_camera_update(&self.data.position_temp, &self.data.direction, &self.data.axis_up);
     }
 }
 

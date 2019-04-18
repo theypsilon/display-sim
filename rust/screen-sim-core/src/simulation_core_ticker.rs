@@ -651,7 +651,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             _ => {}
         }
 
-        camera.update_view()
+        camera.update_view(self.dt)
     }
 
     fn change_frontend_input_values(&self) {
