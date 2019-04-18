@@ -383,6 +383,9 @@ pub struct CustomInputEvent {
 // This was made like this, because it's an incremental from a single event struct.
 impl CustomInputEvent {
     pub fn add_value(&mut self, kind: String, value: InputEventValue) {
+        if self.kinds.contains(&kind) {
+            panic!("We are not supported multiple events of the same kind at the moment. kind: {}", kind);
+        }
         self.values.push(value);
         self.kinds.push(kind);
     }
