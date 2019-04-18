@@ -223,11 +223,9 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
                 self.ctx.dispatcher.dispatch_top_message("Minimum value is 0");
             }
         }
-        for event_value in self.input.custom_event.get_values() {
-            if let InputEventValue::BlurLevel(blur_passes) = *event_value {
-                self.res.filters.blur_passes = blur_passes;
-                self.ctx.dispatcher.dispatch_change_blur_level(self.res);
-            }
+        if let InputEventValue::BlurLevel(blur_passes) = self.input.custom_event.get_value(event_kind::BLUR_LEVEL) {
+            self.res.filters.blur_passes = blur_passes;
+            self.ctx.dispatcher.dispatch_change_blur_level(self.res);
         }
         if self.res.filters.blur_passes > 100 {
             self.res.filters.blur_passes = 100;
@@ -250,11 +248,9 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         if self.input.lpp.decrease.is_just_pressed() && self.res.filters.lines_per_pixel > 0 {
             self.res.filters.lines_per_pixel -= 1;
         }
-        for event_value in self.input.custom_event.get_values() {
-            if let InputEventValue::LinersPerPixel(lpp) = *event_value {
-                self.res.filters.lines_per_pixel = lpp;
-                self.ctx.dispatcher.dispatch_change_lines_per_pixel(self.res);
-            }
+        if let InputEventValue::LinersPerPixel(lpp) = self.input.custom_event.get_value(event_kind::LINES_PER_PIXEL) {
+            self.res.filters.lines_per_pixel = lpp;
+            self.ctx.dispatcher.dispatch_change_lines_per_pixel(self.res);
         }
         if self.res.filters.lines_per_pixel < 1 {
             self.res.filters.lines_per_pixel = 1;
@@ -374,12 +370,12 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             self.ctx.dispatcher.dispatch_pixel_shadow_shape(self.res);
         }
 
-        let mut received_pixel_shadow_height = None;
-        for event_value in self.input.custom_event.get_values() {
-            if let InputEventValue::PixelShadowHeight(height) = *event_value {
-                received_pixel_shadow_height = Some(height)
-            }
-        }
+        let received_pixel_shadow_height =
+            if let InputEventValue::PixelShadowHeight(height) = self.input.custom_event.get_value(event_kind::PIXEL_SHADOW_HEIGHT) {
+                Some(height)
+            } else {
+                None
+            };
 
         if self.input.next_pixels_shadow_height_factor.any_active() || received_pixel_shadow_height.is_some() {
             if self.input.next_pixels_shadow_height_factor.increase {
