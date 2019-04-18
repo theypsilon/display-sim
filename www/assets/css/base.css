@@ -330,6 +330,14 @@ canvas:hover {
     height: 26px;
 }
 
+#movement-mode .feature-name {
+    margin-right: 6px;
+}
+
+#movement-mode input {
+    width: 160px;
+}
+
 .button-inc-dec {
     width: 15px;
     margin-left: 0px;

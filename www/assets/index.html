@@ -202,6 +202,11 @@
             <div><button class="activate-button feature-movement-keys key-up-center">↑</button><button class="activate-button feature-movement-keys key-up-far-right">+</button> ⟳</div><br/>
             <div><button class="activate-button feature-movement-keys">←</button><button class="activate-button feature-movement-keys key-down-center">↓</button><button class="activate-button feature-movement-keys">→</button><button class="activate-button feature-movement-keys key-down-far-right">-</button> ⟲</div>
           </div></li>
+          <li id="movement-mode"><div class="feature-name">· Movement Type:</div>
+            <div id="feature-camera-movement-mode" class="feature-value">
+                <input id="camera-movement-mode" title="The camera will move around the picture, always looking at it" class="number-input feature-readonly-input" type="text" value="Lock on Picture" disabled>
+            </div>
+          </li>
         </ul>
       </div>
       <div class="info-category">
@@ -237,10 +242,6 @@
       </div>
       <div class="info-button">
           <input title="Hotkey: F4" class="btn btn-crt btn-green text-white" type="button" id="feature-capture-framebuffer" value="Capture framebuffer">
-      </div>
-      <br>
-      <div class="info-button">
-        <input title="Hotkey: SPACE" class="btn btn-crt btn-green text-white toggle-info-panel" id="info-hide" type="button" value="Hide this panel">
       </div>
     </div>
   </div>
