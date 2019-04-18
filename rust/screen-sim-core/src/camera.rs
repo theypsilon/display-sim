@@ -133,7 +133,7 @@ impl<'a, Dispatcher: AppEventDispatcher> CameraSystem<'a, Dispatcher> {
     }
 
     pub fn turn(&mut self, direction: CameraDirection, dt: f32) {
-        let velocity = dt * if self.data.locked_mode { 0.1 } else { 0.06 * self.turning_speed };
+        let velocity = dt * if self.data.locked_mode { 0.1 } else { 0.06 * self.data.turning_speed };
         match direction {
             CameraDirection::Up => self.data.heading += velocity,
             CameraDirection::Down => self.data.heading -= velocity,
