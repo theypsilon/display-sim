@@ -110,12 +110,11 @@ impl<'a, Dispatcher: AppEventDispatcher> CameraSystem<'a, Dispatcher> {
         let velocity = self.data.movement_speed * dt * if self.data.locked_mode { -1.0 } else { 1.0 };
         let position_delta = if self.data.locked_mode {
             match direction {
-                CameraDirection::Up => self.data.direction * velocity,
-                CameraDirection::Down => -self.data.direction * velocity,
-                CameraDirection::Left => -self.data.axis_right * velocity,
-                CameraDirection::Right => self.data.axis_right * velocity,
                 CameraDirection::Forward => self.data.axis_up * velocity,
                 CameraDirection::Backward => -self.data.axis_up * velocity,
+                CameraDirection::Left => -self.data.axis_right * velocity,
+                CameraDirection::Right => self.data.axis_right * velocity,
+                _ => glm::vec3(0.0, 0.0, 0.0),
             }
         } else {
             match direction {
@@ -128,6 +127,7 @@ impl<'a, Dispatcher: AppEventDispatcher> CameraSystem<'a, Dispatcher> {
             }
         };
         self.data.position_destiny += position_delta;
+        self.data.position_changed = true;
     }
 
     pub fn turn(&mut self, direction: CameraDirection, dt: f32) {
@@ -172,24 +172,24 @@ impl<'a, Dispatcher: AppEventDispatcher> CameraSystem<'a, Dispatcher> {
 
     pub fn change_zoom(&mut self, change: f32, dispatcher: &impl AppEventDispatcher) {
         let last_zoom = self.data.zoom;
-        if self.data.zoom >= 1.0 && self.data.zoom <= 45.0 {
+        if self.data.zoom >= 0.1 && self.data.zoom <= 90.0 {
             self.data.zoom -= change * 0.1;
         }
-        if self.data.zoom <= 1.0 {
-            self.data.zoom = 1.0;
-            dispatcher.dispatch_top_message("Minimum value is 1.0");
+        if self.data.zoom <= 0.1 {
+            self.data.zoom = 0.1;
+            dispatcher.dispatch_top_message("Minimum value is 0.1");
         }
-        if self.data.zoom >= 45.0 {
-            self.data.zoom = 45.0;
-            dispatcher.dispatch_top_message("Maximum value is 45.0");
+        if self.data.zoom >= 90.0 {
+            self.data.zoom = 90.0;
+            dispatcher.dispatch_top_message("Maximum value is 90.0");
         }
-        if (self.data.zoom - last_zoom).abs() < std::f32::EPSILON {
+        if (self.data.zoom - last_zoom).abs() > std::f32::EPSILON {
             dispatcher.dispatch_change_camera_zoom(self.data.zoom);
         }
     }
 
     pub fn update_view(&mut self, dt: f32) {
-        if self.data.pitch == 0.0 && self.data.heading == 0.0 && self.data.rotate == 0.0 && self.data.position_changed {
+        if self.data.pitch == 0.0 && self.data.heading == 0.0 && self.data.rotate == 0.0 && !self.data.position_changed {
             return;
         }
         self.data.position_changed = false;

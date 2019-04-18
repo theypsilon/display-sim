@@ -232,11 +232,13 @@ window.addEventListener('app-event.camera_update', event => {
     window.addEventListener(eventId, event => {
         deo.value = event.detail;
         switch (event.detail) {
-            case 'Lock on Picture':
+            case 'Lock on Display':
                 deo.title = 'The camera will move around the picture, always looking at it';
+                document.querySelectorAll('.free-mode-only-controls').forEach(deo => deo.classList.add('display-none'));
                 break;
-            case 'Free flight':
+            case 'Free Flight':
                 deo.title = 'The camera can move without any restriction in the whole 3D space with plane-like controls';
+                document.querySelectorAll('.free-mode-only-controls').forEach(deo => deo.classList.remove('display-none'));
                 break;
             default:
                 deo.title = event.detail;

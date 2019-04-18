@@ -175,7 +175,7 @@ impl AppEventDispatcher for WebEventDispatcher {
     fn dispatch_change_camera_movement_mode(&self, locked_mode: bool) {
         self.catch_error(dispatch_event_with(
             "app-event.change_camera_movement_mode",
-            &(if locked_mode { "Focus on Picture" } else { "Free flight" }).into(),
+            &(if locked_mode { "Lock on Display" } else { "Free Flight" }).into(),
         ));
     }
 

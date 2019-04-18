@@ -195,8 +195,8 @@
         </div>
         <ul>
           <li><div class="feature-name">· Translation:</div><br><div id="feature-camera-movements" class="camera-movements-arrows">
-            <div><button class="activate-button feature-movement-keys key-up-center">W</button><button class="activate-button feature-movement-keys key-up-far-right">Q</button> ↑</div><br/>
-            <div><button class="activate-button feature-movement-keys">A</button><button class="activate-button feature-movement-keys key-down-center">S</button><button class="activate-button feature-movement-keys">D</button><button class="activate-button feature-movement-keys key-down-far-right">E</button> ↓</div>
+            <div><button class="activate-button feature-movement-keys key-up-center">W</button><div class="free-mode-only-controls display-none"><button class="activate-button feature-movement-keys key-up-far-right">Q</button> ↑</div></div><br/>
+            <div><button class="activate-button feature-movement-keys">A</button><button class="activate-button feature-movement-keys key-down-center">S</button><button class="activate-button feature-movement-keys">D</button><div class="free-mode-only-controls display-none"><button class="activate-button feature-movement-keys key-down-far-right">E</button> ↓</div></div>
           </div></li>
           <li style="height: 65px"><div class="feature-name">· Rotation:</div><br><div id="feature-camera-turns" class="camera-movements-arrows">
             <div><button class="activate-button feature-movement-keys key-up-center">↑</button><button class="activate-button feature-movement-keys key-up-far-right">+</button> ⟳</div><br/>
@@ -204,7 +204,7 @@
           </div></li>
           <li id="movement-mode"><div class="feature-name">· Movement Type:</div>
             <div id="feature-camera-movement-mode" class="feature-value">
-                <input id="camera-movement-mode" title="The camera will move around the picture, always looking at it" class="number-input feature-readonly-input" type="text" value="Lock on Picture" disabled>
+                <input id="camera-movement-mode" class="number-input feature-readonly-input" type="text" value="Lock on Display" disabled>
             </div>
           </li>
         </ul>
