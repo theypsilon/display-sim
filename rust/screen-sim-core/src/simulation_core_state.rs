@@ -399,8 +399,8 @@ impl CustomInputEvent {
         }
         InputEventValue::None
     }
-    pub fn get_values(&self) -> &Vec<InputEventValue> {
-        &self.values
+    pub fn get_values(&self) -> &[InputEventValue] {
+        self.values.as_slice()
     }
     pub fn reset(&mut self) {
         self.values.resize(0, InputEventValue::None);
