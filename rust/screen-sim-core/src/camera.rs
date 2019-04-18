@@ -198,11 +198,8 @@ impl<'a, Dispatcher: AppEventDispatcher> CameraSystem<'a, Dispatcher> {
         self.data.position_delta = glm::vec3(0.0, 0.0, 0.0);
 
         if self.data.reverse {
-            let old_position = self.data.position.clone();
             let distance_to_origin = glm::length(&self.data.position);
             self.data.position = -self.data.direction * distance_to_origin;
-            self.dispatcher
-                .dispatch_top_message(&format!("old: {:?} position: {:?}", old_position, self.data.position));
         }
 
         if !self.data.sending_camera_update_event {
