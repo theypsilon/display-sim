@@ -183,18 +183,15 @@ impl<'a, Dispatcher: AppEventDispatcher> CameraSystem<'a, Dispatcher> {
         }
         self.data.position_changed = false;
 
-        let old_direction = self.data.direction;
-
         let pitch_quat = glm::quat_angle_axis(self.data.pitch, &self.data.axis_up);
         let heading_quat = glm::quat_angle_axis(self.data.heading, &self.data.axis_right);
-        let rotate_quat = glm::quat_angle_axis(self.data.rotate, &old_direction);
+        let rotate_quat = glm::quat_angle_axis(self.data.rotate, &self.data.direction);
 
         let temp = glm::quat_cross(&glm::quat_cross(&pitch_quat, &heading_quat), &rotate_quat);
 
-        self.data.direction = glm::quat_cross_vec(&temp, &old_direction);
-        if self.data.locked_mode && self.data.direction.z > -0.01 {
-            self.data.direction = old_direction;
-        } else {
+        let new_direction = glm::quat_cross_vec(&temp, &self.data.direction);
+        if !self.data.locked_mode || new_direction.z <= -0.01 {
+            self.data.direction = new_direction;
             self.data.axis_up = glm::quat_cross_vec(&temp, &self.data.axis_up);
             self.data.axis_right = glm::quat_cross_vec(&temp, &self.data.axis_right);
         }
