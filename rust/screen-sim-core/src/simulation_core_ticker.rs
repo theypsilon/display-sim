@@ -1,6 +1,6 @@
 use crate::app_events::AppEventDispatcher;
 use crate::boolean_button::BooleanButton;
-use crate::camera::CameraDirection;
+use crate::camera::{CameraData, CameraDirection, CameraSystem};
 use crate::general_types::{get_3_f32color_from_int, NextEnumVariant};
 use crate::pixels_shadow::SHADOWS_LEN;
 use crate::simulation_context::SimulationContext;
@@ -533,127 +533,125 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
     }
 
     fn update_camera(&mut self) {
+        if self.input.reset_position {
+            let initial_position = glm::vec3(0.0, 0.0, self.res.initial_parameters.initial_position_z);
+            self.res.camera = CameraData::new(self.res.camera.movement_speed, self.res.camera.turning_speed);
+            self.res.camera.set_position(initial_position);
+            self.ctx.dispatcher.dispatch_top_message("The camera have been reset.");
+        }
+
+        let mut camera = CameraSystem::new(&mut self.res.camera, &self.ctx.dispatcher);
+
         if self.input.walk_left {
-            self.res.camera.advance(CameraDirection::Left, self.dt);
+            camera.advance(CameraDirection::Left, self.dt);
         }
         if self.input.walk_right {
-            self.res.camera.advance(CameraDirection::Right, self.dt);
+            camera.advance(CameraDirection::Right, self.dt);
         }
         if self.input.walk_up {
-            self.res.camera.advance(CameraDirection::Up, self.dt);
+            camera.advance(CameraDirection::Up, self.dt);
         }
         if self.input.walk_down {
-            self.res.camera.advance(CameraDirection::Down, self.dt);
+            camera.advance(CameraDirection::Down, self.dt);
         }
         if self.input.walk_forward {
-            self.res.camera.advance(CameraDirection::Forward, self.dt);
+            camera.advance(CameraDirection::Forward, self.dt);
         }
         if self.input.walk_backward {
-            self.res.camera.advance(CameraDirection::Backward, self.dt);
+            camera.advance(CameraDirection::Backward, self.dt);
         }
 
         if self.input.turn_left {
-            self.res.camera.turn(CameraDirection::Left, self.dt);
+            camera.turn(CameraDirection::Left, self.dt);
         }
         if self.input.turn_right {
-            self.res.camera.turn(CameraDirection::Right, self.dt);
+            camera.turn(CameraDirection::Right, self.dt);
         }
         if self.input.turn_up {
-            self.res.camera.turn(CameraDirection::Up, self.dt);
+            camera.turn(CameraDirection::Up, self.dt);
         }
         if self.input.turn_down {
-            self.res.camera.turn(CameraDirection::Down, self.dt);
+            camera.turn(CameraDirection::Down, self.dt);
         }
 
         if self.input.rotate_left {
-            self.res.camera.rotate(CameraDirection::Left, self.dt);
+            camera.rotate(CameraDirection::Left, self.dt);
         }
         if self.input.rotate_right {
-            self.res.camera.rotate(CameraDirection::Right, self.dt);
+            camera.rotate(CameraDirection::Right, self.dt);
         }
 
         if self.input.mouse_click.is_just_pressed() {
             self.ctx.dispatcher.dispatch_request_pointer_lock();
         } else if self.input.mouse_click.is_activated() {
-            self.res.camera.drag(self.input.mouse_position_x, self.input.mouse_position_y);
+            camera.drag(self.input.mouse_position_x, self.input.mouse_position_y);
         } else if self.input.mouse_click.is_just_released() {
             self.ctx.dispatcher.dispatch_exit_pointer_lock();
         }
 
         if self.input.camera_zoom.increase {
-            self.res.camera.change_zoom(self.dt * -100.0, &self.ctx.dispatcher);
+            camera.change_zoom(self.dt * -100.0, &self.ctx.dispatcher);
         } else if self.input.camera_zoom.decrease {
-            self.res.camera.change_zoom(self.dt * 100.0, &self.ctx.dispatcher);
+            camera.change_zoom(self.dt * 100.0, &self.ctx.dispatcher);
         } else if self.input.mouse_scroll_y != 0.0 {
-            self.res.camera.change_zoom(self.input.mouse_scroll_y, &self.ctx.dispatcher);
+            camera.change_zoom(self.input.mouse_scroll_y, &self.ctx.dispatcher);
         }
 
         // @Refactor too much code for too little stuff done in this match.
         match self.input.custom_event.value {
-            InputEventValue::CameraZoom(zoom) => self.res.camera.zoom = zoom,
+            InputEventValue::CameraZoom(zoom) => camera.set_zoom(zoom),
             InputEventValue::CameraPosX(x) => {
-                let mut position = self.res.camera.get_position();
+                let mut position = camera.get_position();
                 position.x = x;
-                self.res.camera.set_position(position);
+                camera.set_position(position);
             }
             InputEventValue::CameraPosY(y) => {
-                let mut position = self.res.camera.get_position();
+                let mut position = camera.get_position();
                 position.y = y;
-                self.res.camera.set_position(position);
+                camera.set_position(position);
             }
             InputEventValue::CameraPosZ(z) => {
-                let mut position = self.res.camera.get_position();
+                let mut position = camera.get_position();
                 position.z = z;
-                self.res.camera.set_position(position);
+                camera.set_position(position);
             }
 
             InputEventValue::CameraAxisUpX(x) => {
-                let mut axis_up = self.res.camera.get_axis_up();
+                let mut axis_up = camera.get_axis_up();
                 axis_up.x = x;
-                self.res.camera.set_axis_up(axis_up);
+                camera.set_axis_up(axis_up);
             }
             InputEventValue::CameraAxisUpY(y) => {
-                let mut axis_up = self.res.camera.get_axis_up();
+                let mut axis_up = camera.get_axis_up();
                 axis_up.y = y;
-                self.res.camera.set_axis_up(axis_up);
+                camera.set_axis_up(axis_up);
             }
             InputEventValue::CameraAxisUpZ(z) => {
-                let mut axis_up = self.res.camera.get_axis_up();
+                let mut axis_up = camera.get_axis_up();
                 axis_up.z = z;
-                self.res.camera.set_axis_up(axis_up);
+                camera.set_axis_up(axis_up);
             }
 
             InputEventValue::CameraDirectionX(x) => {
-                let mut direction = self.res.camera.get_direction();
+                let mut direction = camera.get_direction();
                 direction.x = x;
-                self.res.camera.set_direction(direction);
+                camera.set_direction(direction);
             }
             InputEventValue::CameraDirectionY(y) => {
-                let mut direction = self.res.camera.get_direction();
+                let mut direction = camera.get_direction();
                 direction.y = y;
-                self.res.camera.set_direction(direction);
+                camera.set_direction(direction);
             }
             InputEventValue::CameraDirectionZ(z) => {
-                let mut direction = self.res.camera.get_direction();
+                let mut direction = camera.get_direction();
                 direction.z = z;
-                self.res.camera.set_direction(direction);
+                camera.set_direction(direction);
             }
 
             _ => {}
         }
 
-        if self.input.reset_position {
-            self.res
-                .camera
-                .set_position(glm::vec3(0.0, 0.0, self.res.initial_parameters.initial_position_z));
-            self.res.camera.set_direction(glm::vec3(0.0, 0.0, -1.0));
-            self.res.camera.set_axis_up(glm::vec3(0.0, 1.0, 0.0));
-            self.res.camera.zoom = 45.0;
-            self.ctx.dispatcher.dispatch_change_camera_zoom(self.res.camera.zoom);
-            self.ctx.dispatcher.dispatch_top_message("The camera have been reset.");
-        }
-
-        self.res.camera.update_view(&self.ctx.dispatcher)
+        camera.update_view()
     }
 
     fn change_frontend_input_values(&self) {

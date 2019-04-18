@@ -3,7 +3,7 @@ use getters_by_type::GettersMutByType;
 use num_derive::{FromPrimitive, ToPrimitive};
 
 use crate::boolean_button::BooleanButton;
-use crate::camera::Camera;
+use crate::camera::CameraData;
 use crate::general_types::Size2D;
 use crate::internal_resolution::InternalResolution;
 
@@ -33,7 +33,7 @@ pub struct AnimationStep {
 // Simulation Resources
 pub struct Resources {
     pub video: VideoInputResources,
-    pub camera: Camera,
+    pub camera: CameraData,
     pub filters: Filters,
     pub output: ViewModel,
     pub timers: SimulationTimers,
@@ -55,7 +55,7 @@ impl Default for Resources {
             initial_parameters: InitialParameters::default(),
             timers: SimulationTimers::default(),
             video: VideoInputResources::default(),
-            camera: Camera::new(MOVEMENT_BASE_SPEED / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED),
+            camera: CameraData::new(MOVEMENT_BASE_SPEED / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED),
             output: ViewModel::default(),
             filters: Filters::new(PIXEL_MANIPULATION_BASE_SPEED),
             screenshot_trigger: ScreenshotTrigger { is_triggered: false, delay: 0 },
@@ -69,7 +69,7 @@ impl Default for Resources {
 impl Resources {
     pub fn initialize(&mut self, video_input: VideoInputResources, now: f64) {
         let initial_position_z = calculate_far_away_position(&video_input);
-        let mut camera = Camera::new(MOVEMENT_BASE_SPEED * initial_position_z / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED);
+        let mut camera = CameraData::new(MOVEMENT_BASE_SPEED * initial_position_z / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED);
         let mut cur_pixel_width = video_input.pixel_width;
         {
             let res: &Resources = self; // let's avoid using '&mut res' when just reading values
