@@ -540,6 +540,11 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             self.ctx.dispatcher.dispatch_top_message("The camera have been reset.");
         }
 
+        if self.input.next_camera_movement_mode.increase.is_just_pressed() || self.input.next_camera_movement_mode.decrease.is_just_pressed() {
+            self.res.camera.locked_mode = !self.res.camera.locked_mode;
+            self.ctx.dispatcher.dispatch_change_camera_movement_mode(self.res.camera.locked_mode)
+        }
+
         let mut camera = CameraSystem::new(&mut self.res.camera, &self.ctx.dispatcher);
 
         if self.input.walk_left {
@@ -616,6 +621,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         self.ctx.dispatcher.dispatch_change_light_color(self.res);
         self.ctx.dispatcher.dispatch_change_brightness_color(self.res);
         self.ctx.dispatcher.dispatch_change_camera_zoom(self.res.camera.zoom);
+        self.ctx.dispatcher.dispatch_change_camera_movement_mode(self.res.camera.locked_mode);
         self.ctx.dispatcher.dispatch_change_blur_level(self.res);
         self.ctx.dispatcher.dispatch_change_lines_per_pixel(self.res);
         self.ctx.dispatcher.dispatch_color_representation(self.res);

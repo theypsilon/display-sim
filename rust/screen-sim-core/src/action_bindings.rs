@@ -94,6 +94,8 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) -
         "feature-internal-resolution-dec" => input.next_internal_resolution.decrease.input = pressed,
         "feature-texture-interpolation-inc" => input.next_texture_interpolation.increase.input = pressed,
         "feature-texture-interpolation-dec" => input.next_texture_interpolation.decrease.input = pressed,
+        "camera-movement-mode-inc" => input.next_camera_movement_mode.increase.input = pressed,
+        "camera-movement-mode-dec" => input.next_camera_movement_mode.decrease.input = pressed,
         "g" | "lines-per-pixel-inc" => input.lpp.increase.input = pressed,
         "h" | "lines-per-pixel-dec" => input.lpp.decrease.input = pressed,
         "shift" | "left shift" | "right shift" => {

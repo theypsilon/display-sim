@@ -204,6 +204,9 @@ impl AppEventDispatcher for NativeEventDispatcher {
     fn dispatch_screenshot(&self, _: &[u8], _: f64) {
         println!("screenshot");
     }
+    fn dispatch_change_camera_movement_mode(&self, locked_mode: bool) {
+        println!("camera_movement_mode: {}", if self.res.camera.locked_mode { "lock" } else { "free" });
+    }
     fn dispatch_top_message(&self, msg: &str) {
         println!("top_message: {}", msg);
     }

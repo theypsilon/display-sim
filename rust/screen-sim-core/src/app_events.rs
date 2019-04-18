@@ -30,5 +30,6 @@ pub trait AppEventDispatcher: Default {
     fn dispatch_request_pointer_lock(&self);
     fn dispatch_exit_pointer_lock(&self);
     fn dispatch_screenshot(&self, pixels: &[u8], multiplier: f64);
+    fn dispatch_change_camera_movement_mode(&self, locked_mode: bool);
     fn dispatch_top_message(&self, message: &str);
 }

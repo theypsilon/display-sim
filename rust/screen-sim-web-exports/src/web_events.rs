@@ -172,6 +172,13 @@ impl AppEventDispatcher for WebEventDispatcher {
         self.catch_error(dispatch_event_with("app-event.screenshot", &array));
     }
 
+    fn dispatch_change_camera_movement_mode(&self, locked_mode: bool) {
+        self.catch_error(dispatch_event_with(
+            "app-event.change_camera_movement_mode",
+            &(if locked_mode { "Focus on Picture" } else { "Free flight" }).into(),
+        ));
+    }
+
     fn dispatch_top_message(&self, message: &str) {
         self.catch_error(dispatch_event_with("app-event.top_message", &message.into()));
     }

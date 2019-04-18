@@ -425,6 +425,7 @@ pub struct Input {
     pub pixel_spread: IncDec<bool>,
     pub bright: IncDec<bool>,
     pub contrast: IncDec<bool>,
+    pub next_camera_movement_mode: IncDec<BooleanButton>,
     pub translation_speed: IncDec<BooleanButton>,
     pub turn_speed: IncDec<BooleanButton>,
     pub filter_speed: IncDec<BooleanButton>,

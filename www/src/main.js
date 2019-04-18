@@ -49,6 +49,7 @@ const cameraAxisUpXDeo = document.getElementById('camera-axis-up-x');
 const cameraAxisUpYDeo = document.getElementById('camera-axis-up-y');
 const cameraAxisUpZDeo = document.getElementById('camera-axis-up-z');
 const cameraZoomDeo = document.getElementById('camera-zoom');
+const cameraMovementModeDeo = document.getElementById('camera-movement-mode');
 
 const pixelWidthDeo = document.getElementById('pixel-width');
 const pixelHorizontalGapDeo = document.getElementById('pixel-horizontal-gap');
@@ -203,6 +204,7 @@ window.addEventListener('app-event.camera_update', event => {
 
 [
     { deo: cameraZoomDeo, eventId: 'app-event.change_camera_zoom' },
+    { deo: cameraMovementModeDeo, eventId: 'app-event.change_camera_movement_mode' },
     { deo: pixelWidthDeo, eventId: 'app-event.change_pixel_width' },
     { deo: pixelHorizontalGapDeo, eventId: 'app-event.change_pixel_horizontal_gap' },
     { deo: pixelVerticalGapDeo, eventId: 'app-event.change_pixel_vertical_gap' },
@@ -229,7 +231,17 @@ window.addEventListener('app-event.camera_update', event => {
     if (!deo) throw new Error('Wrong deo on defining: ' + eventId);
     window.addEventListener(eventId, event => {
         deo.value = event.detail;
-        deo.title = event.detail;
+        switch (event.detail) {
+            case 'Lock on Picture':
+                deo.title = 'The camera will move around the picture, always looking at it';
+                break;
+            case 'Free flight':
+                deo.title = 'The camera can move without any restriction in the whole 3D space with plane-like controls';
+                break;
+            default:
+                deo.title = event.detail;
+                break;
+        }
     }, false);
 });
 
@@ -253,6 +265,7 @@ customEventOnChange(cameraDirXDeo, 'camera_direction_x', a => +a);
 customEventOnChange(cameraDirYDeo, 'camera_direction_y', a => +a);
 customEventOnChange(cameraDirZDeo, 'camera_direction_z', a => +a);
 customEventOnChange(cameraZoomDeo, 'camera_zoom', a => +a);
+customEventOnChange(cameraMovementModeDeo, 'camera_movement_mode', a => +a);
 
 customEventOnChange(pixelWidthDeo, 'pixel_width', a => +a);
 customEventOnChange(pixelSpreadDeo, 'pixel_spread', a => +a);
