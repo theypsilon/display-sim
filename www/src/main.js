@@ -170,7 +170,7 @@ window.addEventListener('app-event.top_message', event => {
     div.id = topMessageHtmlId;
     const span = document.createElement('span');
     span.innerHTML = event.detail;
-    benchmark("top_message: " + event.detail);
+    benchmark('top_message: ' + event.detail);
     div.appendChild(span);
     document.body.appendChild(div);
     let opacity = 0.75;
