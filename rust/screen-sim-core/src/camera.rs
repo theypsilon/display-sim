@@ -22,7 +22,7 @@ pub struct CameraData {
     pub movement_speed: f32,
     pub turning_speed: f32,
     pub sending_camera_update_event: bool,
-    pub reverse: bool,
+    pub locked_mode: bool,
 }
 
 impl CameraData {
@@ -40,7 +40,7 @@ impl CameraData {
             movement_speed,
             turning_speed,
             sending_camera_update_event: true,
-            reverse: true,
+            locked_mode: true,
         }
     }
 
@@ -120,7 +120,7 @@ impl<'a, Dispatcher: AppEventDispatcher> CameraSystem<'a, Dispatcher> {
     }
 
     pub fn advance(&mut self, direction: CameraDirection, dt: f32) {
-        let velocity = self.data.movement_speed * dt * if self.data.reverse { -1.0 } else { 1.0 };
+        let velocity = self.data.movement_speed * dt * if self.data.locked_mode { -1.0 } else { 1.0 };
         let position_delta = match direction {
             CameraDirection::Up => self.data.axis_up * velocity,
             CameraDirection::Down => -self.data.axis_up * velocity,
@@ -133,7 +133,7 @@ impl<'a, Dispatcher: AppEventDispatcher> CameraSystem<'a, Dispatcher> {
     }
 
     pub fn turn(&mut self, direction: CameraDirection, dt: f32) {
-        let velocity = dt * if self.data.reverse { 0.1 } else { 0.06 * self.turning_speed };
+        let velocity = dt * if self.data.locked_mode { 0.1 } else { 0.06 * self.turning_speed };
         match direction {
             CameraDirection::Up => self.data.heading += velocity,
             CameraDirection::Down => self.data.heading -= velocity,
@@ -144,7 +144,7 @@ impl<'a, Dispatcher: AppEventDispatcher> CameraSystem<'a, Dispatcher> {
     }
 
     pub fn rotate(&mut self, direction: CameraDirection, dt: f32) {
-        let velocity = 60.0 * dt * 0.001 * self.data.turning_speed * if self.data.reverse { -1.0 } else { 1.0 };
+        let velocity = 60.0 * dt * 0.001 * self.data.turning_speed * if self.data.locked_mode { -1.0 } else { 1.0 };
         match direction {
             CameraDirection::Left => self.data.rotate += velocity,
             CameraDirection::Right => self.data.rotate -= velocity,
@@ -197,7 +197,7 @@ impl<'a, Dispatcher: AppEventDispatcher> CameraSystem<'a, Dispatcher> {
         self.data.position += position_delta;
         self.data.position_delta = glm::vec3(0.0, 0.0, 0.0);
 
-        if self.data.reverse {
+        if self.data.locked_mode {
             let distance_to_origin = glm::length(&self.data.position);
             self.data.position = -self.data.direction * distance_to_origin;
         }
