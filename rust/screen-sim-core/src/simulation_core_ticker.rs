@@ -666,7 +666,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         };
         self.res.output.light_color_background = get_3_f32color_from_int(self.res.filters.light_color);
         for i in 0..self.res.output.color_splits {
-            let mut light_color = self.res.output.light_color_background.clone();
+            let mut light_color = self.res.output.light_color_background;
             match self.res.filters.color_channels {
                 ColorChannels::Combined => {}
                 _ => {
