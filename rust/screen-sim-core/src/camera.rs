@@ -198,8 +198,25 @@ impl<'a, Dispatcher: AppEventDispatcher> CameraSystem<'a, Dispatcher> {
         self.data.position_delta = glm::vec3(0.0, 0.0, 0.0);
 
         if self.data.locked_mode {
-            let distance_to_origin = glm::length(&self.data.position);
-            self.data.position = -self.data.direction * distance_to_origin;
+            if self.data.pitch.abs() > std::f32::EPSILON || self.data.heading.abs() > std::f32::EPSILON {
+                let distance_to_origin = glm::length(&self.data.position);
+                self.data.position = -self.data.direction * distance_to_origin;
+            }
+            if self.data.position.z < 0.8 {
+                self.data.position.z = 0.8;
+            } else if self.data.position.z > 8000.0 {
+                self.data.position.z = 8000.0;
+            }
+            if self.data.position.x < -395.0 {
+                self.data.position.x = -395.0;
+            } else if self.data.position.x > 395.0 {
+                self.data.position.x = 395.0;
+            }
+            if self.data.position.y < -220.0 {
+                self.data.position.y = -220.0;
+            } else if self.data.position.y > 220.0 {
+                self.data.position.y = 220.0;
+            }
         }
 
         if !self.data.sending_camera_update_event {
