@@ -108,13 +108,24 @@ impl<'a, Dispatcher: AppEventDispatcher> CameraSystem<'a, Dispatcher> {
 
     pub fn advance(&mut self, direction: CameraDirection, dt: f32) {
         let velocity = self.data.movement_speed * dt * if self.data.locked_mode { -1.0 } else { 1.0 };
-        let position_delta = match direction {
-            CameraDirection::Up => self.data.axis_up * velocity,
-            CameraDirection::Down => -self.data.axis_up * velocity,
-            CameraDirection::Left => -self.data.axis_right * velocity,
-            CameraDirection::Right => self.data.axis_right * velocity,
-            CameraDirection::Forward => self.data.direction * velocity,
-            CameraDirection::Backward => -self.data.direction * velocity,
+        let position_delta = if self.data.locked_mode {
+            match direction {
+                CameraDirection::Up => self.data.direction * velocity,
+                CameraDirection::Down => -self.data.direction * velocity,
+                CameraDirection::Left => -self.data.axis_right * velocity,
+                CameraDirection::Right => self.data.axis_right * velocity,
+                CameraDirection::Forward => self.data.axis_up * velocity,
+                CameraDirection::Backward => -self.data.axis_up * velocity,
+            }
+        } else {
+            match direction {
+                CameraDirection::Up => self.data.axis_up * velocity,
+                CameraDirection::Down => -self.data.axis_up * velocity,
+                CameraDirection::Left => -self.data.axis_right * velocity,
+                CameraDirection::Right => self.data.axis_right * velocity,
+                CameraDirection::Forward => self.data.direction * velocity,
+                CameraDirection::Backward => -self.data.direction * velocity,
+            }
         };
         self.data.position_destiny += position_delta;
     }
