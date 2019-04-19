@@ -1,6 +1,7 @@
 use crate::dispatch_event::{dispatch_event, dispatch_event_with};
 use core::app_events::AppEventDispatcher;
-use core::simulation_core_state::Resources;
+use core::internal_resolution::InternalResolution;
+use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, ScreenLayeringKind, TextureInterpolation};
 use js_sys::{Array, Float32Array};
 use std::cell::RefCell;
 use web_error::{WebError, WebResult};
@@ -41,96 +42,78 @@ impl AppEventDispatcher for WebEventDispatcher {
         self.catch_error(dispatch_event_with("app-event.change_pixel_spread", &format!("{:.03}", size).into()));
     }
 
-    fn dispatch_change_pixel_brightness(&self, res: &Resources) {
+    fn dispatch_change_pixel_brightness(&self, extra_bright: f32) {
         self.catch_error(dispatch_event_with(
             "app-event.change_pixel_brightness",
-            &format!("{:.02}", res.filters.extra_bright).into(),
+            &format!("{:.02}", extra_bright).into(),
         ));
     }
 
-    fn dispatch_change_pixel_contrast(&self, res: &Resources) {
+    fn dispatch_change_pixel_contrast(&self, extra_contrast: f32) {
         self.catch_error(dispatch_event_with(
             "app-event.change_pixel_contrast",
-            &format!("{:.02}", res.filters.extra_contrast).into(),
+            &format!("{:.02}", extra_contrast).into(),
         ));
     }
 
-    fn dispatch_change_light_color(&self, res: &Resources) {
-        self.dispatch_change_color("app-event.change_light_color", res.filters.light_color);
+    fn dispatch_change_light_color(&self, light_color: i32) {
+        self.dispatch_change_color("app-event.change_light_color", light_color);
     }
 
-    fn dispatch_change_brightness_color(&self, res: &Resources) {
-        self.dispatch_change_color("app-event.change_brightness_color", res.filters.brightness_color);
+    fn dispatch_change_brightness_color(&self, brightness_color: i32) {
+        self.dispatch_change_color("app-event.change_brightness_color", brightness_color);
     }
 
     fn dispatch_change_camera_zoom(&self, zoom: f32) {
         self.catch_error(dispatch_event_with("app-event.change_camera_zoom", &format!("{:.02}", zoom).into()));
     }
 
-    fn dispatch_change_blur_level(&self, res: &Resources) {
-        self.catch_error(dispatch_event_with("app-event.change_blur_level", &(res.filters.blur_passes as i32).into()));
+    fn dispatch_change_blur_level(&self, blur_passes: usize) {
+        self.catch_error(dispatch_event_with("app-event.change_blur_level", &(blur_passes as i32).into()));
     }
 
-    fn dispatch_change_lines_per_pixel(&self, res: &Resources) {
-        self.catch_error(dispatch_event_with(
-            "app-event.change_lines_per_pixel",
-            &(res.filters.lines_per_pixel as i32).into(),
-        ));
+    fn dispatch_change_lines_per_pixel(&self, lpp: usize) {
+        self.catch_error(dispatch_event_with("app-event.change_lines_per_pixel", &(lpp as i32).into()));
     }
 
-    fn dispatch_color_representation(&self, res: &Resources) {
-        self.catch_error(dispatch_event_with(
-            "app-event.color_representation",
-            &(res.filters.color_channels.to_string()).into(),
-        ));
+    fn dispatch_color_representation(&self, color_channels: ColorChannels) {
+        self.catch_error(dispatch_event_with("app-event.color_representation", &(color_channels.to_string()).into()));
     }
 
-    fn dispatch_pixel_geometry(&self, res: &Resources) {
-        self.catch_error(dispatch_event_with(
-            "app-event.pixel_geometry",
-            &(res.filters.pixels_geometry_kind.to_string()).into(),
-        ));
+    fn dispatch_pixel_geometry(&self, pixels_geometry_kind: PixelsGeometryKind) {
+        self.catch_error(dispatch_event_with("app-event.pixel_geometry", &(pixels_geometry_kind.to_string()).into()));
     }
 
-    fn dispatch_pixel_shadow_shape(&self, res: &Resources) {
+    fn dispatch_pixel_shadow_shape(&self, pixel_shadow_shape_kind: usize) {
         self.catch_error(dispatch_event_with(
             "app-event.pixel_shadow_shape",
-            &(res.filters.pixel_shadow_shape_kind.to_string()).into(),
+            &(pixel_shadow_shape_kind.to_string()).into(),
         ));
     }
 
-    fn dispatch_pixel_shadow_height(&self, res: &Resources) {
+    fn dispatch_pixel_shadow_height(&self, pixel_shadow_height_factor: f32) {
         self.catch_error(dispatch_event_with(
             "app-event.pixel_shadow_height",
-            &(res.filters.pixel_shadow_height_factor).into(),
+            &format!("{:.02}", pixel_shadow_height_factor).into(),
         ));
     }
 
-    fn dispatch_screen_layering_type(&self, res: &Resources) {
-        self.catch_error(dispatch_event_with(
-            "app-event.screen_layering_type",
-            &(res.filters.layering_kind.to_string()).into(),
-        ));
+    fn dispatch_screen_layering_type(&self, layering_kind: ScreenLayeringKind) {
+        self.catch_error(dispatch_event_with("app-event.screen_layering_type", &(layering_kind.to_string()).into()));
     }
 
-    fn dispatch_screen_curvature(&self, res: &Resources) {
-        self.catch_error(dispatch_event_with(
-            "app-event.screen_curvature",
-            &(res.filters.screen_curvature_kind.to_string()).into(),
-        ));
+    fn dispatch_screen_curvature(&self, screen_curvature_kind: ScreenCurvatureKind) {
+        self.catch_error(dispatch_event_with("app-event.screen_curvature", &(screen_curvature_kind.to_string()).into()));
     }
 
-    fn dispatch_internal_resolution(&self, res: &Resources) {
-        self.catch_error(dispatch_event_with(
-            "app-event.internal_resolution",
-            &(res.filters.internal_resolution.to_label()).into(),
-        ));
+    fn dispatch_internal_resolution(&self, internal_resolution: &InternalResolution) {
+        self.catch_error(dispatch_event_with("app-event.internal_resolution", &(internal_resolution.to_label()).into()));
     }
 
-    fn dispatch_texture_interpolation(&self, res: &Resources) {
+    fn dispatch_texture_interpolation(&self, texture_interpolation: TextureInterpolation) {
         self.catch_error(dispatch_event_with(
             "app-event.texture_interpolation",
-            &(res.filters.texture_interpolation.to_string()).into(),
+            &(texture_interpolation.to_string()).into(),
         ));
     }
 

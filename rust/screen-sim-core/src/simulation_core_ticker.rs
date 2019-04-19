@@ -5,10 +5,13 @@ use crate::general_types::{get_3_f32color_from_int, NextEnumVariant};
 use crate::pixels_shadow::SHADOWS_LEN;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::{
-    event_kind, ColorChannels, CustomInputEvent, Filters, IncDec, Input, InputEventValue, PixelsGeometryKind, Resources, ScreenCurvatureKind,
+    event_kind, ColorChannels, Filters, IncDec, Input, InputEventValue, PixelsGeometryKind, Resources, ScreenCurvatureKind,
     ScreenLayeringKind, PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
 };
 use derive_new::new;
+use std::cmp::{PartialEq, PartialOrd};
+use std::fmt::Display;
+use std::ops::{AddAssign, SubAssign};
 
 #[derive(new)]
 pub struct SimulationCoreTicker<'a, T: AppEventDispatcher> {
@@ -46,6 +49,16 @@ struct SimulationUpdater<'a, T: AppEventDispatcher> {
     res: &'a mut Resources,
     input: &'a Input,
     dt: f32,
+}
+
+macro_rules! read_event_value {
+    ($this:ident, $variant:ident, $kind:ident) => {
+        if let InputEventValue::$variant(value) = $this.input.custom_event.get_value(event_kind::$kind) {
+            Some(value)
+        } else {
+            None
+        }
+    }
 }
 
 impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
@@ -155,50 +168,29 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
     }
 
     fn update_filter_source_colors(&mut self) {
-        {
-            let last_extra_bright = self.res.filters.extra_bright;
-            if self.input.bright.increase {
-                self.res.filters.extra_bright += 0.01 * self.dt * self.res.filters.change_speed;
-            }
-            if self.input.bright.decrease {
-                self.res.filters.extra_bright -= 0.01 * self.dt * self.res.filters.change_speed;
-            }
-            if let InputEventValue::PixelBrighttness(brightness) = self.input.custom_event.get_value(event_kind::PIXEL_BRIGHTNESS) {
-                self.res.filters.extra_bright = brightness;
-            }
-            if last_extra_bright != self.res.filters.extra_bright {
-                if self.res.filters.extra_bright < -1.0 {
-                    self.res.filters.extra_bright = -1.0;
-                    self.ctx.dispatcher.dispatch_top_message("Minimum value is -1.0");
-                } else if self.res.filters.extra_bright > 1.0 {
-                    self.res.filters.extra_bright = 1.0;
-                    self.ctx.dispatcher.dispatch_top_message("Maximum value is +1.0");
-                }
-                self.ctx.dispatcher.dispatch_change_pixel_brightness(self.res);
-            }
+        let ctx = &self.ctx;
+        FilterScalarSystem {
+            event_value: read_event_value!(self, PixelBrighttness, PIXEL_BRIGHTNESS),
+            incdec: self.input.bright.clone(),
+            velocity: 0.01 * self.dt * self.res.filters.change_speed,
+            min: Some(-1.0),
+            max: Some(1.0),
+            ctx,
+            send_message: |x| ctx.dispatcher.dispatch_change_pixel_brightness(x),
+            var: &mut self.res.filters.extra_bright,
         }
-        {
-            let last_extra_contrast = self.res.filters.extra_contrast;
-            if self.input.contrast.increase {
-                self.res.filters.extra_contrast += 0.01 * self.dt * self.res.filters.change_speed;
-            }
-            if self.input.contrast.decrease {
-                self.res.filters.extra_contrast -= 0.01 * self.dt * self.res.filters.change_speed;
-            }
-            if let InputEventValue::PixelContrast(contrast) = self.input.custom_event.get_value(event_kind::PIXEL_CONTRAST) {
-                self.res.filters.extra_contrast = contrast;
-            }
-            if last_extra_contrast != self.res.filters.extra_contrast {
-                if self.res.filters.extra_contrast < 0.0 {
-                    self.res.filters.extra_contrast = 0.0;
-                    self.ctx.dispatcher.dispatch_top_message("Minimum value is 0.0");
-                } else if self.res.filters.extra_contrast > 20.0 {
-                    self.res.filters.extra_contrast = 20.0;
-                    self.ctx.dispatcher.dispatch_top_message("Maximum value is 20.0");
-                }
-                self.ctx.dispatcher.dispatch_change_pixel_contrast(self.res);
-            }
+        .operate();
+        FilterScalarSystem {
+            event_value: read_event_value!(self, PixelContrast, PIXEL_CONTRAST),
+            incdec: self.input.contrast.clone(),
+            velocity: 0.01 * self.dt * self.res.filters.change_speed,
+            min: Some(0.0),
+            max: Some(20.0),
+            ctx,
+            send_message: |x| ctx.dispatcher.dispatch_change_pixel_contrast(x),
+            var: &mut self.res.filters.extra_contrast,
         }
+        .operate();
         if let InputEventValue::LightColor(light_color) = self.input.custom_event.get_value(event_kind::LIGHT_COLOR) {
             self.res.filters.light_color = light_color;
             self.ctx.dispatcher.dispatch_top_message("Light Color changed.");
@@ -210,59 +202,40 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
     }
 
     fn update_filter_blur(&mut self) {
-        let last_blur_passes = self.res.filters.blur_passes;
-        if self.input.blur.increase.is_just_pressed() {
-            self.res.filters.blur_passes += 1;
+        let ctx = &self.ctx;
+        FilterScalarSystem {
+            event_value: read_event_value!(self, BlurLevel, BLUR_LEVEL),
+            incdec: IncDec::new(self.input.blur.increase.is_just_pressed(), self.input.blur.decrease.is_just_pressed()),
+            velocity: 1,
+            min: Some(0),
+            max: Some(100),
+            ctx,
+            send_message: |x| {
+                ctx.dispatcher.dispatch_top_message(&format!("Blur level: {}", x));
+                ctx.dispatcher.dispatch_change_blur_level(x)
+            },
+            var: &mut self.res.filters.blur_passes,
         }
-        if self.input.blur.decrease.is_just_pressed() {
-            if self.res.filters.blur_passes > 0 {
-                self.res.filters.blur_passes -= 1;
-            } else {
-                self.ctx.dispatcher.dispatch_top_message("Minimum value is 0");
-            }
-        }
-        if let InputEventValue::BlurLevel(blur_passes) = self.input.custom_event.get_value(event_kind::BLUR_LEVEL) {
-            self.res.filters.blur_passes = blur_passes;
-            self.ctx.dispatcher.dispatch_change_blur_level(self.res);
-        }
-        if self.res.filters.blur_passes > 100 {
-            self.res.filters.blur_passes = 100;
-            self.ctx.dispatcher.dispatch_top_message("Maximum value is 100");
-        }
-        if last_blur_passes != self.res.filters.blur_passes {
-            self.ctx
-                .dispatcher
-                .dispatch_top_message(&format!("Blur level: {}", self.res.filters.blur_passes));
-            self.ctx.dispatcher.dispatch_change_blur_level(self.res);
-        }
+        .operate();
     }
 
     // lines per pixel
     fn update_filter_lpp(&mut self) {
-        let last_lpp = self.res.filters.lines_per_pixel;
-        if self.input.lpp.increase.is_just_pressed() {
-            self.res.filters.lines_per_pixel += 1;
+        let ctx = &self.ctx;
+        FilterScalarSystem {
+            event_value: read_event_value!(self, LinersPerPixel, LINES_PER_PIXEL),
+            incdec: IncDec::new(self.input.lpp.increase.is_just_pressed(), self.input.lpp.decrease.is_just_pressed()),
+            velocity: 1,
+            min: Some(1),
+            max: Some(20),
+            ctx,
+            send_message: |x| {
+                ctx.dispatcher.dispatch_top_message(&format!("Lines per pixel: {}", x));
+                ctx.dispatcher.dispatch_change_lines_per_pixel(x)
+            },
+            var: &mut self.res.filters.lines_per_pixel,
         }
-        if self.input.lpp.decrease.is_just_pressed() && self.res.filters.lines_per_pixel > 0 {
-            self.res.filters.lines_per_pixel -= 1;
-        }
-        if let InputEventValue::LinersPerPixel(lpp) = self.input.custom_event.get_value(event_kind::LINES_PER_PIXEL) {
-            self.res.filters.lines_per_pixel = lpp;
-            self.ctx.dispatcher.dispatch_change_lines_per_pixel(self.res);
-        }
-        if self.res.filters.lines_per_pixel < 1 {
-            self.res.filters.lines_per_pixel = 1;
-            self.ctx.dispatcher.dispatch_top_message("Minimum value is 1");
-        } else if self.res.filters.lines_per_pixel > 20 {
-            self.res.filters.lines_per_pixel = 20;
-            self.ctx.dispatcher.dispatch_top_message("Maximum value is 20");
-        }
-        if last_lpp != self.res.filters.lines_per_pixel {
-            self.ctx
-                .dispatcher
-                .dispatch_top_message(&format!("Lines per pixel: {}.", self.res.filters.lines_per_pixel));
-            self.ctx.dispatcher.dispatch_change_lines_per_pixel(self.res);
-        }
+        .operate();
     }
 
     fn update_filter_curvature(&mut self) {
@@ -275,7 +248,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             self.ctx
                 .dispatcher
                 .dispatch_top_message(&format!("Screen curvature: {}.", self.res.filters.screen_curvature_kind));
-            self.ctx.dispatcher.dispatch_screen_curvature(self.res);
+            self.ctx.dispatcher.dispatch_screen_curvature(self.res.filters.screen_curvature_kind);
         }
     }
 
@@ -289,7 +262,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             self.ctx
                 .dispatcher
                 .dispatch_top_message(&format!("Layering kind: {}.", self.res.filters.layering_kind));
-            self.ctx.dispatcher.dispatch_screen_layering_type(self.res);
+            self.ctx.dispatcher.dispatch_screen_layering_type(self.res.filters.layering_kind);
         }
     }
 
@@ -303,7 +276,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             self.ctx
                 .dispatcher
                 .dispatch_top_message(&format!("Pixel color representation: {}.", self.res.filters.color_channels));
-            self.ctx.dispatcher.dispatch_color_representation(self.res);
+            self.ctx.dispatcher.dispatch_color_representation(self.res.filters.color_channels);
         }
     }
 
@@ -320,7 +293,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             } else if self.res.filters.internal_resolution.maximium_reached {
                 self.ctx.dispatcher.dispatch_top_message("Maximum internal resolution has been reached.");
             } else {
-                self.ctx.dispatcher.dispatch_internal_resolution(self.res);
+                self.ctx.dispatcher.dispatch_internal_resolution(&self.res.filters.internal_resolution);
             }
         }
     }
@@ -333,7 +306,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             if self.input.next_texture_interpolation.decrease.is_just_pressed() {
                 self.res.filters.texture_interpolation.previous_enum_variant();
             }
-            self.ctx.dispatcher.dispatch_texture_interpolation(self.res);
+            self.ctx.dispatcher.dispatch_texture_interpolation(self.res.filters.texture_interpolation);
         }
     }
 
@@ -347,7 +320,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             self.ctx
                 .dispatcher
                 .dispatch_top_message(&format!("Pixel geometry: {}.", self.res.filters.pixels_geometry_kind));
-            self.ctx.dispatcher.dispatch_pixel_geometry(self.res);
+            self.ctx.dispatcher.dispatch_pixel_geometry(self.res.filters.pixels_geometry_kind);
         }
 
         if self.input.next_pixels_shadow_shape_kind.any_just_pressed() {
@@ -365,106 +338,67 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             self.ctx
                 .dispatcher
                 .dispatch_top_message(&format!("Showing next pixel shadow: {}.", self.res.filters.pixel_shadow_shape_kind));
-            self.ctx.dispatcher.dispatch_pixel_shadow_shape(self.res);
+            self.ctx.dispatcher.dispatch_pixel_shadow_shape(self.res.filters.pixel_shadow_shape_kind);
         }
 
-        let received_pixel_shadow_height =
-            if let InputEventValue::PixelShadowHeight(height) = self.input.custom_event.get_value(event_kind::PIXEL_SHADOW_HEIGHT) {
-                Some(height)
-            } else {
-                None
-            };
-
-        if self.input.next_pixels_shadow_height_factor.any_active() || received_pixel_shadow_height.is_some() {
-            if self.input.next_pixels_shadow_height_factor.increase {
-                self.res.filters.pixel_shadow_height_factor += self.dt * 0.3;
-            }
-            if self.input.next_pixels_shadow_height_factor.decrease {
-                self.res.filters.pixel_shadow_height_factor -= self.dt * 0.3;
-            }
-            if let Some(height) = received_pixel_shadow_height {
-                self.res.filters.pixel_shadow_height_factor = height;
-            }
-            if self.res.filters.pixel_shadow_height_factor < 0.0 {
-                self.res.filters.pixel_shadow_height_factor = 0.0;
-                self.ctx.dispatcher.dispatch_top_message("Minimum value is 0.0");
-            }
-            if self.res.filters.pixel_shadow_height_factor > 1.0 {
-                self.res.filters.pixel_shadow_height_factor = 1.0;
-                self.ctx.dispatcher.dispatch_top_message("Maximum value is 1.0");
-            }
-            self.ctx.dispatcher.dispatch_pixel_shadow_height(self.res);
+        let ctx = &self.ctx;
+        FilterScalarSystem {
+            event_value: read_event_value!(self, PixelShadowHeight, PIXEL_SHADOW_HEIGHT),
+            incdec: self.input.next_pixels_shadow_height_factor.clone(),
+            velocity: self.dt * 0.3,
+            min: Some(0.0),
+            max: Some(1.0),
+            ctx,
+            send_message: |x| ctx.dispatcher.dispatch_pixel_shadow_height(x),
+            var: &mut self.res.filters.pixel_shadow_height_factor,
         }
+        .operate();
 
         let pixel_velocity = self.dt * self.res.filters.change_speed;
-        let ctx = &self.ctx;
-        change_pixel_sizes(
+        FilterScalarSystem {
+            event_value: read_event_value!(self, PixelVerticalGap, PIXEL_VERTICAL_GAP),
+            incdec: self.input.pixel_vertical_gap.clone(),
+            velocity: pixel_velocity * 0.00125,
+            min: Some(0.0),
+            max: None,
             ctx,
-            &self.input.custom_event,
-            self.input.pixel_vertical_gap.clone(),
-            &mut self.res.filters.cur_pixel_vertical_gap,
-            pixel_velocity * 0.00125,
-            |n| ctx.dispatcher.dispatch_change_pixel_vertical_gap(n),
-            event_kind::PIXEL_VERTICAL_GAP,
-        );
-        change_pixel_sizes(
-            ctx,
-            &self.input.custom_event,
-            self.input.pixel_horizontal_gap.clone(),
-            &mut self.res.filters.cur_pixel_horizontal_gap,
-            pixel_velocity * 0.00125,
-            |n| ctx.dispatcher.dispatch_change_pixel_horizontal_gap(n),
-            event_kind::PIXEL_HORIZONTAL_GAP,
-        );
-        change_pixel_sizes(
-            ctx,
-            &self.input.custom_event,
-            self.input.pixel_width.clone(),
-            &mut self.res.filters.cur_pixel_width,
-            pixel_velocity * 0.005,
-            |n| ctx.dispatcher.dispatch_change_pixel_width(n),
-            event_kind::PIXEL_WIDTH,
-        );
-        change_pixel_sizes(
-            ctx,
-            &self.input.custom_event,
-            self.input.pixel_spread.clone(),
-            &mut self.res.filters.cur_pixel_spread,
-            pixel_velocity * 0.005,
-            |n| ctx.dispatcher.dispatch_change_pixel_spread(n),
-            event_kind::PIXEL_SPREAD,
-        );
-
-        fn change_pixel_sizes<T: AppEventDispatcher>(
-            ctx: &SimulationContext<T>,
-            custom_event: &CustomInputEvent,
-            controller: IncDec<bool>,
-            cur_size: &mut f32,
-            velocity: f32,
-            dispatch_update: impl Fn(f32),
-            event_kind: &str,
-        ) {
-            let before_size = *cur_size;
-            if controller.increase {
-                *cur_size += velocity;
-            }
-            if controller.decrease {
-                *cur_size -= velocity;
-            }
-            let event_value = custom_event.get_value(event_kind);
-            if let InputEventValue::None = event_value {
-            } else {
-                *cur_size = event_value.get_f32();
-            }
-            if *cur_size != before_size {
-                if *cur_size < 0.0 {
-                    *cur_size = 0.0;
-                    ctx.dispatcher.dispatch_top_message("Minimum value is 0.0");
-                }
-                let size = *cur_size;
-                dispatch_update(size);
-            }
+            send_message: |x| ctx.dispatcher.dispatch_change_pixel_vertical_gap(x),
+            var: &mut self.res.filters.cur_pixel_vertical_gap,
         }
+        .operate();
+        FilterScalarSystem {
+            event_value: read_event_value!(self, PixelHorizontalGap, PIXEL_HORIZONTAL_GAP),
+            incdec: self.input.pixel_horizontal_gap.clone(),
+            velocity: pixel_velocity * 0.00125,
+            min: Some(0.0),
+            max: None,
+            ctx,
+            send_message: |x| ctx.dispatcher.dispatch_change_pixel_horizontal_gap(x),
+            var: &mut self.res.filters.cur_pixel_horizontal_gap,
+        }
+        .operate();
+        FilterScalarSystem {
+            event_value: read_event_value!(self, PixelWidth, PIXEL_WIDTH),
+            incdec: self.input.pixel_width.clone(),
+            velocity: pixel_velocity * 0.005,
+            min: Some(0.0),
+            max: None,
+            ctx,
+            send_message: |x| ctx.dispatcher.dispatch_change_pixel_width(x),
+            var: &mut self.res.filters.cur_pixel_width,
+        }
+        .operate();
+        FilterScalarSystem {
+            event_value: read_event_value!(self, PixelSpread, PIXEL_SPREAD),
+            incdec: self.input.pixel_spread.clone(),
+            velocity: pixel_velocity * 0.005,
+            min: Some(0.0),
+            max: None,
+            ctx,
+            send_message: |x| ctx.dispatcher.dispatch_change_pixel_spread(x),
+            var: &mut self.res.filters.cur_pixel_spread,
+        }
+        .operate();
     }
 
     fn update_speeds(&mut self) {
@@ -621,22 +555,22 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         self.ctx.dispatcher.dispatch_change_pixel_vertical_gap(self.res.filters.cur_pixel_vertical_gap);
         self.ctx.dispatcher.dispatch_change_pixel_width(self.res.filters.cur_pixel_width);
         self.ctx.dispatcher.dispatch_change_pixel_spread(self.res.filters.cur_pixel_spread);
-        self.ctx.dispatcher.dispatch_change_pixel_brightness(self.res);
-        self.ctx.dispatcher.dispatch_change_pixel_contrast(self.res);
-        self.ctx.dispatcher.dispatch_change_light_color(self.res);
-        self.ctx.dispatcher.dispatch_change_brightness_color(self.res);
+        self.ctx.dispatcher.dispatch_change_pixel_brightness(self.res.filters.extra_bright);
+        self.ctx.dispatcher.dispatch_change_pixel_contrast(self.res.filters.extra_contrast);
+        self.ctx.dispatcher.dispatch_change_light_color(self.res.filters.light_color);
+        self.ctx.dispatcher.dispatch_change_brightness_color(self.res.filters.brightness_color);
         self.ctx.dispatcher.dispatch_change_camera_zoom(self.res.camera.zoom);
         self.ctx.dispatcher.dispatch_change_camera_movement_mode(self.res.camera.locked_mode);
-        self.ctx.dispatcher.dispatch_change_blur_level(self.res);
-        self.ctx.dispatcher.dispatch_change_lines_per_pixel(self.res);
-        self.ctx.dispatcher.dispatch_color_representation(self.res);
-        self.ctx.dispatcher.dispatch_pixel_geometry(self.res);
-        self.ctx.dispatcher.dispatch_pixel_shadow_shape(self.res);
-        self.ctx.dispatcher.dispatch_pixel_shadow_height(self.res);
-        self.ctx.dispatcher.dispatch_screen_layering_type(self.res);
-        self.ctx.dispatcher.dispatch_screen_curvature(self.res);
-        self.ctx.dispatcher.dispatch_internal_resolution(self.res);
-        self.ctx.dispatcher.dispatch_texture_interpolation(self.res);
+        self.ctx.dispatcher.dispatch_change_blur_level(self.res.filters.blur_passes);
+        self.ctx.dispatcher.dispatch_change_lines_per_pixel(self.res.filters.lines_per_pixel);
+        self.ctx.dispatcher.dispatch_color_representation(self.res.filters.color_channels);
+        self.ctx.dispatcher.dispatch_pixel_geometry(self.res.filters.pixels_geometry_kind);
+        self.ctx.dispatcher.dispatch_pixel_shadow_shape(self.res.filters.pixel_shadow_shape_kind);
+        self.ctx.dispatcher.dispatch_pixel_shadow_height(self.res.filters.pixel_shadow_height_factor);
+        self.ctx.dispatcher.dispatch_screen_layering_type(self.res.filters.layering_kind);
+        self.ctx.dispatcher.dispatch_screen_curvature(self.res.filters.screen_curvature_kind);
+        self.ctx.dispatcher.dispatch_internal_resolution(&self.res.filters.internal_resolution);
+        self.ctx.dispatcher.dispatch_texture_interpolation(self.res.filters.texture_interpolation);
         self.ctx
             .dispatcher
             .dispatch_change_pixel_speed(self.res.filters.change_speed / PIXEL_MANIPULATION_BASE_SPEED);
@@ -821,6 +755,57 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
                     },
                 }
             }
+        }
+    }
+}
+
+struct FilterScalarSystem<'a, T, SendMessage, Dispatcher>
+    where T: Display + AddAssign + SubAssign + PartialOrd + PartialEq + Copy,
+        SendMessage: Fn(T),
+        Dispatcher: AppEventDispatcher
+{
+    pub var: &'a mut T,
+    pub event_value: Option<T>,
+    pub incdec: IncDec<bool>,
+    pub velocity: T,
+    pub min: Option<T>,
+    pub max: Option<T>,
+    pub ctx: &'a SimulationContext<Dispatcher>,
+    pub send_message: SendMessage,
+}
+
+impl<'a, T, SendMessage, Dispatcher>
+    FilterScalarSystem<'a, T, SendMessage, Dispatcher>
+    where T: Display + AddAssign + SubAssign + PartialOrd + PartialEq + Copy,
+        SendMessage: Fn(T),
+        Dispatcher: AppEventDispatcher
+{
+    pub fn operate(&mut self) {
+        let last_value = *self.var;
+        if self.incdec.increase {
+            *self.var += self.velocity;
+        }
+        if self.incdec.decrease {
+            *self.var -= self.velocity;
+        }
+        if let Some(val) = self.event_value {
+            *self.var = val;
+        }
+        if last_value != *self.var {
+            if let Some(min) = self.min {
+                if *self.var < min {
+                    *self.var = min;
+                    self.ctx.dispatcher.dispatch_top_message(&format!("Minimum value is {}", min));
+                }
+            }
+            if let Some(max) = self.max {
+                if *self.var > max {
+                    *self.var = max;
+                    self.ctx.dispatcher.dispatch_top_message(&format!("Maximum value is {}", max));
+                }
+            }
+            let send_message = &self.send_message;
+            send_message(*self.var);
         }
     }
 }

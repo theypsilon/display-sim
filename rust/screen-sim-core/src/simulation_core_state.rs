@@ -426,6 +426,12 @@ impl IncDec<BooleanButton> {
 }
 
 impl IncDec<bool> {
+    pub fn new(increase: bool, decrease: bool) -> IncDec<bool> {
+        IncDec {
+            increase,
+            decrease
+        }
+    }
     pub fn any_active(&self) -> bool {
         self.increase || self.decrease
     }
