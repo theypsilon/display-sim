@@ -8,7 +8,8 @@ use core::simulation_core_state::{AnimationStep, Input, Resources, VideoInputRes
 use core::simulation_core_ticker::SimulationCoreTicker;
 use render::simulation_draw::SimulationDrawer;
 use render::simulation_render_state::{Materials, VideoInputMaterials};
-
+use core::internal_resolution::InternalResolution;
+use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, ScreenLayeringKind, TextureInterpolation};
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use std::time::SystemTime;
@@ -120,71 +121,71 @@ impl AppEventDispatcher for NativeEventDispatcher {
     fn dispatch_camera_update(&self, a: &glm::Vec3, b: &glm::Vec3, c: &glm::Vec3) {
         println!("camera_update {}, {}, {}", a, b, c);
     }
-    fn dispatch_change_pixel_horizontal_gap(&self, a: f32) {
-        println!("change_pixel_horizontal_gap {}", a);
+    fn dispatch_change_pixel_horizontal_gap(&self, size: f32) {
+        println!("ixel_horizontal_gap: {}", size);
     }
-    fn dispatch_change_pixel_vertical_gap(&self, a: f32) {
-        println!("change_pixel_vertical_gap {}", a);
+    fn dispatch_change_pixel_vertical_gap(&self, size: f32) {
+        println!("change_pixel_vertical_gap: {}", size);
     }
-    fn dispatch_change_pixel_width(&self, a: f32) {
-        println!("change_pixel_width {}", a);
+    fn dispatch_change_pixel_width(&self, size: f32) {
+        println!("change_pixel_width: {}", size);
     }
-    fn dispatch_change_pixel_spread(&self, a: f32) {
-        println!("change_pixel_spread {}", a);
+    fn dispatch_change_pixel_spread(&self, size: f32) {
+        println!("change_pixel_spread: {}", size);
     }
-    fn dispatch_change_pixel_brightness(&self, _: &Resources) {
-        println!("change_pixel_brightness");
+    fn dispatch_change_pixel_brightness(&self, res: f32) {
+        println!("change_pixel_brightness: {}", res);
     }
-    fn dispatch_change_pixel_contrast(&self, _: &Resources) {
-        println!("change_pixel_contrast");
+    fn dispatch_change_pixel_contrast(&self, res: f32) {
+        println!("change_pixel_contrast: {}", res);
     }
-    fn dispatch_change_light_color(&self, _: &Resources) {
-        println!("change_light_color");
+    fn dispatch_change_light_color(&self, res: i32) {
+        println!("change_light_color: {}", res);
     }
-    fn dispatch_change_brightness_color(&self, _: &Resources) {
-        println!("change_brightness_color");
+    fn dispatch_change_brightness_color(&self, res: i32) {
+        println!("change_brightness_color: {}", res);
     }
-    fn dispatch_change_camera_zoom(&self, a: f32) {
-        println!("change_camera_zoom {}", a);
+    fn dispatch_change_camera_zoom(&self, zoom: f32) {
+        println!("change_camera_zoom: {}", zoom);
     }
-    fn dispatch_change_blur_level(&self, _: &Resources) {
-        println!("change_blur_level");
+    fn dispatch_change_blur_level(&self, res: usize) {
+        println!("change_blur_level: {}", res);
     }
-    fn dispatch_change_lines_per_pixel(&self, _: &Resources) {
-        println!("change_lines_per_pixel");
+    fn dispatch_change_lines_per_pixel(&self, res: usize) {
+        println!("change_lines_per_pixel: {}", res);
     }
-    fn dispatch_color_representation(&self, _: &Resources) {
-        println!("color_representation");
+    fn dispatch_color_representation(&self, res: ColorChannels) {
+        println!("color_representation: {}", res);
     }
-    fn dispatch_pixel_geometry(&self, _: &Resources) {
-        println!("pixel_geometry");
+    fn dispatch_pixel_geometry(&self, res: PixelsGeometryKind) {
+        println!("pixel_geometry: {}", res);
     }
-    fn dispatch_pixel_shadow_shape(&self, _: &Resources) {
-        println!("pixel_shadow_shape");
+    fn dispatch_pixel_shadow_shape(&self, res: usize) {
+        println!("pixel_shadow_shape: {}", res);
     }
-    fn dispatch_pixel_shadow_height(&self, _: &Resources) {
-        println!("pixel_shadow_height");
+    fn dispatch_pixel_shadow_height(&self, res: f32) {
+        println!("pixel_shadow_height: {}", res);
     }
-    fn dispatch_screen_layering_type(&self, _: &Resources) {
-        println!("screen_layering_type");
+    fn dispatch_screen_layering_type(&self, res: ScreenLayeringKind) {
+        println!("screen_layering_type: {}", res);
     }
-    fn dispatch_screen_curvature(&self, _: &Resources) {
-        println!("screen_curvature");
+    fn dispatch_screen_curvature(&self, res: ScreenCurvatureKind) {
+        println!("screen_curvature: {}", res);
     }
-    fn dispatch_internal_resolution(&self, _: &Resources) {
-        println!("internal_resolution");
+    fn dispatch_internal_resolution(&self, res: &InternalResolution) {
+        println!("internal_resolution: {}", res.to_label());
     }
-    fn dispatch_texture_interpolation(&self, _: &Resources) {
-        println!("texture_interpolation");
+    fn dispatch_texture_interpolation(&self, res: TextureInterpolation) {
+        println!("texture_interpolation: {}", res);
     }
-    fn dispatch_change_pixel_speed(&self, a: f32) {
-        println!("change_pixel_speed {}", a);
+    fn dispatch_change_pixel_speed(&self, speed: f32) {
+        println!("change_pixel_speed: {}", speed);
     }
-    fn dispatch_change_turning_speed(&self, a: f32) {
-        println!("change_turning_speed {}", a);
+    fn dispatch_change_turning_speed(&self, speed: f32) {
+        println!("change_turning_speed: {}", speed);
     }
-    fn dispatch_change_movement_speed(&self, a: f32) {
-        println!("change_movement_speed {}", a);
+    fn dispatch_change_movement_speed(&self, speed: f32) {
+        println!("change_movement_speed: {}", speed);
     }
     fn dispatch_exiting_session(&self) {
         println!("exiting_session");
@@ -192,8 +193,8 @@ impl AppEventDispatcher for NativeEventDispatcher {
     fn dispatch_toggle_info_panel(&self) {
         println!("toggle_info_panel");
     }
-    fn dispatch_fps(&self, a: f32) {
-        println!("fps {}", a);
+    fn dispatch_fps(&self, fps: f32) {
+        println!("frames in 20 seconds: {}", fps);
     }
     fn dispatch_request_pointer_lock(&self) {
         println!("request_pointer_lock");
@@ -202,12 +203,11 @@ impl AppEventDispatcher for NativeEventDispatcher {
         println!("exit_pointer_lock");
     }
     fn dispatch_screenshot(&self, _: &[u8], _: f64) {
-        println!("screenshot");
     }
     fn dispatch_change_camera_movement_mode(&self, locked_mode: bool) {
-        println!("camera_movement_mode: {}", if locked_mode { "lock" } else { "free" });
+        println!("change_camera_movement_mode: {}", locked_mode);
     }
-    fn dispatch_top_message(&self, msg: &str) {
-        println!("top_message: {}", msg);
+    fn dispatch_top_message(&self, message: &str) {
+        println!("top_message: {}", message);
     }
 }

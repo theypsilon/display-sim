@@ -386,12 +386,10 @@ impl CustomInputEvent {
         self.kinds.push(kind);
     }
     pub fn get_value(&self, kind: &str) -> InputEventValue {
-        let mut i = 0;
-        for k in &self.kinds {
+        for (i, k) in self.kinds.iter().enumerate() {
             if k == kind {
                 return self.values[i];
             }
-            i += 1;
         }
         InputEventValue::None
     }

@@ -353,7 +353,6 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             var: &mut self.res.filters.pixel_shadow_height_factor,
         }
         .operate();
-
         let pixel_velocity = self.dt * self.res.filters.change_speed;
         FilterScalarSystem {
             event_value: read_event_value!(self, PixelVerticalGap, PIXEL_VERTICAL_GAP),
@@ -764,14 +763,14 @@ struct FilterScalarSystem<'a, T, SendMessage, Dispatcher>
         SendMessage: Fn(T),
         Dispatcher: AppEventDispatcher
 {
-    pub var: &'a mut T,
-    pub event_value: Option<T>,
-    pub incdec: IncDec<bool>,
-    pub velocity: T,
-    pub min: Option<T>,
-    pub max: Option<T>,
-    pub ctx: &'a SimulationContext<Dispatcher>,
-    pub send_message: SendMessage,
+    var: &'a mut T,
+    event_value: Option<T>,
+    incdec: IncDec<bool>,
+    velocity: T,
+    min: Option<T>,
+    max: Option<T>,
+    ctx: &'a SimulationContext<Dispatcher>,
+    send_message: SendMessage,
 }
 
 impl<'a, T, SendMessage, Dispatcher>
@@ -780,7 +779,7 @@ impl<'a, T, SendMessage, Dispatcher>
         SendMessage: Fn(T),
         Dispatcher: AppEventDispatcher
 {
-    pub fn operate(&mut self) {
+    pub fn operate(self) {
         let last_value = *self.var;
         if self.incdec.increase {
             *self.var += self.velocity;

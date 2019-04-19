@@ -3,6 +3,8 @@ use core::general_types::Size2D;
 use core::simulation_context::SimulationContext;
 use core::simulation_core_state::{AnimationStep, Input, Resources, VideoInputResources};
 use core::simulation_core_ticker::SimulationCoreTicker;
+use core::internal_resolution::InternalResolution;
+use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, ScreenLayeringKind, TextureInterpolation};
 use render::background_render::BackgroundRender;
 use render::blur_render::BlurRender;
 use render::internal_resolution_render::InternalResolutionRender;
@@ -82,21 +84,21 @@ impl AppEventDispatcher for FakeEventDispatcher {
     fn dispatch_change_pixel_vertical_gap(&self, _: f32) {}
     fn dispatch_change_pixel_width(&self, _: f32) {}
     fn dispatch_change_pixel_spread(&self, _: f32) {}
-    fn dispatch_change_pixel_brightness(&self, _: &Resources) {}
-    fn dispatch_change_pixel_contrast(&self, _: &Resources) {}
-    fn dispatch_change_light_color(&self, _: &Resources) {}
-    fn dispatch_change_brightness_color(&self, _: &Resources) {}
+    fn dispatch_change_pixel_brightness(&self, _: f32) {}
+    fn dispatch_change_pixel_contrast(&self, _: f32) {}
+    fn dispatch_change_light_color(&self, _: i32) {}
+    fn dispatch_change_brightness_color(&self, _: i32) {}
     fn dispatch_change_camera_zoom(&self, _: f32) {}
-    fn dispatch_change_blur_level(&self, _: &Resources) {}
-    fn dispatch_change_lines_per_pixel(&self, _: &Resources) {}
-    fn dispatch_color_representation(&self, _: &Resources) {}
-    fn dispatch_pixel_geometry(&self, _: &Resources) {}
-    fn dispatch_pixel_shadow_shape(&self, _: &Resources) {}
-    fn dispatch_pixel_shadow_height(&self, _: &Resources) {}
-    fn dispatch_screen_layering_type(&self, _: &Resources) {}
-    fn dispatch_screen_curvature(&self, _: &Resources) {}
-    fn dispatch_internal_resolution(&self, _: &Resources) {}
-    fn dispatch_texture_interpolation(&self, _: &Resources) {}
+    fn dispatch_change_blur_level(&self, _: usize) {}
+    fn dispatch_change_lines_per_pixel(&self, _: usize) {}
+    fn dispatch_color_representation(&self, _: ColorChannels) {}
+    fn dispatch_pixel_geometry(&self, _: PixelsGeometryKind) {}
+    fn dispatch_pixel_shadow_shape(&self, _: usize) {}
+    fn dispatch_pixel_shadow_height(&self, _: f32) {}
+    fn dispatch_screen_layering_type(&self, _: ScreenLayeringKind) {}
+    fn dispatch_screen_curvature(&self, _: ScreenCurvatureKind) {}
+    fn dispatch_internal_resolution(&self, _: &InternalResolution) {}
+    fn dispatch_texture_interpolation(&self, _: TextureInterpolation) {}
     fn dispatch_change_pixel_speed(&self, _: f32) {}
     fn dispatch_change_turning_speed(&self, _: f32) {}
     fn dispatch_change_movement_speed(&self, _: f32) {}
