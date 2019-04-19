@@ -421,14 +421,17 @@ impl IncDec<BooleanButton> {
     pub fn any_just_released(&self) -> bool {
         self.increase.is_just_released() || self.decrease.is_just_released()
     }
+    pub fn to_is_just_pressed(&self) -> IncDec<bool> {
+        IncDec {
+            increase: self.increase.is_just_pressed(),
+            decrease: self.decrease.is_just_pressed(),
+        }
+    }
 }
 
 impl IncDec<bool> {
     pub fn new(increase: bool, decrease: bool) -> IncDec<bool> {
-        IncDec {
-            increase,
-            decrease
-        }
+        IncDec { increase, decrease }
     }
     pub fn any_active(&self) -> bool {
         self.increase || self.decrease

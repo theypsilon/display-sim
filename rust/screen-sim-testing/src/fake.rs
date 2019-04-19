@@ -1,10 +1,10 @@
 use core::app_events::AppEventDispatcher;
 use core::general_types::Size2D;
+use core::internal_resolution::InternalResolution;
 use core::simulation_context::SimulationContext;
 use core::simulation_core_state::{AnimationStep, Input, Resources, VideoInputResources};
-use core::simulation_core_ticker::SimulationCoreTicker;
-use core::internal_resolution::InternalResolution;
 use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, ScreenLayeringKind, TextureInterpolation};
+use core::simulation_core_ticker::SimulationCoreTicker;
 use render::background_render::BackgroundRender;
 use render::blur_render::BlurRender;
 use render::internal_resolution_render::InternalResolutionRender;

@@ -3,13 +3,13 @@ use render::opengl_hooks::{WebGl2RenderingContext, WebResult};
 use core::action_bindings::on_button_action;
 use core::app_events::AppEventDispatcher;
 use core::general_types::Size2D;
+use core::internal_resolution::InternalResolution;
 use core::simulation_context::SimulationContext;
 use core::simulation_core_state::{AnimationStep, Input, Resources, VideoInputResources};
+use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, ScreenLayeringKind, TextureInterpolation};
 use core::simulation_core_ticker::SimulationCoreTicker;
 use render::simulation_draw::SimulationDrawer;
 use render::simulation_render_state::{Materials, VideoInputMaterials};
-use core::internal_resolution::InternalResolution;
-use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, ScreenLayeringKind, TextureInterpolation};
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use std::time::SystemTime;
@@ -202,8 +202,7 @@ impl AppEventDispatcher for NativeEventDispatcher {
     fn dispatch_exit_pointer_lock(&self) {
         println!("exit_pointer_lock");
     }
-    fn dispatch_screenshot(&self, _: &[u8], _: f64) {
-    }
+    fn dispatch_screenshot(&self, _: &[u8], _: f64) {}
     fn dispatch_change_camera_movement_mode(&self, locked_mode: bool) {
         println!("change_camera_movement_mode: {}", locked_mode);
     }

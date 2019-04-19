@@ -1,17 +1,16 @@
 use crate::app_events::AppEventDispatcher;
-use crate::boolean_button::BooleanButton;
 use crate::camera::{CameraData, CameraDirection, CameraSystem};
 use crate::general_types::{get_3_f32color_from_int, NextEnumVariant};
 use crate::pixels_shadow::SHADOWS_LEN;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::{
-    event_kind, ColorChannels, Filters, IncDec, Input, InputEventValue, PixelsGeometryKind, Resources, ScreenCurvatureKind,
-    ScreenLayeringKind, PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
+    event_kind, ColorChannels, Filters, IncDec, Input, InputEventValue, PixelsGeometryKind, Resources, ScreenCurvatureKind, ScreenLayeringKind,
+    PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
 };
 use derive_new::new;
 use std::cmp::{PartialEq, PartialOrd};
 use std::fmt::Display;
-use std::ops::{AddAssign, SubAssign};
+use std::ops::{AddAssign, DivAssign, MulAssign, SubAssign};
 
 #[derive(new)]
 pub struct SimulationCoreTicker<'a, T: AppEventDispatcher> {
@@ -58,7 +57,7 @@ macro_rules! read_event_value {
         } else {
             None
         }
-    }
+    };
 }
 
 impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
@@ -169,28 +168,20 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
 
     fn update_filter_source_colors(&mut self) {
         let ctx = &self.ctx;
-        FilterScalarSystem {
-            event_value: read_event_value!(self, PixelBrighttness, PIXEL_BRIGHTNESS),
-            incdec: self.input.bright.clone(),
-            velocity: 0.01 * self.dt * self.res.filters.change_speed,
-            min: Some(-1.0),
-            max: Some(1.0),
-            ctx,
-            send_message: |x| ctx.dispatcher.dispatch_change_pixel_brightness(x),
-            var: &mut self.res.filters.extra_bright,
-        }
-        .operate();
-        FilterScalarSystem {
-            event_value: read_event_value!(self, PixelContrast, PIXEL_CONTRAST),
-            incdec: self.input.contrast.clone(),
-            velocity: 0.01 * self.dt * self.res.filters.change_speed,
-            min: Some(0.0),
-            max: Some(20.0),
-            ctx,
-            send_message: |x| ctx.dispatcher.dispatch_change_pixel_contrast(x),
-            var: &mut self.res.filters.extra_contrast,
-        }
-        .operate();
+        FilterScalarSystem::new(ctx, &mut self.res.filters.extra_bright, self.input.bright.clone())
+            .set_velocity(0.01 * self.dt * self.res.filters.change_speed)
+            .set_event_value(read_event_value!(self, PixelBrighttness, PIXEL_BRIGHTNESS))
+            .set_min(-1.0)
+            .set_max(1.0)
+            .set_send_message(|x| ctx.dispatcher.dispatch_change_pixel_brightness(x))
+            .operate();
+        FilterScalarSystem::new(ctx, &mut self.res.filters.extra_contrast, self.input.contrast.clone())
+            .set_velocity(0.01 * self.dt * self.res.filters.change_speed)
+            .set_event_value(read_event_value!(self, PixelContrast, PIXEL_CONTRAST))
+            .set_min(0.0)
+            .set_max(20.0)
+            .set_send_message(|x| ctx.dispatcher.dispatch_change_pixel_contrast(x))
+            .operate();
         if let InputEventValue::LightColor(light_color) = self.input.custom_event.get_value(event_kind::LIGHT_COLOR) {
             self.res.filters.light_color = light_color;
             self.ctx.dispatcher.dispatch_top_message("Light Color changed.");
@@ -203,39 +194,31 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
 
     fn update_filter_blur(&mut self) {
         let ctx = &self.ctx;
-        FilterScalarSystem {
-            event_value: read_event_value!(self, BlurLevel, BLUR_LEVEL),
-            incdec: IncDec::new(self.input.blur.increase.is_just_pressed(), self.input.blur.decrease.is_just_pressed()),
-            velocity: 1,
-            min: Some(0),
-            max: Some(100),
-            ctx,
-            send_message: |x| {
+        FilterScalarSystem::new(ctx, &mut self.res.filters.blur_passes, self.input.blur.to_is_just_pressed())
+            .set_velocity(1)
+            .set_event_value(read_event_value!(self, BlurLevel, BLUR_LEVEL))
+            .set_min(0)
+            .set_max(100)
+            .set_send_message(|x| {
                 ctx.dispatcher.dispatch_top_message(&format!("Blur level: {}", x));
                 ctx.dispatcher.dispatch_change_blur_level(x)
-            },
-            var: &mut self.res.filters.blur_passes,
-        }
-        .operate();
+            })
+            .operate();
     }
 
     // lines per pixel
     fn update_filter_lpp(&mut self) {
         let ctx = &self.ctx;
-        FilterScalarSystem {
-            event_value: read_event_value!(self, LinersPerPixel, LINES_PER_PIXEL),
-            incdec: IncDec::new(self.input.lpp.increase.is_just_pressed(), self.input.lpp.decrease.is_just_pressed()),
-            velocity: 1,
-            min: Some(1),
-            max: Some(20),
-            ctx,
-            send_message: |x| {
+        FilterScalarSystem::new(ctx, &mut self.res.filters.lines_per_pixel, self.input.lpp.to_is_just_pressed())
+            .set_velocity(1)
+            .set_event_value(read_event_value!(self, LinersPerPixel, LINES_PER_PIXEL))
+            .set_min(1)
+            .set_max(20)
+            .set_send_message(|x| {
                 ctx.dispatcher.dispatch_top_message(&format!("Lines per pixel: {}", x));
                 ctx.dispatcher.dispatch_change_lines_per_pixel(x)
-            },
-            var: &mut self.res.filters.lines_per_pixel,
-        }
-        .operate();
+            })
+            .operate();
     }
 
     fn update_filter_curvature(&mut self) {
@@ -342,126 +325,94 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         }
 
         let ctx = &self.ctx;
-        FilterScalarSystem {
-            event_value: read_event_value!(self, PixelShadowHeight, PIXEL_SHADOW_HEIGHT),
-            incdec: self.input.next_pixels_shadow_height_factor.clone(),
-            velocity: self.dt * 0.3,
-            min: Some(0.0),
-            max: Some(1.0),
+        FilterScalarSystem::new(
             ctx,
-            send_message: |x| ctx.dispatcher.dispatch_pixel_shadow_height(x),
-            var: &mut self.res.filters.pixel_shadow_height_factor,
-        }
+            &mut self.res.filters.pixel_shadow_height_factor,
+            self.input.next_pixels_shadow_height_factor.clone(),
+        )
+        .set_velocity(self.dt * 0.3)
+        .set_event_value(read_event_value!(self, PixelShadowHeight, PIXEL_SHADOW_HEIGHT))
+        .set_min(0.0)
+        .set_max(1.0)
+        .set_send_message(|x| ctx.dispatcher.dispatch_pixel_shadow_height(x))
         .operate();
         let pixel_velocity = self.dt * self.res.filters.change_speed;
-        FilterScalarSystem {
-            event_value: read_event_value!(self, PixelVerticalGap, PIXEL_VERTICAL_GAP),
-            incdec: self.input.pixel_vertical_gap.clone(),
-            velocity: pixel_velocity * 0.00125,
-            min: Some(0.0),
-            max: None,
-            ctx,
-            send_message: |x| ctx.dispatcher.dispatch_change_pixel_vertical_gap(x),
-            var: &mut self.res.filters.cur_pixel_vertical_gap,
-        }
-        .operate();
-        FilterScalarSystem {
-            event_value: read_event_value!(self, PixelHorizontalGap, PIXEL_HORIZONTAL_GAP),
-            incdec: self.input.pixel_horizontal_gap.clone(),
-            velocity: pixel_velocity * 0.00125,
-            min: Some(0.0),
-            max: None,
-            ctx,
-            send_message: |x| ctx.dispatcher.dispatch_change_pixel_horizontal_gap(x),
-            var: &mut self.res.filters.cur_pixel_horizontal_gap,
-        }
-        .operate();
-        FilterScalarSystem {
-            event_value: read_event_value!(self, PixelWidth, PIXEL_WIDTH),
-            incdec: self.input.pixel_width.clone(),
-            velocity: pixel_velocity * 0.005,
-            min: Some(0.0),
-            max: None,
-            ctx,
-            send_message: |x| ctx.dispatcher.dispatch_change_pixel_width(x),
-            var: &mut self.res.filters.cur_pixel_width,
-        }
-        .operate();
-        FilterScalarSystem {
-            event_value: read_event_value!(self, PixelSpread, PIXEL_SPREAD),
-            incdec: self.input.pixel_spread.clone(),
-            velocity: pixel_velocity * 0.005,
-            min: Some(0.0),
-            max: None,
-            ctx,
-            send_message: |x| ctx.dispatcher.dispatch_change_pixel_spread(x),
-            var: &mut self.res.filters.cur_pixel_spread,
-        }
-        .operate();
+        FilterScalarSystem::new(ctx, &mut self.res.filters.cur_pixel_vertical_gap, self.input.pixel_vertical_gap.clone())
+            .set_velocity(pixel_velocity * 0.00125)
+            .set_event_value(read_event_value!(self, PixelVerticalGap, PIXEL_VERTICAL_GAP))
+            .set_min(0.0)
+            .set_send_message(|x| ctx.dispatcher.dispatch_change_pixel_vertical_gap(x))
+            .operate();
+        FilterScalarSystem::new(ctx, &mut self.res.filters.cur_pixel_horizontal_gap, self.input.pixel_horizontal_gap.clone())
+            .set_velocity(pixel_velocity * 0.00125)
+            .set_event_value(read_event_value!(self, PixelHorizontalGap, PIXEL_HORIZONTAL_GAP))
+            .set_min(0.0)
+            .set_send_message(|x| ctx.dispatcher.dispatch_change_pixel_horizontal_gap(x))
+            .operate();
+        FilterScalarSystem::new(ctx, &mut self.res.filters.cur_pixel_width, self.input.pixel_width.clone())
+            .set_velocity(pixel_velocity * 0.005)
+            .set_event_value(read_event_value!(self, PixelWidth, PIXEL_WIDTH))
+            .set_min(0.0)
+            .set_send_message(|x| ctx.dispatcher.dispatch_change_pixel_width(x))
+            .operate();
+        FilterScalarSystem::new(ctx, &mut self.res.filters.cur_pixel_spread, self.input.pixel_spread.clone())
+            .set_velocity(pixel_velocity * 0.005)
+            .set_event_value(read_event_value!(self, PixelSpread, PIXEL_SPREAD))
+            .set_min(0.0)
+            .set_send_message(|x| ctx.dispatcher.dispatch_change_pixel_spread(x))
+            .operate();
     }
 
     fn update_speeds(&mut self) {
         let ctx = &self.ctx;
-        change_speed(
-            self.ctx,
-            &self.input.turn_speed,
-            &mut self.res.camera.turning_speed,
-            TURNING_BASE_SPEED,
-            "Turning camera speed: ",
-            |n| ctx.dispatcher.dispatch_change_turning_speed(n),
-        );
-
-        change_speed(
-            self.ctx,
-            &self.input.filter_speed,
-            &mut self.res.filters.change_speed,
-            PIXEL_MANIPULATION_BASE_SPEED,
-            "Pixel manipulation speed: ",
-            |n| ctx.dispatcher.dispatch_change_pixel_speed(n),
-        );
-
-        change_speed(
-            self.ctx,
-            &self.input.translation_speed,
-            &mut self.res.camera.turning_speed,
-            TURNING_BASE_SPEED,
-            "Turning camera speed: ",
-            |n| ctx.dispatcher.dispatch_change_turning_speed(n),
-        );
-        change_speed(
-            self.ctx,
-            &self.input.translation_speed,
-            &mut self.res.camera.movement_speed,
-            self.res.initial_parameters.initial_movement_speed,
-            "Translation camera speed: ",
-            |n| ctx.dispatcher.dispatch_change_movement_speed(n),
-        );
-
-        fn change_speed<T: AppEventDispatcher>(
-            ctx: &SimulationContext<T>,
-            speed: &IncDec<BooleanButton>,
-            cur_speed: &mut f32,
-            base_speed: f32,
-            top_message: &str,
-            dispatch_update: impl Fn(f32),
-        ) {
-            let before_speed = *cur_speed;
-            if speed.increase.is_just_pressed() && *cur_speed < 10000.0 {
-                *cur_speed *= 2.0;
-            }
-            if speed.decrease.is_just_pressed() && *cur_speed > 0.01 {
-                *cur_speed /= 2.0;
-            }
-            if *cur_speed != before_speed {
-                let speed = (*cur_speed / base_speed * 1000.0).round() / 1000.0;
-                ctx.dispatcher.dispatch_top_message(&format!("{}{}x", top_message, speed));
-                dispatch_update(*cur_speed / base_speed);
-            }
-        }
-
+        FilterScalarSystem::new(ctx, &mut self.res.camera.turning_speed, self.input.turn_speed.to_is_just_pressed())
+            .set_operation_kind(FilterOperationKind::Multiply)
+            .set_velocity(2.0)
+            .set_min(0.007_812_5 * TURNING_BASE_SPEED)
+            .set_max(16_384.0 * TURNING_BASE_SPEED)
+            .set_send_message(|x| {
+                let speed = (x / TURNING_BASE_SPEED * 1000.0).round() / 1000.0;
+                ctx.dispatcher.dispatch_top_message(&format!("Turning camera speed: {}x", speed));
+                ctx.dispatcher.dispatch_change_turning_speed(x / TURNING_BASE_SPEED);
+            })
+            .operate();
+        FilterScalarSystem::new(ctx, &mut self.res.filters.change_speed, self.input.filter_speed.to_is_just_pressed())
+            .set_operation_kind(FilterOperationKind::Multiply)
+            .set_velocity(2.0)
+            .set_min(0.007_812_5 * PIXEL_MANIPULATION_BASE_SPEED)
+            .set_max(16_384.0 * PIXEL_MANIPULATION_BASE_SPEED)
+            .set_send_message(|x| {
+                let speed = (x / PIXEL_MANIPULATION_BASE_SPEED * 1000.0).round() / 1000.0;
+                ctx.dispatcher.dispatch_top_message(&format!("Pixel manipulation speed: {}x", speed));
+                ctx.dispatcher.dispatch_change_pixel_speed(x / PIXEL_MANIPULATION_BASE_SPEED);
+            })
+            .operate();
+        FilterScalarSystem::new(ctx, &mut self.res.camera.turning_speed, self.input.translation_speed.to_is_just_pressed())
+            .set_operation_kind(FilterOperationKind::Multiply)
+            .set_velocity(2.0)
+            .set_min(0.007_812_5 * TURNING_BASE_SPEED)
+            .set_max(16_384.0 * TURNING_BASE_SPEED)
+            .set_send_message(|x| {
+                let speed = (x / TURNING_BASE_SPEED * 1000.0).round() / 1000.0;
+                ctx.dispatcher.dispatch_top_message(&format!("Turning camera speed: {}x", speed));
+                ctx.dispatcher.dispatch_change_turning_speed(x / TURNING_BASE_SPEED);
+            })
+            .operate();
+        let initial_movement_speed = self.res.initial_parameters.initial_movement_speed;
+        FilterScalarSystem::new(ctx, &mut self.res.camera.movement_speed, self.input.translation_speed.to_is_just_pressed())
+            .set_operation_kind(FilterOperationKind::Multiply)
+            .set_velocity(2.0)
+            .set_min(0.007_812_5 * initial_movement_speed)
+            .set_max(16_384.0 * initial_movement_speed)
+            .set_send_message(|x| {
+                let speed = (x / initial_movement_speed * 1000.0).round() / 1000.0;
+                ctx.dispatcher.dispatch_top_message(&format!("Translation camera speed: {}x", speed));
+                ctx.dispatcher.dispatch_change_movement_speed(x / initial_movement_speed);
+            })
+            .operate();
         if self.input.reset_speeds {
             self.res.camera.turning_speed = TURNING_BASE_SPEED;
-            self.res.camera.movement_speed = self.res.initial_parameters.initial_movement_speed;
+            self.res.camera.movement_speed = initial_movement_speed;
             self.res.filters.change_speed = PIXEL_MANIPULATION_BASE_SPEED;
             self.ctx.dispatcher.dispatch_top_message("All speeds have been reset.");
             self.change_frontend_input_values();
@@ -758,10 +709,16 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
     }
 }
 
+enum FilterOperationKind {
+    Sum,
+    Multiply,
+}
+
 struct FilterScalarSystem<'a, T, SendMessage, Dispatcher>
-    where T: Display + AddAssign + SubAssign + PartialOrd + PartialEq + Copy,
-        SendMessage: Fn(T),
-        Dispatcher: AppEventDispatcher
+where
+    T: Display + AddAssign + SubAssign + MulAssign + DivAssign + PartialOrd + PartialEq + Copy + Default,
+    SendMessage: Fn(T),
+    Dispatcher: AppEventDispatcher,
 {
     var: &'a mut T,
     event_value: Option<T>,
@@ -769,23 +726,73 @@ struct FilterScalarSystem<'a, T, SendMessage, Dispatcher>
     velocity: T,
     min: Option<T>,
     max: Option<T>,
+    operation_kind: FilterOperationKind,
     ctx: &'a SimulationContext<Dispatcher>,
-    send_message: SendMessage,
+    send_message: Option<SendMessage>,
 }
 
-impl<'a, T, SendMessage, Dispatcher>
-    FilterScalarSystem<'a, T, SendMessage, Dispatcher>
-    where T: Display + AddAssign + SubAssign + PartialOrd + PartialEq + Copy,
-        SendMessage: Fn(T),
-        Dispatcher: AppEventDispatcher
+impl<'a, T, SendMessage, Dispatcher> FilterScalarSystem<'a, T, SendMessage, Dispatcher>
+where
+    T: Display + AddAssign + SubAssign + MulAssign + DivAssign + PartialOrd + PartialEq + Copy + Default,
+    SendMessage: Fn(T),
+    Dispatcher: AppEventDispatcher,
 {
+    pub fn new(ctx: &'a SimulationContext<Dispatcher>, var: &'a mut T, incdec: IncDec<bool>) -> Self {
+        FilterScalarSystem {
+            ctx,
+            var,
+            incdec,
+            velocity: Default::default(),
+            operation_kind: FilterOperationKind::Sum,
+            event_value: None,
+            min: None,
+            max: None,
+            send_message: None,
+        }
+    }
+    pub fn set_velocity(mut self, velocity: T) -> Self {
+        self.velocity = velocity;
+        self
+    }
+    pub fn set_min(mut self, min: T) -> Self {
+        self.min = Some(min);
+        self
+    }
+    pub fn set_max(mut self, max: T) -> Self {
+        self.max = Some(max);
+        self
+    }
+    pub fn set_event_value(mut self, event_value: Option<T>) -> Self {
+        self.event_value = event_value;
+        self
+    }
+    pub fn set_send_message(mut self, send_message: SendMessage) -> Self {
+        self.send_message = Some(send_message);
+        self
+    }
+    pub fn set_operation_kind(mut self, operation_kind: FilterOperationKind) -> Self {
+        self.operation_kind = operation_kind;
+        self
+    }
     pub fn operate(self) {
         let last_value = *self.var;
-        if self.incdec.increase {
-            *self.var += self.velocity;
-        }
-        if self.incdec.decrease {
-            *self.var -= self.velocity;
+        match self.operation_kind {
+            FilterOperationKind::Sum => {
+                if self.incdec.increase {
+                    *self.var += self.velocity;
+                }
+                if self.incdec.decrease {
+                    *self.var -= self.velocity;
+                }
+            }
+            FilterOperationKind::Multiply => {
+                if self.incdec.increase {
+                    *self.var *= self.velocity;
+                }
+                if self.incdec.decrease {
+                    *self.var /= self.velocity;
+                }
+            }
         }
         if let Some(val) = self.event_value {
             *self.var = val;
@@ -803,8 +810,9 @@ impl<'a, T, SendMessage, Dispatcher>
                     self.ctx.dispatcher.dispatch_top_message(&format!("Maximum value is {}", max));
                 }
             }
-            let send_message = &self.send_message;
-            send_message(*self.var);
+            if let Some(ref send_message) = self.send_message {
+                send_message(*self.var);
+            }
         }
     }
 }
