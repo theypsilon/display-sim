@@ -169,14 +169,14 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
     fn update_filter_source_colors(&mut self) {
         let ctx = &self.ctx;
         FilterScalarSystem::new(ctx, &mut self.res.filters.extra_bright, self.input.bright.clone())
-            .set_velocity(0.01 * self.dt * self.res.filters.change_speed)
+            .set_progression(0.01 * self.dt * self.res.filters.change_speed)
             .set_event_value(read_event_value!(self, PixelBrighttness, PIXEL_BRIGHTNESS))
             .set_min(-1.0)
             .set_max(1.0)
             .set_send_message(|x| ctx.dispatcher.dispatch_change_pixel_brightness(x))
             .operate();
         FilterScalarSystem::new(ctx, &mut self.res.filters.extra_contrast, self.input.contrast.clone())
-            .set_velocity(0.01 * self.dt * self.res.filters.change_speed)
+            .set_progression(0.01 * self.dt * self.res.filters.change_speed)
             .set_event_value(read_event_value!(self, PixelContrast, PIXEL_CONTRAST))
             .set_min(0.0)
             .set_max(20.0)
@@ -195,7 +195,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
     fn update_filter_blur(&mut self) {
         let ctx = &self.ctx;
         FilterScalarSystem::new(ctx, &mut self.res.filters.blur_passes, self.input.blur.to_is_just_pressed())
-            .set_velocity(1)
+            .set_progression(1)
             .set_event_value(read_event_value!(self, BlurLevel, BLUR_LEVEL))
             .set_min(0)
             .set_max(100)
@@ -210,7 +210,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
     fn update_filter_lpp(&mut self) {
         let ctx = &self.ctx;
         FilterScalarSystem::new(ctx, &mut self.res.filters.lines_per_pixel, self.input.lpp.to_is_just_pressed())
-            .set_velocity(1)
+            .set_progression(1)
             .set_event_value(read_event_value!(self, LinersPerPixel, LINES_PER_PIXEL))
             .set_min(1)
             .set_max(20)
@@ -325,38 +325,34 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         }
 
         let ctx = &self.ctx;
-        FilterScalarSystem::new(
-            ctx,
-            &mut self.res.filters.pixel_shadow_height_factor,
-            self.input.next_pixels_shadow_height_factor.clone(),
-        )
-        .set_velocity(self.dt * 0.3)
-        .set_event_value(read_event_value!(self, PixelShadowHeight, PIXEL_SHADOW_HEIGHT))
-        .set_min(0.0)
-        .set_max(1.0)
-        .set_send_message(|x| ctx.dispatcher.dispatch_pixel_shadow_height(x))
-        .operate();
+        FilterScalarSystem::new(ctx, &mut self.res.filters.pixel_shadow_height, self.input.next_pixels_shadow_height.clone())
+            .set_progression(self.dt * 0.3)
+            .set_event_value(read_event_value!(self, PixelShadowHeight, PIXEL_SHADOW_HEIGHT))
+            .set_min(0.0)
+            .set_max(1.0)
+            .set_send_message(|x| ctx.dispatcher.dispatch_pixel_shadow_height(x))
+            .operate();
         let pixel_velocity = self.dt * self.res.filters.change_speed;
         FilterScalarSystem::new(ctx, &mut self.res.filters.cur_pixel_vertical_gap, self.input.pixel_vertical_gap.clone())
-            .set_velocity(pixel_velocity * 0.00125)
+            .set_progression(pixel_velocity * 0.00125)
             .set_event_value(read_event_value!(self, PixelVerticalGap, PIXEL_VERTICAL_GAP))
             .set_min(0.0)
             .set_send_message(|x| ctx.dispatcher.dispatch_change_pixel_vertical_gap(x))
             .operate();
         FilterScalarSystem::new(ctx, &mut self.res.filters.cur_pixel_horizontal_gap, self.input.pixel_horizontal_gap.clone())
-            .set_velocity(pixel_velocity * 0.00125)
+            .set_progression(pixel_velocity * 0.00125)
             .set_event_value(read_event_value!(self, PixelHorizontalGap, PIXEL_HORIZONTAL_GAP))
             .set_min(0.0)
             .set_send_message(|x| ctx.dispatcher.dispatch_change_pixel_horizontal_gap(x))
             .operate();
         FilterScalarSystem::new(ctx, &mut self.res.filters.cur_pixel_width, self.input.pixel_width.clone())
-            .set_velocity(pixel_velocity * 0.005)
+            .set_progression(pixel_velocity * 0.005)
             .set_event_value(read_event_value!(self, PixelWidth, PIXEL_WIDTH))
             .set_min(0.0)
             .set_send_message(|x| ctx.dispatcher.dispatch_change_pixel_width(x))
             .operate();
         FilterScalarSystem::new(ctx, &mut self.res.filters.cur_pixel_spread, self.input.pixel_spread.clone())
-            .set_velocity(pixel_velocity * 0.005)
+            .set_progression(pixel_velocity * 0.005)
             .set_event_value(read_event_value!(self, PixelSpread, PIXEL_SPREAD))
             .set_min(0.0)
             .set_send_message(|x| ctx.dispatcher.dispatch_change_pixel_spread(x))
@@ -367,7 +363,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         let ctx = &self.ctx;
         FilterScalarSystem::new(ctx, &mut self.res.camera.turning_speed, self.input.turn_speed.to_is_just_pressed())
             .set_operation_kind(FilterOperationKind::Multiply)
-            .set_velocity(2.0)
+            .set_progression(2.0)
             .set_min(0.007_812_5 * TURNING_BASE_SPEED)
             .set_max(16_384.0 * TURNING_BASE_SPEED)
             .set_send_message(|x| {
@@ -378,7 +374,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             .operate();
         FilterScalarSystem::new(ctx, &mut self.res.filters.change_speed, self.input.filter_speed.to_is_just_pressed())
             .set_operation_kind(FilterOperationKind::Multiply)
-            .set_velocity(2.0)
+            .set_progression(2.0)
             .set_min(0.007_812_5 * PIXEL_MANIPULATION_BASE_SPEED)
             .set_max(16_384.0 * PIXEL_MANIPULATION_BASE_SPEED)
             .set_send_message(|x| {
@@ -389,7 +385,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             .operate();
         FilterScalarSystem::new(ctx, &mut self.res.camera.turning_speed, self.input.translation_speed.to_is_just_pressed())
             .set_operation_kind(FilterOperationKind::Multiply)
-            .set_velocity(2.0)
+            .set_progression(2.0)
             .set_min(0.007_812_5 * TURNING_BASE_SPEED)
             .set_max(16_384.0 * TURNING_BASE_SPEED)
             .set_send_message(|x| {
@@ -401,7 +397,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         let initial_movement_speed = self.res.initial_parameters.initial_movement_speed;
         FilterScalarSystem::new(ctx, &mut self.res.camera.movement_speed, self.input.translation_speed.to_is_just_pressed())
             .set_operation_kind(FilterOperationKind::Multiply)
-            .set_velocity(2.0)
+            .set_progression(2.0)
             .set_min(0.007_812_5 * initial_movement_speed)
             .set_max(16_384.0 * initial_movement_speed)
             .set_send_message(|x| {
@@ -516,7 +512,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         self.ctx.dispatcher.dispatch_color_representation(self.res.filters.color_channels);
         self.ctx.dispatcher.dispatch_pixel_geometry(self.res.filters.pixels_geometry_kind);
         self.ctx.dispatcher.dispatch_pixel_shadow_shape(self.res.filters.pixel_shadow_shape_kind);
-        self.ctx.dispatcher.dispatch_pixel_shadow_height(self.res.filters.pixel_shadow_height_factor);
+        self.ctx.dispatcher.dispatch_pixel_shadow_height(self.res.filters.pixel_shadow_height);
         self.ctx.dispatcher.dispatch_screen_layering_type(self.res.filters.layering_kind);
         self.ctx.dispatcher.dispatch_screen_curvature(self.res.filters.screen_curvature_kind);
         self.ctx.dispatcher.dispatch_internal_resolution(&self.res.filters.internal_resolution);
@@ -543,7 +539,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         };
         self.res.output.ambient_strength = ambient_strength;
         self.res.output.pixel_have_depth = pixel_have_depth;
-        self.res.output.height_modifier_factor = 1.0 - self.res.filters.pixel_shadow_height_factor;
+        self.res.output.height_modifier_factor = 1.0 - self.res.filters.pixel_shadow_height;
 
         self.update_output_pixel_scale_gap_offset();
     }
@@ -750,7 +746,7 @@ where
             send_message: None,
         }
     }
-    pub fn set_velocity(mut self, velocity: T) -> Self {
+    pub fn set_progression(mut self, velocity: T) -> Self {
         self.velocity = velocity;
         self
     }

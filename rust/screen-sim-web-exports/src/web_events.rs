@@ -91,10 +91,10 @@ impl AppEventDispatcher for WebEventDispatcher {
         ));
     }
 
-    fn dispatch_pixel_shadow_height(&self, pixel_shadow_height_factor: f32) {
+    fn dispatch_pixel_shadow_height(&self, pixel_shadow_height: f32) {
         self.catch_error(dispatch_event_with(
             "app-event.pixel_shadow_height",
-            &format!("{:.02}", pixel_shadow_height_factor).into(),
+            &format!("{:.02}", pixel_shadow_height).into(),
         ));
     }
 
