@@ -15,6 +15,7 @@ use render::simulation_draw::SimulationDrawer;
 use render::simulation_render_state::{Materials, VideoInputMaterials};
 use render::stubs::{WebGl2RenderingContext, WebResult};
 use std::time::SystemTime;
+use std::fmt::Display;
 
 pub struct FakeVideoInput(VideoInputResources, VideoInputMaterials);
 
@@ -79,6 +80,7 @@ impl FakeVideoInput {
 struct FakeEventDispatcher {}
 
 impl AppEventDispatcher for FakeEventDispatcher {
+    fn enable_extra_messages(&self, _: bool) {}
     fn dispatch_camera_update(&self, _: &glm::Vec3, _: &glm::Vec3, _: &glm::Vec3) {}
     fn dispatch_change_pixel_horizontal_gap(&self, _: f32) {}
     fn dispatch_change_pixel_vertical_gap(&self, _: f32) {}
@@ -112,4 +114,6 @@ impl AppEventDispatcher for FakeEventDispatcher {
     fn dispatch_screenshot(&self, _: &[u8], _: f64) {}
     fn dispatch_change_camera_movement_mode(&self, _: bool) {}
     fn dispatch_top_message(&self, _: &str) {}
+    fn dispatch_minimum_value<T: Display>(&self, _: T) {}
+    fn dispatch_maximum_value<T: Display>(&self, _: T) {}
 }

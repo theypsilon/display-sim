@@ -198,10 +198,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             .set_event_value(read_event_value!(self, BlurLevel, BLUR_LEVEL))
             .set_min(0)
             .set_max(100)
-            .set_trigger_handler(|x| {
-                ctx.dispatcher.dispatch_top_message(&format!("Blur level: {}", x));
-                ctx.dispatcher.dispatch_change_blur_level(x)
-            })
+            .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_blur_level(x))
             .sum();
     }
 
@@ -213,23 +210,14 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             .iterate_variant();
         let next_screen_curvature_kind = self.input.next_screen_curvature_type.to_is_just_pressed();
         FilterParams::new(ctx, &mut self.res.filters.screen_curvature_kind, next_screen_curvature_kind)
-            .set_trigger_handler(|x| {
-                ctx.dispatcher.dispatch_top_message(&format!("Screen curvature: {}.", x));
-                ctx.dispatcher.dispatch_screen_curvature(x);
-            })
+            .set_trigger_handler(|x| ctx.dispatcher.dispatch_screen_curvature(x))
             .iterate_variant();
         FilterParams::new(ctx, &mut self.res.filters.layering_kind, self.input.next_layering_kind.to_is_just_pressed())
-            .set_trigger_handler(|x| {
-                ctx.dispatcher.dispatch_top_message(&format!("Layering kind: {}.", x));
-                ctx.dispatcher.dispatch_screen_layering_type(x);
-            })
+            .set_trigger_handler(|x| ctx.dispatcher.dispatch_screen_layering_type(x))
             .iterate_variant();
         let next_color_representation_kind = self.input.next_color_representation_kind.to_is_just_pressed();
         FilterParams::new(ctx, &mut self.res.filters.color_channels, next_color_representation_kind)
-            .set_trigger_handler(|x| {
-                ctx.dispatcher.dispatch_top_message(&format!("Pixel color representation: {}.", x));
-                ctx.dispatcher.dispatch_color_representation(x);
-            })
+            .set_trigger_handler(|x| ctx.dispatcher.dispatch_color_representation(x))
             .iterate_variant();
     }
 
@@ -241,10 +229,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             .set_event_value(read_event_value!(self, LinersPerPixel, LINES_PER_PIXEL))
             .set_min(1)
             .set_max(20)
-            .set_trigger_handler(|x| {
-                ctx.dispatcher.dispatch_top_message(&format!("Lines per pixel: {}", x));
-                ctx.dispatcher.dispatch_change_lines_per_pixel(x)
-            })
+            .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_lines_per_pixel(x))
             .sum();
     }
 
@@ -268,33 +253,25 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
 
     fn update_filter_pixel_shape(&mut self) {
         let ctx = &self.ctx;
-        FilterParams::new(
-            ctx,
-            &mut self.res.filters.pixels_geometry_kind,
-            self.input.next_pixel_geometry_kind.to_is_just_pressed(),
-        )
-        .set_trigger_handler(|x| {
-            ctx.dispatcher.dispatch_top_message(&format!("Pixel geometry: {}.", x));
-            ctx.dispatcher.dispatch_pixel_geometry(x);
-        })
-        .iterate_variant();
+        let filters = &mut self.res.filters;
+
+        FilterParams::new(ctx, &mut filters.pixels_geometry_kind, self.input.next_pixel_geometry_kind.to_is_just_pressed())
+            .set_trigger_handler(|x| ctx.dispatcher.dispatch_pixel_geometry(x))
+            .iterate_variant();
 
         if self.input.next_pixels_shadow_shape_kind.any_just_pressed() {
             if self.input.next_pixels_shadow_shape_kind.increase.is_just_pressed() {
-                self.res.filters.pixel_shadow_shape_kind += 1;
-                if self.res.filters.pixel_shadow_shape_kind >= SHADOWS_LEN {
-                    self.res.filters.pixel_shadow_shape_kind = 0;
+                filters.pixel_shadow_shape_kind += 1;
+                if filters.pixel_shadow_shape_kind >= SHADOWS_LEN {
+                    filters.pixel_shadow_shape_kind = 0;
                 }
             } else {
-                if self.res.filters.pixel_shadow_shape_kind == 0 {
-                    self.res.filters.pixel_shadow_shape_kind = SHADOWS_LEN;
+                if filters.pixel_shadow_shape_kind == 0 {
+                    filters.pixel_shadow_shape_kind = SHADOWS_LEN;
                 }
-                self.res.filters.pixel_shadow_shape_kind -= 1;
+                filters.pixel_shadow_shape_kind -= 1;
             }
-            self.ctx
-                .dispatcher
-                .dispatch_top_message(&format!("Showing next pixel shadow: {}.", self.res.filters.pixel_shadow_shape_kind));
-            self.ctx.dispatcher.dispatch_pixel_shadow_shape(self.res.filters.pixel_shadow_shape_kind);
+            ctx.dispatcher.dispatch_pixel_shadow_shape(filters.pixel_shadow_shape_kind);
         }
 
         FilterParams::new(ctx, &mut self.res.filters.pixel_shadow_height, self.input.next_pixels_shadow_height.clone())
@@ -337,42 +314,26 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             .set_progression(2.0)
             .set_min(0.007_812_5 * TURNING_BASE_SPEED)
             .set_max(16_384.0 * TURNING_BASE_SPEED)
-            .set_trigger_handler(|x| {
-                let speed = (x / TURNING_BASE_SPEED * 1000.0).round() / 1000.0;
-                ctx.dispatcher.dispatch_top_message(&format!("Turning camera speed: {}x", speed));
-                ctx.dispatcher.dispatch_change_turning_speed(x / TURNING_BASE_SPEED);
-            })
+            .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_turning_speed(x / TURNING_BASE_SPEED))
             .multiply();
         FilterParams::new(ctx, &mut self.res.filters.change_speed, self.input.filter_speed.to_is_just_pressed())
             .set_progression(2.0)
             .set_min(0.007_812_5 * PIXEL_MANIPULATION_BASE_SPEED)
             .set_max(16_384.0 * PIXEL_MANIPULATION_BASE_SPEED)
-            .set_trigger_handler(|x| {
-                let speed = (x / PIXEL_MANIPULATION_BASE_SPEED * 1000.0).round() / 1000.0;
-                ctx.dispatcher.dispatch_top_message(&format!("Pixel manipulation speed: {}x", speed));
-                ctx.dispatcher.dispatch_change_pixel_speed(x / PIXEL_MANIPULATION_BASE_SPEED);
-            })
+            .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_pixel_speed(x / PIXEL_MANIPULATION_BASE_SPEED))
             .multiply();
         FilterParams::new(ctx, &mut self.res.camera.turning_speed, self.input.translation_speed.to_is_just_pressed())
             .set_progression(2.0)
             .set_min(0.007_812_5 * TURNING_BASE_SPEED)
             .set_max(16_384.0 * TURNING_BASE_SPEED)
-            .set_trigger_handler(|x| {
-                let speed = (x / TURNING_BASE_SPEED * 1000.0).round() / 1000.0;
-                ctx.dispatcher.dispatch_top_message(&format!("Turning camera speed: {}x", speed));
-                ctx.dispatcher.dispatch_change_turning_speed(x / TURNING_BASE_SPEED);
-            })
+            .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_turning_speed(x / TURNING_BASE_SPEED))
             .multiply();
         let initial_movement_speed = self.res.initial_parameters.initial_movement_speed;
         FilterParams::new(ctx, &mut self.res.camera.movement_speed, self.input.translation_speed.to_is_just_pressed())
             .set_progression(2.0)
             .set_min(0.007_812_5 * initial_movement_speed)
             .set_max(16_384.0 * initial_movement_speed)
-            .set_trigger_handler(|x| {
-                let speed = (x / initial_movement_speed * 1000.0).round() / 1000.0;
-                ctx.dispatcher.dispatch_top_message(&format!("Translation camera speed: {}x", speed));
-                ctx.dispatcher.dispatch_change_movement_speed(x / initial_movement_speed);
-            })
+            .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_movement_speed(x / initial_movement_speed))
             .multiply();
         if self.input.reset_speeds {
             self.res.camera.turning_speed = TURNING_BASE_SPEED;
@@ -463,44 +424,39 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
     }
 
     fn change_frontend_input_values(&self) {
-        self.ctx
-            .dispatcher
-            .dispatch_change_pixel_horizontal_gap(self.res.filters.cur_pixel_horizontal_gap);
-        self.ctx.dispatcher.dispatch_change_pixel_vertical_gap(self.res.filters.cur_pixel_vertical_gap);
-        self.ctx.dispatcher.dispatch_change_pixel_width(self.res.filters.cur_pixel_width);
-        self.ctx.dispatcher.dispatch_change_pixel_spread(self.res.filters.cur_pixel_spread);
-        self.ctx.dispatcher.dispatch_change_pixel_brightness(self.res.filters.extra_bright);
-        self.ctx.dispatcher.dispatch_change_pixel_contrast(self.res.filters.extra_contrast);
-        self.ctx.dispatcher.dispatch_change_light_color(self.res.filters.light_color);
-        self.ctx.dispatcher.dispatch_change_brightness_color(self.res.filters.brightness_color);
-        self.ctx.dispatcher.dispatch_change_camera_zoom(self.res.camera.zoom);
-        self.ctx.dispatcher.dispatch_change_camera_movement_mode(self.res.camera.locked_mode);
-        self.ctx.dispatcher.dispatch_change_blur_level(self.res.filters.blur_passes);
-        self.ctx.dispatcher.dispatch_change_lines_per_pixel(self.res.filters.lines_per_pixel);
-        self.ctx.dispatcher.dispatch_color_representation(self.res.filters.color_channels);
-        self.ctx.dispatcher.dispatch_pixel_geometry(self.res.filters.pixels_geometry_kind);
-        self.ctx.dispatcher.dispatch_pixel_shadow_shape(self.res.filters.pixel_shadow_shape_kind);
-        self.ctx.dispatcher.dispatch_pixel_shadow_height(self.res.filters.pixel_shadow_height);
-        self.ctx.dispatcher.dispatch_screen_layering_type(self.res.filters.layering_kind);
-        self.ctx.dispatcher.dispatch_screen_curvature(self.res.filters.screen_curvature_kind);
-        self.ctx.dispatcher.dispatch_internal_resolution(&self.res.filters.internal_resolution);
-        self.ctx.dispatcher.dispatch_texture_interpolation(self.res.filters.texture_interpolation);
-        self.ctx
-            .dispatcher
-            .dispatch_change_pixel_speed(self.res.filters.change_speed / PIXEL_MANIPULATION_BASE_SPEED);
-        self.ctx
-            .dispatcher
-            .dispatch_change_turning_speed(self.res.camera.turning_speed / TURNING_BASE_SPEED);
-        self.ctx
-            .dispatcher
-            .dispatch_change_movement_speed(self.res.camera.movement_speed / self.res.initial_parameters.initial_movement_speed);
+        let dispatcher = &self.ctx.dispatcher;
+        dispatcher.enable_extra_messages(false);
+        dispatcher.dispatch_change_pixel_horizontal_gap(self.res.filters.cur_pixel_horizontal_gap);
+        dispatcher.dispatch_change_pixel_vertical_gap(self.res.filters.cur_pixel_vertical_gap);
+        dispatcher.dispatch_change_pixel_width(self.res.filters.cur_pixel_width);
+        dispatcher.dispatch_change_pixel_spread(self.res.filters.cur_pixel_spread);
+        dispatcher.dispatch_change_pixel_brightness(self.res.filters.extra_bright);
+        dispatcher.dispatch_change_pixel_contrast(self.res.filters.extra_contrast);
+        dispatcher.dispatch_change_light_color(self.res.filters.light_color);
+        dispatcher.dispatch_change_brightness_color(self.res.filters.brightness_color);
+        dispatcher.dispatch_change_camera_zoom(self.res.camera.zoom);
+        dispatcher.dispatch_change_camera_movement_mode(self.res.camera.locked_mode);
+        dispatcher.dispatch_change_blur_level(self.res.filters.blur_passes);
+        dispatcher.dispatch_change_lines_per_pixel(self.res.filters.lines_per_pixel);
+        dispatcher.dispatch_color_representation(self.res.filters.color_channels);
+        dispatcher.dispatch_pixel_geometry(self.res.filters.pixels_geometry_kind);
+        dispatcher.dispatch_pixel_shadow_shape(self.res.filters.pixel_shadow_shape_kind);
+        dispatcher.dispatch_pixel_shadow_height(self.res.filters.pixel_shadow_height);
+        dispatcher.dispatch_screen_layering_type(self.res.filters.layering_kind);
+        dispatcher.dispatch_screen_curvature(self.res.filters.screen_curvature_kind);
+        dispatcher.dispatch_internal_resolution(&self.res.filters.internal_resolution);
+        dispatcher.dispatch_texture_interpolation(self.res.filters.texture_interpolation);
+        dispatcher.dispatch_change_pixel_speed(self.res.filters.change_speed / PIXEL_MANIPULATION_BASE_SPEED);
+        dispatcher.dispatch_change_turning_speed(self.res.camera.turning_speed / TURNING_BASE_SPEED);
+        dispatcher.dispatch_change_movement_speed(self.res.camera.movement_speed / self.res.initial_parameters.initial_movement_speed);
+        dispatcher.enable_extra_messages(true);
     }
 
     fn update_outputs(&mut self) {
         self.update_output_filter_source_colors();
         self.update_output_filter_curvature();
         self.update_output_filter_layering_kind();
-        
+
         let output = &mut self.res.output;
         let filters = &self.res.filters;
 
@@ -728,6 +684,7 @@ where
     TriggerHandler: Fn(T),
     Dispatcher: AppEventDispatcher,
 {
+    #[allow(clippy::useless_let_if_seq)]
     fn iterate_variant(self) {
         let mut changed = false;
         if self.incdec.increase {
@@ -793,13 +750,13 @@ where
         if let Some(min) = params.min {
             if *params.var < min {
                 *params.var = min;
-                params.ctx.dispatcher.dispatch_top_message(&format!("Minimum value is {}", min));
+                params.ctx.dispatcher.dispatch_minimum_value(min);
             }
         }
         if let Some(max) = params.max {
             if *params.var > max {
                 *params.var = max;
-                params.ctx.dispatcher.dispatch_top_message(&format!("Maximum value is {}", max));
+                params.ctx.dispatcher.dispatch_maximum_value(max);
             }
         }
         if let Some(ref handler) = params.trigger_handler {

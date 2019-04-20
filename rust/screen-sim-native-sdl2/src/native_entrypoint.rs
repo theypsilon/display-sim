@@ -13,6 +13,7 @@ use render::simulation_render_state::{Materials, VideoInputMaterials};
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use std::time::SystemTime;
+use std::fmt::Display;
 
 pub fn main() {
     if let Err(e) = program() {
@@ -118,6 +119,7 @@ pub fn read_key(input: &mut Input, key: Keycode, pressed: bool) {
 struct NativeEventDispatcher {}
 
 impl AppEventDispatcher for NativeEventDispatcher {
+    fn enable_extra_messages(&self, _: bool) {}
     fn dispatch_camera_update(&self, a: &glm::Vec3, b: &glm::Vec3, c: &glm::Vec3) {
         println!("camera_update {}, {}, {}", a, b, c);
     }
@@ -208,5 +210,11 @@ impl AppEventDispatcher for NativeEventDispatcher {
     }
     fn dispatch_top_message(&self, message: &str) {
         println!("top_message: {}", message);
+    }
+    fn dispatch_minimum_value<T: Display>(&self, value: T) {
+        println!("minimum: {}", value);
+    }
+    fn dispatch_maximum_value<T: Display>(&self, value: T) {
+        println!("maximum: {}", value);
     }
 }

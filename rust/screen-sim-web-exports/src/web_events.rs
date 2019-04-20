@@ -5,13 +5,32 @@ use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurva
 use js_sys::{Array, Float32Array};
 use std::cell::RefCell;
 use web_error::{WebError, WebResult};
+use std::fmt::Display;
 
-#[derive(Default)]
 pub struct WebEventDispatcher {
     error: RefCell<Option<WebError>>,
+    extra_messages_enabled: RefCell<bool>,
+}
+
+impl Default for WebEventDispatcher {
+    fn default() -> Self {
+        WebEventDispatcher {
+            error: Default::default(),
+            extra_messages_enabled: RefCell::new(true),
+        }
+    }
+}
+
+impl WebEventDispatcher {
+    fn are_extra_messages_enabled(&self) -> bool {
+        *self.extra_messages_enabled.borrow()
+    }
 }
 
 impl AppEventDispatcher for WebEventDispatcher {
+    fn enable_extra_messages(&self, extra_messages: bool) {
+        *self.extra_messages_enabled.borrow_mut() = extra_messages;
+    }
     fn dispatch_camera_update(&self, position: &glm::Vec3, direction: &glm::Vec3, axis_up: &glm::Vec3) {
         let values_array = Float32Array::new(&wasm_bindgen::JsValue::from(9));
         values_array.fill(position.x, 0, 1);
@@ -69,22 +88,37 @@ impl AppEventDispatcher for WebEventDispatcher {
     }
 
     fn dispatch_change_blur_level(&self, blur_passes: usize) {
+        if self.are_extra_messages_enabled() {
+            self.dispatch_top_message(&format!("Blur level: {}", blur_passes));
+        }
         self.catch_error(dispatch_event_with("app-event.change_blur_level", &(blur_passes as i32).into()));
     }
 
     fn dispatch_change_lines_per_pixel(&self, lpp: usize) {
+        if self.are_extra_messages_enabled() {
+            self.dispatch_top_message(&format!("Lines per pixel: {}", lpp));
+        }
         self.catch_error(dispatch_event_with("app-event.change_lines_per_pixel", &(lpp as i32).into()));
     }
 
     fn dispatch_color_representation(&self, color_channels: ColorChannels) {
+        if self.are_extra_messages_enabled() {
+            self.dispatch_top_message(&format!("Pixel color representation: {}.", color_channels));
+        }
         self.catch_error(dispatch_event_with("app-event.color_representation", &(color_channels.to_string()).into()));
     }
 
     fn dispatch_pixel_geometry(&self, pixels_geometry_kind: PixelsGeometryKind) {
+        if self.are_extra_messages_enabled() {
+            self.dispatch_top_message(&format!("Pixel geometry: {}.", pixels_geometry_kind));
+        }
         self.catch_error(dispatch_event_with("app-event.pixel_geometry", &(pixels_geometry_kind.to_string()).into()));
     }
 
     fn dispatch_pixel_shadow_shape(&self, pixel_shadow_shape_kind: usize) {
+        if self.are_extra_messages_enabled() {
+            self.dispatch_top_message(&format!("Showing next pixel shadow: {}.", pixel_shadow_shape_kind));
+        }
         self.catch_error(dispatch_event_with(
             "app-event.pixel_shadow_shape",
             &(pixel_shadow_shape_kind.to_string()).into(),
@@ -99,10 +133,16 @@ impl AppEventDispatcher for WebEventDispatcher {
     }
 
     fn dispatch_screen_layering_type(&self, layering_kind: ScreenLayeringKind) {
+        if self.are_extra_messages_enabled() {
+            self.dispatch_top_message(&format!("Layering kind: {}.", layering_kind));
+        }
         self.catch_error(dispatch_event_with("app-event.screen_layering_type", &(layering_kind.to_string()).into()));
     }
 
     fn dispatch_screen_curvature(&self, screen_curvature_kind: ScreenCurvatureKind) {
+        if self.are_extra_messages_enabled() {
+            self.dispatch_top_message(&format!("Screen curvature: {}.", screen_curvature_kind));
+        }
         self.catch_error(dispatch_event_with("app-event.screen_curvature", &(screen_curvature_kind.to_string()).into()));
     }
 
@@ -118,14 +158,26 @@ impl AppEventDispatcher for WebEventDispatcher {
     }
 
     fn dispatch_change_pixel_speed(&self, speed: f32) {
+        if self.are_extra_messages_enabled() {
+            let speed = (speed * 1000.0).round() / 1000.0;
+            self.dispatch_top_message(&format!("Pixel manipulation speed: {}x", speed));
+        }
         self.dispatch_internal_speed("app-event.change_pixel_speed", speed);
     }
 
     fn dispatch_change_turning_speed(&self, speed: f32) {
+        if self.are_extra_messages_enabled() {
+            let speed = (speed * 1000.0).round() / 1000.0;
+            self.dispatch_top_message(&format!("Turning camera speed: {}x", speed));
+        }
         self.dispatch_internal_speed("app-event.change_turning_speed", speed);
     }
 
     fn dispatch_change_movement_speed(&self, speed: f32) {
+        if self.are_extra_messages_enabled() {
+            let speed = (speed * 1000.0).round() / 1000.0;
+            self.dispatch_top_message(&format!("Translation camera speed: {}x", speed));
+        }
         self.dispatch_internal_speed("app-event.change_movement_speed", speed);
     }
 
@@ -164,6 +216,14 @@ impl AppEventDispatcher for WebEventDispatcher {
 
     fn dispatch_top_message(&self, message: &str) {
         self.catch_error(dispatch_event_with("app-event.top_message", &message.into()));
+    }
+
+    fn dispatch_minimum_value<T: Display>(&self, value: T) {
+        self.dispatch_top_message(&format!("Minimum value is {}", value));
+    }
+
+    fn dispatch_maximum_value<T: Display>(&self, value: T) {
+        self.dispatch_top_message(&format!("Maximum value is {}", value));
     }
 }
 
