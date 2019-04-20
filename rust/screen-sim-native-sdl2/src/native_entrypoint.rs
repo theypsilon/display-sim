@@ -4,6 +4,7 @@ use core::action_bindings::on_button_action;
 use core::app_events::AppEventDispatcher;
 use core::general_types::Size2D;
 use core::internal_resolution::InternalResolution;
+use core::pixels_shadow::ShadowShape;
 use core::simulation_context::SimulationContext;
 use core::simulation_core_state::{AnimationStep, Input, Resources, VideoInputResources};
 use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, ScreenLayeringKind, TextureInterpolation};
@@ -162,7 +163,7 @@ impl AppEventDispatcher for NativeEventDispatcher {
     fn dispatch_pixel_geometry(&self, res: PixelsGeometryKind) {
         println!("pixel_geometry: {}", res);
     }
-    fn dispatch_pixel_shadow_shape(&self, res: usize) {
+    fn dispatch_pixel_shadow_shape(&self, res: ShadowShape) {
         println!("pixel_shadow_shape: {}", res);
     }
     fn dispatch_pixel_shadow_height(&self, res: f32) {

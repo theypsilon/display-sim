@@ -1,6 +1,42 @@
+use crate::general_types::OptionCursor;
+use std::fmt::{Display, Error, Formatter};
+
 pub const TEXTURE_SIZE: usize = 510;
 
-pub const SHADOWS_LEN: usize = 24;
+const SHADOWS_LEN: usize = 24;
+
+#[derive(Default, Clone, Copy)]
+pub struct ShadowShape {
+    pub value: usize,
+}
+
+impl Display for ShadowShape {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        write!(f, "{}", self.value)
+    }
+}
+
+impl OptionCursor for ShadowShape {
+    fn next_option(&mut self) {
+        self.value += 1;
+        if self.value >= SHADOWS_LEN {
+            self.value = 0;
+        }
+    }
+    fn previous_option(&mut self) {
+        if self.value == 0 {
+            self.value = SHADOWS_LEN;
+        }
+        self.value -= 1;
+    }
+    fn has_reached_maximum_limit(&self) -> bool {
+        false
+    }
+
+    fn has_reached_minimum_limit(&self) -> bool {
+        false
+    }
+}
 
 pub fn get_shadows() -> [Box<Fn(usize, usize) -> f64>; SHADOWS_LEN] {
     [

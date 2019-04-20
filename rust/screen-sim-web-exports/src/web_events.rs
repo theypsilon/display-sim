@@ -1,6 +1,7 @@
 use crate::dispatch_event::{dispatch_event, dispatch_event_with};
 use core::app_events::AppEventDispatcher;
 use core::internal_resolution::InternalResolution;
+use core::pixels_shadow::ShadowShape;
 use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, ScreenLayeringKind, TextureInterpolation};
 use js_sys::{Array, Float32Array};
 use std::cell::RefCell;
@@ -115,7 +116,7 @@ impl AppEventDispatcher for WebEventDispatcher {
         self.catch_error(dispatch_event_with("app-event.pixel_geometry", &(pixels_geometry_kind.to_string()).into()));
     }
 
-    fn dispatch_pixel_shadow_shape(&self, pixel_shadow_shape_kind: usize) {
+    fn dispatch_pixel_shadow_shape(&self, pixel_shadow_shape_kind: ShadowShape) {
         if self.are_extra_messages_enabled() {
             self.dispatch_top_message(&format!("Showing next pixel shadow: {}.", pixel_shadow_shape_kind));
         }

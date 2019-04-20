@@ -9,7 +9,7 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) -
         }
         "." => {
             if !input.input_focused {
-                input.next_pixels_shadow_shape_kind.increase.input = pressed
+                input.next_pixel_shadow_shape_kind.increase.input = pressed
             }
         }
         "+" => {
@@ -102,8 +102,8 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) -
         "feature-change-screen-curvature-dec" => input.next_screen_curvature_type.decrease.input = pressed,
         "feature-change-screen-layering-type-inc" => input.next_layering_kind.increase.input = pressed,
         "feature-change-screen-layering-type-dec" => input.next_layering_kind.decrease.input = pressed,
-        "feature-change-pixel-shadow-shape-inc" => input.next_pixels_shadow_shape_kind.increase.input = pressed,
-        "feature-change-pixel-shadow-shape-dec" => input.next_pixels_shadow_shape_kind.decrease.input = pressed,
+        "feature-change-pixel-shadow-shape-inc" => input.next_pixel_shadow_shape_kind.increase.input = pressed,
+        "feature-change-pixel-shadow-shape-dec" => input.next_pixel_shadow_shape_kind.decrease.input = pressed,
         "feature-change-pixel-shadow-height-inc" => input.next_pixels_shadow_height.increase = pressed,
         "feature-change-pixel-shadow-height-dec" => input.next_pixels_shadow_height.decrease = pressed,
         "feature-internal-resolution-inc" => input.next_internal_resolution.increase.input = pressed,

@@ -1,7 +1,6 @@
 use crate::app_events::AppEventDispatcher;
 use crate::camera::{CameraData, CameraDirection, CameraSystem};
 use crate::general_types::{get_3_f32color_from_int, OptionCursor};
-use crate::pixels_shadow::SHADOWS_LEN;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::{
     event_kind, ColorChannels, Filters, IncDec, Input, InputEventValue, PixelsGeometryKind, Resources, ScreenCurvatureKind, ScreenLayeringKind,
@@ -190,7 +189,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
 
     fn update_filter_blur(&mut self) {
         let ctx = &self.ctx;
-        FilterParams::new(ctx, &mut self.res.filters.blur_passes, self.input.blur.to_is_just_pressed())
+        FilterParams::new(ctx, &mut self.res.filters.blur_passes, self.input.blur.to_just_pressed())
             .set_progression(1)
             .set_event_value(read_event_value!(self, BlurLevel, BLUR_LEVEL))
             .set_min(0)
@@ -204,19 +203,19 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         let filters = &mut self.res.filters;
         let input = &self.input;
 
-        FilterParams::new(ctx, &mut filters.texture_interpolation, input.next_texture_interpolation.to_is_just_pressed())
+        FilterParams::new(ctx, &mut filters.texture_interpolation, input.next_texture_interpolation.to_just_pressed())
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_texture_interpolation(x))
             .process_options();
-        FilterParams::new(ctx, &mut filters.screen_curvature_kind, input.next_screen_curvature_type.to_is_just_pressed())
+        FilterParams::new(ctx, &mut filters.screen_curvature_kind, input.next_screen_curvature_type.to_just_pressed())
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_screen_curvature(x))
             .process_options();
-        FilterParams::new(ctx, &mut filters.layering_kind, input.next_layering_kind.to_is_just_pressed())
+        FilterParams::new(ctx, &mut filters.layering_kind, input.next_layering_kind.to_just_pressed())
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_screen_layering_type(x))
             .process_options();
-        FilterParams::new(ctx, &mut filters.color_channels, input.next_color_representation_kind.to_is_just_pressed())
+        FilterParams::new(ctx, &mut filters.color_channels, input.next_color_representation_kind.to_just_pressed())
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_color_representation(x))
             .process_options();
-        FilterParams::new(ctx, &mut filters.internal_resolution, input.next_internal_resolution.to_is_just_pressed())
+        FilterParams::new(ctx, &mut filters.internal_resolution, input.next_internal_resolution.to_just_pressed())
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_internal_resolution(x))
             .process_options();
     }
@@ -224,7 +223,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
     // lines per pixel
     fn update_filter_lpp(&mut self) {
         let ctx = &self.ctx;
-        FilterParams::new(ctx, &mut self.res.filters.lines_per_pixel, self.input.lpp.to_is_just_pressed())
+        FilterParams::new(ctx, &mut self.res.filters.lines_per_pixel, self.input.lpp.to_just_pressed())
             .set_progression(1)
             .set_event_value(read_event_value!(self, LinersPerPixel, LINES_PER_PIXEL))
             .set_min(1)
@@ -236,53 +235,41 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
     fn update_filter_pixel_shape(&mut self) {
         let ctx = &self.ctx;
         let filters = &mut self.res.filters;
+        let input = &self.input;
+        let pixel_velocity = self.dt * filters.change_speed;
 
-        FilterParams::new(ctx, &mut filters.pixels_geometry_kind, self.input.next_pixel_geometry_kind.to_is_just_pressed())
+        FilterParams::new(ctx, &mut filters.pixels_geometry_kind, input.next_pixel_geometry_kind.to_just_pressed())
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_pixel_geometry(x))
             .process_options();
-
-        if self.input.next_pixels_shadow_shape_kind.any_just_pressed() {
-            if self.input.next_pixels_shadow_shape_kind.increase.is_just_pressed() {
-                filters.pixel_shadow_shape_kind += 1;
-                if filters.pixel_shadow_shape_kind >= SHADOWS_LEN {
-                    filters.pixel_shadow_shape_kind = 0;
-                }
-            } else {
-                if filters.pixel_shadow_shape_kind == 0 {
-                    filters.pixel_shadow_shape_kind = SHADOWS_LEN;
-                }
-                filters.pixel_shadow_shape_kind -= 1;
-            }
-            ctx.dispatcher.dispatch_pixel_shadow_shape(filters.pixel_shadow_shape_kind);
-        }
-
-        FilterParams::new(ctx, &mut self.res.filters.pixel_shadow_height, self.input.next_pixels_shadow_height.clone())
+        FilterParams::new(ctx, &mut filters.pixel_shadow_shape_kind, input.next_pixel_shadow_shape_kind.to_just_pressed())
+            .set_trigger_handler(|x| ctx.dispatcher.dispatch_pixel_shadow_shape(x))
+            .process_options();
+        FilterParams::new(ctx, &mut filters.pixel_shadow_height, input.next_pixels_shadow_height.clone())
             .set_progression(self.dt * 0.3)
             .set_event_value(read_event_value!(self, PixelShadowHeight, PIXEL_SHADOW_HEIGHT))
             .set_min(0.0)
             .set_max(1.0)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_pixel_shadow_height(x))
             .sum();
-        let pixel_velocity = self.dt * self.res.filters.change_speed;
-        FilterParams::new(ctx, &mut self.res.filters.cur_pixel_vertical_gap, self.input.pixel_vertical_gap.clone())
+        FilterParams::new(ctx, &mut filters.cur_pixel_vertical_gap, input.pixel_vertical_gap.clone())
             .set_progression(pixel_velocity * 0.00125)
             .set_event_value(read_event_value!(self, PixelVerticalGap, PIXEL_VERTICAL_GAP))
             .set_min(0.0)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_pixel_vertical_gap(x))
             .sum();
-        FilterParams::new(ctx, &mut self.res.filters.cur_pixel_horizontal_gap, self.input.pixel_horizontal_gap.clone())
+        FilterParams::new(ctx, &mut filters.cur_pixel_horizontal_gap, input.pixel_horizontal_gap.clone())
             .set_progression(pixel_velocity * 0.00125)
             .set_event_value(read_event_value!(self, PixelHorizontalGap, PIXEL_HORIZONTAL_GAP))
             .set_min(0.0)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_pixel_horizontal_gap(x))
             .sum();
-        FilterParams::new(ctx, &mut self.res.filters.cur_pixel_width, self.input.pixel_width.clone())
+        FilterParams::new(ctx, &mut filters.cur_pixel_width, input.pixel_width.clone())
             .set_progression(pixel_velocity * 0.005)
             .set_event_value(read_event_value!(self, PixelWidth, PIXEL_WIDTH))
             .set_min(0.0)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_pixel_width(x))
             .sum();
-        FilterParams::new(ctx, &mut self.res.filters.cur_pixel_spread, self.input.pixel_spread.clone())
+        FilterParams::new(ctx, &mut filters.cur_pixel_spread, input.pixel_spread.clone())
             .set_progression(pixel_velocity * 0.005)
             .set_event_value(read_event_value!(self, PixelSpread, PIXEL_SPREAD))
             .set_min(0.0)
@@ -292,26 +279,26 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
 
     fn update_speeds(&mut self) {
         let ctx = &self.ctx;
-        FilterParams::new(ctx, &mut self.res.camera.turning_speed, self.input.turn_speed.to_is_just_pressed())
+        FilterParams::new(ctx, &mut self.res.camera.turning_speed, self.input.turn_speed.to_just_pressed())
             .set_progression(2.0)
             .set_min(0.007_812_5 * TURNING_BASE_SPEED)
             .set_max(16_384.0 * TURNING_BASE_SPEED)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_turning_speed(x / TURNING_BASE_SPEED))
             .multiply();
-        FilterParams::new(ctx, &mut self.res.filters.change_speed, self.input.filter_speed.to_is_just_pressed())
+        FilterParams::new(ctx, &mut self.res.filters.change_speed, self.input.filter_speed.to_just_pressed())
             .set_progression(2.0)
             .set_min(0.007_812_5 * PIXEL_MANIPULATION_BASE_SPEED)
             .set_max(16_384.0 * PIXEL_MANIPULATION_BASE_SPEED)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_pixel_speed(x / PIXEL_MANIPULATION_BASE_SPEED))
             .multiply();
-        FilterParams::new(ctx, &mut self.res.camera.turning_speed, self.input.translation_speed.to_is_just_pressed())
+        FilterParams::new(ctx, &mut self.res.camera.turning_speed, self.input.translation_speed.to_just_pressed())
             .set_progression(2.0)
             .set_min(0.007_812_5 * TURNING_BASE_SPEED)
             .set_max(16_384.0 * TURNING_BASE_SPEED)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_turning_speed(x / TURNING_BASE_SPEED))
             .multiply();
         let initial_movement_speed = self.res.initial_parameters.initial_movement_speed;
-        FilterParams::new(ctx, &mut self.res.camera.movement_speed, self.input.translation_speed.to_is_just_pressed())
+        FilterParams::new(ctx, &mut self.res.camera.movement_speed, self.input.translation_speed.to_just_pressed())
             .set_progression(2.0)
             .set_min(0.007_812_5 * initial_movement_speed)
             .set_max(16_384.0 * initial_movement_speed)
