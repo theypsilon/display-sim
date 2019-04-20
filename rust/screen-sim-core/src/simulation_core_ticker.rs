@@ -725,7 +725,7 @@ trait EnumFilter {
 
 impl<'a, T, TriggerHandler, Dispatcher> EnumFilter for FilterParams<'a, T, TriggerHandler, Dispatcher>
 where
-    T: Display + FromPrimitive + ToPrimitive + EnumLen + Copy,
+    T: FromPrimitive + ToPrimitive + EnumLen + Copy,
     TriggerHandler: Fn(T),
     Dispatcher: AppEventDispatcher,
 {
