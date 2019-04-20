@@ -102,21 +102,21 @@ impl AppEventDispatcher for WebEventDispatcher {
         self.catch_error(dispatch_event_with("app-event.change_lines_per_pixel", &(lpp as i32).into()));
     }
 
-    fn dispatch_color_representation(&self, color_channels: ColorChannels) {
+    fn dispatch_color_representation(&self, color_channels: &ColorChannels) {
         if self.are_extra_messages_enabled() {
             self.dispatch_top_message(&format!("Pixel color representation: {}.", color_channels));
         }
         self.catch_error(dispatch_event_with("app-event.color_representation", &(color_channels.to_string()).into()));
     }
 
-    fn dispatch_pixel_geometry(&self, pixels_geometry_kind: PixelsGeometryKind) {
+    fn dispatch_pixel_geometry(&self, pixels_geometry_kind: &PixelsGeometryKind) {
         if self.are_extra_messages_enabled() {
             self.dispatch_top_message(&format!("Pixel geometry: {}.", pixels_geometry_kind));
         }
         self.catch_error(dispatch_event_with("app-event.pixel_geometry", &(pixels_geometry_kind.to_string()).into()));
     }
 
-    fn dispatch_pixel_shadow_shape(&self, pixel_shadow_shape_kind: ShadowShape) {
+    fn dispatch_pixel_shadow_shape(&self, pixel_shadow_shape_kind: &ShadowShape) {
         if self.are_extra_messages_enabled() {
             self.dispatch_top_message(&format!("Showing next pixel shadow: {}.", pixel_shadow_shape_kind));
         }
@@ -133,25 +133,25 @@ impl AppEventDispatcher for WebEventDispatcher {
         ));
     }
 
-    fn dispatch_screen_layering_type(&self, layering_kind: ScreenLayeringKind) {
+    fn dispatch_screen_layering_type(&self, layering_kind: &ScreenLayeringKind) {
         if self.are_extra_messages_enabled() {
             self.dispatch_top_message(&format!("Layering kind: {}.", layering_kind));
         }
         self.catch_error(dispatch_event_with("app-event.screen_layering_type", &(layering_kind.to_string()).into()));
     }
 
-    fn dispatch_screen_curvature(&self, screen_curvature_kind: ScreenCurvatureKind) {
+    fn dispatch_screen_curvature(&self, screen_curvature_kind: &ScreenCurvatureKind) {
         if self.are_extra_messages_enabled() {
             self.dispatch_top_message(&format!("Screen curvature: {}.", screen_curvature_kind));
         }
         self.catch_error(dispatch_event_with("app-event.screen_curvature", &(screen_curvature_kind.to_string()).into()));
     }
 
-    fn dispatch_internal_resolution(&self, internal_resolution: InternalResolution) {
+    fn dispatch_internal_resolution(&self, internal_resolution: &InternalResolution) {
         self.catch_error(dispatch_event_with("app-event.internal_resolution", &(internal_resolution.to_string()).into()));
     }
 
-    fn dispatch_texture_interpolation(&self, texture_interpolation: TextureInterpolation) {
+    fn dispatch_texture_interpolation(&self, texture_interpolation: &TextureInterpolation) {
         self.catch_error(dispatch_event_with(
             "app-event.texture_interpolation",
             &(texture_interpolation.to_string()).into(),
@@ -219,11 +219,11 @@ impl AppEventDispatcher for WebEventDispatcher {
         self.catch_error(dispatch_event_with("app-event.top_message", &message.into()));
     }
 
-    fn dispatch_minimum_value<T: Display>(&self, value: T) {
+    fn dispatch_minimum_value<T: Display>(&self, value: &T) {
         self.dispatch_top_message(&format!("Minimum value is {}", value));
     }
 
-    fn dispatch_maximum_value<T: Display>(&self, value: T) {
+    fn dispatch_maximum_value<T: Display>(&self, value: &T) {
         self.dispatch_top_message(&format!("Maximum value is {}", value));
     }
 }

@@ -17,14 +17,14 @@ pub trait AppEventDispatcher: Default {
     fn dispatch_change_camera_zoom(&self, zoom: f32);
     fn dispatch_change_blur_level(&self, res: usize);
     fn dispatch_change_lines_per_pixel(&self, res: usize);
-    fn dispatch_color_representation(&self, res: ColorChannels);
-    fn dispatch_pixel_geometry(&self, res: PixelsGeometryKind);
-    fn dispatch_pixel_shadow_shape(&self, res: ShadowShape);
+    fn dispatch_color_representation(&self, res: &ColorChannels);
+    fn dispatch_pixel_geometry(&self, res: &PixelsGeometryKind);
+    fn dispatch_pixel_shadow_shape(&self, res: &ShadowShape);
     fn dispatch_pixel_shadow_height(&self, res: f32);
-    fn dispatch_screen_layering_type(&self, res: ScreenLayeringKind);
-    fn dispatch_screen_curvature(&self, res: ScreenCurvatureKind);
-    fn dispatch_internal_resolution(&self, res: InternalResolution);
-    fn dispatch_texture_interpolation(&self, res: TextureInterpolation);
+    fn dispatch_screen_layering_type(&self, res: &ScreenLayeringKind);
+    fn dispatch_screen_curvature(&self, res: &ScreenCurvatureKind);
+    fn dispatch_internal_resolution(&self, res: &InternalResolution);
+    fn dispatch_texture_interpolation(&self, res: &TextureInterpolation);
     fn dispatch_change_pixel_speed(&self, speed: f32);
     fn dispatch_change_turning_speed(&self, speed: f32);
     fn dispatch_change_movement_speed(&self, speed: f32);
@@ -36,6 +36,6 @@ pub trait AppEventDispatcher: Default {
     fn dispatch_screenshot(&self, pixels: &[u8], multiplier: f64);
     fn dispatch_change_camera_movement_mode(&self, locked_mode: bool);
     fn dispatch_top_message(&self, message: &str);
-    fn dispatch_minimum_value<T: Display>(&self, value: T);
-    fn dispatch_maximum_value<T: Display>(&self, value: T);
+    fn dispatch_minimum_value<T: Display>(&self, value: &T);
+    fn dispatch_maximum_value<T: Display>(&self, value: &T);
 }

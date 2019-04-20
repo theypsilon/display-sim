@@ -94,14 +94,14 @@ impl AppEventDispatcher for FakeEventDispatcher {
     fn dispatch_change_camera_zoom(&self, _: f32) {}
     fn dispatch_change_blur_level(&self, _: usize) {}
     fn dispatch_change_lines_per_pixel(&self, _: usize) {}
-    fn dispatch_color_representation(&self, _: ColorChannels) {}
-    fn dispatch_pixel_geometry(&self, _: PixelsGeometryKind) {}
-    fn dispatch_pixel_shadow_shape(&self, _: ShadowShape) {}
+    fn dispatch_color_representation(&self, _: &ColorChannels) {}
+    fn dispatch_pixel_geometry(&self, _: &PixelsGeometryKind) {}
+    fn dispatch_pixel_shadow_shape(&self, _: &ShadowShape) {}
     fn dispatch_pixel_shadow_height(&self, _: f32) {}
-    fn dispatch_screen_layering_type(&self, _: ScreenLayeringKind) {}
-    fn dispatch_screen_curvature(&self, _: ScreenCurvatureKind) {}
-    fn dispatch_internal_resolution(&self, _: InternalResolution) {}
-    fn dispatch_texture_interpolation(&self, _: TextureInterpolation) {}
+    fn dispatch_screen_layering_type(&self, _: &ScreenLayeringKind) {}
+    fn dispatch_screen_curvature(&self, _: &ScreenCurvatureKind) {}
+    fn dispatch_internal_resolution(&self, _: &InternalResolution) {}
+    fn dispatch_texture_interpolation(&self, _: &TextureInterpolation) {}
     fn dispatch_change_pixel_speed(&self, _: f32) {}
     fn dispatch_change_turning_speed(&self, _: f32) {}
     fn dispatch_change_movement_speed(&self, _: f32) {}
@@ -115,6 +115,6 @@ impl AppEventDispatcher for FakeEventDispatcher {
     fn dispatch_screenshot(&self, _: &[u8], _: f64) {}
     fn dispatch_change_camera_movement_mode(&self, _: bool) {}
     fn dispatch_top_message(&self, _: &str) {}
-    fn dispatch_minimum_value<T: Display>(&self, _: T) {}
-    fn dispatch_maximum_value<T: Display>(&self, _: T) {}
+    fn dispatch_minimum_value<T: Display>(&self, _: &T) {}
+    fn dispatch_maximum_value<T: Display>(&self, _: &T) {}
 }

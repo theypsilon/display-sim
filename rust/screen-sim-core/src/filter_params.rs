@@ -5,7 +5,7 @@ use std::cmp::{PartialEq, PartialOrd};
 use std::fmt::Display;
 use std::ops::{Add, Div, Mul, Sub};
 
-pub struct FilterParams<'a, T, TriggerHandler: Fn(T), Dispatcher: AppEventDispatcher> {
+pub struct FilterParams<'a, T, U, TriggerHandler: Fn(U), Dispatcher: AppEventDispatcher> {
     ctx: &'a SimulationContext<Dispatcher>,
     var: &'a mut T,
     incdec: IncDec<bool>,
@@ -14,9 +14,10 @@ pub struct FilterParams<'a, T, TriggerHandler: Fn(T), Dispatcher: AppEventDispat
     velocity: Option<T>,
     min: Option<T>,
     max: Option<T>,
+    _u: std::marker::PhantomData<Fn(U)>,
 }
 
-impl<'a, T, TriggerHandler: Fn(T), Dispatcher: AppEventDispatcher> FilterParams<'a, T, TriggerHandler, Dispatcher> {
+impl<'a, T, U, TriggerHandler: Fn(U), Dispatcher: AppEventDispatcher> FilterParams<'a, T, U, TriggerHandler, Dispatcher> {
     pub fn new(ctx: &'a SimulationContext<Dispatcher>, var: &'a mut T, incdec: IncDec<bool>) -> Self {
         FilterParams {
             ctx,
@@ -27,6 +28,7 @@ impl<'a, T, TriggerHandler: Fn(T), Dispatcher: AppEventDispatcher> FilterParams<
             velocity: None,
             min: None,
             max: None,
+            _u: Default::default(),
         }
     }
     pub fn set_event_value(mut self, event_value: Option<T>) -> Self {
@@ -39,7 +41,7 @@ impl<'a, T, TriggerHandler: Fn(T), Dispatcher: AppEventDispatcher> FilterParams<
     }
 }
 
-impl<'a, T: PartialOrd + PartialEq, TriggerHandler: Fn(T), Dispatcher: AppEventDispatcher> FilterParams<'a, T, TriggerHandler, Dispatcher> {
+impl<'a, T: PartialOrd + PartialEq, TriggerHandler: Fn(T), Dispatcher: AppEventDispatcher> FilterParams<'a, T, T, TriggerHandler, Dispatcher> {
     pub fn set_progression(mut self, velocity: T) -> Self {
         self.velocity = Some(velocity);
         self
@@ -54,10 +56,10 @@ impl<'a, T: PartialOrd + PartialEq, TriggerHandler: Fn(T), Dispatcher: AppEventD
     }
 }
 
-impl<'a, T, TriggerHandler, Dispatcher> FilterParams<'a, T, TriggerHandler, Dispatcher>
+impl<'a, T, TriggerHandler, Dispatcher> FilterParams<'a, T, &'a T, TriggerHandler, Dispatcher>
 where
-    T: OptionCursor + Copy + Display,
-    TriggerHandler: Fn(T),
+    T: OptionCursor + Display,
+    TriggerHandler: Fn(&'a T),
     Dispatcher: AppEventDispatcher,
 {
     #[allow(clippy::useless_let_if_seq)]
@@ -77,17 +79,17 @@ where
         }
         if changed {
             if self.var.has_reached_minimum_limit() {
-                self.ctx.dispatcher.dispatch_minimum_value(*self.var);
+                self.ctx.dispatcher.dispatch_minimum_value(self.var);
             } else if self.var.has_reached_maximum_limit() {
-                self.ctx.dispatcher.dispatch_maximum_value(*self.var);
+                self.ctx.dispatcher.dispatch_maximum_value(self.var);
             } else if let Some(ref handler) = self.trigger_handler {
-                handler(*self.var);
+                handler(self.var);
             }
         }
     }
 }
 
-impl<'a, T, TriggerHandler, Dispatcher> FilterParams<'a, T, TriggerHandler, Dispatcher>
+impl<'a, T, TriggerHandler, Dispatcher> FilterParams<'a, T, T, TriggerHandler, Dispatcher>
 where
     T: Display + Add<Output = T> + Sub<Output = T> + PartialOrd + PartialEq + Copy + Default,
     TriggerHandler: Fn(T),
@@ -98,7 +100,7 @@ where
     }
 }
 
-impl<'a, T, TriggerHandler, Dispatcher> FilterParams<'a, T, TriggerHandler, Dispatcher>
+impl<'a, T, TriggerHandler, Dispatcher> FilterParams<'a, T, T, TriggerHandler, Dispatcher>
 where
     T: Display + Mul<Output = T> + Div<Output = T> + PartialOrd + PartialEq + Copy + Default,
     TriggerHandler: Fn(T),
@@ -109,7 +111,7 @@ where
     }
 }
 
-fn operate_filter<T, TriggerHandler, Dispatcher>(params: FilterParams<T, TriggerHandler, Dispatcher>, inc_op: impl Fn(T, T) -> T, dec_op: impl Fn(T, T) -> T)
+fn operate_filter<T, TriggerHandler, Dispatcher>(params: FilterParams<T, T, TriggerHandler, Dispatcher>, inc_op: impl Fn(T, T) -> T, dec_op: impl Fn(T, T) -> T)
 where
     T: Display + PartialOrd + PartialEq + Copy + Default,
     TriggerHandler: Fn(T),
@@ -130,13 +132,13 @@ where
         if let Some(min) = params.min {
             if *params.var < min {
                 *params.var = min;
-                params.ctx.dispatcher.dispatch_minimum_value(min);
+                params.ctx.dispatcher.dispatch_minimum_value(&min);
             }
         }
         if let Some(max) = params.max {
             if *params.var > max {
                 *params.var = max;
-                params.ctx.dispatcher.dispatch_maximum_value(max);
+                params.ctx.dispatcher.dispatch_maximum_value(&max);
             }
         }
         if let Some(ref handler) = params.trigger_handler {
