@@ -7,23 +7,23 @@ pub struct Size2D<T: Copy + Clone + Default> {
     pub height: T,
 }
 
-pub trait NextEnumVariant {
-    fn next_enum_variant(&mut self);
-    fn previous_enum_variant(&mut self);
+pub trait OptionCursor {
+    fn next_option(&mut self);
+    fn previous_option(&mut self);
 }
 
-impl<T> NextEnumVariant for T
+impl<T> OptionCursor for T
 where
     T: FromPrimitive + ToPrimitive + EnumLen,
 {
-    fn next_enum_variant(&mut self)
+    fn next_option(&mut self)
     where
         Self: FromPrimitive + ToPrimitive,
     {
         change_enum_variant(self, |u| u + 1)
     }
 
-    fn previous_enum_variant(&mut self)
+    fn previous_option(&mut self)
     where
         Self: FromPrimitive + ToPrimitive,
     {

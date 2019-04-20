@@ -1,6 +1,6 @@
 use crate::app_events::AppEventDispatcher;
 use crate::camera::{CameraData, CameraDirection, CameraSystem};
-use crate::general_types::{get_3_f32color_from_int, NextEnumVariant};
+use crate::general_types::{get_3_f32color_from_int, OptionCursor};
 use crate::pixels_shadow::SHADOWS_LEN;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::{
@@ -688,11 +688,11 @@ where
     fn iterate_variant(self) {
         let mut changed = false;
         if self.incdec.increase {
-            self.var.next_enum_variant();
+            self.var.next_option();
             changed = true;
         }
         if self.incdec.decrease {
-            self.var.previous_enum_variant();
+            self.var.previous_option();
             changed = true;
         }
         if let Some(val) = self.event_value {
