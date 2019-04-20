@@ -1,7 +1,6 @@
 use crate::app_events::AppEventDispatcher;
-use crate::general_types::OptionCursor;
+use crate::general_types::{IncDec, OptionCursor};
 use crate::simulation_context::SimulationContext;
-use crate::simulation_core_state::IncDec;
 use std::cmp::{PartialEq, PartialOrd};
 use std::fmt::Display;
 use std::ops::{Add, Div, Mul, Sub};
