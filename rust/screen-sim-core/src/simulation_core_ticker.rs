@@ -596,74 +596,61 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
     }
 
     fn update_output_pixel_scale_gap_offset(&mut self) {
-        self.res.output.pixel_spread = [
-            (1.0 + self.res.filters.cur_pixel_spread) * self.res.filters.cur_pixel_width,
-            1.0 + self.res.filters.cur_pixel_spread,
-        ];
-        self.res.output.pixel_scale_base = [
-            (self.res.filters.cur_pixel_vertical_gap + 1.0) / self.res.filters.cur_pixel_width,
-            self.res.filters.cur_pixel_horizontal_gap + 1.0,
-            (self.res.filters.cur_pixel_vertical_gap + self.res.filters.cur_pixel_vertical_gap) * 0.5 + 1.0,
+        let output = &mut self.res.output;
+        let filters = &self.res.filters;
+        output.pixel_spread = [(1.0 + filters.cur_pixel_spread) * filters.cur_pixel_width, 1.0 + filters.cur_pixel_spread];
+        output.pixel_scale_base = [
+            (filters.cur_pixel_vertical_gap + 1.0) / filters.cur_pixel_width,
+            filters.cur_pixel_horizontal_gap + 1.0,
+            (filters.cur_pixel_vertical_gap + filters.cur_pixel_vertical_gap) * 0.5 + 1.0,
         ];
 
-        let by_lpp = 1.0 / (self.res.filters.lines_per_pixel as f32);
-        let vl_offset_beginning = -(self.res.filters.lines_per_pixel as f32 - 1.0) / 2.0;
+        let by_lpp = 1.0 / (filters.lines_per_pixel as f32);
+        let vl_offset_beginning = -(filters.lines_per_pixel as f32 - 1.0) / 2.0;
 
-        self.res
-            .output
-            .pixel_scale_background
-            .resize_with(self.res.filters.lines_per_pixel, Default::default);
-        self.res
-            .output
-            .pixel_offset_background
-            .resize_with(self.res.filters.lines_per_pixel, Default::default);
-        for vl_idx in 0..self.res.filters.lines_per_pixel {
-            let pixel_offset = &mut self.res.output.pixel_offset_background[vl_idx];
-            let pixel_scale = &mut self.res.output.pixel_scale_background[vl_idx];
+        output.pixel_scale_background.resize_with(filters.lines_per_pixel, Default::default);
+        output.pixel_offset_background.resize_with(filters.lines_per_pixel, Default::default);
+        for vl_idx in 0..filters.lines_per_pixel {
+            let pixel_offset = &mut output.pixel_offset_background[vl_idx];
+            let pixel_scale = &mut output.pixel_scale_background[vl_idx];
 
             *pixel_offset = [0.0, 0.0, 0.0];
             *pixel_scale = [
-                (self.res.filters.cur_pixel_vertical_gap + 1.0) / self.res.filters.cur_pixel_width,
-                self.res.filters.cur_pixel_horizontal_gap + 1.0,
-                (self.res.filters.cur_pixel_vertical_gap + self.res.filters.cur_pixel_vertical_gap) * 0.5 + 1.0,
+                (filters.cur_pixel_vertical_gap + 1.0) / filters.cur_pixel_width,
+                filters.cur_pixel_horizontal_gap + 1.0,
+                (filters.cur_pixel_vertical_gap + filters.cur_pixel_vertical_gap) * 0.5 + 1.0,
             ];
-            if self.res.filters.lines_per_pixel > 1 {
+            if filters.lines_per_pixel > 1 {
                 let vl_cur_offset = vl_offset_beginning + vl_idx as f32;
-                pixel_offset[0] = (pixel_offset[0] + vl_cur_offset * self.res.filters.cur_pixel_width) * by_lpp;
-                pixel_scale[0] *= self.res.filters.lines_per_pixel as f32;
+                pixel_offset[0] = (pixel_offset[0] + vl_cur_offset * filters.cur_pixel_width) * by_lpp;
+                pixel_scale[0] *= filters.lines_per_pixel as f32;
             }
         }
 
-        self.res
-            .output
-            .pixel_scale_foreground
-            .resize_with(self.res.filters.lines_per_pixel, Default::default);
-        self.res
-            .output
-            .pixel_offset_foreground
-            .resize_with(self.res.filters.lines_per_pixel, Default::default);
-        for vl_idx in 0..self.res.filters.lines_per_pixel {
-            for color_idx in 0..self.res.output.color_splits {
-                let pixel_offset = &mut self.res.output.pixel_offset_foreground[vl_idx][color_idx];
-                let pixel_scale = &mut self.res.output.pixel_scale_foreground[vl_idx][color_idx];
-                *pixel_offset = self.res.output.pixel_offset_background[vl_idx];
-                *pixel_scale = self.res.output.pixel_scale_background[vl_idx];
-                match self.res.filters.color_channels {
+        output.pixel_scale_foreground.resize_with(filters.lines_per_pixel, Default::default);
+        output.pixel_offset_foreground.resize_with(filters.lines_per_pixel, Default::default);
+        for vl_idx in 0..filters.lines_per_pixel {
+            for color_idx in 0..output.color_splits {
+                let pixel_offset = &mut output.pixel_offset_foreground[vl_idx][color_idx];
+                let pixel_scale = &mut output.pixel_scale_foreground[vl_idx][color_idx];
+                *pixel_offset = output.pixel_offset_background[vl_idx];
+                *pixel_scale = output.pixel_scale_background[vl_idx];
+                match filters.color_channels {
                     ColorChannels::Combined => {}
-                    _ => match self.res.filters.color_channels {
+                    _ => match filters.color_channels {
                         ColorChannels::SplitHorizontal => {
-                            pixel_offset[0] += by_lpp * (color_idx as f32 - 1.0) * (1.0 / 3.0) * self.res.filters.cur_pixel_width
-                                / (self.res.filters.cur_pixel_vertical_gap + 1.0);
-                            pixel_scale[0] *= self.res.output.color_splits as f32;
+                            pixel_offset[0] +=
+                                by_lpp * (color_idx as f32 - 1.0) * (1.0 / 3.0) * filters.cur_pixel_width / (filters.cur_pixel_vertical_gap + 1.0);
+                            pixel_scale[0] *= output.color_splits as f32;
                         }
                         ColorChannels::Overlapping => {
-                            pixel_offset[0] += by_lpp * (color_idx as f32 - 1.0) * (1.0 / 3.0) * self.res.filters.cur_pixel_width
-                                / (self.res.filters.cur_pixel_vertical_gap + 1.0);
+                            pixel_offset[0] +=
+                                by_lpp * (color_idx as f32 - 1.0) * (1.0 / 3.0) * filters.cur_pixel_width / (filters.cur_pixel_vertical_gap + 1.0);
                             pixel_scale[0] *= 1.5;
                         }
                         ColorChannels::SplitVertical => {
-                            pixel_offset[1] += (color_idx as f32 - 1.0) * (1.0 / 3.0) / (self.res.filters.cur_pixel_horizontal_gap + 1.0);
-                            pixel_scale[1] *= self.res.output.color_splits as f32;
+                            pixel_offset[1] += (color_idx as f32 - 1.0) * (1.0 / 3.0) / (filters.cur_pixel_horizontal_gap + 1.0);
+                            pixel_scale[1] *= output.color_splits as f32;
                         }
                         _ => unreachable!(),
                     },
