@@ -146,8 +146,8 @@ impl AppEventDispatcher for WebEventDispatcher {
         self.catch_error(dispatch_event_with("app-event.screen_curvature", &(screen_curvature_kind.to_string()).into()));
     }
 
-    fn dispatch_internal_resolution(&self, internal_resolution: &InternalResolution) {
-        self.catch_error(dispatch_event_with("app-event.internal_resolution", &(internal_resolution.to_label()).into()));
+    fn dispatch_internal_resolution(&self, internal_resolution: InternalResolution) {
+        self.catch_error(dispatch_event_with("app-event.internal_resolution", &(internal_resolution.to_string()).into()));
     }
 
     fn dispatch_texture_interpolation(&self, texture_interpolation: TextureInterpolation) {

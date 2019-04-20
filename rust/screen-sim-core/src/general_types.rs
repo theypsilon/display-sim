@@ -10,6 +10,8 @@ pub struct Size2D<T: Copy + Clone + Default> {
 pub trait OptionCursor {
     fn next_option(&mut self);
     fn previous_option(&mut self);
+    fn has_reached_maximum_limit(&self) -> bool;
+    fn has_reached_minimum_limit(&self) -> bool;
 }
 
 impl<T> OptionCursor for T
@@ -28,6 +30,13 @@ where
         Self: FromPrimitive + ToPrimitive,
     {
         change_enum_variant(self, |u| if u == 0 { Self::len() - 1 } else { u - 1 })
+    }
+
+    fn has_reached_maximum_limit(&self) -> bool {
+        false
+    }
+    fn has_reached_minimum_limit(&self) -> bool {
+        false
     }
 }
 

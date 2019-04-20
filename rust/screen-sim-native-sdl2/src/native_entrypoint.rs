@@ -174,8 +174,8 @@ impl AppEventDispatcher for NativeEventDispatcher {
     fn dispatch_screen_curvature(&self, res: ScreenCurvatureKind) {
         println!("screen_curvature: {}", res);
     }
-    fn dispatch_internal_resolution(&self, res: &InternalResolution) {
-        println!("internal_resolution: {}", res.to_label());
+    fn dispatch_internal_resolution(&self, res: InternalResolution) {
+        println!("internal_resolution: {}", res);
     }
     fn dispatch_texture_interpolation(&self, res: TextureInterpolation) {
         println!("texture_interpolation: {}", res);

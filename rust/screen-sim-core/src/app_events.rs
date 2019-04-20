@@ -22,7 +22,7 @@ pub trait AppEventDispatcher: Default {
     fn dispatch_pixel_shadow_height(&self, res: f32);
     fn dispatch_screen_layering_type(&self, res: ScreenLayeringKind);
     fn dispatch_screen_curvature(&self, res: ScreenCurvatureKind);
-    fn dispatch_internal_resolution(&self, res: &InternalResolution);
+    fn dispatch_internal_resolution(&self, res: InternalResolution);
     fn dispatch_texture_interpolation(&self, res: TextureInterpolation);
     fn dispatch_change_pixel_speed(&self, speed: f32);
     fn dispatch_change_turning_speed(&self, speed: f32);

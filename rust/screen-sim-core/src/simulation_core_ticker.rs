@@ -8,8 +8,6 @@ use crate::simulation_core_state::{
     PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
 };
 use derive_new::new;
-use enum_len_trait::EnumLen;
-use num_traits::{FromPrimitive, ToPrimitive};
 use std::cmp::{PartialEq, PartialOrd};
 use std::fmt::Display;
 use std::ops::{Add, Div, Mul, Sub};
@@ -207,18 +205,18 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         let next_texture_interpolation = self.input.next_texture_interpolation.to_is_just_pressed();
         FilterParams::new(ctx, &mut self.res.filters.texture_interpolation, next_texture_interpolation)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_texture_interpolation(x))
-            .iterate_variant();
+            .process_options();
         let next_screen_curvature_kind = self.input.next_screen_curvature_type.to_is_just_pressed();
         FilterParams::new(ctx, &mut self.res.filters.screen_curvature_kind, next_screen_curvature_kind)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_screen_curvature(x))
-            .iterate_variant();
+            .process_options();
         FilterParams::new(ctx, &mut self.res.filters.layering_kind, self.input.next_layering_kind.to_is_just_pressed())
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_screen_layering_type(x))
-            .iterate_variant();
+            .process_options();
         let next_color_representation_kind = self.input.next_color_representation_kind.to_is_just_pressed();
         FilterParams::new(ctx, &mut self.res.filters.color_channels, next_color_representation_kind)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_color_representation(x))
-            .iterate_variant();
+            .process_options();
     }
 
     // lines per pixel
@@ -234,21 +232,12 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
     }
 
     fn update_filter_internal_resolution(&mut self) {
-        if self.input.next_internal_resolution.any_just_released() {
-            if self.input.next_internal_resolution.increase.is_just_released() {
-                self.res.filters.internal_resolution.increase();
-            }
-            if self.input.next_internal_resolution.decrease.is_just_released() {
-                self.res.filters.internal_resolution.decrease();
-            }
-            if self.res.filters.internal_resolution.minimum_reached {
-                self.ctx.dispatcher.dispatch_top_message("Minimum internal resolution has been reached.");
-            } else if self.res.filters.internal_resolution.maximium_reached {
-                self.ctx.dispatcher.dispatch_top_message("Maximum internal resolution has been reached.");
-            } else {
-                self.ctx.dispatcher.dispatch_internal_resolution(&self.res.filters.internal_resolution);
-            }
-        }
+        let ctx = &self.ctx;
+        let filters = &mut self.res.filters;
+
+        FilterParams::new(ctx, &mut filters.internal_resolution, self.input.next_internal_resolution.to_is_just_pressed())
+            .set_trigger_handler(|x| ctx.dispatcher.dispatch_internal_resolution(x))
+            .process_options();
     }
 
     fn update_filter_pixel_shape(&mut self) {
@@ -257,7 +246,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
 
         FilterParams::new(ctx, &mut filters.pixels_geometry_kind, self.input.next_pixel_geometry_kind.to_is_just_pressed())
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_pixel_geometry(x))
-            .iterate_variant();
+            .process_options();
 
         if self.input.next_pixels_shadow_shape_kind.any_just_pressed() {
             if self.input.next_pixels_shadow_shape_kind.increase.is_just_pressed() {
@@ -444,7 +433,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         dispatcher.dispatch_pixel_shadow_height(self.res.filters.pixel_shadow_height);
         dispatcher.dispatch_screen_layering_type(self.res.filters.layering_kind);
         dispatcher.dispatch_screen_curvature(self.res.filters.screen_curvature_kind);
-        dispatcher.dispatch_internal_resolution(&self.res.filters.internal_resolution);
+        dispatcher.dispatch_internal_resolution(self.res.filters.internal_resolution);
         dispatcher.dispatch_texture_interpolation(self.res.filters.texture_interpolation);
         dispatcher.dispatch_change_pixel_speed(self.res.filters.change_speed / PIXEL_MANIPULATION_BASE_SPEED);
         dispatcher.dispatch_change_turning_speed(self.res.camera.turning_speed / TURNING_BASE_SPEED);
@@ -680,12 +669,12 @@ impl<'a, T: PartialOrd + PartialEq, TriggerHandler: Fn(T), Dispatcher: AppEventD
 
 impl<'a, T, TriggerHandler, Dispatcher> FilterParams<'a, T, TriggerHandler, Dispatcher>
 where
-    T: FromPrimitive + ToPrimitive + EnumLen + Copy,
+    T: OptionCursor + Copy + Display,
     TriggerHandler: Fn(T),
     Dispatcher: AppEventDispatcher,
 {
     #[allow(clippy::useless_let_if_seq)]
-    fn iterate_variant(self) {
+    fn process_options(self) {
         let mut changed = false;
         if self.incdec.increase {
             self.var.next_option();
@@ -700,7 +689,11 @@ where
             changed = true;
         }
         if changed {
-            if let Some(ref handler) = self.trigger_handler {
+            if self.var.has_reached_minimum_limit() {
+                self.ctx.dispatcher.dispatch_minimum_value(*self.var);
+            } else if self.var.has_reached_maximum_limit() {
+                self.ctx.dispatcher.dispatch_maximum_value(*self.var);
+            } else if let Some(ref handler) = self.trigger_handler {
                 handler(*self.var);
             }
         }

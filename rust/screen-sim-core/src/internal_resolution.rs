@@ -1,12 +1,14 @@
-use crate::general_types::Size2D;
+use crate::general_types::{OptionCursor, Size2D};
+use std::fmt::{Display, Error, Formatter};
 
+#[derive(Copy, Clone)]
 pub struct InternalResolution {
     pub multiplier: f64,
-    pub minimum_reached: bool,
-    pub maximium_reached: bool,
     backup_multiplier: f64,
     max_texture_size: i32,
     pub viewport: Size2D<u32>,
+    minimum_reached: bool,
+    maximium_reached: bool,
 }
 
 impl InternalResolution {
@@ -24,7 +26,35 @@ impl InternalResolution {
         self.viewport = viewport;
         self.max_texture_size = max_texture_size;
     }
-    pub fn increase(&mut self) {
+    fn set_resolution(&mut self, resolution: i32) {
+        self.multiplier = f64::from(resolution) / f64::from(self.viewport.height);
+        if self.width() > self.max_texture_size || self.height() > self.max_texture_size {
+            self.previous_option();
+            self.maximium_reached = true;
+        }
+    }
+    pub fn width(&self) -> i32 {
+        (f64::from(self.viewport.width) * self.multiplier) as i32
+    }
+    pub fn height(&self) -> i32 {
+        (f64::from(self.viewport.height) * self.multiplier) as i32
+    }
+}
+
+impl Display for InternalResolution {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        let height = self.height();
+        if height <= 1080 {
+            write!(f, "{}p", height)?;
+        } else {
+            write!(f, "{}K", height / 540)?;
+        }
+        Ok(())
+    }
+}
+
+impl OptionCursor for InternalResolution {
+    fn next_option(&mut self) {
         self.minimum_reached = false;
         let new_height = match self.height() {
             720 => (self.backup_multiplier * f64::from(self.viewport.height)) as i32,
@@ -42,7 +72,7 @@ impl InternalResolution {
         };
         self.set_resolution(new_height);
     }
-    pub fn decrease(&mut self) {
+    fn previous_option(&mut self) {
         self.maximium_reached = false;
         let new_height = match self.height() {
             721..=1440 => {
@@ -66,26 +96,10 @@ impl InternalResolution {
         };
         self.set_resolution(new_height);
     }
-    fn set_resolution(&mut self, resolution: i32) {
-        self.multiplier = f64::from(resolution) / f64::from(self.viewport.height);
-        if self.width() > self.max_texture_size || self.height() > self.max_texture_size {
-            self.decrease();
-            self.maximium_reached = true;
-        }
+    fn has_reached_maximum_limit(&self) -> bool {
+        self.maximium_reached
     }
-
-    pub fn width(&self) -> i32 {
-        (f64::from(self.viewport.width) * self.multiplier) as i32
-    }
-    pub fn height(&self) -> i32 {
-        (f64::from(self.viewport.height) * self.multiplier) as i32
-    }
-    pub fn to_label(&self) -> String {
-        let height = self.height();
-        if height <= 1080 {
-            format!("{}p", height)
-        } else {
-            format!("{}K", height / 540)
-        }
+    fn has_reached_minimum_limit(&self) -> bool {
+        self.minimum_reached
     }
 }
