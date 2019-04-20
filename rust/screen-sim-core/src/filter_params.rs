@@ -6,14 +6,14 @@ use std::fmt::Display;
 use std::ops::{Add, Div, Mul, Sub};
 
 pub struct FilterParams<'a, T, TriggerHandler: Fn(T), Dispatcher: AppEventDispatcher> {
+    ctx: &'a SimulationContext<Dispatcher>,
     var: &'a mut T,
-    event_value: Option<T>,
     incdec: IncDec<bool>,
+    trigger_handler: Option<TriggerHandler>,
+    event_value: Option<T>,
     velocity: Option<T>,
     min: Option<T>,
     max: Option<T>,
-    ctx: &'a SimulationContext<Dispatcher>,
-    trigger_handler: Option<TriggerHandler>,
 }
 
 impl<'a, T, TriggerHandler: Fn(T), Dispatcher: AppEventDispatcher> FilterParams<'a, T, TriggerHandler, Dispatcher> {
@@ -22,11 +22,11 @@ impl<'a, T, TriggerHandler: Fn(T), Dispatcher: AppEventDispatcher> FilterParams<
             ctx,
             var,
             incdec,
-            velocity: None,
+            trigger_handler: None,
             event_value: None,
+            velocity: None,
             min: None,
             max: None,
-            trigger_handler: None,
         }
     }
     pub fn set_event_value(mut self, event_value: Option<T>) -> Self {
