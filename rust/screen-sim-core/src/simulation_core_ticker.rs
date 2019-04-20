@@ -697,6 +697,17 @@ impl<'a, T, TriggerHandler: Fn(T), Dispatcher: AppEventDispatcher> FilterParams<
             trigger_handler: None,
         }
     }
+    pub fn set_event_value(mut self, event_value: Option<T>) -> Self {
+        self.event_value = event_value;
+        self
+    }
+    pub fn set_trigger_handler(mut self, trigger_handler: TriggerHandler) -> Self {
+        self.trigger_handler = Some(trigger_handler);
+        self
+    }
+}
+
+impl<'a, T: PartialOrd + PartialEq, TriggerHandler: Fn(T), Dispatcher: AppEventDispatcher> FilterParams<'a, T, TriggerHandler, Dispatcher> {
     pub fn set_progression(mut self, velocity: T) -> Self {
         self.velocity = Some(velocity);
         self
@@ -707,14 +718,6 @@ impl<'a, T, TriggerHandler: Fn(T), Dispatcher: AppEventDispatcher> FilterParams<
     }
     pub fn set_max(mut self, max: T) -> Self {
         self.max = Some(max);
-        self
-    }
-    pub fn set_event_value(mut self, event_value: Option<T>) -> Self {
-        self.event_value = event_value;
-        self
-    }
-    pub fn set_trigger_handler(mut self, trigger_handler: TriggerHandler) -> Self {
-        self.trigger_handler = Some(trigger_handler);
         self
     }
 }
