@@ -722,11 +722,7 @@ impl<'a, T: PartialOrd + PartialEq, TriggerHandler: Fn(T), Dispatcher: AppEventD
     }
 }
 
-trait EnumFilter {
-    fn iterate_variant(self);
-}
-
-impl<'a, T, TriggerHandler, Dispatcher> EnumFilter for FilterParams<'a, T, TriggerHandler, Dispatcher>
+impl<'a, T, TriggerHandler, Dispatcher> FilterParams<'a, T, TriggerHandler, Dispatcher>
 where
     T: FromPrimitive + ToPrimitive + EnumLen + Copy,
     TriggerHandler: Fn(T),
@@ -754,11 +750,7 @@ where
     }
 }
 
-trait SumFilter {
-    fn sum(self);
-}
-
-impl<'a, T, TriggerHandler, Dispatcher> SumFilter for FilterParams<'a, T, TriggerHandler, Dispatcher>
+impl<'a, T, TriggerHandler, Dispatcher> FilterParams<'a, T, TriggerHandler, Dispatcher>
 where
     T: Display + Add<Output = T> + Sub<Output = T> + PartialOrd + PartialEq + Copy + Default,
     TriggerHandler: Fn(T),
@@ -769,11 +761,7 @@ where
     }
 }
 
-trait MultiplyFilter {
-    fn multiply(self);
-}
-
-impl<'a, T, TriggerHandler, Dispatcher> MultiplyFilter for FilterParams<'a, T, TriggerHandler, Dispatcher>
+impl<'a, T, TriggerHandler, Dispatcher> FilterParams<'a, T, TriggerHandler, Dispatcher>
 where
     T: Display + Mul<Output = T> + Div<Output = T> + PartialOrd + PartialEq + Copy + Default,
     TriggerHandler: Fn(T),
