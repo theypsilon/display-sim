@@ -500,14 +500,17 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         self.update_output_filter_source_colors();
         self.update_output_filter_curvature();
         self.update_output_filter_layering_kind();
+        
+        let output = &mut self.res.output;
+        let filters = &self.res.filters;
 
-        let (ambient_strength, pixel_have_depth) = match self.res.filters.pixels_geometry_kind {
+        let (ambient_strength, pixel_have_depth) = match filters.pixels_geometry_kind {
             PixelsGeometryKind::Squares => (1.0, false),
             PixelsGeometryKind::Cubes => (0.5, true),
         };
-        self.res.output.ambient_strength = ambient_strength;
-        self.res.output.pixel_have_depth = pixel_have_depth;
-        self.res.output.height_modifier_factor = 1.0 - self.res.filters.pixel_shadow_height;
+        output.ambient_strength = ambient_strength;
+        output.pixel_have_depth = pixel_have_depth;
+        output.height_modifier_factor = 1.0 - filters.pixel_shadow_height;
 
         self.update_output_pixel_scale_gap_offset();
     }
