@@ -14,8 +14,8 @@ use render::rgb_render::RgbRender;
 use render::simulation_draw::SimulationDrawer;
 use render::simulation_render_state::{Materials, VideoInputMaterials};
 use render::stubs::{WebGl2RenderingContext, WebResult};
-use std::time::SystemTime;
 use std::fmt::Display;
+use std::time::SystemTime;
 
 pub struct FakeVideoInput(VideoInputResources, VideoInputMaterials);
 

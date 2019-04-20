@@ -12,8 +12,8 @@ use render::simulation_draw::SimulationDrawer;
 use render::simulation_render_state::{Materials, VideoInputMaterials};
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
-use std::time::SystemTime;
 use std::fmt::Display;
+use std::time::SystemTime;
 
 pub fn main() {
     if let Err(e) = program() {

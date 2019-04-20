@@ -4,8 +4,8 @@ use core::internal_resolution::InternalResolution;
 use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, ScreenLayeringKind, TextureInterpolation};
 use js_sys::{Array, Float32Array};
 use std::cell::RefCell;
-use web_error::{WebError, WebResult};
 use std::fmt::Display;
+use web_error::{WebError, WebResult};
 
 pub struct WebEventDispatcher {
     error: RefCell<Option<WebError>>,
@@ -158,27 +158,27 @@ impl AppEventDispatcher for WebEventDispatcher {
     }
 
     fn dispatch_change_pixel_speed(&self, speed: f32) {
+        let speed = self.format_speed(speed);
         if self.are_extra_messages_enabled() {
-            let speed = (speed * 1000.0).round() / 1000.0;
-            self.dispatch_top_message(&format!("Pixel manipulation speed: {}x", speed));
+            self.dispatch_top_message(&format!("Pixel manipulation speed: {}", speed));
         }
-        self.dispatch_internal_speed("app-event.change_pixel_speed", speed);
+        self.catch_error(dispatch_event_with("app-event.change_pixel_speed", &speed.into()));
     }
 
     fn dispatch_change_turning_speed(&self, speed: f32) {
+        let speed = self.format_speed(speed);
         if self.are_extra_messages_enabled() {
-            let speed = (speed * 1000.0).round() / 1000.0;
-            self.dispatch_top_message(&format!("Turning camera speed: {}x", speed));
+            self.dispatch_top_message(&format!("Turning camera speed: {}", speed));
         }
-        self.dispatch_internal_speed("app-event.change_turning_speed", speed);
+        self.catch_error(dispatch_event_with("app-event.change_turning_speed", &speed.into()));
     }
 
     fn dispatch_change_movement_speed(&self, speed: f32) {
+        let speed = self.format_speed(speed);
         if self.are_extra_messages_enabled() {
-            let speed = (speed * 1000.0).round() / 1000.0;
-            self.dispatch_top_message(&format!("Translation camera speed: {}x", speed));
+            self.dispatch_top_message(&format!("Translation camera speed: {}", speed));
         }
-        self.dispatch_internal_speed("app-event.change_movement_speed", speed);
+        self.catch_error(dispatch_event_with("app-event.change_movement_speed", &speed.into()));
     }
 
     fn dispatch_exiting_session(&self) {
@@ -228,10 +228,9 @@ impl AppEventDispatcher for WebEventDispatcher {
 }
 
 impl WebEventDispatcher {
-    fn dispatch_internal_speed(&self, id: &str, speed: f32) {
-        self.catch_error(dispatch_event_with(id, &format!("x{}", format!("{:.03}", speed)).into()));
+    fn format_speed(&self, speed: f32) -> String {
+        format!("x{}", (speed * 1000.0).round() / 1000.0)
     }
-
     fn dispatch_change_color(&self, id: &str, color: i32) {
         self.catch_error(dispatch_event_with(id, &format!("#{:X}", color).into()));
     }
