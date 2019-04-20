@@ -109,36 +109,6 @@ impl Resources {
     }
 }
 
-fn calculate_far_away_position(video_input: &VideoInputResources) -> f32 {
-    let width = video_input.background_size.width as f32;
-    let height = video_input.background_size.height as f32;
-    let viewport_width_scaled = (video_input.viewport_size.width as f32 / video_input.pixel_width) as u32;
-    let width_ratio = viewport_width_scaled as f32 / width;
-    let height_ratio = video_input.viewport_size.height as f32 / height;
-    let is_height_bounded = width_ratio > height_ratio;
-    let mut bound_ratio = if is_height_bounded { height_ratio } else { width_ratio };
-    let mut resolution = if is_height_bounded {
-        video_input.viewport_size.height
-    } else {
-        viewport_width_scaled
-    } as i32;
-    while bound_ratio < 1.0 {
-        bound_ratio *= 2.0;
-        resolution *= 2;
-    }
-    if !video_input.stretch {
-        let mut divisor = bound_ratio as i32;
-        while divisor > 1 {
-            if resolution % divisor == 0 {
-                break;
-            }
-            divisor -= 1;
-        }
-        bound_ratio = divisor as f32;
-    }
-    0.5 + (resolution as f32 / bound_ratio) * if is_height_bounded { 1.2076 } else { 0.68 * video_input.pixel_width }
-}
-
 #[derive(Default)]
 pub struct SimulationTimers {
     pub frame_count: u32,
@@ -467,4 +437,34 @@ impl Input {
         input.now = now;
         input
     }
+}
+
+fn calculate_far_away_position(video_input: &VideoInputResources) -> f32 {
+    let width = video_input.background_size.width as f32;
+    let height = video_input.background_size.height as f32;
+    let viewport_width_scaled = (video_input.viewport_size.width as f32 / video_input.pixel_width) as u32;
+    let width_ratio = viewport_width_scaled as f32 / width;
+    let height_ratio = video_input.viewport_size.height as f32 / height;
+    let is_height_bounded = width_ratio > height_ratio;
+    let mut bound_ratio = if is_height_bounded { height_ratio } else { width_ratio };
+    let mut resolution = if is_height_bounded {
+        video_input.viewport_size.height
+    } else {
+        viewport_width_scaled
+    } as i32;
+    while bound_ratio < 1.0 {
+        bound_ratio *= 2.0;
+        resolution *= 2;
+    }
+    if !video_input.stretch {
+        let mut divisor = bound_ratio as i32;
+        while divisor > 1 {
+            if resolution % divisor == 0 {
+                break;
+            }
+            divisor -= 1;
+        }
+        bound_ratio = divisor as f32;
+    }
+    0.5 + (resolution as f32 / bound_ratio) * if is_height_bounded { 1.2076 } else { 0.68 * video_input.pixel_width }
 }
