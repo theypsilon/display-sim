@@ -201,22 +201,22 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
 
     fn update_filter_options_with_cursors(&mut self) {
         let ctx = &self.ctx;
-        let next_texture_interpolation = self.input.next_texture_interpolation.to_is_just_pressed();
-        FilterParams::new(ctx, &mut self.res.filters.texture_interpolation, next_texture_interpolation)
+        let filters = &mut self.res.filters;
+        let input = &self.input;
+
+        FilterParams::new(ctx, &mut filters.texture_interpolation, input.next_texture_interpolation.to_is_just_pressed())
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_texture_interpolation(x))
             .process_options();
-        let next_screen_curvature_kind = self.input.next_screen_curvature_type.to_is_just_pressed();
-        FilterParams::new(ctx, &mut self.res.filters.screen_curvature_kind, next_screen_curvature_kind)
+        FilterParams::new(ctx, &mut filters.screen_curvature_kind, input.next_screen_curvature_type.to_is_just_pressed())
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_screen_curvature(x))
             .process_options();
-        FilterParams::new(ctx, &mut self.res.filters.layering_kind, self.input.next_layering_kind.to_is_just_pressed())
+        FilterParams::new(ctx, &mut filters.layering_kind, input.next_layering_kind.to_is_just_pressed())
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_screen_layering_type(x))
             .process_options();
-        let next_color_representation_kind = self.input.next_color_representation_kind.to_is_just_pressed();
-        FilterParams::new(ctx, &mut self.res.filters.color_channels, next_color_representation_kind)
+        FilterParams::new(ctx, &mut filters.color_channels, input.next_color_representation_kind.to_is_just_pressed())
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_color_representation(x))
             .process_options();
-        FilterParams::new(ctx, &mut filters.internal_resolution, self.input.next_internal_resolution.to_is_just_pressed())
+        FilterParams::new(ctx, &mut filters.internal_resolution, input.next_internal_resolution.to_is_just_pressed())
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_internal_resolution(x))
             .process_options();
     }
