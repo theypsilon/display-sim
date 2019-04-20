@@ -159,7 +159,6 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         self.update_filter_blur();
         self.update_filter_lpp();
         self.update_filter_pixel_shape();
-        self.update_filter_internal_resolution();
         self.update_filter_misc_enums();
     }
 
@@ -217,6 +216,9 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         FilterParams::new(ctx, &mut self.res.filters.color_channels, next_color_representation_kind)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_color_representation(x))
             .process_options();
+        FilterParams::new(ctx, &mut filters.internal_resolution, self.input.next_internal_resolution.to_is_just_pressed())
+            .set_trigger_handler(|x| ctx.dispatcher.dispatch_internal_resolution(x))
+            .process_options();
     }
 
     // lines per pixel
@@ -229,15 +231,6 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             .set_max(20)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_lines_per_pixel(x))
             .sum();
-    }
-
-    fn update_filter_internal_resolution(&mut self) {
-        let ctx = &self.ctx;
-        let filters = &mut self.res.filters;
-
-        FilterParams::new(ctx, &mut filters.internal_resolution, self.input.next_internal_resolution.to_is_just_pressed())
-            .set_trigger_handler(|x| ctx.dispatcher.dispatch_internal_resolution(x))
-            .process_options();
     }
 
     fn update_filter_pixel_shape(&mut self) {
