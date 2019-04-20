@@ -8,6 +8,7 @@ pub mod action_bindings;
 pub mod app_events;
 pub mod boolean_button;
 pub mod camera;
+mod filter_params;
 pub mod general_types;
 pub mod internal_resolution;
 pub mod pixels_shadow;
