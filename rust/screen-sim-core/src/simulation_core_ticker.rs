@@ -159,7 +159,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         self.update_filter_blur();
         self.update_filter_lpp();
         self.update_filter_pixel_shape();
-        self.update_filter_misc_enums();
+        self.update_filter_options_with_cursors();
     }
 
     fn update_filter_source_colors(&mut self) {
@@ -199,7 +199,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             .sum();
     }
 
-    fn update_filter_misc_enums(&mut self) {
+    fn update_filter_options_with_cursors(&mut self) {
         let ctx = &self.ctx;
         let next_texture_interpolation = self.input.next_texture_interpolation.to_is_just_pressed();
         FilterParams::new(ctx, &mut self.res.filters.texture_interpolation, next_texture_interpolation)
