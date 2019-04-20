@@ -207,39 +207,30 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
 
     fn update_filter_misc_enums(&mut self) {
         let ctx = &self.ctx;
-        FilterParams::new(
-            ctx,
-            &mut self.res.filters.texture_interpolation,
-            self.input.next_texture_interpolation.to_is_just_pressed(),
-        )
-        .set_trigger_handler(|x| ctx.dispatcher.dispatch_texture_interpolation(x))
-        .iterate_variant();
-        FilterParams::new(
-            ctx,
-            &mut self.res.filters.screen_curvature_kind,
-            self.input.next_screen_curvature_type.to_is_just_pressed(),
-        )
-        .set_trigger_handler(|x| {
-            ctx.dispatcher.dispatch_top_message(&format!("Screen curvature: {}.", x));
-            ctx.dispatcher.dispatch_screen_curvature(x);
-        })
-        .iterate_variant();
+        let next_texture_interpolation = self.input.next_texture_interpolation.to_is_just_pressed();
+        FilterParams::new(ctx, &mut self.res.filters.texture_interpolation, next_texture_interpolation)
+            .set_trigger_handler(|x| ctx.dispatcher.dispatch_texture_interpolation(x))
+            .iterate_variant();
+        let next_texture_interpolation = self.input.next_screen_curvature_type.to_is_just_pressed();
+        FilterParams::new(ctx, &mut self.res.filters.screen_curvature_kind, next_screen_curvature_kind)
+            .set_trigger_handler(|x| {
+                ctx.dispatcher.dispatch_top_message(&format!("Screen curvature: {}.", x));
+                ctx.dispatcher.dispatch_screen_curvature(x);
+            })
+            .iterate_variant();
         FilterParams::new(ctx, &mut self.res.filters.layering_kind, self.input.next_layering_kind.to_is_just_pressed())
             .set_trigger_handler(|x| {
                 ctx.dispatcher.dispatch_top_message(&format!("Layering kind: {}.", x));
                 ctx.dispatcher.dispatch_screen_layering_type(x);
             })
             .iterate_variant();
-        FilterParams::new(
-            ctx,
-            &mut self.res.filters.color_channels,
-            self.input.next_color_representation_kind.to_is_just_pressed(),
-        )
-        .set_trigger_handler(|x| {
-            ctx.dispatcher.dispatch_top_message(&format!("Pixel color representation: {}.", x));
-            ctx.dispatcher.dispatch_color_representation(x);
-        })
-        .iterate_variant();
+        let next_color_representation_kind = self.input.next_color_representation_kind.to_is_just_pressed();
+        FilterParams::new(ctx, &mut self.res.filters.color_channels, next_color_representation_kind)
+            .set_trigger_handler(|x| {
+                ctx.dispatcher.dispatch_top_message(&format!("Pixel color representation: {}.", x));
+                ctx.dispatcher.dispatch_color_representation(x);
+            })
+            .iterate_variant();
     }
 
     // lines per pixel
