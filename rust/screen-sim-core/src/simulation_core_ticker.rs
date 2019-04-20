@@ -8,6 +8,8 @@ use crate::simulation_core_state::{
     PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
 };
 use derive_new::new;
+use enum_len_trait::EnumLen;
+use num_traits::{FromPrimitive, ToPrimitive};
 use std::cmp::{PartialEq, PartialOrd};
 use std::fmt::Display;
 use std::ops::{Add, Div, Mul, Sub};
@@ -155,27 +157,24 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             self.ctx.dispatcher.dispatch_top_message("All filter options have been reset.");
             return;
         }
-        self.update_filter_curvature();
         self.update_filter_source_colors();
         self.update_filter_blur();
         self.update_filter_lpp();
         self.update_filter_pixel_shape();
-        self.update_filter_layering_kind();
-        self.update_filter_color_representation();
         self.update_filter_internal_resolution();
-        self.update_filter_texture_interpolation();
+        self.update_filter_misc_enums();
     }
 
     fn update_filter_source_colors(&mut self) {
         let ctx = &self.ctx;
-        FilterScalarSystem::new(ctx, &mut self.res.filters.extra_bright, self.input.bright.clone())
+        FilterParams::new(ctx, &mut self.res.filters.extra_bright, self.input.bright.clone())
             .set_progression(0.01 * self.dt * self.res.filters.change_speed)
             .set_event_value(read_event_value!(self, PixelBrighttness, PIXEL_BRIGHTNESS))
             .set_min(-1.0)
             .set_max(1.0)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_pixel_brightness(x))
             .sum();
-        FilterScalarSystem::new(ctx, &mut self.res.filters.extra_contrast, self.input.contrast.clone())
+        FilterParams::new(ctx, &mut self.res.filters.extra_contrast, self.input.contrast.clone())
             .set_progression(0.01 * self.dt * self.res.filters.change_speed)
             .set_event_value(read_event_value!(self, PixelContrast, PIXEL_CONTRAST))
             .set_min(0.0)
@@ -194,7 +193,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
 
     fn update_filter_blur(&mut self) {
         let ctx = &self.ctx;
-        FilterScalarSystem::new(ctx, &mut self.res.filters.blur_passes, self.input.blur.to_is_just_pressed())
+        FilterParams::new(ctx, &mut self.res.filters.blur_passes, self.input.blur.to_is_just_pressed())
             .set_progression(1)
             .set_event_value(read_event_value!(self, BlurLevel, BLUR_LEVEL))
             .set_min(0)
@@ -206,10 +205,47 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             .sum();
     }
 
+    fn update_filter_misc_enums(&mut self) {
+        let ctx = &self.ctx;
+        FilterParams::new(
+            ctx,
+            &mut self.res.filters.texture_interpolation,
+            self.input.next_texture_interpolation.to_is_just_pressed(),
+        )
+        .set_trigger_handler(|x| ctx.dispatcher.dispatch_texture_interpolation(x))
+        .iterate_variant();
+        FilterParams::new(
+            ctx,
+            &mut self.res.filters.screen_curvature_kind,
+            self.input.next_screen_curvature_type.to_is_just_pressed(),
+        )
+        .set_trigger_handler(|x| {
+            ctx.dispatcher.dispatch_top_message(&format!("Screen curvature: {}.", x));
+            ctx.dispatcher.dispatch_screen_curvature(x);
+        })
+        .iterate_variant();
+        FilterParams::new(ctx, &mut self.res.filters.layering_kind, self.input.next_layering_kind.to_is_just_pressed())
+            .set_trigger_handler(|x| {
+                ctx.dispatcher.dispatch_top_message(&format!("Layering kind: {}.", x));
+                ctx.dispatcher.dispatch_screen_layering_type(x);
+            })
+            .iterate_variant();
+        FilterParams::new(
+            ctx,
+            &mut self.res.filters.color_channels,
+            self.input.next_color_representation_kind.to_is_just_pressed(),
+        )
+        .set_trigger_handler(|x| {
+            ctx.dispatcher.dispatch_top_message(&format!("Pixel color representation: {}.", x));
+            ctx.dispatcher.dispatch_color_representation(x);
+        })
+        .iterate_variant();
+    }
+
     // lines per pixel
     fn update_filter_lpp(&mut self) {
         let ctx = &self.ctx;
-        FilterScalarSystem::new(ctx, &mut self.res.filters.lines_per_pixel, self.input.lpp.to_is_just_pressed())
+        FilterParams::new(ctx, &mut self.res.filters.lines_per_pixel, self.input.lpp.to_is_just_pressed())
             .set_progression(1)
             .set_event_value(read_event_value!(self, LinersPerPixel, LINES_PER_PIXEL))
             .set_min(1)
@@ -219,48 +255,6 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
                 ctx.dispatcher.dispatch_change_lines_per_pixel(x)
             })
             .sum();
-    }
-
-    fn update_filter_curvature(&mut self) {
-        if self.input.next_screen_curvature_type.any_just_pressed() {
-            if self.input.next_screen_curvature_type.increase.is_just_pressed() {
-                self.res.filters.screen_curvature_kind.next_enum_variant();
-            } else {
-                self.res.filters.screen_curvature_kind.previous_enum_variant();
-            }
-            self.ctx
-                .dispatcher
-                .dispatch_top_message(&format!("Screen curvature: {}.", self.res.filters.screen_curvature_kind));
-            self.ctx.dispatcher.dispatch_screen_curvature(self.res.filters.screen_curvature_kind);
-        }
-    }
-
-    fn update_filter_layering_kind(&mut self) {
-        if self.input.next_layering_kind.any_just_pressed() {
-            if self.input.next_layering_kind.increase.is_just_pressed() {
-                self.res.filters.layering_kind.next_enum_variant();
-            } else {
-                self.res.filters.layering_kind.previous_enum_variant();
-            }
-            self.ctx
-                .dispatcher
-                .dispatch_top_message(&format!("Layering kind: {}.", self.res.filters.layering_kind));
-            self.ctx.dispatcher.dispatch_screen_layering_type(self.res.filters.layering_kind);
-        }
-    }
-
-    fn update_filter_color_representation(&mut self) {
-        if self.input.next_color_representation_kind.any_just_pressed() {
-            if self.input.next_color_representation_kind.increase.is_just_pressed() {
-                self.res.filters.color_channels.next_enum_variant();
-            } else {
-                self.res.filters.color_channels.previous_enum_variant();
-            }
-            self.ctx
-                .dispatcher
-                .dispatch_top_message(&format!("Pixel color representation: {}.", self.res.filters.color_channels));
-            self.ctx.dispatcher.dispatch_color_representation(self.res.filters.color_channels);
-        }
     }
 
     fn update_filter_internal_resolution(&mut self) {
@@ -281,30 +275,18 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         }
     }
 
-    fn update_filter_texture_interpolation(&mut self) {
-        if self.input.next_texture_interpolation.any_just_pressed() {
-            if self.input.next_texture_interpolation.increase.is_just_pressed() {
-                self.res.filters.texture_interpolation.next_enum_variant();
-            }
-            if self.input.next_texture_interpolation.decrease.is_just_pressed() {
-                self.res.filters.texture_interpolation.previous_enum_variant();
-            }
-            self.ctx.dispatcher.dispatch_texture_interpolation(self.res.filters.texture_interpolation);
-        }
-    }
-
     fn update_filter_pixel_shape(&mut self) {
-        if self.input.next_pixel_geometry_kind.any_just_pressed() {
-            if self.input.next_pixel_geometry_kind.increase.is_just_pressed() {
-                self.res.filters.pixels_geometry_kind.next_enum_variant();
-            } else {
-                self.res.filters.pixels_geometry_kind.previous_enum_variant();
-            }
-            self.ctx
-                .dispatcher
-                .dispatch_top_message(&format!("Pixel geometry: {}.", self.res.filters.pixels_geometry_kind));
-            self.ctx.dispatcher.dispatch_pixel_geometry(self.res.filters.pixels_geometry_kind);
-        }
+        let ctx = &self.ctx;
+        FilterParams::new(
+            ctx,
+            &mut self.res.filters.pixels_geometry_kind,
+            self.input.next_pixel_geometry_kind.to_is_just_pressed(),
+        )
+        .set_trigger_handler(|x| {
+            ctx.dispatcher.dispatch_top_message(&format!("Pixel geometry: {}.", x));
+            ctx.dispatcher.dispatch_pixel_geometry(x);
+        })
+        .iterate_variant();
 
         if self.input.next_pixels_shadow_shape_kind.any_just_pressed() {
             if self.input.next_pixels_shadow_shape_kind.increase.is_just_pressed() {
@@ -324,8 +306,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             self.ctx.dispatcher.dispatch_pixel_shadow_shape(self.res.filters.pixel_shadow_shape_kind);
         }
 
-        let ctx = &self.ctx;
-        FilterScalarSystem::new(ctx, &mut self.res.filters.pixel_shadow_height, self.input.next_pixels_shadow_height.clone())
+        FilterParams::new(ctx, &mut self.res.filters.pixel_shadow_height, self.input.next_pixels_shadow_height.clone())
             .set_progression(self.dt * 0.3)
             .set_event_value(read_event_value!(self, PixelShadowHeight, PIXEL_SHADOW_HEIGHT))
             .set_min(0.0)
@@ -333,25 +314,25 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_pixel_shadow_height(x))
             .sum();
         let pixel_velocity = self.dt * self.res.filters.change_speed;
-        FilterScalarSystem::new(ctx, &mut self.res.filters.cur_pixel_vertical_gap, self.input.pixel_vertical_gap.clone())
+        FilterParams::new(ctx, &mut self.res.filters.cur_pixel_vertical_gap, self.input.pixel_vertical_gap.clone())
             .set_progression(pixel_velocity * 0.00125)
             .set_event_value(read_event_value!(self, PixelVerticalGap, PIXEL_VERTICAL_GAP))
             .set_min(0.0)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_pixel_vertical_gap(x))
             .sum();
-        FilterScalarSystem::new(ctx, &mut self.res.filters.cur_pixel_horizontal_gap, self.input.pixel_horizontal_gap.clone())
+        FilterParams::new(ctx, &mut self.res.filters.cur_pixel_horizontal_gap, self.input.pixel_horizontal_gap.clone())
             .set_progression(pixel_velocity * 0.00125)
             .set_event_value(read_event_value!(self, PixelHorizontalGap, PIXEL_HORIZONTAL_GAP))
             .set_min(0.0)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_pixel_horizontal_gap(x))
             .sum();
-        FilterScalarSystem::new(ctx, &mut self.res.filters.cur_pixel_width, self.input.pixel_width.clone())
+        FilterParams::new(ctx, &mut self.res.filters.cur_pixel_width, self.input.pixel_width.clone())
             .set_progression(pixel_velocity * 0.005)
             .set_event_value(read_event_value!(self, PixelWidth, PIXEL_WIDTH))
             .set_min(0.0)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_pixel_width(x))
             .sum();
-        FilterScalarSystem::new(ctx, &mut self.res.filters.cur_pixel_spread, self.input.pixel_spread.clone())
+        FilterParams::new(ctx, &mut self.res.filters.cur_pixel_spread, self.input.pixel_spread.clone())
             .set_progression(pixel_velocity * 0.005)
             .set_event_value(read_event_value!(self, PixelSpread, PIXEL_SPREAD))
             .set_min(0.0)
@@ -361,7 +342,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
 
     fn update_speeds(&mut self) {
         let ctx = &self.ctx;
-        FilterScalarSystem::new(ctx, &mut self.res.camera.turning_speed, self.input.turn_speed.to_is_just_pressed())
+        FilterParams::new(ctx, &mut self.res.camera.turning_speed, self.input.turn_speed.to_is_just_pressed())
             .set_progression(2.0)
             .set_min(0.007_812_5 * TURNING_BASE_SPEED)
             .set_max(16_384.0 * TURNING_BASE_SPEED)
@@ -371,7 +352,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
                 ctx.dispatcher.dispatch_change_turning_speed(x / TURNING_BASE_SPEED);
             })
             .multiply();
-        FilterScalarSystem::new(ctx, &mut self.res.filters.change_speed, self.input.filter_speed.to_is_just_pressed())
+        FilterParams::new(ctx, &mut self.res.filters.change_speed, self.input.filter_speed.to_is_just_pressed())
             .set_progression(2.0)
             .set_min(0.007_812_5 * PIXEL_MANIPULATION_BASE_SPEED)
             .set_max(16_384.0 * PIXEL_MANIPULATION_BASE_SPEED)
@@ -381,7 +362,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
                 ctx.dispatcher.dispatch_change_pixel_speed(x / PIXEL_MANIPULATION_BASE_SPEED);
             })
             .multiply();
-        FilterScalarSystem::new(ctx, &mut self.res.camera.turning_speed, self.input.translation_speed.to_is_just_pressed())
+        FilterParams::new(ctx, &mut self.res.camera.turning_speed, self.input.translation_speed.to_is_just_pressed())
             .set_progression(2.0)
             .set_min(0.007_812_5 * TURNING_BASE_SPEED)
             .set_max(16_384.0 * TURNING_BASE_SPEED)
@@ -392,7 +373,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             })
             .multiply();
         let initial_movement_speed = self.res.initial_parameters.initial_movement_speed;
-        FilterScalarSystem::new(ctx, &mut self.res.camera.movement_speed, self.input.translation_speed.to_is_just_pressed())
+        FilterParams::new(ctx, &mut self.res.camera.movement_speed, self.input.translation_speed.to_is_just_pressed())
             .set_progression(2.0)
             .set_min(0.007_812_5 * initial_movement_speed)
             .set_max(16_384.0 * initial_movement_speed)
@@ -701,24 +682,24 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
     }
 }
 
-struct FilterScalarSystem<'a, T: Default, TriggerHandler: Fn(T), Dispatcher: AppEventDispatcher> {
+struct FilterParams<'a, T, TriggerHandler: Fn(T), Dispatcher: AppEventDispatcher> {
     var: &'a mut T,
     event_value: Option<T>,
     incdec: IncDec<bool>,
-    velocity: T,
+    velocity: Option<T>,
     min: Option<T>,
     max: Option<T>,
     ctx: &'a SimulationContext<Dispatcher>,
     trigger_handler: Option<TriggerHandler>,
 }
 
-impl<'a, T: Default, TriggerHandler: Fn(T), Dispatcher: AppEventDispatcher> FilterScalarSystem<'a, T, TriggerHandler, Dispatcher> {
+impl<'a, T, TriggerHandler: Fn(T), Dispatcher: AppEventDispatcher> FilterParams<'a, T, TriggerHandler, Dispatcher> {
     pub fn new(ctx: &'a SimulationContext<Dispatcher>, var: &'a mut T, incdec: IncDec<bool>) -> Self {
-        FilterScalarSystem {
+        FilterParams {
             ctx,
             var,
             incdec,
-            velocity: Default::default(),
+            velocity: None,
             event_value: None,
             min: None,
             max: None,
@@ -726,7 +707,7 @@ impl<'a, T: Default, TriggerHandler: Fn(T), Dispatcher: AppEventDispatcher> Filt
         }
     }
     pub fn set_progression(mut self, velocity: T) -> Self {
-        self.velocity = velocity;
+        self.velocity = Some(velocity);
         self
     }
     pub fn set_min(mut self, min: T) -> Self {
@@ -747,11 +728,39 @@ impl<'a, T: Default, TriggerHandler: Fn(T), Dispatcher: AppEventDispatcher> Filt
     }
 }
 
+trait EnumFilter {
+    fn iterate_variant(self);
+}
+
+impl<'a, T, TriggerHandler, Dispatcher> EnumFilter for FilterParams<'a, T, TriggerHandler, Dispatcher>
+where
+    T: Display + FromPrimitive + ToPrimitive + EnumLen + Copy,
+    TriggerHandler: Fn(T),
+    Dispatcher: AppEventDispatcher,
+{
+    fn iterate_variant(self) {
+        let mut changed = false;
+        if self.incdec.increase {
+            self.var.next_enum_variant();
+            changed = true;
+        }
+        if self.incdec.decrease {
+            self.var.previous_enum_variant();
+            changed = true;
+        }
+        if changed {
+            if let Some(ref handler) = self.trigger_handler {
+                handler(*self.var);
+            }
+        }
+    }
+}
+
 trait SumFilter {
     fn sum(self);
 }
 
-impl<'a, T, TriggerHandler, Dispatcher> SumFilter for FilterScalarSystem<'a, T, TriggerHandler, Dispatcher>
+impl<'a, T, TriggerHandler, Dispatcher> SumFilter for FilterParams<'a, T, TriggerHandler, Dispatcher>
 where
     T: Display + Add<Output = T> + Sub<Output = T> + PartialOrd + PartialEq + Copy + Default,
     TriggerHandler: Fn(T),
@@ -766,7 +775,7 @@ trait MultiplyFilter {
     fn multiply(self);
 }
 
-impl<'a, T, TriggerHandler, Dispatcher> MultiplyFilter for FilterScalarSystem<'a, T, TriggerHandler, Dispatcher>
+impl<'a, T, TriggerHandler, Dispatcher> MultiplyFilter for FilterParams<'a, T, TriggerHandler, Dispatcher>
 where
     T: Display + Mul<Output = T> + Div<Output = T> + PartialOrd + PartialEq + Copy + Default,
     TriggerHandler: Fn(T),
@@ -777,21 +786,19 @@ where
     }
 }
 
-fn operate_filter<T, TriggerHandler, Dispatcher>(
-    params: FilterScalarSystem<T, TriggerHandler, Dispatcher>,
-    inc_op: impl Fn(T, T) -> T,
-    dec_op: impl Fn(T, T) -> T,
-) where
+fn operate_filter<T, TriggerHandler, Dispatcher>(params: FilterParams<T, TriggerHandler, Dispatcher>, inc_op: impl Fn(T, T) -> T, dec_op: impl Fn(T, T) -> T)
+where
     T: Display + PartialOrd + PartialEq + Copy + Default,
     TriggerHandler: Fn(T),
     Dispatcher: AppEventDispatcher,
 {
     let last_value = *params.var;
+    let velocity = if let Some(velocity) = params.velocity { velocity } else { Default::default() };
     if params.incdec.increase {
-        *params.var = inc_op(*params.var, params.velocity);
+        *params.var = inc_op(*params.var, velocity);
     }
     if params.incdec.decrease {
-        *params.var = dec_op(*params.var, params.velocity);
+        *params.var = dec_op(*params.var, velocity);
     }
     if let Some(val) = params.event_value {
         *params.var = val;
