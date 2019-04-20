@@ -211,7 +211,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         FilterParams::new(ctx, &mut self.res.filters.texture_interpolation, next_texture_interpolation)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_texture_interpolation(x))
             .iterate_variant();
-        let next_texture_interpolation = self.input.next_screen_curvature_type.to_is_just_pressed();
+        let next_screen_curvature_kind = self.input.next_screen_curvature_type.to_is_just_pressed();
         FilterParams::new(ctx, &mut self.res.filters.screen_curvature_kind, next_screen_curvature_kind)
             .set_trigger_handler(|x| {
                 ctx.dispatcher.dispatch_top_message(&format!("Screen curvature: {}.", x));
@@ -737,6 +737,10 @@ where
         }
         if self.incdec.decrease {
             self.var.previous_enum_variant();
+            changed = true;
+        }
+        if let Some(val) = self.event_value {
+            *self.var = val;
             changed = true;
         }
         if changed {
