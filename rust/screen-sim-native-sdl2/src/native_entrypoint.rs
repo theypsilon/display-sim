@@ -160,7 +160,7 @@ impl AppEventDispatcher for NativeEventDispatcher {
     fn dispatch_pixel_geometry(&self, res: PixelsGeometryKind) {
         println!("pixel_geometry: {}", res);
     }
-    fn dispatch_pixel_shadow_shape(&self, res: usize) {
+    fn dispatch_pixel_shadow_shape(&self, res: isize) {
         println!("pixel_shadow_shape: {}", res);
     }
     fn dispatch_pixel_shadow_height(&self, res: f32) {

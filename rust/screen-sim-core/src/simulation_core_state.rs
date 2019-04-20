@@ -170,7 +170,7 @@ pub struct Filters {
     pub pixels_geometry_kind: PixelsGeometryKind,
     pub color_channels: ColorChannels,
     pub screen_curvature_kind: ScreenCurvatureKind,
-    pub pixel_shadow_shape_kind: usize,
+    pub pixel_shadow_shape: isize,
     pub layering_kind: ScreenLayeringKind,
 }
 
@@ -192,7 +192,7 @@ impl Filters {
             pixel_shadow_height: 0.25,
             change_speed,
             pixels_geometry_kind: PixelsGeometryKind::Squares,
-            pixel_shadow_shape_kind: 3,
+            pixel_shadow_shape: 3,
             color_channels: ColorChannels::Combined,
             screen_curvature_kind: ScreenCurvatureKind::Flat,
             layering_kind: ScreenLayeringKind::ShadowWithSolidBackground50,
@@ -488,7 +488,7 @@ pub struct Input {
     pub mouse_click: BooleanButton,
     pub blur: IncDec<BooleanButton>,
     pub lpp: IncDec<BooleanButton>,
-    pub next_pixels_shadow_shape_kind: IncDec<BooleanButton>,
+    pub next_pixels_shadow_shape: IncDec<BooleanButton>,
     pub next_pixels_shadow_height: IncDec<bool>,
     pub next_color_representation_kind: IncDec<BooleanButton>,
     pub next_pixel_geometry_kind: IncDec<BooleanButton>,

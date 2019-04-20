@@ -306,25 +306,18 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             self.ctx.dispatcher.dispatch_pixel_geometry(self.res.filters.pixels_geometry_kind);
         }
 
-        if self.input.next_pixels_shadow_shape_kind.any_just_pressed() {
-            if self.input.next_pixels_shadow_shape_kind.increase.is_just_pressed() {
-                self.res.filters.pixel_shadow_shape_kind += 1;
-                if self.res.filters.pixel_shadow_shape_kind >= SHADOWS_LEN {
-                    self.res.filters.pixel_shadow_shape_kind = 0;
-                }
-            } else {
-                if self.res.filters.pixel_shadow_shape_kind == 0 {
-                    self.res.filters.pixel_shadow_shape_kind = SHADOWS_LEN;
-                }
-                self.res.filters.pixel_shadow_shape_kind -= 1;
-            }
-            self.ctx
-                .dispatcher
-                .dispatch_top_message(&format!("Showing next pixel shadow: {}.", self.res.filters.pixel_shadow_shape_kind));
-            self.ctx.dispatcher.dispatch_pixel_shadow_shape(self.res.filters.pixel_shadow_shape_kind);
-        }
-
         let ctx = &self.ctx;
+        let input_next_pixels_shadow_shape = self.input.next_pixels_shadow_shape.to_is_just_pressed();
+        FilterScalarSystem::new(ctx, &mut self.res.filters.pixel_shadow_shape, input_next_pixels_shadow_shape)
+            .set_progression(1)
+            .set_min(0)
+            .set_max(SHADOWS_LEN - 1)
+            .set_reverse_overflow()
+            .set_trigger_handler(|x| {
+                ctx.dispatcher.dispatch_top_message(&format!("Showing next pixel shadow: {}.", x));
+                ctx.dispatcher.dispatch_pixel_shadow_shape(x);
+            })
+            .sum();
         FilterScalarSystem::new(ctx, &mut self.res.filters.pixel_shadow_height, self.input.next_pixels_shadow_height.clone())
             .set_progression(self.dt * 0.3)
             .set_event_value(read_event_value!(self, PixelShadowHeight, PIXEL_SHADOW_HEIGHT))
@@ -507,7 +500,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         self.ctx.dispatcher.dispatch_change_lines_per_pixel(self.res.filters.lines_per_pixel);
         self.ctx.dispatcher.dispatch_color_representation(self.res.filters.color_channels);
         self.ctx.dispatcher.dispatch_pixel_geometry(self.res.filters.pixels_geometry_kind);
-        self.ctx.dispatcher.dispatch_pixel_shadow_shape(self.res.filters.pixel_shadow_shape_kind);
+        self.ctx.dispatcher.dispatch_pixel_shadow_shape(self.res.filters.pixel_shadow_shape);
         self.ctx.dispatcher.dispatch_pixel_shadow_height(self.res.filters.pixel_shadow_height);
         self.ctx.dispatcher.dispatch_screen_layering_type(self.res.filters.layering_kind);
         self.ctx.dispatcher.dispatch_screen_curvature(self.res.filters.screen_curvature_kind);
@@ -710,6 +703,7 @@ struct FilterScalarSystem<'a, T: Default, TriggerHandler: Fn(T), Dispatcher: App
     max: Option<T>,
     ctx: &'a SimulationContext<Dispatcher>,
     trigger_handler: Option<TriggerHandler>,
+    reverse_overflow: bool,
 }
 
 impl<'a, T: Default, TriggerHandler: Fn(T), Dispatcher: AppEventDispatcher> FilterScalarSystem<'a, T, TriggerHandler, Dispatcher> {
@@ -723,6 +717,7 @@ impl<'a, T: Default, TriggerHandler: Fn(T), Dispatcher: AppEventDispatcher> Filt
             min: None,
             max: None,
             trigger_handler: None,
+            reverse_overflow: false,
         }
     }
     pub fn set_progression(mut self, velocity: T) -> Self {
@@ -743,6 +738,10 @@ impl<'a, T: Default, TriggerHandler: Fn(T), Dispatcher: AppEventDispatcher> Filt
     }
     pub fn set_trigger_handler(mut self, trigger_handler: TriggerHandler) -> Self {
         self.trigger_handler = Some(trigger_handler);
+        self
+    }
+    pub fn set_reverse_overflow(mut self) -> Self {
+        self.reverse_overflow = true;
         self
     }
 }
@@ -799,13 +798,21 @@ fn operate_filter<T, TriggerHandler, Dispatcher>(
     if last_value != *params.var {
         if let Some(min) = params.min {
             if *params.var < min {
-                *params.var = min;
+                *params.var = if params.reverse_overflow {
+                    params.max.expect("reverse_overflow wrongly configured.")
+                } else {
+                    min
+                };
                 params.ctx.dispatcher.dispatch_top_message(&format!("Minimum value is {}", min));
             }
         }
         if let Some(max) = params.max {
             if *params.var > max {
-                *params.var = max;
+                *params.var = if params.reverse_overflow {
+                    params.min.expect("reverse_overflow wrongly configured.")
+                } else {
+                    max
+                };
                 params.ctx.dispatcher.dispatch_top_message(&format!("Maximum value is {}", max));
             }
         }
