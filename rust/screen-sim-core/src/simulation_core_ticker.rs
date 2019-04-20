@@ -513,14 +513,17 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
     }
 
     fn update_output_filter_source_colors(&mut self) {
-        self.res.output.color_splits = match self.res.filters.color_channels {
+        let output = &mut self.res.output;
+        let filters = &self.res.filters;
+
+        output.color_splits = match filters.color_channels {
             ColorChannels::Combined => 1,
             _ => 3,
         };
-        self.res.output.light_color_background = get_3_f32color_from_int(self.res.filters.light_color);
-        for i in 0..self.res.output.color_splits {
-            let mut light_color = self.res.output.light_color_background;
-            match self.res.filters.color_channels {
+        output.light_color_background = get_3_f32color_from_int(filters.light_color);
+        for i in 0..output.color_splits {
+            let mut light_color = output.light_color_background;
+            match filters.color_channels {
                 ColorChannels::Combined => {}
                 _ => {
                     light_color[(i + 0) % 3] *= 1.0;
@@ -528,67 +531,73 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
                     light_color[(i + 2) % 3] = 0.0;
                 }
             }
-            self.res.output.light_color[i] = light_color;
+            output.light_color[i] = light_color;
         }
-        self.res.output.extra_light = get_3_f32color_from_int(self.res.filters.brightness_color);
-        for light in self.res.output.extra_light.iter_mut() {
-            *light *= self.res.filters.extra_bright;
+        output.extra_light = get_3_f32color_from_int(filters.brightness_color);
+        for light in output.extra_light.iter_mut() {
+            *light *= filters.extra_bright;
         }
     }
 
     fn update_output_filter_curvature(&mut self) {
-        self.res.output.screen_curvature_factor = match self.res.filters.screen_curvature_kind {
+        let output = &mut self.res.output;
+        let filters = &self.res.filters;
+
+        output.screen_curvature_factor = match filters.screen_curvature_kind {
             ScreenCurvatureKind::Curved1 => 0.15,
             ScreenCurvatureKind::Curved2 => 0.3,
             ScreenCurvatureKind::Curved3 => 0.45,
             _ => 0.0,
         };
 
-        if let ScreenCurvatureKind::Pulse = self.res.filters.screen_curvature_kind {
-            self.res.output.pixels_pulse += self.dt * 0.3;
+        if let ScreenCurvatureKind::Pulse = filters.screen_curvature_kind {
+            output.pixels_pulse += self.dt * 0.3;
         } else {
-            self.res.output.pixels_pulse = 0.0;
+            output.pixels_pulse = 0.0;
         }
     }
 
     fn update_output_filter_layering_kind(&mut self) {
+        let output = &mut self.res.output;
+        let filters = &self.res.filters;
+
         let mut solid_color_weight = 1.0;
-        match self.res.filters.layering_kind {
+        match filters.layering_kind {
             ScreenLayeringKind::ShadowOnly => {
-                self.res.output.showing_foreground = true;
-                self.res.output.showing_background = false;
+                output.showing_foreground = true;
+                output.showing_background = false;
             }
             ScreenLayeringKind::SolidOnly => {
-                self.res.output.showing_foreground = false;
-                self.res.output.showing_background = true;
+                output.showing_foreground = false;
+                output.showing_background = true;
             }
             ScreenLayeringKind::DiffuseOnly => {
-                self.res.output.showing_foreground = false;
-                self.res.output.showing_background = true;
+                output.showing_foreground = false;
+                output.showing_background = true;
             }
             ScreenLayeringKind::ShadowWithSolidBackground75 => {
-                self.res.output.showing_foreground = true;
-                self.res.output.showing_background = true;
+                output.showing_foreground = true;
+                output.showing_background = true;
                 solid_color_weight = 0.75;
             }
             ScreenLayeringKind::ShadowWithSolidBackground50 => {
-                self.res.output.showing_foreground = true;
-                self.res.output.showing_background = true;
+                output.showing_foreground = true;
+                output.showing_background = true;
                 solid_color_weight = 0.5;
             }
             ScreenLayeringKind::ShadowWithSolidBackground25 => {
-                self.res.output.showing_foreground = true;
-                self.res.output.showing_background = true;
+                output.showing_foreground = true;
+                output.showing_background = true;
                 solid_color_weight = 0.25;
             }
         };
 
         for i in 0..3 {
-            self.res.output.light_color_background[i] *= solid_color_weight;
+            output.light_color_background[i] *= solid_color_weight;
         }
 
-        self.res.output.is_background_diffuse = self.res.output.showing_foreground
-            || if let ScreenLayeringKind::DiffuseOnly = self.res.filters.layering_kind {
+        output.is_background_diffuse = output.showing_foreground
+            || if let ScreenLayeringKind::DiffuseOnly = filters.layering_kind {
                 true
             } else {
                 false
@@ -598,6 +607,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
     fn update_output_pixel_scale_gap_offset(&mut self) {
         let output = &mut self.res.output;
         let filters = &self.res.filters;
+
         output.pixel_spread = [(1.0 + filters.cur_pixel_spread) * filters.cur_pixel_width, 1.0 + filters.cur_pixel_spread];
         output.pixel_scale_base = [
             (filters.cur_pixel_vertical_gap + 1.0) / filters.cur_pixel_width,
