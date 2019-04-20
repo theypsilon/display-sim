@@ -181,21 +181,21 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             .set_min(-1.0)
             .set_max(1.0)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_pixel_brightness(x))
-            .sum();
+            .process_with_sums();
         FilterParams::new(ctx, &mut filters.extra_contrast, input.contrast.clone())
             .set_progression(0.01 * self.dt * filters.change_speed)
             .set_event_value(read_event_value!(self, PixelContrast, PIXEL_CONTRAST))
             .set_min(0.0)
             .set_max(20.0)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_pixel_contrast(x))
-            .sum();
+            .process_with_sums();
         FilterParams::new(ctx, &mut filters.blur_passes, input.blur.to_just_pressed())
             .set_progression(1)
             .set_event_value(read_event_value!(self, BlurLevel, BLUR_LEVEL))
             .set_min(0)
             .set_max(100)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_blur_level(x))
-            .sum();
+            .process_with_sums();
         FilterParams::new(ctx, &mut filters.texture_interpolation, input.next_texture_interpolation.to_just_pressed())
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_texture_interpolation(x))
             .process_options();
@@ -217,7 +217,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             .set_min(1)
             .set_max(20)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_lines_per_pixel(x))
-            .sum();
+            .process_with_sums();
 
         let pixel_velocity = self.dt * filters.change_speed;
         FilterParams::new(ctx, &mut filters.pixels_geometry_kind, input.next_pixel_geometry_kind.to_just_pressed())
@@ -232,55 +232,55 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             .set_min(0.0)
             .set_max(1.0)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_pixel_shadow_height(x))
-            .sum();
+            .process_with_sums();
         FilterParams::new(ctx, &mut filters.cur_pixel_vertical_gap, input.pixel_vertical_gap.clone())
             .set_progression(pixel_velocity * 0.00125)
             .set_event_value(read_event_value!(self, PixelVerticalGap, PIXEL_VERTICAL_GAP))
             .set_min(0.0)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_pixel_vertical_gap(x))
-            .sum();
+            .process_with_sums();
         FilterParams::new(ctx, &mut filters.cur_pixel_horizontal_gap, input.pixel_horizontal_gap.clone())
             .set_progression(pixel_velocity * 0.00125)
             .set_event_value(read_event_value!(self, PixelHorizontalGap, PIXEL_HORIZONTAL_GAP))
             .set_min(0.0)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_pixel_horizontal_gap(x))
-            .sum();
+            .process_with_sums();
         FilterParams::new(ctx, &mut filters.cur_pixel_width, input.pixel_width.clone())
             .set_progression(pixel_velocity * 0.005)
             .set_event_value(read_event_value!(self, PixelWidth, PIXEL_WIDTH))
             .set_min(0.0)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_pixel_width(x))
-            .sum();
+            .process_with_sums();
         FilterParams::new(ctx, &mut filters.cur_pixel_spread, input.pixel_spread.clone())
             .set_progression(pixel_velocity * 0.005)
             .set_event_value(read_event_value!(self, PixelSpread, PIXEL_SPREAD))
             .set_min(0.0)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_pixel_spread(x))
-            .sum();
+            .process_with_sums();
         FilterParams::new(ctx, &mut self.res.camera.turning_speed, input.turn_speed.to_just_pressed())
             .set_progression(2.0)
             .set_min(0.007_812_5 * TURNING_BASE_SPEED)
             .set_max(16_384.0 * TURNING_BASE_SPEED)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_turning_speed(x / TURNING_BASE_SPEED))
-            .multiply();
+            .process_with_multiplications();
         FilterParams::new(ctx, &mut filters.change_speed, input.filter_speed.to_just_pressed())
             .set_progression(2.0)
             .set_min(0.007_812_5 * PIXEL_MANIPULATION_BASE_SPEED)
             .set_max(16_384.0 * PIXEL_MANIPULATION_BASE_SPEED)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_pixel_speed(x / PIXEL_MANIPULATION_BASE_SPEED))
-            .multiply();
+            .process_with_multiplications();
         FilterParams::new(ctx, &mut self.res.camera.turning_speed, input.translation_speed.to_just_pressed())
             .set_progression(2.0)
             .set_min(0.007_812_5 * TURNING_BASE_SPEED)
             .set_max(16_384.0 * TURNING_BASE_SPEED)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_turning_speed(x / TURNING_BASE_SPEED))
-            .multiply();
+            .process_with_multiplications();
         FilterParams::new(ctx, &mut self.res.camera.movement_speed, input.translation_speed.to_just_pressed())
             .set_progression(2.0)
             .set_min(0.007_812_5 * initial_movement_speed)
             .set_max(16_384.0 * initial_movement_speed)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_movement_speed(x / initial_movement_speed))
-            .multiply();
+            .process_with_multiplications();
     }
 
     fn update_camera(&mut self) {
@@ -656,7 +656,7 @@ where
     TriggerHandler: Fn(T),
     Dispatcher: AppEventDispatcher,
 {
-    fn sum(self) {
+    fn process_with_sums(self) {
         operate_filter(self, |a, b| a + b, |a, b| a - b)
     }
 }
@@ -667,7 +667,7 @@ where
     TriggerHandler: Fn(T),
     Dispatcher: AppEventDispatcher,
 {
-    fn multiply(self) {
+    fn process_with_multiplications(self) {
         operate_filter(self, |a, b| a * b, |a, b| a / b)
     }
 }
