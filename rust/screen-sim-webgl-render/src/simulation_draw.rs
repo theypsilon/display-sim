@@ -64,7 +64,7 @@ impl<'a, T: AppEventDispatcher> SimulationDrawer<'a, T> {
                         }
                     }
                     self.materials.pixels_render.render(PixelsUniform {
-                        shadow_kind: self.res.filters.pixel_shadow_shape as usize,
+                        shadow_kind: self.res.filters.pixel_shadow_shape_kind,
                         geometry_kind: self.res.filters.pixels_geometry_kind,
                         view: view.as_slice(),
                         projection: projection.as_slice(),

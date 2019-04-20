@@ -84,8 +84,11 @@ impl AppEventDispatcher for WebEventDispatcher {
         self.catch_error(dispatch_event_with("app-event.pixel_geometry", &(pixels_geometry_kind.to_string()).into()));
     }
 
-    fn dispatch_pixel_shadow_shape(&self, pixel_shadow_shape: isize) {
-        self.catch_error(dispatch_event_with("app-event.pixel_shadow_shape", &(pixel_shadow_shape.to_string()).into()));
+    fn dispatch_pixel_shadow_shape(&self, pixel_shadow_shape_kind: usize) {
+        self.catch_error(dispatch_event_with(
+            "app-event.pixel_shadow_shape",
+            &(pixel_shadow_shape_kind.to_string()).into(),
+        ));
     }
 
     fn dispatch_pixel_shadow_height(&self, pixel_shadow_height: f32) {

@@ -93,7 +93,7 @@ impl AppEventDispatcher for FakeEventDispatcher {
     fn dispatch_change_lines_per_pixel(&self, _: usize) {}
     fn dispatch_color_representation(&self, _: ColorChannels) {}
     fn dispatch_pixel_geometry(&self, _: PixelsGeometryKind) {}
-    fn dispatch_pixel_shadow_shape(&self, _: isize) {}
+    fn dispatch_pixel_shadow_shape(&self, _: usize) {}
     fn dispatch_pixel_shadow_height(&self, _: f32) {}
     fn dispatch_screen_layering_type(&self, _: ScreenLayeringKind) {}
     fn dispatch_screen_curvature(&self, _: ScreenCurvatureKind) {}
