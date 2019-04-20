@@ -1,2 +1,3 @@
 · Improve texts.
 · X in the corner of info panel for closing.
+· Test app in mobile, it works on my new one.
