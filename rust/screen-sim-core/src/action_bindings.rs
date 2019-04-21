@@ -121,7 +121,7 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) -
             input.pixel_spread.reset();
         }
         "alt" => input.alt = pressed,
-        " " | "space" => input.space.input = pressed,
+        " " | "space" | "feature-close-panel" => input.space.input = pressed,
         "escape" | "esc" | "feature-quit" => input.esc.input = pressed,
         "f4" | "feature-capture-framebuffer" => input.screenshot.input = pressed,
         "reset-camera" => input.reset_position = pressed,

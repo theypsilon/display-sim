@@ -166,6 +166,7 @@
     </div>
     <div id="info-panel">
       <div id="fps-counter-holder"><div id="fps-counter"></div><span>FPS</span></div>
+      <input title="Hide this panel." id="feature-close-panel" class="btn btn-crt btn-green text-white" type="button" value="&times;" onclick="this.blur();">
       <h3>Sim Panel</h3>
       <div class="info-category">
         <div><h5>Camera Movements <div id="reset-camera" class="reset-button"><button class="activate-button" title="All camera parameters will be reset.">Reset Position</button></div></h5></div>
@@ -241,7 +242,7 @@
         </ul>
       </div>
       <div class="info-button">
-          <input title="Hotkey: F4" class="btn btn-crt btn-green text-white" type="button" id="feature-capture-framebuffer" value="Capture framebuffer">
+          <input title="Hotkey: F4" class="btn btn-crt btn-green text-white" type="button" id="feature-capture-framebuffer" value="Capture framebuffer" onclick="this.blur();">
       </div>
     </div>
   </div>

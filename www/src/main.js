@@ -63,6 +63,7 @@ const blurLevelDeo = document.getElementById('blur-level');
 const lppDeo = document.getElementById('lines-per-pixel');
 const featureQuitDeo = document.getElementById('feature-quit');
 const featureCaptureFramebufferDeo = document.getElementById('feature-capture-framebuffer');
+const featureClosePanelDeo = document.getElementById('feature-close-panel');
 
 const featureChangeColorRepresentationDeo = document.getElementById('feature-change-color-representation');
 const featureChangePixelGeometryDeo = document.getElementById('feature-change-pixel-geometry');
@@ -305,6 +306,7 @@ function customEventOnChange (deo, kind, parse) {
     featureChangeScreenCurvatureDeo,
     featureQuitDeo,
     featureCaptureFramebufferDeo,
+    featureClosePanelDeo,
     resetCameraDeo,
     resetSpeedsDeo,
     resetFiltersDeo
