@@ -2,9 +2,10 @@ use crate::app_events::AppEventDispatcher;
 use crate::camera::{CameraData, CameraDirection, CameraSystem};
 use crate::filter_params::FilterParams;
 use crate::general_types::get_3_f32color_from_int;
+use crate::pixels_shadow::ShadowShape;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::{
-    event_kind, ColorChannels, Filters, Input, InputEventValue, PixelsGeometryKind, Resources, ScreenCurvatureKind, ScreenLayeringKind,
+    event_kind, ColorChannels, Filters, Input, InputEventValue, PixelsGeometryKind, Resources, ScreenCurvatureKind, ScreenLayeringKind, TextureInterpolation,
     PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
 };
 use derive_new::new;
@@ -195,16 +196,16 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_blur_level(x))
             .process_with_sums();
         FilterParams::new(ctx, &mut filters.texture_interpolation, input.next_texture_interpolation.to_just_pressed())
-            .set_trigger_handler(|x| ctx.dispatcher.dispatch_texture_interpolation(x))
+            .set_trigger_handler(|x: &TextureInterpolation| ctx.dispatcher.dispatch_texture_interpolation(*x))
             .process_options();
         FilterParams::new(ctx, &mut filters.screen_curvature_kind, input.next_screen_curvature_type.to_just_pressed())
-            .set_trigger_handler(|x| ctx.dispatcher.dispatch_screen_curvature(x))
+            .set_trigger_handler(|x: &ScreenCurvatureKind| ctx.dispatcher.dispatch_screen_curvature(*x))
             .process_options();
         FilterParams::new(ctx, &mut filters.layering_kind, input.next_layering_kind.to_just_pressed())
-            .set_trigger_handler(|x| ctx.dispatcher.dispatch_screen_layering_type(x))
+            .set_trigger_handler(|x: &ScreenLayeringKind| ctx.dispatcher.dispatch_screen_layering_type(*x))
             .process_options();
         FilterParams::new(ctx, &mut filters.color_channels, input.next_color_representation_kind.to_just_pressed())
-            .set_trigger_handler(|x| ctx.dispatcher.dispatch_color_representation(x))
+            .set_trigger_handler(|x: &ColorChannels| ctx.dispatcher.dispatch_color_representation(*x))
             .process_options();
         FilterParams::new(ctx, &mut filters.internal_resolution, input.next_internal_resolution.to_just_pressed())
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_internal_resolution(x))
@@ -219,10 +220,10 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
 
         let pixel_velocity = self.dt * filters.change_speed;
         FilterParams::new(ctx, &mut filters.pixels_geometry_kind, input.next_pixel_geometry_kind.to_just_pressed())
-            .set_trigger_handler(|x| ctx.dispatcher.dispatch_pixel_geometry(x))
+            .set_trigger_handler(|x: &PixelsGeometryKind| ctx.dispatcher.dispatch_pixel_geometry(*x))
             .process_options();
         FilterParams::new(ctx, &mut filters.pixel_shadow_shape_kind, input.next_pixel_shadow_shape_kind.to_just_pressed())
-            .set_trigger_handler(|x| ctx.dispatcher.dispatch_pixel_shadow_shape(x))
+            .set_trigger_handler(|x: &ShadowShape| ctx.dispatcher.dispatch_pixel_shadow_shape(*x))
             .process_options();
         FilterParams::new(ctx, &mut filters.pixel_shadow_height, input.next_pixels_shadow_height.clone())
             .set_progression(self.dt * 0.3)
@@ -375,14 +376,14 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         dispatcher.dispatch_change_camera_movement_mode(self.res.camera.locked_mode);
         dispatcher.dispatch_change_blur_level(self.res.filters.blur_passes);
         dispatcher.dispatch_change_lines_per_pixel(self.res.filters.lines_per_pixel);
-        dispatcher.dispatch_color_representation(&self.res.filters.color_channels);
-        dispatcher.dispatch_pixel_geometry(&self.res.filters.pixels_geometry_kind);
-        dispatcher.dispatch_pixel_shadow_shape(&self.res.filters.pixel_shadow_shape_kind);
+        dispatcher.dispatch_color_representation(self.res.filters.color_channels);
+        dispatcher.dispatch_pixel_geometry(self.res.filters.pixels_geometry_kind);
+        dispatcher.dispatch_pixel_shadow_shape(self.res.filters.pixel_shadow_shape_kind);
         dispatcher.dispatch_pixel_shadow_height(self.res.filters.pixel_shadow_height);
-        dispatcher.dispatch_screen_layering_type(&self.res.filters.layering_kind);
-        dispatcher.dispatch_screen_curvature(&self.res.filters.screen_curvature_kind);
+        dispatcher.dispatch_screen_layering_type(self.res.filters.layering_kind);
+        dispatcher.dispatch_screen_curvature(self.res.filters.screen_curvature_kind);
         dispatcher.dispatch_internal_resolution(&self.res.filters.internal_resolution);
-        dispatcher.dispatch_texture_interpolation(&self.res.filters.texture_interpolation);
+        dispatcher.dispatch_texture_interpolation(self.res.filters.texture_interpolation);
         dispatcher.dispatch_change_pixel_speed(self.res.filters.change_speed / PIXEL_MANIPULATION_BASE_SPEED);
         dispatcher.dispatch_change_turning_speed(self.res.camera.turning_speed / TURNING_BASE_SPEED);
         dispatcher.dispatch_change_movement_speed(self.res.camera.movement_speed / self.res.initial_parameters.initial_movement_speed);

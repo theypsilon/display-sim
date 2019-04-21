@@ -36,7 +36,7 @@ impl IncDec<bool> {
 pub trait DefaultReset {
     fn reset(&mut self)
     where
-        Self: std::marker::Sized + std::default::Default,
+        Self: Default,
     {
         std::mem::swap(self, &mut Self::default());
     }

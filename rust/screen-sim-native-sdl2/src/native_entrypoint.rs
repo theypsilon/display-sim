@@ -157,28 +157,28 @@ impl AppEventDispatcher for NativeEventDispatcher {
     fn dispatch_change_lines_per_pixel(&self, res: usize) {
         println!("change_lines_per_pixel: {}", res);
     }
-    fn dispatch_color_representation(&self, res: &ColorChannels) {
+    fn dispatch_color_representation(&self, res: ColorChannels) {
         println!("color_representation: {}", res);
     }
-    fn dispatch_pixel_geometry(&self, res: &PixelsGeometryKind) {
+    fn dispatch_pixel_geometry(&self, res: PixelsGeometryKind) {
         println!("pixel_geometry: {}", res);
     }
-    fn dispatch_pixel_shadow_shape(&self, res: &ShadowShape) {
+    fn dispatch_pixel_shadow_shape(&self, res: ShadowShape) {
         println!("pixel_shadow_shape: {}", res);
     }
     fn dispatch_pixel_shadow_height(&self, res: f32) {
         println!("pixel_shadow_height: {}", res);
     }
-    fn dispatch_screen_layering_type(&self, res: &ScreenLayeringKind) {
+    fn dispatch_screen_layering_type(&self, res: ScreenLayeringKind) {
         println!("screen_layering_type: {}", res);
     }
-    fn dispatch_screen_curvature(&self, res: &ScreenCurvatureKind) {
+    fn dispatch_screen_curvature(&self, res: ScreenCurvatureKind) {
         println!("screen_curvature: {}", res);
     }
     fn dispatch_internal_resolution(&self, res: &InternalResolution) {
         println!("internal_resolution: {}", res);
     }
-    fn dispatch_texture_interpolation(&self, res: &TextureInterpolation) {
+    fn dispatch_texture_interpolation(&self, res: TextureInterpolation) {
         println!("texture_interpolation: {}", res);
     }
     fn dispatch_change_pixel_speed(&self, speed: f32) {
