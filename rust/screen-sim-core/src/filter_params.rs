@@ -3,7 +3,7 @@ use crate::general_types::{IncDec, OptionCursor};
 use crate::simulation_context::SimulationContext;
 use std::cmp::{PartialEq, PartialOrd};
 use std::fmt::Display;
-use std::ops::{Add, Div, Mul, Sub};
+use std::ops::{AddAssign, DivAssign, MulAssign, SubAssign};
 
 pub struct FilterParams<'a, T, U, TriggerHandler: Fn(U), Dispatcher: AppEventDispatcher> {
     ctx: &'a SimulationContext<Dispatcher>,
@@ -91,27 +91,27 @@ where
 
 impl<'a, T, TriggerHandler, Dispatcher> FilterParams<'a, T, T, TriggerHandler, Dispatcher>
 where
-    T: Display + Add<Output = T> + Sub<Output = T> + PartialOrd + PartialEq + Copy + Default,
+    T: Display + AddAssign + SubAssign + PartialOrd + PartialEq + Copy + Default,
     TriggerHandler: Fn(T),
     Dispatcher: AppEventDispatcher,
 {
     pub fn process_with_sums(self) {
-        operate_filter(self, |a, b| a + b, |a, b| a - b)
+        operate_filter(self, AddAssign::add_assign, SubAssign::sub_assign)
     }
 }
 
 impl<'a, T, TriggerHandler, Dispatcher> FilterParams<'a, T, T, TriggerHandler, Dispatcher>
 where
-    T: Display + Mul<Output = T> + Div<Output = T> + PartialOrd + PartialEq + Copy + Default,
+    T: Display + MulAssign + DivAssign + PartialOrd + PartialEq + Copy + Default,
     TriggerHandler: Fn(T),
     Dispatcher: AppEventDispatcher,
 {
     pub fn process_with_multiplications(self) {
-        operate_filter(self, |a, b| a * b, |a, b| a / b)
+        operate_filter(self, MulAssign::mul_assign, DivAssign::div_assign)
     }
 }
 
-fn operate_filter<T, TriggerHandler, Dispatcher>(params: FilterParams<T, T, TriggerHandler, Dispatcher>, inc_op: impl Fn(T, T) -> T, dec_op: impl Fn(T, T) -> T)
+fn operate_filter<T, TriggerHandler, Dispatcher>(params: FilterParams<T, T, TriggerHandler, Dispatcher>, inc_op: impl Fn(&mut T, T), dec_op: impl Fn(&mut T, T))
 where
     T: Display + PartialOrd + PartialEq + Copy + Default,
     TriggerHandler: Fn(T),
@@ -120,10 +120,10 @@ where
     let last_value = *params.var;
     let velocity = if let Some(velocity) = params.velocity { velocity } else { Default::default() };
     if params.incdec.increase {
-        *params.var = inc_op(*params.var, velocity);
+        inc_op(params.var, velocity);
     }
     if params.incdec.decrease {
-        *params.var = dec_op(*params.var, velocity);
+        dec_op(params.var, velocity);
     }
     if let Some(val) = params.event_value {
         *params.var = val;
