@@ -1,3 +1,2 @@
 · Improve texts.
 · Test app in mobile, it works on my new one.
-· Scroll bar on info panel when all content does not fit vertically.

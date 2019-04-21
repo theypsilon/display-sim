@@ -402,6 +402,7 @@ pub struct Input {
     pub shift: bool,
     pub alt: bool,
     pub input_focused: bool,
+    pub canvas_focused: bool,
     pub mouse_position_x: i32,
     pub mouse_position_y: i32,
     pub mouse_scroll_y: f32,

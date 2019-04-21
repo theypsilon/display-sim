@@ -37,6 +37,7 @@ const toggleInfoPanelClass = document.querySelectorAll('.toggle-info-panel');
 const freeModeControlsClas = document.querySelectorAll('.free-mode-only-controls');
 const simulationUiDeo = document.getElementById('simulation-ui');
 const infoPanelDeo = document.getElementById('info-panel');
+const infoPanelScrollAreaDeo = document.getElementById('info-panel-scroll-area');
 const fpsCounterDeo = document.getElementById('fps-counter');
 const lightColorDeo = document.getElementById('light-color');
 const brightnessColorDeo = document.getElementById('brightness-color');
@@ -539,7 +540,10 @@ async function prepareUi () {
     canvas.style.width = width;
     canvas.style.height = height;
 
-    infoPanelDeo.style.setProperty('max-height', height - 36);
+    infoPanelScrollAreaDeo.style.setProperty('max-height', height * 0.95);
+
+    canvas.onfocus = () => document.dispatchEvent(new KeyboardEvent('keydown', {key: 'canvas_focused'}));
+    canvas.onblur = () => document.dispatchEvent(new KeyboardEvent('keyup', {key: 'canvas_focused'}));
 
     document.body.appendChild(canvas);
 

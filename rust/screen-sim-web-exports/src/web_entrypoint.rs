@@ -174,7 +174,9 @@ fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WebResult<Vec<OwnedClosu
         Closure::wrap(Box::new(move |event: JsValue| {
             if let Ok(e) = event.dyn_into::<WheelEvent>() {
                 let mut input = state_owner.input.borrow_mut();
-                input.mouse_scroll_y = e.delta_y() as f32;
+                if input.canvas_focused {
+                    input.mouse_scroll_y = e.delta_y() as f32;
+                }
             }
         }))
     };
