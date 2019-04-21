@@ -542,8 +542,8 @@ async function prepareUi () {
 
     infoPanelScrollAreaDeo.style.setProperty('max-height', height * 0.95);
 
-    canvas.onfocus = () => document.dispatchEvent(new KeyboardEvent('keydown', {key: 'canvas_focused'}));
-    canvas.onblur = () => document.dispatchEvent(new KeyboardEvent('keyup', {key: 'canvas_focused'}));
+    canvas.onfocus = () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'canvas_focused' }));
+    canvas.onblur = () => document.dispatchEvent(new KeyboardEvent('keyup', { key: 'canvas_focused' }));
 
     document.body.appendChild(canvas);
 
