@@ -104,6 +104,8 @@ window.ondragover = event => {
     event.dataTransfer.dropEffect = 'none';
 };
 
+window.addEventListener('resize', fixCanvasSize, false);
+
 window.addEventListener('app-event.toggle_info_panel', () => {
     if (!getGlCanvasDeo()) {
         return;
@@ -491,9 +493,6 @@ async function prepareUi () {
     }());
 
     benchmark('image readed');
-    const dpi = window.devicePixelRatio;
-    const width = window.screen.width;
-    const height = window.screen.height;
 
     let scaleX = 1;
     let stretch = false;
@@ -515,7 +514,7 @@ async function prepareUi () {
         scaleX = (4 / 3) / (imageWidth / imageHeight);
         break;
     case scalingStretchToBothEdgesHtmlId:
-        scaleX = (width / height) / (imageWidth / imageHeight);
+        scaleX = (window.screen.width / window.screen.height) / (imageWidth / imageHeight);
         stretch = true;
         break;
     case scalingStretchToNearestEdgeHtmlId:
@@ -541,13 +540,7 @@ async function prepareUi () {
 
     canvas.id = glCanvasHtmlId;
 
-    canvas.width = Math.floor(width * dpi / 80) * 80;
-    canvas.height = Math.floor(height * dpi / 60) * 60;
-
-    canvas.style.width = width;
-    canvas.style.height = height;
-
-    infoPanelScrollAreaDeo.style.setProperty('max-height', height * 0.95);
+    fixCanvasSize(canvas);
 
     canvas.onfocus = () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'canvas_focused' }));
     canvas.onblur = () => document.dispatchEvent(new KeyboardEvent('keyup', { key: 'canvas_focused' }));
@@ -728,8 +721,14 @@ function makeVisibility () {
         hideUi: () => hideElement(uiDeo),
         showLoading: () => showElement(loadingDeo),
         hideLoading: () => hideElement(loadingDeo),
-        showSimulationUi: () => showElement(simulationUiDeo),
-        hideSimulationUi: () => hideElement(simulationUiDeo),
+        showSimulationUi: () => {
+            document.body.style.setProperty('overflow', 'hidden');
+            showElement(simulationUiDeo);
+        },
+        hideSimulationUi: () => {
+            document.body.style.removeProperty('overflow');
+            hideElement(simulationUiDeo);
+        },
         showInfoPanel: () => showElement(infoPanelDeo),
         hideInfoPanel: () => hideElement(infoPanelDeo),
         isInfoPanelVisible: () => isVisible(infoPanelDeo),
@@ -746,6 +745,24 @@ function makeVisibility () {
     function isVisible (element) {
         return element.classList.contains(displayNoneClassName) === false;
     }
+}
+
+function fixCanvasSize (canvas) {
+    canvas = canvas instanceof HTMLCanvasElement ? canvas : document.getElementById(glCanvasHtmlId);
+    if (!canvas) return;
+
+    const dpi = window.devicePixelRatio;
+    const width = window.screen.width;
+    const height = window.screen.height;
+    const zoom = Math.round(window.outerWidth / window.innerWidth * 100) / 100;
+
+    canvas.width = Math.floor(width * dpi / 80) * 80 / zoom;
+    canvas.height = Math.floor(height * dpi / 60) * 60 / zoom;
+
+    canvas.style.width = window.innerWidth;
+    canvas.style.height = window.innerHeight;
+
+    infoPanelScrollAreaDeo.style.setProperty('max-height', height * 0.95 / zoom);
 }
 
 function mobileAndTabletCheck () {

@@ -1,2 +1,1 @@
 · Improve texts.
-· Test app in mobile, it works on my new one.
