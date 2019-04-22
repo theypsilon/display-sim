@@ -754,13 +754,18 @@ function fixCanvasSize (canvas) {
     const dpi = window.devicePixelRatio;
     const width = window.screen.width;
     const height = window.screen.height;
-    const zoom = Math.round(window.outerWidth / window.innerWidth * 100) / 100;
+    const zoom = window.outerWidth / window.innerWidth;
 
-    canvas.width = Math.floor(width * dpi / 80) * 80 / zoom;
-    canvas.height = Math.floor(height * dpi / 60) * 60 / zoom;
+    canvas.width = Math.floor(width * dpi / 80) * 80;
+    canvas.height = Math.floor(height * dpi / 60) * 60;
 
-    canvas.style.width = window.innerWidth;
-    canvas.style.height = window.innerHeight;
+    if (Math.abs(window.innerWidth / window.outerWidth - 1.0) < 0.05) {
+        canvas.style.width = width;
+        canvas.style.height = height;
+    } else {
+        canvas.style.width = window.innerWidth;
+        canvas.style.height = window.innerHeight;
+    }
 
     infoPanelScrollAreaDeo.style.setProperty('max-height', height * 0.95 / zoom);
 }
