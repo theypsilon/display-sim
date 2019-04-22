@@ -104,8 +104,6 @@ window.ondragover = event => {
     event.dataTransfer.dropEffect = 'none';
 };
 
-window.addEventListener('resize', fixCanvasSize, false);
-
 window.addEventListener('app-event.toggle_info_panel', () => {
     if (!getGlCanvasDeo()) {
         return;
