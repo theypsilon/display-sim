@@ -490,6 +490,7 @@ async function prepareUi () {
             const gifKey = isAsset ? img.src : canvas.toDataURL();
             let gif = gifCache[gifKey];
             if (!gif) {
+                benchmark("decoding...");
                 gif = new GIF();
                 gif.load(img.src);
                 await new Promise(resolve => {
