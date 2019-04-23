@@ -12,6 +12,7 @@
  * 
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
+
 use console_error_panic_hook::set_once as set_panic_hook;
 
 use js_sys::Uint8Array;

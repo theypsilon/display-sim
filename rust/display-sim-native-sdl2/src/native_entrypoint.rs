@@ -12,6 +12,7 @@
  * 
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
+
 use render::opengl_hooks::{WebGl2RenderingContext, WebResult};
 
 use core::action_bindings::on_button_action;

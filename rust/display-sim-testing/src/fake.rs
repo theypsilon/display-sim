@@ -12,6 +12,7 @@
  * 
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
+
 use core::app_events::AppEventDispatcher;
 use core::general_types::Size2D;
 use core::internal_resolution::InternalResolution;

@@ -12,6 +12,7 @@
  * 
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
+
 #[cfg(target_arch = "x86_64")]
 fn main() {
     display_sim_native_sdl2::main();

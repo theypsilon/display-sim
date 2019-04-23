@@ -12,6 +12,7 @@
  * 
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
+
 use build_tools::{copy_webgl_render_crate_to_file, CopyWebglRenderParams};
 fn main() {
     copy_webgl_render_crate_to_file(&CopyWebglRenderParams {

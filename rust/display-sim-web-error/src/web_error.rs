@@ -12,6 +12,7 @@
  * 
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
+
 #[derive(Clone, Debug)]
 pub enum WebError {
     Js(wasm_bindgen::JsValue),

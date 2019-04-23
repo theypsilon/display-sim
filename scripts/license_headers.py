@@ -5,14 +5,16 @@
 
 import os
 
-def update_source(filename, license_text):
+def update_source(filename, license_text, older_license):
     utfstr = chr(0xef)+chr(0xbb)+chr(0xbf)
     fdata = file(filename,"r+").read()
     isUTF = False
     if (fdata.startswith(utfstr)):
         isUTF = True
         fdata = fdata[3:]
-    if not (fdata.startswith("/* Copyright")):
+    if (isinstance(older_license, str) and fdata.startswith(older_license)):
+        fdata = fdata[len(older_license):]
+    if not (fdata.startswith(license_text)):
         print "updating "+filename
         fdata = license_text + fdata
         if (isUTF):
@@ -20,19 +22,19 @@ def update_source(filename, license_text):
         else:
             file(filename,"w").write(fdata)
 
-def recursive_traversal(dir, extension, license_text):
+def recursive_traversal(dir, extension, license_text, older_license):
     fns = os.listdir(dir)
     print "listing "+dir
     for fn in fns:
         fullfn = os.path.join(dir,fn)
         if (os.path.isdir(fullfn)):
-            recursive_traversal(fullfn, extension, license_text)
+            recursive_traversal(fullfn, extension, license_text, older_license)
         else:
             if (fullfn.endswith(extension)):
-                update_source(fullfn, license_text)
+                update_source(fullfn, license_text, older_license)
 
 license_text = ""
-with open("./scripts/license_headers.txt") as f:
+with open("./scripts/license_header.txt") as f:
     firstline = True
     for line in f.readlines():
         if firstline:
@@ -43,4 +45,4 @@ with open("./scripts/license_headers.txt") as f:
         license_text += line
     license_text += " */\n"
 
-recursive_traversal("./rust", ".rs", license_text)
+recursive_traversal("./rust", ".rs", license_text + "\n", license_text)
