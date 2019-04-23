@@ -170,7 +170,7 @@ window.addEventListener('app-event.screenshot', async event => {
     const blob = await new Promise(resolve => canvas.toBlob(resolve));
     const url = URL.createObjectURL(blob);
     a.href = url;
-    a.download = 'CRT-3D-Sim_' + new Date().toISOString() + '.png';
+    a.download = 'Display-Sim_' + new Date().toISOString() + '.png';
     a.click();
     setTimeout(() => {
         URL.revokeObjectURL(url);

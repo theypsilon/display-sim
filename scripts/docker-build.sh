@@ -4,7 +4,7 @@ set -euo pipefail
 
 cd "$(dirname $0)/.."
 
-export REGISTRY_IMAGE="${REGISTRY_IMAGE:-crt-3d-sim}"
+export REGISTRY_IMAGE="${REGISTRY_IMAGE:-display-sim}"
 export TAG="${TAG:-latest}"
 export IMAGE_NAME="${REGISTRY_IMAGE}:${TAG}"
 
@@ -23,5 +23,5 @@ fi
 
 if [[ $@ =~ .*--serve.* ]] ; then
     echo Server running on port 80...
-    docker run --rm --name crt-3d-sim-server -p 80:80 -p 443:443 ${IMAGE_NAME}
+    docker run --rm --name display-sim-server -p 80:80 -p 443:443 ${IMAGE_NAME}
 fi
