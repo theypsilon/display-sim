@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import GIF from './third_party/gif';
+import * as fastgif from 'fastgif/fastgif';
 import FontFaceObserver from 'fontfaceobserver';
 
 const wasmPromise = import('./wasm/display_sim');
@@ -118,6 +118,8 @@ window.ondragover = event => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'none';
 };
+
+window.addEventListener('resize', fixCanvasSize);
 
 window.addEventListener('app-event.toggle_info_panel', () => {
     if (!getGlCanvasDeo()) {
@@ -491,16 +493,15 @@ async function prepareUi () {
             let gif = gifCache[gifKey];
             if (!gif) {
                 benchmark('decoding...');
-                gif = new GIF();
-                gif.load(img.src);
-                await new Promise(resolve => {
-                    gif.onload = () => resolve();
-                });
+                const decoder = new fastgif.Decoder();
+                gif = await window.fetch(img.src)
+                    .then(response => response.arrayBuffer())
+                    .then(buffer => decoder.decode(buffer));
                 gifCache[gifKey] = gif;
             }
             benchmark('gif loaded', gif);
-            return gif.frames.map(frame => ({
-                raw: frame.image.getContext('2d').getImageData(0, 0, img.width, img.height),
+            return gif.map(frame => ({
+                raw: frame.imageData,
                 delay: frame.delay
             }));
         }
@@ -774,9 +775,11 @@ function fixCanvasSize (canvas) {
     canvas.height = Math.floor(height * dpi / 60) * 60;
 
     if (Math.abs(window.innerWidth / window.outerWidth - 1.0) < 0.05) {
+        benchmark('canvas.style... = screen.width, screen.height');
         canvas.style.width = width;
         canvas.style.height = height;
     } else {
+        benchmark('canvas.style... = window.innerWidth, window.innerHeight');
         canvas.style.width = window.innerWidth;
         canvas.style.height = window.innerHeight;
     }
