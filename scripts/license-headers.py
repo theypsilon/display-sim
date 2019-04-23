@@ -32,7 +32,7 @@ def recursive_traversal(dir, extension, license_text):
                 update_source(fullfn, license_text)
 
 license_text = ""
-with open("LICENSE") as f:
+with open("./scripts/LICENSE_HEADERS.txt") as f:
     firstline = True
     for line in f.readlines():
         if firstline:
