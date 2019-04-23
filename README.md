@@ -1,4 +1,4 @@
-# CRT 3D Sim [![Build Status](https://travis-ci.com/theypsilon/crt-3d-sim.svg?branch=master)](https://travis-ci.com/theypsilon/crt-3d-sim)
+# Display Sim [![Build Status](https://travis-ci.com/theypsilon/crt-3d-sim.svg?branch=master)](https://travis-ci.com/theypsilon/crt-3d-sim)
 
 Port of [Retro-Display-Simulator](https://github.com/theypsilon/Retro-Display-Simulator) to the web, using rust, wasm, and webgl2.
 

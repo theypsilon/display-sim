@@ -1,0 +1,17 @@
+[package]
+name = "display-sim-testing"
+version = "0.1.0"
+authors = ["José manuel Barroso Galindo <theypsilon@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+glm = { version = "0.1", package = "nalgebra-glm" }
+render = { path = "../display-sim-stub-render", package = "display-sim-stub-render" }
+core = { path = "../display-sim-core", package = "display-sim-core" }
+
+[dev-dependencies]
+criterion = "0.2.11"
+
+[[bench]]
+name = "whole_sim_bench"
+harness = false

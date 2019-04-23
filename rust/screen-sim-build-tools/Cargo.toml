@@ -1,8 +1,0 @@
-[package]
-name = "screen-sim-build-tools"
-version = "0.1.0"
-authors = ["José manuel Barroso Galindo <theypsilon@gmail.com>"]
-edition = "2018"
-
-[dependencies]
-glob = "0.3.0"

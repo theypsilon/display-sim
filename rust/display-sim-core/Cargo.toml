@@ -1,0 +1,14 @@
+[package]
+name = "display-sim-core"
+version = "0.1.0"
+authors = ["José manuel Barroso Galindo <theypsilon@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+glm = { version = "0.1", package = "nalgebra-glm" }
+num-traits = "0.2"
+num-derive = "0.2"
+getters-by-type = "0.2"
+enum-len-derive = { path = "../enum-len-derive" }
+enum-len-trait = { path = "../enum-len-trait" }
+derive-new = "0.5.6"

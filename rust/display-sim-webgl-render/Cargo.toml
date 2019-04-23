@@ -1,0 +1,30 @@
+[package]
+name = "display-sim-webgl-render"
+version = "0.1.0"
+authors = ["José manuel Barroso Galindo <theypsilon@gmail.com>"]
+edition = "2018"
+
+[features]
+web_api = []
+webgl_stubs = []
+webgl_to_opengl_hooks = []
+
+[dependencies]
+derive-new = "0.5.6"
+glm = { version = "0.1", package = "nalgebra-glm" }
+core = { path = "../display-sim-core", package = "display-sim-core" }
+web-error = { path = "../display-sim-web-error", package = "display-sim-web-error" }
+
+[dependencies.web-sys]
+version = "0.3.19"
+features = [
+  'WebGlBuffer',
+  'WebGl2RenderingContext',
+  'WebGlProgram',
+  'WebGlShader',
+  'WebGlVertexArrayObject',
+  'WebGlUniformLocation',
+  'WebGlTexture',
+  'WebGlFramebuffer',
+  'WebGlRenderbuffer'
+]

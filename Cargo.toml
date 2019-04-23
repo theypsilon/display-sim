@@ -1,38 +1,38 @@
 [package]
-name = "screen-sim"
+name = "display-sim"
 version = "0.1.0"
 authors = ["José manuel Barroso Galindo <theypsilon@gmail.com>"]
 edition = "2018"
 
 [lib]
 crate-type = ["cdylib"]
-path = "rust/screen-sim-wasm.rs"
+path = "rust/display-sim-wasm.rs"
 
 [[bin]]
-name = "screen-sim-native"
-path = "rust/screen-sim-native-main.rs"
+name = "display-sim-native"
+path = "rust/display-sim-native-main.rs"
 
 [profile.release]
 debug = false
 lto = true
 
 [dependencies]
-screen-sim-web-exports = { path = "rust/screen-sim-web-exports" }
+display-sim-web-exports = { path = "rust/display-sim-web-exports" }
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
-screen-sim-native-sdl2 = { path = "rust/screen-sim-native-sdl2" }
+display-sim-native-sdl2 = { path = "rust/display-sim-native-sdl2" }
 
 [workspace]
 members = [
     "rust/enum-len-derive",
     "rust/enum-len-trait",
-    "rust/screen-sim-core",
-    "rust/screen-sim-webgl-render",
-    "rust/screen-sim-web-error",
-    "rust/screen-sim-web-exports",
-    "rust/screen-sim-stub-render",
-    "rust/screen-sim-opengl-render",
-    "rust/screen-sim-native-sdl2",
-    "rust/screen-sim-build-tools",
-    "rust/screen-sim-testing",
+    "rust/display-sim-core",
+    "rust/display-sim-webgl-render",
+    "rust/display-sim-web-error",
+    "rust/display-sim-web-exports",
+    "rust/display-sim-stub-render",
+    "rust/display-sim-opengl-render",
+    "rust/display-sim-native-sdl2",
+    "rust/display-sim-build-tools",
+    "rust/display-sim-testing",
 ]

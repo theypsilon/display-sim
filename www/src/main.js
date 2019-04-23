@@ -16,7 +16,7 @@
 import GIF from './third_party/gif';
 import FontFaceObserver from 'fontfaceobserver';
 
-const wasmPromise = import('./wasm/screen_sim');
+const wasmPromise = import('./wasm/display_sim');
 
 const displayNoneClassName = 'display-none';
 const scalingAutoHtmlId = 'scaling-auto';
@@ -791,7 +791,7 @@ function mobileAndTabletCheck () {
 }
 
 function benchmark (message, ctx) {
-    if (!window.screen_sim_bench && !window.localStorage.getItem('screen_sim_bench')) return;
+    if (!window.display_sim_bench && !window.localStorage.getItem('display_sim_bench')) return;
     const date = new Date().toISOString();
     if (ctx) {
         console.log(date, message, ctx);
