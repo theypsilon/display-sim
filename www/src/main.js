@@ -629,7 +629,6 @@ async function prepareUi () {
     benchmark('wasm run_program done');
 
     visibility.hideLoading();
-    visibility.showInfoPanel();
     visibility.showSimulationUi();
 }
 
@@ -737,7 +736,7 @@ function makeVisibility () {
         showLoading: () => showElement(loadingDeo),
         hideLoading: () => hideElement(loadingDeo),
         showSimulationUi: () => {
-            document.body.style.setProperty('overflow', 'hidden');
+            document.body.style.overflow = 'hidden';
             showElement(simulationUiDeo);
         },
         hideSimulationUi: () => {
