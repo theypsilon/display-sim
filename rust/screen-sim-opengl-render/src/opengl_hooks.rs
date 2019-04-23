@@ -479,8 +479,7 @@ impl<T: Fn() -> (&'static str, u32)> GlScopedDebugger<T> {
         }
     }
     pub fn print(&self) {
-        let func = &self.func;
-        let second_tuple = func();
+        let second_tuple = (self.func)();
         println!("{}| {:?} => {:?} ; {}", self.line, self.first_tuple.1, second_tuple.1, second_tuple.0);
         if self.first_tuple.1 != gl::NO_ERROR || second_tuple.1 != gl::NO_ERROR {
             panic!("Errors! {}", line!());

@@ -83,7 +83,7 @@ where
     }
 }
 
-fn change_enum_variant<T: FromPrimitive + ToPrimitive + EnumLen>(instance: &mut T, action: impl Fn(usize) -> usize) {
+fn change_enum_variant<T: FromPrimitive + ToPrimitive + EnumLen>(instance: &mut T, action: impl FnOnce(usize) -> usize) {
     let mut changed = match instance.to_usize().and_then(|as_usize| FromPrimitive::from_usize(action(as_usize))) {
         Some(n) => n,
         None => FromPrimitive::from_usize(0).expect("Can't construct enum from 0."),
