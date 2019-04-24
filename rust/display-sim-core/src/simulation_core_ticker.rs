@@ -198,7 +198,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
 
     fn update_filters(&mut self) {
         if let InputEventValue::FilterPreset(preset) = self.input.custom_event.get_value(event_kind::FILTER_PRESET) {
-            if self.res.filters.locked == false {
+            if !self.res.filters.locked {
                 self.res.saved_filters = Some(self.res.filters.clone());
             }
             self.res.filters.locked = match preset.as_ref() {

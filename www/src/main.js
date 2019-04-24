@@ -331,7 +331,7 @@ function customEventOnChange (deo, kind, parse) {
     featureChangeScreenCurvatureDeo,
     featureQuitDeo,
     featureCaptureFramebufferDeo,
-    featureClosePanelDeo,
+    featureClosePanelDeo
 ].forEach(deo => {
     deo.onmousedown = () => document.dispatchEvent(new KeyboardEvent('keydown', { key: deo.id }));
     deo.onmouseup = () => document.dispatchEvent(new KeyboardEvent('keyup', { key: deo.id }));
@@ -343,7 +343,7 @@ function customEventOnChange (deo, kind, parse) {
     resetFiltersDeo
 ].forEach(deo => {
     deo.onclick = () => document.dispatchEvent(new KeyboardEvent('keydown', { key: deo.id }));
-})
+});
 
 document.querySelectorAll('.selectable-image').forEach(deo => {
     const img = deo.querySelector('img');
@@ -393,7 +393,6 @@ toggleInfoPanelClass.forEach(deo => {
     };
 });
 
-
 filterPresetsDeo.onchange = () => {
     if (filterPresetsDeo.value === presetCustom) {
         visibility.showFilterOptionMainList();
@@ -409,7 +408,7 @@ filterPresetsDeo.onchange = () => {
             kind: 'event_kind:filter_presets_selected'
         }
     }));
-}
+};
 
 inputFileUploadDeo.onchange = () => {
     const file = inputFileUploadDeo.files[0];
@@ -839,16 +838,16 @@ function calculateAutoScaling (imageWidth, imageHeight) {
             scaleX: 1,
             message: 'none.'
         };
-    } else if (imageHeight == 144) {
+    } else if (imageHeight === 144) {
         return {
             scaleX: (11 / 10) / (imageWidth / imageHeight),
             message: '11:10 (Game Boy) on full image.'
-        }
-    } else if (imageHeight == 160) {
+        };
+    } else if (imageHeight === 160) {
         return {
             scaleX: (3 / 2) / (imageWidth / imageHeight),
             message: '3:2 (Game Boy Advance) on full image.'
-        }
+        };
     } else {
         return {
             scaleX: (4 / 3) / (imageWidth / imageHeight),
