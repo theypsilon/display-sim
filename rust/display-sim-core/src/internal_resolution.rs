@@ -16,6 +16,7 @@
 use crate::general_types::{OptionCursor, Size2D};
 use std::fmt::{Display, Error, Formatter};
 
+#[derive(Clone)]
 pub struct InternalResolution {
     pub multiplier: f64,
     backup_multiplier: f64,

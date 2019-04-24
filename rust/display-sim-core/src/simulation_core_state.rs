@@ -51,6 +51,8 @@ pub struct Resources {
     pub video: VideoInputResources,
     pub camera: CameraData,
     pub filters: Filters,
+    pub speed: Speeds,
+    pub saved_filters: Option<Filters>,
     pub output: ViewModel,
     pub timers: SimulationTimers,
     pub initial_parameters: InitialParameters,
@@ -73,7 +75,11 @@ impl Default for Resources {
             video: VideoInputResources::default(),
             camera: CameraData::new(MOVEMENT_BASE_SPEED / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED),
             output: ViewModel::default(),
-            filters: Filters::new(PIXEL_MANIPULATION_BASE_SPEED),
+            speed: Speeds {
+                filter_speed: PIXEL_MANIPULATION_BASE_SPEED,
+            },
+            filters: Filters::default(),
+            saved_filters: None,
             screenshot_trigger: ScreenshotTrigger { is_triggered: false, delay: 0 },
             drawable: false,
             resetted: true,
@@ -138,6 +144,11 @@ pub struct InitialParameters {
     pub initial_pixel_width: f32,
 }
 
+pub struct Speeds {
+    pub filter_speed: f32,
+}
+
+#[derive(Clone)]
 pub struct Filters {
     pub internal_resolution: InternalResolution,
     pub texture_interpolation: TextureInterpolation,
@@ -151,7 +162,6 @@ pub struct Filters {
     pub cur_pixel_vertical_gap: f32,
     pub cur_pixel_horizontal_gap: f32,
     pub cur_pixel_spread: f32,
-    pub change_speed: f32,
     pub pixel_shadow_height: f32,
     pub pixels_geometry_kind: PixelsGeometryKind,
     pub color_channels: ColorChannels,
@@ -161,8 +171,14 @@ pub struct Filters {
     pub locked: bool,
 }
 
+impl Default for Filters {
+    fn default() -> Self {
+        Filters::preset_crt_aperture_grille()
+    }
+}
+
 impl Filters {
-    pub fn new(change_speed: f32) -> Filters {
+    pub fn preset_crt_aperture_grille() -> Filters {
         Filters {
             internal_resolution: InternalResolution::new(1.0),
             texture_interpolation: TextureInterpolation::Linear,
@@ -177,7 +193,30 @@ impl Filters {
             cur_pixel_horizontal_gap: 0.0,
             cur_pixel_spread: 0.0,
             pixel_shadow_height: 0.25,
-            change_speed,
+            pixels_geometry_kind: PixelsGeometryKind::Squares,
+            pixel_shadow_shape_kind: ShadowShape { value: 3 },
+            color_channels: ColorChannels::Combined,
+            screen_curvature_kind: ScreenCurvatureKind::Flat,
+            layering_kind: ScreenLayeringKind::ShadowWithSolidBackground50,
+            locked: false,
+        }
+    }
+
+    pub fn preset_crt_shadow_mask() -> Filters {
+        Filters {
+            internal_resolution: InternalResolution::new(1.0),
+            texture_interpolation: TextureInterpolation::Linear,
+            blur_passes: 1,
+            lines_per_pixel: 2,
+            light_color: 0x00FF_FFFF,
+            brightness_color: 0x00FF_FFFF,
+            extra_bright: 0.0,
+            extra_contrast: 1.0,
+            cur_pixel_width: 1.0,
+            cur_pixel_vertical_gap: 0.0,
+            cur_pixel_horizontal_gap: 0.0,
+            cur_pixel_spread: 0.0,
+            pixel_shadow_height: 0.25,
             pixels_geometry_kind: PixelsGeometryKind::Squares,
             pixel_shadow_shape_kind: ShadowShape { value: 3 },
             color_channels: ColorChannels::Combined,

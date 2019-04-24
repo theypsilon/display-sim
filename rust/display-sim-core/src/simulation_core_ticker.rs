@@ -164,12 +164,11 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         if self.input.reset_speeds {
             self.res.camera.turning_speed = TURNING_BASE_SPEED;
             self.res.camera.movement_speed = initial_movement_speed;
-            self.res.filters.change_speed = PIXEL_MANIPULATION_BASE_SPEED;
+            self.res.speed.filter_speed = PIXEL_MANIPULATION_BASE_SPEED;
             self.ctx.dispatcher.dispatch_top_message("All speeds have been reset.");
             self.change_frontend_input_values();
         }
         let ctx = &self.ctx;
-        let filters = &mut self.res.filters;
         let input = &self.input;
         FilterParams::new(ctx, &mut self.res.camera.turning_speed, input.turn_speed.to_just_pressed())
             .set_progression(2.0)
@@ -177,7 +176,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             .set_max(16_384.0 * TURNING_BASE_SPEED)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_turning_speed(x / TURNING_BASE_SPEED))
             .process_with_multiplications();
-        FilterParams::new(ctx, &mut filters.change_speed, input.filter_speed.to_just_pressed())
+        FilterParams::new(ctx, &mut self.res.speed.filter_speed, input.filter_speed.to_just_pressed())
             .set_progression(2.0)
             .set_min(0.007_812_5 * PIXEL_MANIPULATION_BASE_SPEED)
             .set_max(16_384.0 * PIXEL_MANIPULATION_BASE_SPEED)
@@ -199,17 +198,31 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
 
     fn update_filters(&mut self) {
         if let InputEventValue::FilterPreset(preset) = self.input.custom_event.get_value(event_kind::FILTER_PRESET) {
+            if self.res.filters.locked == false {
+                self.res.saved_filters = Some(self.res.filters.clone());
+            }
             self.res.filters.locked = match preset.as_ref() {
-                "crt-aperture-grille" => true,
-                "crt-shadow-mask" => true,
-                _ => false,
+                "crt-aperture-grille" => {
+                    self.res.filters = Filters::preset_crt_aperture_grille();
+                    true
+                }
+                "crt-shadow-mask" => {
+                    self.res.filters = Filters::preset_crt_shadow_mask();
+                    true
+                }
+                _ => {
+                    if let Some(ref saved_filters) = self.res.saved_filters {
+                        self.res.filters = saved_filters.clone();
+                    }
+                    false
+                }
             };
         }
         if self.res.filters.locked {
             return;
         }
         if self.input.reset_filters {
-            self.res.filters = Filters::new(PIXEL_MANIPULATION_BASE_SPEED);
+            self.res.filters = Filters::default();
             self.res.filters.cur_pixel_width = self.res.initial_parameters.initial_pixel_width;
             self.res
                 .filters
@@ -233,14 +246,14 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         let input = &self.input;
 
         FilterParams::new(ctx, &mut filters.extra_bright, input.bright.clone())
-            .set_progression(0.01 * self.dt * filters.change_speed)
+            .set_progression(0.01 * self.dt * self.res.speed.filter_speed)
             .set_event_value(read_event_value!(self, PixelBrighttness, PIXEL_BRIGHTNESS))
             .set_min(-1.0)
             .set_max(1.0)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_pixel_brightness(x))
             .process_with_sums();
         FilterParams::new(ctx, &mut filters.extra_contrast, input.contrast.clone())
-            .set_progression(0.01 * self.dt * filters.change_speed)
+            .set_progression(0.01 * self.dt * self.res.speed.filter_speed)
             .set_event_value(read_event_value!(self, PixelContrast, PIXEL_CONTRAST))
             .set_min(0.0)
             .set_max(20.0)
@@ -276,7 +289,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_lines_per_pixel(x))
             .process_with_sums();
 
-        let pixel_velocity = self.dt * filters.change_speed;
+        let pixel_velocity = self.dt * self.res.speed.filter_speed;
         FilterParams::new(ctx, &mut filters.pixels_geometry_kind, input.next_pixel_geometry_kind.to_just_pressed())
             .set_trigger_handler(|x: &PixelsGeometryKind| ctx.dispatcher.dispatch_pixel_geometry(*x))
             .process_options();
@@ -418,7 +431,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         dispatcher.dispatch_screen_curvature(self.res.filters.screen_curvature_kind);
         dispatcher.dispatch_internal_resolution(&self.res.filters.internal_resolution);
         dispatcher.dispatch_texture_interpolation(self.res.filters.texture_interpolation);
-        dispatcher.dispatch_change_pixel_speed(self.res.filters.change_speed / PIXEL_MANIPULATION_BASE_SPEED);
+        dispatcher.dispatch_change_pixel_speed(self.res.speed.filter_speed / PIXEL_MANIPULATION_BASE_SPEED);
         dispatcher.dispatch_change_turning_speed(self.res.camera.turning_speed / TURNING_BASE_SPEED);
         dispatcher.dispatch_change_movement_speed(self.res.camera.movement_speed / self.res.initial_parameters.initial_movement_speed);
         dispatcher.enable_extra_messages(true);
