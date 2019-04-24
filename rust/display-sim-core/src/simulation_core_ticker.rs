@@ -53,6 +53,9 @@ impl<'a, T: AppEventDispatcher> SimulationCoreTicker<'a, T> {
         self.input.mouse_position_x = 0;
         self.input.mouse_position_y = 0;
         self.input.custom_event.reset();
+        self.input.reset_filters = false;
+        self.input.reset_position = false;
+        self.input.reset_speeds = false;
     }
 }
 

@@ -332,13 +332,18 @@ function customEventOnChange (deo, kind, parse) {
     featureQuitDeo,
     featureCaptureFramebufferDeo,
     featureClosePanelDeo,
-    resetCameraDeo,
-    resetSpeedsDeo,
-    resetFiltersDeo
 ].forEach(deo => {
     deo.onmousedown = () => document.dispatchEvent(new KeyboardEvent('keydown', { key: deo.id }));
     deo.onmouseup = () => document.dispatchEvent(new KeyboardEvent('keyup', { key: deo.id }));
 });
+
+[
+    resetCameraDeo,
+    resetSpeedsDeo,
+    resetFiltersDeo
+].forEach(deo => {
+    deo.onclick = () => document.dispatchEvent(new KeyboardEvent('keydown', { key: deo.id }));
+})
 
 document.querySelectorAll('.selectable-image').forEach(deo => {
     const img = deo.querySelector('img');
