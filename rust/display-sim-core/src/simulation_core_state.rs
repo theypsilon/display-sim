@@ -458,6 +458,7 @@ pub struct Input {
     pub reset_position: bool,
     pub reset_filters: bool,
     pub shift: bool,
+    pub control: bool,
     pub alt: bool,
     pub input_focused: bool,
     pub canvas_focused: bool,

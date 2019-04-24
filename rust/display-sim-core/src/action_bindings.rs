@@ -29,12 +29,12 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) -
             }
         }
         "+" => {
-            if !input.input_focused {
+            if !input.input_focused && !input.control {
                 input.rotate_left = pressed
             }
         }
         "-" => {
-            if !input.input_focused {
+            if !input.input_focused && !input.control {
                 input.rotate_right = pressed
             }
         }
@@ -134,6 +134,11 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) -
             input.shift = pressed;
             input.pixel_width.reset();
             input.pixel_spread.reset();
+        }
+        "control" | "left control" | "right control" | "ctrl" | "left ctrl" | "right ctrl" => {
+            input.control = pressed;
+            input.rotate_left = false;
+            input.rotate_right = false;
         }
         "alt" => input.alt = pressed,
         " " | "space" | "feature-close-panel" => input.space.input = pressed,
