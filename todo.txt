@@ -1,3 +1,2 @@
 · Introduce presets. Aperture Grille, Shadow Mask, and Custom.
-· Introduce GBA/GB resolutions and aspect ratios in scaling auto detections.
-· Improve texts.
+· Improve readme.
