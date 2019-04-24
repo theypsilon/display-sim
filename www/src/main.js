@@ -772,11 +772,13 @@ function makeVisibility () {
         showLoading: () => showElement(loadingDeo),
         hideLoading: () => hideElement(loadingDeo),
         showSimulationUi: () => {
-            document.body.style.overflow = 'hidden';
+            document.body.style.setProperty('overflow', 'hidden');
+            document.body.style.setProperty('background-color', 'black');
             showElement(simulationUiDeo);
         },
         hideSimulationUi: () => {
             document.body.style.removeProperty('overflow');
+            document.body.style.removeProperty('background-color');
             hideElement(simulationUiDeo);
         },
         showInfoPanel: () => showElement(infoPanelDeo),
@@ -806,23 +808,17 @@ function fixCanvasSize (canvas) {
     const dpi = window.devicePixelRatio;
     const width = window.screen.width;
     const height = window.screen.height;
-    const zoom = window.outerHeight / window.innerHeight;
+    const zoom = window.outerWidth / window.innerWidth;
 
-    canvas.width = Math.floor(width * dpi / 80) * 80;
-    canvas.height = Math.floor(height * dpi / 60) * 60;
+    canvas.width = Math.round(width * dpi / zoom / 80) * 80;
+    canvas.height = Math.round(height * dpi / zoom / 60) * 60;
 
-    if (Math.abs(window.innerWidth / window.outerWidth - 1.0) < 0.05) {
-        canvas.style.width = width;
-        canvas.style.height = height;
-    } else {
-        benchmark('using window.inner!');
-        canvas.style.width = window.innerWidth;
-        canvas.style.height = window.innerHeight;
-    }
+    canvas.style.width = window.innerWidth;
+    canvas.style.height = window.innerHeight;
 
-    benchmark(canvas.width, canvas.height, canvas.style.width, canvas.style.height);
+    benchmark('resolution:', canvas.width, canvas.height, width, height);
 
-    infoPanelScrollAreaDeo.style.setProperty('max-height', height * 0.93 / zoom);
+    infoPanelScrollAreaDeo.style.setProperty('max-height', (window.innerHeight - 18) * 0.95);
 }
 
 function mobileAndTabletCheck () {
@@ -856,12 +852,7 @@ function calculateAutoScaling (imageWidth, imageHeight) {
     }
 }
 
-function benchmark (message, ctx) {
+function benchmark () {
     if (!window.display_sim_bench && !window.localStorage.getItem('display_sim_bench')) return;
-    const date = new Date().toISOString();
-    if (ctx) {
-        console.log(date, message, ctx);
-    } else {
-        console.log(date, message);
-    }
+    console.log(new Date().toISOString(), ...arguments);
 }
