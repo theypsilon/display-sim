@@ -231,7 +231,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
         </div>
         <div class="info-category">
           <h5>Screen Filter Options <div id="reset-filters" class="reset-button"><button class="activate-button" title="All screen filter options will be reset.">Reset Filters</button></div></h5>
-          <ul class="info-options">
+          <label for="filter-presets" >Presets:</label>
+          <select id="filter-presets" name="filter-presets">
+              <option value="crt-aperture-grille">CRT Aperture Grille</option>
+              <option value="crt-shadow-mask">CRT Shadow Mask</option>
+              <option value="custom">Custom</option>
+          </select>
+          <ul id="filter-option-main-list" class="info-options">
             <li title="Horizontal gap Hotkeys: J & K"><div><div class="feature-name">Horizontal gap</div><sup class="feature-hotkeys">(J, K)</sup></div><div class="feature-value"><input id="pixel-horizontal-gap" class="number-input feature-modificable-input" type="number" placeholder="0" step="0.001" min="0" max="10" value="0"></div></li>
             <li title="Vertical gap Hotkeys: U & I"><div><div class="feature-name">Vertical gap</div><sup class="feature-hotkeys">(U, I)</sup></div><div class="feature-value"><input id="pixel-vertical-gap" class="number-input feature-modificable-input" type="number" placeholder="0" step="0.001" min="0" max="10" value="0"></div></li>
             <li title="Width Hotkeys: N & M"><div><div class="feature-name">Pixel width</div><sup class="feature-hotkeys">(N, M)</sup></div><div class="feature-value"><input id="pixel-width" class="number-input feature-modificable-input" type="number" placeholder="0" step="0.001" min="0" max="10" value="0"></div></li>

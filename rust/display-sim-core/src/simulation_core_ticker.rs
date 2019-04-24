@@ -1,15 +1,15 @@
 /* Copyright (c) 2019 José manuel Barroso Galindo <theypsilon@gmail.com>
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
@@ -66,7 +66,7 @@ struct SimulationUpdater<'a, T: AppEventDispatcher> {
 macro_rules! read_event_value {
     ($this:ident, $variant:ident, $kind:ident) => {
         if let InputEventValue::$variant(value) = $this.input.custom_event.get_value(event_kind::$kind) {
-            Some(value)
+            Some(*value)
         } else {
             None
         }
@@ -101,6 +101,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             self.ctx.dispatcher.dispatch_toggle_info_panel();
         }
 
+        self.update_speeds();
         self.update_filters();
         self.update_camera();
         self.update_screenshot();
@@ -155,7 +156,55 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         }
     }
 
+    fn update_speeds(&mut self) {
+        let initial_movement_speed = self.res.initial_parameters.initial_movement_speed;
+        if self.input.reset_speeds {
+            self.res.camera.turning_speed = TURNING_BASE_SPEED;
+            self.res.camera.movement_speed = initial_movement_speed;
+            self.res.filters.change_speed = PIXEL_MANIPULATION_BASE_SPEED;
+            self.ctx.dispatcher.dispatch_top_message("All speeds have been reset.");
+            self.change_frontend_input_values();
+        }
+        let ctx = &self.ctx;
+        let filters = &mut self.res.filters;
+        let input = &self.input;
+        FilterParams::new(ctx, &mut self.res.camera.turning_speed, input.turn_speed.to_just_pressed())
+            .set_progression(2.0)
+            .set_min(0.007_812_5 * TURNING_BASE_SPEED)
+            .set_max(16_384.0 * TURNING_BASE_SPEED)
+            .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_turning_speed(x / TURNING_BASE_SPEED))
+            .process_with_multiplications();
+        FilterParams::new(ctx, &mut filters.change_speed, input.filter_speed.to_just_pressed())
+            .set_progression(2.0)
+            .set_min(0.007_812_5 * PIXEL_MANIPULATION_BASE_SPEED)
+            .set_max(16_384.0 * PIXEL_MANIPULATION_BASE_SPEED)
+            .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_pixel_speed(x / PIXEL_MANIPULATION_BASE_SPEED))
+            .process_with_multiplications();
+        FilterParams::new(ctx, &mut self.res.camera.turning_speed, input.translation_speed.to_just_pressed())
+            .set_progression(2.0)
+            .set_min(0.007_812_5 * TURNING_BASE_SPEED)
+            .set_max(16_384.0 * TURNING_BASE_SPEED)
+            .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_turning_speed(x / TURNING_BASE_SPEED))
+            .process_with_multiplications();
+        FilterParams::new(ctx, &mut self.res.camera.movement_speed, input.translation_speed.to_just_pressed())
+            .set_progression(2.0)
+            .set_min(0.007_812_5 * initial_movement_speed)
+            .set_max(16_384.0 * initial_movement_speed)
+            .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_movement_speed(x / initial_movement_speed))
+            .process_with_multiplications();
+    }
+
     fn update_filters(&mut self) {
+        if let InputEventValue::FilterPreset(preset) = self.input.custom_event.get_value(event_kind::FILTER_PRESET) {
+            self.res.filters.locked = match preset.as_ref() {
+                "crt-aperture-grille" => true,
+                "crt-shadow-mask" => true,
+                _ => false,
+            };
+        }
+        if self.res.filters.locked {
+            return;
+        }
         if self.input.reset_filters {
             self.res.filters = Filters::new(PIXEL_MANIPULATION_BASE_SPEED);
             self.res.filters.cur_pixel_width = self.res.initial_parameters.initial_pixel_width;
@@ -168,21 +217,12 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             return;
         }
         if let InputEventValue::LightColor(light_color) = self.input.custom_event.get_value(event_kind::LIGHT_COLOR) {
-            self.res.filters.light_color = light_color;
+            self.res.filters.light_color = *light_color;
             self.ctx.dispatcher.dispatch_top_message("Light Color changed.");
         }
         if let InputEventValue::BrightnessColor(brightness_color) = self.input.custom_event.get_value(event_kind::LIGHT_COLOR) {
-            self.res.filters.brightness_color = brightness_color;
+            self.res.filters.brightness_color = *brightness_color;
             self.ctx.dispatcher.dispatch_top_message("Brightness Color changed.");
-        }
-
-        let initial_movement_speed = self.res.initial_parameters.initial_movement_speed;
-        if self.input.reset_speeds {
-            self.res.camera.turning_speed = TURNING_BASE_SPEED;
-            self.res.camera.movement_speed = initial_movement_speed;
-            self.res.filters.change_speed = PIXEL_MANIPULATION_BASE_SPEED;
-            self.ctx.dispatcher.dispatch_top_message("All speeds have been reset.");
-            self.change_frontend_input_values();
         }
 
         let ctx = &self.ctx;
@@ -271,30 +311,6 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             .set_min(0.0)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_pixel_spread(x))
             .process_with_sums();
-        FilterParams::new(ctx, &mut self.res.camera.turning_speed, input.turn_speed.to_just_pressed())
-            .set_progression(2.0)
-            .set_min(0.007_812_5 * TURNING_BASE_SPEED)
-            .set_max(16_384.0 * TURNING_BASE_SPEED)
-            .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_turning_speed(x / TURNING_BASE_SPEED))
-            .process_with_multiplications();
-        FilterParams::new(ctx, &mut filters.change_speed, input.filter_speed.to_just_pressed())
-            .set_progression(2.0)
-            .set_min(0.007_812_5 * PIXEL_MANIPULATION_BASE_SPEED)
-            .set_max(16_384.0 * PIXEL_MANIPULATION_BASE_SPEED)
-            .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_pixel_speed(x / PIXEL_MANIPULATION_BASE_SPEED))
-            .process_with_multiplications();
-        FilterParams::new(ctx, &mut self.res.camera.turning_speed, input.translation_speed.to_just_pressed())
-            .set_progression(2.0)
-            .set_min(0.007_812_5 * TURNING_BASE_SPEED)
-            .set_max(16_384.0 * TURNING_BASE_SPEED)
-            .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_turning_speed(x / TURNING_BASE_SPEED))
-            .process_with_multiplications();
-        FilterParams::new(ctx, &mut self.res.camera.movement_speed, input.translation_speed.to_just_pressed())
-            .set_progression(2.0)
-            .set_min(0.007_812_5 * initial_movement_speed)
-            .set_max(16_384.0 * initial_movement_speed)
-            .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_movement_speed(x / initial_movement_speed))
-            .process_with_multiplications();
     }
 
     fn update_camera(&mut self) {

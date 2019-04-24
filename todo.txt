@@ -1,2 +1,2 @@
-· Introduce presets. Aperture Grille, Shadow Mask, and Custom.
+· Create presets: Aperture Grille, Shadow Mask.
 · Improve readme.

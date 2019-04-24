@@ -29,6 +29,10 @@ const glCanvasHtmlId = 'gl-canvas';
 const topMessageHtmlId = 'top-message';
 const firstPreviewImageId = 'first-preview-image';
 
+const presetApertureGrille = 'crt-aperture-grille';
+const presetShadowMask = 'crt-shadow-mask';
+const presetCustom = 'custom';
+
 const uiDeo = document.getElementById('ui');
 const loadingDeo = document.getElementById('loading');
 const inputFileUploadDeo = document.getElementById('file');
@@ -69,6 +73,8 @@ const cameraAxisUpZDeo = document.getElementById('camera-axis-up-z');
 const cameraZoomDeo = document.getElementById('camera-zoom');
 const cameraMovementModeDeo = document.getElementById('camera-movement-mode');
 
+const filterPresetsDeo = document.getElementById('filter-presets');
+const filterOptionMainListDeo = document.getElementById('filter-option-main-list');
 const pixelWidthDeo = document.getElementById('pixel-width');
 const pixelHorizontalGapDeo = document.getElementById('pixel-horizontal-gap');
 const pixelVerticalGapDeo = document.getElementById('pixel-vertical-gap');
@@ -382,6 +388,24 @@ toggleInfoPanelClass.forEach(deo => {
     };
 });
 
+
+filterPresetsDeo.onchange = () => {
+    if (filterPresetsDeo.value === presetCustom) {
+        visibility.showFilterOptionMainList();
+    } else if ([presetApertureGrille, presetShadowMask].includes(filterPresetsDeo.value)) {
+        visibility.hideFilterOptionMainList();
+    } else {
+        filterPresetsDeo.value = presetApertureGrille;
+    }
+    storage.setFilterPresets(filterPresetsDeo.value);
+    window.dispatchEvent(new CustomEvent('app-event.custom_input_event', {
+        detail: {
+            value: filterPresetsDeo.value,
+            kind: 'event_kind:filter_presets_selected'
+        }
+    }));
+}
+
 inputFileUploadDeo.onchange = () => {
     const file = inputFileUploadDeo.files[0];
     const url = (window.URL || window.webkitURL).createObjectURL(file);
@@ -629,6 +653,9 @@ async function prepareUi () {
     wasm.run_program(gl, simulationResources, videoInput);
     benchmark('wasm run_program done');
 
+    filterPresetsDeo.value = storage.getFilterPresets();
+    filterPresetsDeo.onchange();
+
     visibility.hideLoading();
     visibility.showSimulationUi();
 }
@@ -700,6 +727,7 @@ function makeStorage () {
     const optionScalingCustomArY = 'option-scaling-custom-aspect-ratio-y';
     const optionScalingCustomStretchNearest = 'option-scaling-custom-stretch-nearest';
     const optionAntialias = 'option-antialias';
+    const optionFilterPresets = 'option-filter-presets';
     return {
         getScalingSelectOption: () => localStorage.getItem(optionScalingSelect) || scalingAutoHtmlId,
         setScalingSelectOption: option => localStorage.setItem(optionScalingSelect, option),
@@ -717,6 +745,8 @@ function makeStorage () {
         setCustomStretchNearest: stretch => localStorage.setItem(optionScalingCustomStretchNearest, stretch ? 'true' : 'false'),
         getAntiAliasing: () => localStorage.getItem(optionAntialias) !== 'false',
         setAntiAliasing: antiAliasing => localStorage.setItem(optionAntialias, antiAliasing ? 'true' : 'false'),
+        getFilterPresets: () => localStorage.getItem(optionFilterPresets) || presetApertureGrille,
+        setFilterPresets: filterPresets => localStorage.setItem(optionFilterPresets, filterPresets),
         removeAllOptions: () => {
             localStorage.removeItem(optionScalingSelect);
             localStorage.removeItem(optionPowerPreferenceSelect);
@@ -726,6 +756,7 @@ function makeStorage () {
             localStorage.removeItem(optionScalingCustomArY);
             localStorage.removeItem(optionScalingCustomStretchNearest);
             localStorage.removeItem(optionAntialias);
+            localStorage.removeItem(optionFilterPresets);
         }
     };
 }
@@ -747,6 +778,8 @@ function makeVisibility () {
         showInfoPanel: () => showElement(infoPanelDeo),
         hideInfoPanel: () => hideElement(infoPanelDeo),
         isInfoPanelVisible: () => isVisible(infoPanelDeo),
+        showFilterOptionMainList: () => showElement(filterOptionMainListDeo),
+        hideFilterOptionMainList: () => hideElement(filterOptionMainListDeo),
         showScalingCustomResButton: () => showElement(scalingCustomResButtonDeo),
         showScaleCustomInputs: () => showElement(scalingCustomInputsDeo),
         hideScaleCustomInputs: () => hideElement(scalingCustomInputsDeo)
@@ -785,7 +818,7 @@ function fixCanvasSize (canvas) {
 
     benchmark(canvas.width, canvas.height, canvas.style.width, canvas.style.height);
 
-    infoPanelScrollAreaDeo.style.setProperty('max-height', height * 0.9 / zoom);
+    infoPanelScrollAreaDeo.style.setProperty('max-height', height * 0.93 / zoom);
 }
 
 function mobileAndTabletCheck () {

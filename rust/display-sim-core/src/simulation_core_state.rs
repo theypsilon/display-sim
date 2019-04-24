@@ -1,15 +1,15 @@
 /* Copyright (c) 2019 José manuel Barroso Galindo <theypsilon@gmail.com>
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
@@ -158,6 +158,7 @@ pub struct Filters {
     pub screen_curvature_kind: ScreenCurvatureKind,
     pub pixel_shadow_shape_kind: ShadowShape,
     pub layering_kind: ScreenLayeringKind,
+    pub locked: bool,
 }
 
 impl Filters {
@@ -182,6 +183,7 @@ impl Filters {
             color_channels: ColorChannels::Combined,
             screen_curvature_kind: ScreenCurvatureKind::Flat,
             layering_kind: ScreenLayeringKind::ShadowWithSolidBackground50,
+            locked: false,
         }
     }
 }
@@ -302,6 +304,7 @@ impl std::fmt::Display for ColorChannels {
 }
 
 pub mod event_kind {
+    pub const FILTER_PRESET: &str = "event_kind:filter_presets_selected";
     pub const PIXEL_BRIGHTNESS: &str = "event_kind:pixel_brightness";
     pub const PIXEL_CONTRAST: &str = "event_kind:pixel_contrast";
     pub const LIGHT_COLOR: &str = "event_kind:light_color";
@@ -325,9 +328,10 @@ pub mod event_kind {
     pub const CAMERA_DIRECTION_Z: &str = "event_kind:camera_direction_z";
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub enum InputEventValue {
     None,
+    FilterPreset(String),
     PixelBrighttness(f32),
     PixelContrast(f32),
     LightColor(i32),
@@ -371,13 +375,13 @@ impl CustomInputEvent {
         self.values.push(value);
         self.kinds.push(kind);
     }
-    pub fn get_value(&self, kind: &str) -> InputEventValue {
+    pub fn get_value<'a>(&'a self, kind: &str) -> &'a InputEventValue {
         for (i, k) in self.kinds.iter().enumerate() {
             if k == kind {
-                return self.values[i];
+                return &self.values[i];
             }
         }
-        InputEventValue::None
+        &InputEventValue::None
     }
     pub fn get_values(&self) -> &[InputEventValue] {
         self.values.as_slice()
