@@ -775,14 +775,15 @@ function fixCanvasSize (canvas) {
     canvas.height = Math.floor(height * dpi / 60) * 60;
 
     if (Math.abs(window.innerWidth / window.outerWidth - 1.0) < 0.05) {
-        benchmark('canvas.style... = screen.width, screen.height');
         canvas.style.width = width;
         canvas.style.height = height;
     } else {
-        benchmark('canvas.style... = window.innerWidth, window.innerHeight');
+        benchmark('using window.inner!');
         canvas.style.width = window.innerWidth;
         canvas.style.height = window.innerHeight;
     }
+
+    benchmark(canvas.width, canvas.height, canvas.style.width, canvas.style.height);
 
     infoPanelScrollAreaDeo.style.setProperty('max-height', height * 0.9 / zoom);
 }
