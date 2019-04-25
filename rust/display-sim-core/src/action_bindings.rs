@@ -95,7 +95,7 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) -
         "h" | "feature-texture-interpolation-inc" => input.next_texture_interpolation.increase.input = pressed,
         "shift+h" | "feature-texture-interpolation-dec" => input.next_texture_interpolation.decrease.input = pressed,
         "," | "feature-backlight-percent-inc" => input.backlight_percent.increase = pressed,
-        "shift+," | "feature-backlight-percent-dec" => input.backlight_percent.decrease = pressed,
+        "." | "feature-backlight-percent-dec" => input.backlight_percent.decrease = pressed,
         "g" | "camera-movement-mode-inc" => input.next_camera_movement_mode.increase.input = pressed,
         "shift+g" | "camera-movement-mode-dec" => input.next_camera_movement_mode.decrease.input = pressed,
         _ => return false,
