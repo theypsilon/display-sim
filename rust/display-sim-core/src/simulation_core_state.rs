@@ -153,7 +153,7 @@ pub struct Filters {
     pub internal_resolution: InternalResolution,
     pub texture_interpolation: TextureInterpolation,
     pub blur_passes: usize,
-    pub horizontal_lpp: usize,
+    pub vertical_lpp: usize,
     pub light_color: i32,
     pub brightness_color: i32,
     pub extra_bright: f32,
@@ -177,7 +177,7 @@ impl Default for Filters {
             internal_resolution: InternalResolution::new(1.0),
             texture_interpolation: TextureInterpolation::Linear,
             blur_passes: 0,
-            horizontal_lpp: 1,
+            vertical_lpp: 1,
             light_color: 0x00FF_FFFF,
             brightness_color: 0x00FF_FFFF,
             extra_bright: 0.0,
@@ -203,7 +203,7 @@ impl Filters {
             internal_resolution: self.internal_resolution.clone(),
             texture_interpolation: TextureInterpolation::Linear,
             blur_passes: 0,
-            horizontal_lpp: 1,
+            vertical_lpp: 1,
             light_color: 0x00FF_FFFF,
             brightness_color: 0x00FF_FFFF,
             extra_bright: 0.0,
@@ -227,7 +227,7 @@ impl Filters {
             internal_resolution: self.internal_resolution.clone(),
             texture_interpolation: TextureInterpolation::Linear,
             blur_passes: 1,
-            horizontal_lpp: 2,
+            vertical_lpp: 2,
             light_color: 0x00FF_FFFF,
             brightness_color: 0x00FF_FFFF,
             extra_bright: 0.0,
@@ -251,7 +251,7 @@ impl Filters {
             internal_resolution: self.internal_resolution.clone(),
             texture_interpolation: TextureInterpolation::Linear,
             blur_passes: 1,
-            horizontal_lpp: 2,
+            vertical_lpp: 2,
             light_color: 0x00FF_FFFF,
             brightness_color: 0x00FF_FFFF,
             extra_bright: 0.0,
@@ -368,7 +368,7 @@ pub mod event_kind {
     pub const LIGHT_COLOR: &str = "event_kind:light_color";
     pub const BRIGHTNESS_COLOR: &str = "event_kind:brightness_color";
     pub const BLUR_LEVEL: &str = "event_kind:blur_level";
-    pub const HORIZONTAL_LPP: &str = "event_kind:horizontal_lpp";
+    pub const VERTICAL_LPP: &str = "event_kind:vertical_lpp";
     pub const PIXEL_SHADOW_HEIGHT: &str = "event_kind:pixel_shadow_height";
     pub const PIXEL_VERTICAL_GAP: &str = "event_kind:pixel_vertical_gap";
     pub const PIXEL_HORIZONTAL_GAP: &str = "event_kind:pixel_horizontal_gap";
@@ -396,7 +396,7 @@ pub enum InputEventValue {
     LightColor(i32),
     BrightnessColor(i32),
     BlurLevel(usize),
-    LinersPerPixel(usize),
+    VerticalLpp(usize),
     BacklightPercent(f32),
     PixelShadowHeight(f32),
     PixelVerticalGap(f32),

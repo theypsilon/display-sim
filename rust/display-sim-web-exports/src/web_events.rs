@@ -110,11 +110,11 @@ impl AppEventDispatcher for WebEventDispatcher {
         self.catch_error(dispatch_event_with("app-event.change_blur_level", &(blur_passes as i32).into()));
     }
 
-    fn dispatch_change_horizontal_lpp(&self, lpp: usize) {
+    fn dispatch_change_vertical_lpp(&self, lpp: usize) {
         if self.are_extra_messages_enabled() {
-            self.dispatch_top_message(&format!("Horizontal lines per pixel: {}", lpp));
+            self.dispatch_top_message(&format!("Vertical lines per pixel: {}", lpp));
         }
-        self.catch_error(dispatch_event_with("app-event.change_horizontal_lpp", &(lpp as i32).into()));
+        self.catch_error(dispatch_event_with("app-event.change_vertical_lpp", &(lpp as i32).into()));
     }
 
     fn dispatch_color_representation(&self, color_channels: ColorChannels) {

@@ -123,8 +123,8 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) -
         "feature-backlight-percent-dec" => input.backlight_percent.decrease = pressed,
         "camera-movement-mode-inc" => input.next_camera_movement_mode.increase.input = pressed,
         "camera-movement-mode-dec" => input.next_camera_movement_mode.decrease.input = pressed,
-        "g" | "horizontal-lpp-inc" => input.lpp.increase.input = pressed,
-        "h" | "horizontal-lpp-dec" => input.lpp.decrease.input = pressed,
+        "g" | "vertical-lpp-inc" => input.lpp.increase.input = pressed,
+        "h" | "vertical-lpp-dec" => input.lpp.decrease.input = pressed,
         "shift" | "left shift" | "right shift" => {
             input.shift = pressed;
             input.pixel_width.reset();

@@ -31,7 +31,7 @@ pub trait AppEventDispatcher: Default {
     fn dispatch_change_brightness_color(&self, res: i32);
     fn dispatch_change_camera_zoom(&self, zoom: f32);
     fn dispatch_change_blur_level(&self, res: usize);
-    fn dispatch_change_horizontal_lpp(&self, res: usize);
+    fn dispatch_change_vertical_lpp(&self, res: usize);
     fn dispatch_color_representation(&self, res: ColorChannels);
     fn dispatch_pixel_geometry(&self, res: PixelsGeometryKind);
     fn dispatch_pixel_shadow_shape(&self, res: ShadowShape);

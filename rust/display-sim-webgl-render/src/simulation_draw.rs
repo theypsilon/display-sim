@@ -68,7 +68,7 @@ impl<'a, T: AppEventDispatcher> SimulationDrawer<'a, T> {
             .camera
             .get_projection(self.res.video.viewport_size.width as f32, self.res.video.viewport_size.height as f32);
 
-        for vl_idx in 0..self.res.filters.horizontal_lpp {
+        for vl_idx in 0..self.res.filters.vertical_lpp {
             for color_idx in 0..self.res.output.color_splits {
                 if let ColorChannels::Overlapping = self.res.filters.color_channels {
                     self.materials.main_buffer_stack.push()?;
@@ -127,7 +127,7 @@ impl<'a, T: AppEventDispatcher> SimulationDrawer<'a, T> {
             self.materials.bg_buffer_stack.push()?;
             self.materials.bg_buffer_stack.bind_current()?;
             gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
-            for vl_idx in 0..self.res.filters.horizontal_lpp {
+            for vl_idx in 0..self.res.filters.vertical_lpp {
                 self.materials.pixels_render.render(PixelsUniform {
                     shadow_kind: 0,
                     geometry_kind: self.res.filters.pixels_geometry_kind,

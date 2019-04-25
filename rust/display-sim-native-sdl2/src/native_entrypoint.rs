@@ -22,7 +22,7 @@ use core::internal_resolution::InternalResolution;
 use core::pixels_shadow::ShadowShape;
 use core::simulation_context::SimulationContext;
 use core::simulation_core_state::{AnimationStep, Input, Resources, VideoInputResources};
-use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, ScreenLayeringKind, TextureInterpolation};
+use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, TextureInterpolation};
 use core::simulation_core_ticker::SimulationCoreTicker;
 use render::simulation_draw::SimulationDrawer;
 use render::simulation_render_state::{Materials, VideoInputMaterials};
@@ -169,8 +169,8 @@ impl AppEventDispatcher for NativeEventDispatcher {
     fn dispatch_change_blur_level(&self, res: usize) {
         println!("change_blur_level: {}", res);
     }
-    fn dispatch_change_horizontal_lpp(&self, res: usize) {
-        println!("change_horizontal_lpp: {}", res);
+    fn dispatch_change_vertical_lpp(&self, res: usize) {
+        println!("change_vertical_lpp: {}", res);
     }
     fn dispatch_color_representation(&self, res: ColorChannels) {
         println!("color_representation: {}", res);
