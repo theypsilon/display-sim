@@ -31,7 +31,9 @@ const firstPreviewImageId = 'first-preview-image';
 
 const presetApertureGrille = 'crt-aperture-grille';
 const presetShadowMask = 'crt-shadow-mask';
+const presetSharp = 'sharp';
 const presetCustom = 'custom';
+const properPresets = [presetApertureGrille, presetShadowMask, presetSharp];
 
 const uiDeo = document.getElementById('ui');
 const loadingDeo = document.getElementById('loading');
@@ -82,7 +84,7 @@ const pixelSpreadDeo = document.getElementById('pixel-spread');
 const pixelBrigthnessDeo = document.getElementById('pixel-brightness');
 const pixelContrastDeo = document.getElementById('pixel-contrast');
 const blurLevelDeo = document.getElementById('blur-level');
-const lppDeo = document.getElementById('lines-per-pixel');
+const horizontalLppDeo = document.getElementById('horizontal-lpp');
 const featureQuitDeo = document.getElementById('feature-quit');
 const featureCaptureFramebufferDeo = document.getElementById('feature-capture-framebuffer');
 const featureClosePanelDeo = document.getElementById('feature-close-panel');
@@ -91,10 +93,10 @@ const featureChangeColorRepresentationDeo = document.getElementById('feature-cha
 const featureChangePixelGeometryDeo = document.getElementById('feature-change-pixel-geometry');
 const featureChangePixelShadowShapeDeo = document.getElementById('feature-change-pixel-shadow-shape');
 const featureChangePixelShadowHeightDeo = document.getElementById('feature-change-pixel-shadow-height');
-const featureChangeScreenLayeringTypeDeo = document.getElementById('feature-change-screen-layering-type');
 const featureChangeScreenCurvatureDeo = document.getElementById('feature-change-screen-curvature');
 const featureInternalResolutionDeo = document.getElementById('feature-internal-resolution');
 const featureTextureInterpolationDeo = document.getElementById('feature-texture-interpolation');
+const featureBacklightPercentDeo = document.getElementById('feature-backlight-percent');
 
 const featureChangeMoveSpeedDeo = document.getElementById('feature-change-move-speed');
 const featureChangeTurnSpeedDeo = document.getElementById('feature-change-turn-speed');
@@ -240,7 +242,7 @@ window.addEventListener('app-event.camera_update', event => {
     { deo: pixelBrigthnessDeo, eventId: 'app-event.change_pixel_brightness' },
     { deo: pixelContrastDeo, eventId: 'app-event.change_pixel_contrast' },
     { deo: blurLevelDeo, eventId: 'app-event.change_blur_level' },
-    { deo: lppDeo, eventId: 'app-event.change_lines_per_pixel' },
+    { deo: horizontalLppDeo, eventId: 'app-event.change_horizontal_lpp' },
     { deo: lightColorDeo, eventId: 'app-event.change_light_color' },
     { deo: brightnessColorDeo, eventId: 'app-event.change_brightness_color' },
     { deo: featureChangeMoveSpeedDeo, eventId: 'app-event.change_movement_speed' },
@@ -251,7 +253,7 @@ window.addEventListener('app-event.camera_update', event => {
     { deo: featureChangePixelGeometryDeo, eventId: 'app-event.pixel_geometry' },
     { deo: featureChangePixelShadowShapeDeo, eventId: 'app-event.pixel_shadow_shape' },
     { deo: featureChangePixelShadowHeightDeo, eventId: 'app-event.pixel_shadow_height' },
-    { deo: featureChangeScreenLayeringTypeDeo, eventId: 'app-event.screen_layering_type' },
+    { deo: featureBacklightPercentDeo, eventId: 'app-event.backlight_percent' },
     { deo: featureInternalResolutionDeo, eventId: 'app-event.internal_resolution' },
     { deo: featureTextureInterpolationDeo, eventId: 'app-event.texture_interpolation' },
     { deo: featureChangeScreenCurvatureDeo, eventId: 'app-event.screen_curvature' }
@@ -303,10 +305,11 @@ customEventOnChange(pixelSpreadDeo, 'pixel_spread', a => +a);
 customEventOnChange(pixelHorizontalGapDeo, 'pixel_horizontal_gap', a => +a);
 customEventOnChange(pixelVerticalGapDeo, 'pixel_vertical_gap', a => +a);
 customEventOnChange(blurLevelDeo, 'blur_level', a => +a);
-customEventOnChange(lppDeo, 'lines_per_pixel', a => +a);
+customEventOnChange(horizontalLppDeo, 'horizontal_lpp', a => +a);
 customEventOnChange(pixelBrigthnessDeo, 'pixel_brightness', a => +a);
 customEventOnChange(pixelContrastDeo, 'pixel_contrast', a => +a);
 customEventOnChange(featureChangePixelShadowHeightDeo, 'pixel_shadow_height', a => +a);
+customEventOnChange(featureBacklightPercentDeo, 'backlight_percent', a => +a);
 const parseColor = (value) => parseInt('0x' + value.substring(1));
 customEventOnChange(lightColorDeo, 'light_color', parseColor);
 customEventOnChange(brightnessColorDeo, 'brightness_color', parseColor);
@@ -327,7 +330,7 @@ function customEventOnChange (deo, kind, parse) {
     featureChangePixelGeometryDeo,
     featureChangePixelShadowShapeDeo,
     featureChangePixelShadowHeightDeo,
-    featureChangeScreenLayeringTypeDeo,
+    featureBacklightPercentDeo,
     featureChangeScreenCurvatureDeo,
     featureQuitDeo,
     featureCaptureFramebufferDeo,
@@ -396,7 +399,7 @@ toggleInfoPanelClass.forEach(deo => {
 filterPresetsDeo.onchange = () => {
     if (filterPresetsDeo.value === presetCustom) {
         visibility.showFilterOptionMainList();
-    } else if ([presetApertureGrille, presetShadowMask].includes(filterPresetsDeo.value)) {
+    } else if (properPresets.includes(filterPresetsDeo.value)) {
         visibility.hideFilterOptionMainList();
     } else {
         filterPresetsDeo.value = presetApertureGrille;

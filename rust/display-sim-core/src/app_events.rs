@@ -15,7 +15,7 @@
 
 use crate::internal_resolution::InternalResolution;
 use crate::pixels_shadow::ShadowShape;
-use crate::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, ScreenLayeringKind, TextureInterpolation};
+use crate::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, TextureInterpolation};
 use std::fmt::Display;
 
 pub trait AppEventDispatcher: Default {
@@ -31,12 +31,12 @@ pub trait AppEventDispatcher: Default {
     fn dispatch_change_brightness_color(&self, res: i32);
     fn dispatch_change_camera_zoom(&self, zoom: f32);
     fn dispatch_change_blur_level(&self, res: usize);
-    fn dispatch_change_lines_per_pixel(&self, res: usize);
+    fn dispatch_change_horizontal_lpp(&self, res: usize);
     fn dispatch_color_representation(&self, res: ColorChannels);
     fn dispatch_pixel_geometry(&self, res: PixelsGeometryKind);
     fn dispatch_pixel_shadow_shape(&self, res: ShadowShape);
     fn dispatch_pixel_shadow_height(&self, res: f32);
-    fn dispatch_screen_layering_type(&self, res: ScreenLayeringKind);
+    fn dispatch_backlight_presence(&self, res: f32);
     fn dispatch_screen_curvature(&self, res: ScreenCurvatureKind);
     fn dispatch_internal_resolution(&self, res: &InternalResolution);
     fn dispatch_texture_interpolation(&self, res: TextureInterpolation);

@@ -153,7 +153,7 @@ pub struct Filters {
     pub internal_resolution: InternalResolution,
     pub texture_interpolation: TextureInterpolation,
     pub blur_passes: usize,
-    pub lines_per_pixel: usize,
+    pub horizontal_lpp: usize,
     pub light_color: i32,
     pub brightness_color: i32,
     pub extra_bright: f32,
@@ -167,52 +167,72 @@ pub struct Filters {
     pub color_channels: ColorChannels,
     pub screen_curvature_kind: ScreenCurvatureKind,
     pub pixel_shadow_shape_kind: ShadowShape,
-    pub layering_kind: ScreenLayeringKind,
+    pub backlight_presence: f32,
     pub locked: bool,
 }
 
 impl Default for Filters {
     fn default() -> Self {
-        Filters::preset_crt_aperture_grille()
+        Filters {
+            internal_resolution: InternalResolution::new(1.0),
+            texture_interpolation: TextureInterpolation::Linear,
+            blur_passes: 0,
+            horizontal_lpp: 1,
+            light_color: 0x00FF_FFFF,
+            brightness_color: 0x00FF_FFFF,
+            extra_bright: 0.0,
+            extra_contrast: 1.0,
+            cur_pixel_width: 1.0,
+            cur_pixel_vertical_gap: 0.0,
+            cur_pixel_horizontal_gap: 0.0,
+            cur_pixel_spread: 0.0,
+            pixel_shadow_height: 1.0,
+            pixels_geometry_kind: PixelsGeometryKind::Squares,
+            pixel_shadow_shape_kind: ShadowShape { value: 0 },
+            color_channels: ColorChannels::Combined,
+            screen_curvature_kind: ScreenCurvatureKind::Flat,
+            backlight_presence: 0.0,
+            locked: false,
+        }
     }
 }
 
 impl Filters {
-    pub fn preset_crt_aperture_grille() -> Filters {
+    pub fn preset_sharp(&self) -> Filters {
         Filters {
-            internal_resolution: InternalResolution::new(1.0),
+            internal_resolution: self.internal_resolution.clone(),
             texture_interpolation: TextureInterpolation::Linear,
-            blur_passes: 1,
-            lines_per_pixel: 2,
+            blur_passes: 0,
+            horizontal_lpp: 1,
             light_color: 0x00FF_FFFF,
             brightness_color: 0x00FF_FFFF,
             extra_bright: 0.0,
             extra_contrast: 1.0,
-            cur_pixel_width: 1.0,
+            cur_pixel_width: self.cur_pixel_width,
             cur_pixel_vertical_gap: 0.0,
             cur_pixel_horizontal_gap: 0.0,
             cur_pixel_spread: 0.0,
-            pixel_shadow_height: 0.25,
+            pixel_shadow_height: 1.0,
             pixels_geometry_kind: PixelsGeometryKind::Squares,
-            pixel_shadow_shape_kind: ShadowShape { value: 3 },
+            pixel_shadow_shape_kind: ShadowShape { value: 0 },
             color_channels: ColorChannels::Combined,
             screen_curvature_kind: ScreenCurvatureKind::Flat,
-            layering_kind: ScreenLayeringKind::ShadowWithSolidBackground50,
+            backlight_presence: 0.0,
             locked: false,
         }
     }
 
-    pub fn preset_crt_shadow_mask() -> Filters {
+    pub fn preset_crt_aperture_grille(&self) -> Filters {
         Filters {
-            internal_resolution: InternalResolution::new(1.0),
+            internal_resolution: self.internal_resolution.clone(),
             texture_interpolation: TextureInterpolation::Linear,
             blur_passes: 1,
-            lines_per_pixel: 2,
+            horizontal_lpp: 2,
             light_color: 0x00FF_FFFF,
             brightness_color: 0x00FF_FFFF,
             extra_bright: 0.0,
             extra_contrast: 1.0,
-            cur_pixel_width: 1.0,
+            cur_pixel_width: self.cur_pixel_width,
             cur_pixel_vertical_gap: 0.0,
             cur_pixel_horizontal_gap: 0.0,
             cur_pixel_spread: 0.0,
@@ -221,7 +241,31 @@ impl Filters {
             pixel_shadow_shape_kind: ShadowShape { value: 3 },
             color_channels: ColorChannels::Combined,
             screen_curvature_kind: ScreenCurvatureKind::Flat,
-            layering_kind: ScreenLayeringKind::ShadowWithSolidBackground50,
+            backlight_presence: 0.5,
+            locked: false,
+        }
+    }
+
+    pub fn preset_crt_shadow_mask(&self) -> Filters {
+        Filters {
+            internal_resolution: self.internal_resolution.clone(),
+            texture_interpolation: TextureInterpolation::Linear,
+            blur_passes: 1,
+            horizontal_lpp: 2,
+            light_color: 0x00FF_FFFF,
+            brightness_color: 0x00FF_FFFF,
+            extra_bright: 0.0,
+            extra_contrast: 1.0,
+            cur_pixel_width: self.cur_pixel_width,
+            cur_pixel_vertical_gap: 0.0,
+            cur_pixel_horizontal_gap: 0.0,
+            cur_pixel_spread: 0.0,
+            pixel_shadow_height: 0.25,
+            pixels_geometry_kind: PixelsGeometryKind::Squares,
+            pixel_shadow_shape_kind: ShadowShape { value: 3 },
+            color_channels: ColorChannels::Combined,
+            screen_curvature_kind: ScreenCurvatureKind::Flat,
+            backlight_presence: 0.5,
             locked: false,
         }
     }
@@ -244,32 +288,7 @@ pub struct ViewModel {
     pub pixel_offset_foreground: Vec<[[f32; 3]; 3]>,
     pub pixel_scale_background: Vec<[f32; 3]>,
     pub pixel_offset_background: Vec<[f32; 3]>,
-    pub is_background_diffuse: bool,
     pub showing_background: bool,
-    pub showing_foreground: bool,
-}
-
-#[derive(FromPrimitive, ToPrimitive, EnumLen, Copy, Clone)]
-pub enum ScreenLayeringKind {
-    ShadowOnly,
-    ShadowWithSolidBackground25,
-    ShadowWithSolidBackground50,
-    ShadowWithSolidBackground75,
-    DiffuseOnly,
-    SolidOnly,
-}
-
-impl std::fmt::Display for ScreenLayeringKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match *self {
-            ScreenLayeringKind::ShadowOnly => write!(f, "Lines only"),
-            ScreenLayeringKind::ShadowWithSolidBackground75 => write!(f, "+75% BL"),
-            ScreenLayeringKind::ShadowWithSolidBackground50 => write!(f, "+50% BL"),
-            ScreenLayeringKind::ShadowWithSolidBackground25 => write!(f, "+25% BL"),
-            ScreenLayeringKind::DiffuseOnly => write!(f, "Backlight only"),
-            ScreenLayeringKind::SolidOnly => write!(f, "Disabled"),
-        }
-    }
 }
 
 #[derive(FromPrimitive, ToPrimitive, EnumLen, Copy, Clone)]
@@ -349,12 +368,13 @@ pub mod event_kind {
     pub const LIGHT_COLOR: &str = "event_kind:light_color";
     pub const BRIGHTNESS_COLOR: &str = "event_kind:brightness_color";
     pub const BLUR_LEVEL: &str = "event_kind:blur_level";
-    pub const LINES_PER_PIXEL: &str = "event_kind:lines_per_pixel";
+    pub const HORIZONTAL_LPP: &str = "event_kind:horizontal_lpp";
     pub const PIXEL_SHADOW_HEIGHT: &str = "event_kind:pixel_shadow_height";
     pub const PIXEL_VERTICAL_GAP: &str = "event_kind:pixel_vertical_gap";
     pub const PIXEL_HORIZONTAL_GAP: &str = "event_kind:pixel_horizontal_gap";
     pub const PIXEL_WIDTH: &str = "event_kind:pixel_width";
     pub const PIXEL_SPREAD: &str = "event_kind:pixel_spread";
+    pub const BACKLIGHT_PERCENT: &str = "event_kind:backlight_percent";
     pub const CAMERA_ZOOM: &str = "event_kind:camera_zoom";
     pub const CAMERA_POS_X: &str = "event_kind:camera_pos_x";
     pub const CAMERA_POS_Y: &str = "event_kind:camera_pos_y";
@@ -377,6 +397,7 @@ pub enum InputEventValue {
     BrightnessColor(i32),
     BlurLevel(usize),
     LinersPerPixel(usize),
+    BacklightPercent(f32),
     PixelShadowHeight(f32),
     PixelVerticalGap(f32),
     PixelHorizontalGap(f32),
@@ -395,6 +416,7 @@ impl InputEventValue {
             InputEventValue::PixelHorizontalGap(n) => n,
             InputEventValue::PixelWidth(n) => n,
             InputEventValue::PixelSpread(n) => n,
+            InputEventValue::BacklightPercent(n) => n,
             InputEventValue::Camera(change) => change.get_f32(),
             _ => 0.0,
         }
@@ -408,9 +430,6 @@ pub struct CustomInputEvent {
 
 impl CustomInputEvent {
     pub fn add_value(&mut self, kind: String, value: InputEventValue) {
-        if self.kinds.contains(&kind) {
-            panic!("We are not supported multiple events of the same kind at the moment. kind: {}", kind);
-        }
         self.values.push(value);
         self.kinds.push(kind);
     }
@@ -471,6 +490,7 @@ pub struct Input {
     pub pixel_spread: IncDec<bool>,
     pub bright: IncDec<bool>,
     pub contrast: IncDec<bool>,
+    pub backlight_percent: IncDec<bool>,
     pub next_camera_movement_mode: IncDec<BooleanButton>,
     pub translation_speed: IncDec<BooleanButton>,
     pub turn_speed: IncDec<BooleanButton>,
@@ -482,7 +502,6 @@ pub struct Input {
     pub next_pixels_shadow_height: IncDec<bool>,
     pub next_color_representation_kind: IncDec<BooleanButton>,
     pub next_pixel_geometry_kind: IncDec<BooleanButton>,
-    pub next_layering_kind: IncDec<BooleanButton>,
     pub next_screen_curvature_type: IncDec<BooleanButton>,
     pub next_internal_resolution: IncDec<BooleanButton>,
     pub next_texture_interpolation: IncDec<BooleanButton>,

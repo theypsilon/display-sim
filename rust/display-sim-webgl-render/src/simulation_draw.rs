@@ -68,54 +68,52 @@ impl<'a, T: AppEventDispatcher> SimulationDrawer<'a, T> {
             .camera
             .get_projection(self.res.video.viewport_size.width as f32, self.res.video.viewport_size.height as f32);
 
-        if self.res.output.showing_foreground {
-            for vl_idx in 0..self.res.filters.lines_per_pixel {
-                for color_idx in 0..self.res.output.color_splits {
-                    if let ColorChannels::Overlapping = self.res.filters.color_channels {
-                        self.materials.main_buffer_stack.push()?;
-                        self.materials.main_buffer_stack.bind_current()?;
-                        if vl_idx == 0 {
-                            gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
-                        }
-                    }
-                    self.materials.pixels_render.render(PixelsUniform {
-                        shadow_kind: self.res.filters.pixel_shadow_shape_kind.value,
-                        geometry_kind: self.res.filters.pixels_geometry_kind,
-                        view: view.as_slice(),
-                        projection: projection.as_slice(),
-                        ambient_strength: self.res.output.ambient_strength,
-                        contrast_factor: self.res.filters.extra_contrast,
-                        light_color: &self.res.output.light_color[color_idx],
-                        extra_light: &self.res.output.extra_light,
-                        light_pos: position.as_slice(),
-                        screen_curvature: self.res.output.screen_curvature_factor,
-                        pixel_spread: &self.res.output.pixel_spread,
-                        pixel_scale: &self.res.output.pixel_scale_foreground.get(vl_idx).expect("Bad pixel_scale_foreground")[color_idx],
-                        pixel_pulse: self.res.output.pixels_pulse,
-                        pixel_offset: &self.res.output.pixel_offset_foreground.get(vl_idx).expect("Bad pixel_offset_foreground")[color_idx],
-                        height_modifier_factor: self.res.output.height_modifier_factor,
-                    });
-                }
+        for vl_idx in 0..self.res.filters.horizontal_lpp {
+            for color_idx in 0..self.res.output.color_splits {
                 if let ColorChannels::Overlapping = self.res.filters.color_channels {
-                    self.materials.main_buffer_stack.pop()?;
-                    self.materials.main_buffer_stack.pop()?;
-                    self.materials.main_buffer_stack.pop()?;
+                    self.materials.main_buffer_stack.push()?;
+                    self.materials.main_buffer_stack.bind_current()?;
+                    if vl_idx == 0 {
+                        gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
+                    }
                 }
+                self.materials.pixels_render.render(PixelsUniform {
+                    shadow_kind: self.res.filters.pixel_shadow_shape_kind.value,
+                    geometry_kind: self.res.filters.pixels_geometry_kind,
+                    view: view.as_slice(),
+                    projection: projection.as_slice(),
+                    ambient_strength: self.res.output.ambient_strength,
+                    contrast_factor: self.res.filters.extra_contrast,
+                    light_color: &self.res.output.light_color[color_idx],
+                    extra_light: &self.res.output.extra_light,
+                    light_pos: position.as_slice(),
+                    screen_curvature: self.res.output.screen_curvature_factor,
+                    pixel_spread: &self.res.output.pixel_spread,
+                    pixel_scale: &self.res.output.pixel_scale_foreground.get(vl_idx).expect("Bad pixel_scale_foreground")[color_idx],
+                    pixel_pulse: self.res.output.pixels_pulse,
+                    pixel_offset: &self.res.output.pixel_offset_foreground.get(vl_idx).expect("Bad pixel_offset_foreground")[color_idx],
+                    height_modifier_factor: self.res.output.height_modifier_factor,
+                });
             }
-
             if let ColorChannels::Overlapping = self.res.filters.color_channels {
-                self.materials.main_buffer_stack.bind_current()?;
-                gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 0);
-                gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, self.materials.main_buffer_stack.get_nth(1)?.texture());
-                gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 1);
-                gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, self.materials.main_buffer_stack.get_nth(2)?.texture());
-                gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 2);
-                gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, self.materials.main_buffer_stack.get_nth(3)?.texture());
-
-                self.materials.rgb_render.render();
-
-                gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 0);
+                self.materials.main_buffer_stack.pop()?;
+                self.materials.main_buffer_stack.pop()?;
+                self.materials.main_buffer_stack.pop()?;
             }
+        }
+
+        if let ColorChannels::Overlapping = self.res.filters.color_channels {
+            self.materials.main_buffer_stack.bind_current()?;
+            gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 0);
+            gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, self.materials.main_buffer_stack.get_nth(1)?.texture());
+            gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 1);
+            gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, self.materials.main_buffer_stack.get_nth(2)?.texture());
+            gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 2);
+            gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, self.materials.main_buffer_stack.get_nth(3)?.texture());
+
+            self.materials.rgb_render.render();
+
+            gl.active_texture(WebGl2RenderingContext::TEXTURE0 + 0);
         }
 
         self.materials.main_buffer_stack.push()?;
@@ -123,15 +121,13 @@ impl<'a, T: AppEventDispatcher> SimulationDrawer<'a, T> {
         gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
 
         if self.res.output.showing_background {
-            if self.res.output.is_background_diffuse {
-                self.materials.bg_buffer_stack.set_resolution(1920 / 2, 1080 / 2);
-                self.materials.bg_buffer_stack.set_depthbuffer(false);
-                self.materials.bg_buffer_stack.set_interpolation(WebGl2RenderingContext::LINEAR);
-                self.materials.bg_buffer_stack.push()?;
-                self.materials.bg_buffer_stack.bind_current()?;
-                gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
-            }
-            for vl_idx in 0..self.res.filters.lines_per_pixel {
+            self.materials.bg_buffer_stack.set_resolution(1920 / 2, 1080 / 2);
+            self.materials.bg_buffer_stack.set_depthbuffer(false);
+            self.materials.bg_buffer_stack.set_interpolation(WebGl2RenderingContext::LINEAR);
+            self.materials.bg_buffer_stack.push()?;
+            self.materials.bg_buffer_stack.bind_current()?;
+            gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
+            for vl_idx in 0..self.res.filters.horizontal_lpp {
                 self.materials.pixels_render.render(PixelsUniform {
                     shadow_kind: 0,
                     geometry_kind: self.res.filters.pixels_geometry_kind,
@@ -150,12 +146,10 @@ impl<'a, T: AppEventDispatcher> SimulationDrawer<'a, T> {
                     height_modifier_factor: 0.0,
                 });
             }
-            if self.res.output.is_background_diffuse {
-                let source = self.materials.bg_buffer_stack.get_current()?.clone();
-                let target = self.materials.main_buffer_stack.get_current()?;
-                self.materials.blur_render.render(&mut self.materials.bg_buffer_stack, &source, &target, 6)?;
-                self.materials.bg_buffer_stack.pop()?;
-            }
+            let source = self.materials.bg_buffer_stack.get_current()?.clone();
+            let target = self.materials.main_buffer_stack.get_current()?;
+            self.materials.blur_render.render(&mut self.materials.bg_buffer_stack, &source, &target, 6)?;
+            self.materials.bg_buffer_stack.pop()?;
         }
         self.materials.main_buffer_stack.pop()?;
         self.materials.main_buffer_stack.pop()?;

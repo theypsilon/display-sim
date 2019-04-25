@@ -169,8 +169,8 @@ impl AppEventDispatcher for NativeEventDispatcher {
     fn dispatch_change_blur_level(&self, res: usize) {
         println!("change_blur_level: {}", res);
     }
-    fn dispatch_change_lines_per_pixel(&self, res: usize) {
-        println!("change_lines_per_pixel: {}", res);
+    fn dispatch_change_horizontal_lpp(&self, res: usize) {
+        println!("change_horizontal_lpp: {}", res);
     }
     fn dispatch_color_representation(&self, res: ColorChannels) {
         println!("color_representation: {}", res);
@@ -184,8 +184,8 @@ impl AppEventDispatcher for NativeEventDispatcher {
     fn dispatch_pixel_shadow_height(&self, res: f32) {
         println!("pixel_shadow_height: {}", res);
     }
-    fn dispatch_screen_layering_type(&self, res: ScreenLayeringKind) {
-        println!("screen_layering_type: {}", res);
+    fn dispatch_backlight_presence(&self, res: f32) {
+        println!("backlight_presence: {}", res);
     }
     fn dispatch_screen_curvature(&self, res: ScreenCurvatureKind) {
         println!("screen_curvature: {}", res);

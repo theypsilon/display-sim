@@ -19,7 +19,7 @@ use core::internal_resolution::InternalResolution;
 use core::pixels_shadow::ShadowShape;
 use core::simulation_context::SimulationContext;
 use core::simulation_core_state::{AnimationStep, Input, Resources, VideoInputResources};
-use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, ScreenLayeringKind, TextureInterpolation};
+use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, TextureInterpolation};
 use core::simulation_core_ticker::SimulationCoreTicker;
 use render::background_render::BackgroundRender;
 use render::blur_render::BlurRender;
@@ -108,12 +108,12 @@ impl AppEventDispatcher for FakeEventDispatcher {
     fn dispatch_change_brightness_color(&self, _: i32) {}
     fn dispatch_change_camera_zoom(&self, _: f32) {}
     fn dispatch_change_blur_level(&self, _: usize) {}
-    fn dispatch_change_lines_per_pixel(&self, _: usize) {}
+    fn dispatch_change_horizontal_lpp(&self, _: usize) {}
     fn dispatch_color_representation(&self, _: ColorChannels) {}
     fn dispatch_pixel_geometry(&self, _: PixelsGeometryKind) {}
     fn dispatch_pixel_shadow_shape(&self, _: ShadowShape) {}
     fn dispatch_pixel_shadow_height(&self, _: f32) {}
-    fn dispatch_screen_layering_type(&self, _: ScreenLayeringKind) {}
+    fn dispatch_backlight_presence(&self, _: f32) {}
     fn dispatch_screen_curvature(&self, _: ScreenCurvatureKind) {}
     fn dispatch_internal_resolution(&self, _: &InternalResolution) {}
     fn dispatch_texture_interpolation(&self, _: TextureInterpolation) {}

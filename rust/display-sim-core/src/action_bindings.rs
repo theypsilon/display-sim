@@ -18,11 +18,6 @@ use crate::simulation_core_state::Input;
 
 pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) -> bool {
     match button_action {
-        "," => {
-            if !input.input_focused {
-                input.next_layering_kind.increase.input = pressed
-            }
-        }
         "." => {
             if !input.input_focused {
                 input.next_pixel_shadow_shape_kind.increase.input = pressed
@@ -116,8 +111,6 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) -
         "feature-change-pixel-geometry-dec" => input.next_pixel_geometry_kind.decrease.input = pressed,
         "l" | "feature-change-screen-curvature-inc" => input.next_screen_curvature_type.increase.input = pressed,
         "feature-change-screen-curvature-dec" => input.next_screen_curvature_type.decrease.input = pressed,
-        "feature-change-screen-layering-type-inc" => input.next_layering_kind.increase.input = pressed,
-        "feature-change-screen-layering-type-dec" => input.next_layering_kind.decrease.input = pressed,
         "feature-change-pixel-shadow-shape-inc" => input.next_pixel_shadow_shape_kind.increase.input = pressed,
         "feature-change-pixel-shadow-shape-dec" => input.next_pixel_shadow_shape_kind.decrease.input = pressed,
         "feature-change-pixel-shadow-height-inc" => input.next_pixels_shadow_height.increase = pressed,
@@ -126,10 +119,12 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) -
         "feature-internal-resolution-dec" => input.next_internal_resolution.decrease.input = pressed,
         "feature-texture-interpolation-inc" => input.next_texture_interpolation.increase.input = pressed,
         "feature-texture-interpolation-dec" => input.next_texture_interpolation.decrease.input = pressed,
+        "feature-backlight-percent-inc" => input.backlight_percent.increase = pressed,
+        "feature-backlight-percent-dec" => input.backlight_percent.decrease = pressed,
         "camera-movement-mode-inc" => input.next_camera_movement_mode.increase.input = pressed,
         "camera-movement-mode-dec" => input.next_camera_movement_mode.decrease.input = pressed,
-        "g" | "lines-per-pixel-inc" => input.lpp.increase.input = pressed,
-        "h" | "lines-per-pixel-dec" => input.lpp.decrease.input = pressed,
+        "g" | "horizontal-lpp-inc" => input.lpp.increase.input = pressed,
+        "h" | "horizontal-lpp-dec" => input.lpp.decrease.input = pressed,
         "shift" | "left shift" | "right shift" => {
             input.shift = pressed;
             input.pixel_width.reset();

@@ -20,7 +20,7 @@ use crate::general_types::get_3_f32color_from_int;
 use crate::pixels_shadow::ShadowShape;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::{
-    event_kind, ColorChannels, Filters, Input, InputEventValue, PixelsGeometryKind, Resources, ScreenCurvatureKind, ScreenLayeringKind, TextureInterpolation,
+    event_kind, ColorChannels, Filters, Input, InputEventValue, PixelsGeometryKind, Resources, ScreenCurvatureKind, TextureInterpolation,
     PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
 };
 use derive_new::new;
@@ -202,12 +202,16 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
                 self.res.saved_filters = Some(self.res.filters.clone());
             }
             self.res.filters.locked = match preset.as_ref() {
+                "sharp" => {
+                    self.res.filters = self.res.filters.preset_sharp();
+                    true
+                }
                 "crt-aperture-grille" => {
-                    self.res.filters = Filters::preset_crt_aperture_grille();
+                    self.res.filters = self.res.filters.preset_crt_aperture_grille();
                     true
                 }
                 "crt-shadow-mask" => {
-                    self.res.filters = Filters::preset_crt_shadow_mask();
+                    self.res.filters = self.res.filters.preset_crt_shadow_mask();
                     true
                 }
                 _ => {
@@ -272,21 +276,25 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         FilterParams::new(ctx, &mut filters.screen_curvature_kind, input.next_screen_curvature_type.to_just_pressed())
             .set_trigger_handler(|x: &ScreenCurvatureKind| ctx.dispatcher.dispatch_screen_curvature(*x))
             .process_options();
-        FilterParams::new(ctx, &mut filters.layering_kind, input.next_layering_kind.to_just_pressed())
-            .set_trigger_handler(|x: &ScreenLayeringKind| ctx.dispatcher.dispatch_screen_layering_type(*x))
-            .process_options();
+        FilterParams::new(ctx, &mut filters.backlight_presence, input.backlight_percent.clone())
+            .set_progression(0.01 * self.dt * self.res.speed.filter_speed)
+            .set_event_value(read_event_value!(self, BacklightPercent, BACKLIGHT_PERCENT))
+            .set_min(0.0)
+            .set_max(1.0)
+            .set_trigger_handler(|x| ctx.dispatcher.dispatch_backlight_presence(x))
+            .process_with_sums();
         FilterParams::new(ctx, &mut filters.color_channels, input.next_color_representation_kind.to_just_pressed())
             .set_trigger_handler(|x: &ColorChannels| ctx.dispatcher.dispatch_color_representation(*x))
             .process_options();
         FilterParams::new(ctx, &mut filters.internal_resolution, input.next_internal_resolution.to_just_pressed())
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_internal_resolution(x))
             .process_options();
-        FilterParams::new(ctx, &mut filters.lines_per_pixel, input.lpp.to_just_pressed())
+        FilterParams::new(ctx, &mut filters.horizontal_lpp, input.lpp.to_just_pressed())
             .set_progression(1)
-            .set_event_value(read_event_value!(self, LinersPerPixel, LINES_PER_PIXEL))
+            .set_event_value(read_event_value!(self, LinersPerPixel, HORIZONTAL_LPP))
             .set_min(1)
             .set_max(20)
-            .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_lines_per_pixel(x))
+            .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_horizontal_lpp(x))
             .process_with_sums();
 
         let pixel_velocity = self.dt * self.res.speed.filter_speed;
@@ -422,12 +430,12 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         dispatcher.dispatch_change_camera_zoom(self.res.camera.zoom);
         dispatcher.dispatch_change_camera_movement_mode(self.res.camera.locked_mode);
         dispatcher.dispatch_change_blur_level(self.res.filters.blur_passes);
-        dispatcher.dispatch_change_lines_per_pixel(self.res.filters.lines_per_pixel);
+        dispatcher.dispatch_change_horizontal_lpp(self.res.filters.horizontal_lpp);
         dispatcher.dispatch_color_representation(self.res.filters.color_channels);
         dispatcher.dispatch_pixel_geometry(self.res.filters.pixels_geometry_kind);
         dispatcher.dispatch_pixel_shadow_shape(self.res.filters.pixel_shadow_shape_kind);
         dispatcher.dispatch_pixel_shadow_height(self.res.filters.pixel_shadow_height);
-        dispatcher.dispatch_screen_layering_type(self.res.filters.layering_kind);
+        dispatcher.dispatch_backlight_presence(self.res.filters.backlight_presence);
         dispatcher.dispatch_screen_curvature(self.res.filters.screen_curvature_kind);
         dispatcher.dispatch_internal_resolution(&self.res.filters.internal_resolution);
         dispatcher.dispatch_texture_interpolation(self.res.filters.texture_interpolation);
@@ -440,7 +448,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
     fn update_outputs(&mut self) {
         self.update_output_filter_source_colors();
         self.update_output_filter_curvature();
-        self.update_output_filter_layering_kind();
+        self.update_output_filter_backlight();
 
         let output = &mut self.res.output;
         let filters = &self.res.filters;
@@ -501,51 +509,16 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         }
     }
 
-    fn update_output_filter_layering_kind(&mut self) {
+    fn update_output_filter_backlight(&mut self) {
         let output = &mut self.res.output;
         let filters = &self.res.filters;
 
-        let mut solid_color_weight = 1.0;
-        match filters.layering_kind {
-            ScreenLayeringKind::ShadowOnly => {
-                output.showing_foreground = true;
-                output.showing_background = false;
-            }
-            ScreenLayeringKind::SolidOnly => {
-                output.showing_foreground = false;
-                output.showing_background = true;
-            }
-            ScreenLayeringKind::DiffuseOnly => {
-                output.showing_foreground = false;
-                output.showing_background = true;
-            }
-            ScreenLayeringKind::ShadowWithSolidBackground75 => {
-                output.showing_foreground = true;
-                output.showing_background = true;
-                solid_color_weight = 0.75;
-            }
-            ScreenLayeringKind::ShadowWithSolidBackground50 => {
-                output.showing_foreground = true;
-                output.showing_background = true;
-                solid_color_weight = 0.5;
-            }
-            ScreenLayeringKind::ShadowWithSolidBackground25 => {
-                output.showing_foreground = true;
-                output.showing_background = true;
-                solid_color_weight = 0.25;
-            }
-        };
+        output.showing_background = filters.backlight_presence > 0.0;
+        let solid_color_weight = filters.backlight_presence;
 
         for i in 0..3 {
             output.light_color_background[i] *= solid_color_weight;
         }
-
-        output.is_background_diffuse = output.showing_foreground
-            || if let ScreenLayeringKind::DiffuseOnly = filters.layering_kind {
-                true
-            } else {
-                false
-            };
     }
 
     fn update_output_pixel_scale_gap_offset(&mut self) {
@@ -559,12 +532,12 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             (filters.cur_pixel_vertical_gap + filters.cur_pixel_vertical_gap) * 0.5 + 1.0,
         ];
 
-        let by_lpp = 1.0 / (filters.lines_per_pixel as f32);
-        let vl_offset_beginning = -(filters.lines_per_pixel as f32 - 1.0) / 2.0;
+        let by_lpp = 1.0 / (filters.horizontal_lpp as f32);
+        let vl_offset_beginning = -(filters.horizontal_lpp as f32 - 1.0) / 2.0;
 
-        output.pixel_scale_background.resize_with(filters.lines_per_pixel, Default::default);
-        output.pixel_offset_background.resize_with(filters.lines_per_pixel, Default::default);
-        for vl_idx in 0..filters.lines_per_pixel {
+        output.pixel_scale_background.resize_with(filters.horizontal_lpp, Default::default);
+        output.pixel_offset_background.resize_with(filters.horizontal_lpp, Default::default);
+        for vl_idx in 0..filters.horizontal_lpp {
             let pixel_offset = &mut output.pixel_offset_background[vl_idx];
             let pixel_scale = &mut output.pixel_scale_background[vl_idx];
 
@@ -574,16 +547,16 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
                 filters.cur_pixel_horizontal_gap + 1.0,
                 (filters.cur_pixel_vertical_gap + filters.cur_pixel_vertical_gap) * 0.5 + 1.0,
             ];
-            if filters.lines_per_pixel > 1 {
+            if filters.horizontal_lpp > 1 {
                 let vl_cur_offset = vl_offset_beginning + vl_idx as f32;
                 pixel_offset[0] = (pixel_offset[0] + vl_cur_offset * filters.cur_pixel_width) * by_lpp;
-                pixel_scale[0] *= filters.lines_per_pixel as f32;
+                pixel_scale[0] *= filters.horizontal_lpp as f32;
             }
         }
 
-        output.pixel_scale_foreground.resize_with(filters.lines_per_pixel, Default::default);
-        output.pixel_offset_foreground.resize_with(filters.lines_per_pixel, Default::default);
-        for vl_idx in 0..filters.lines_per_pixel {
+        output.pixel_scale_foreground.resize_with(filters.horizontal_lpp, Default::default);
+        output.pixel_offset_foreground.resize_with(filters.horizontal_lpp, Default::default);
+        for vl_idx in 0..filters.horizontal_lpp {
             for color_idx in 0..output.color_splits {
                 let pixel_offset = &mut output.pixel_offset_foreground[vl_idx][color_idx];
                 let pixel_scale = &mut output.pixel_scale_foreground[vl_idx][color_idx];

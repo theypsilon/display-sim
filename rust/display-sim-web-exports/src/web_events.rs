@@ -17,7 +17,7 @@ use crate::dispatch_event::{dispatch_event, dispatch_event_with};
 use core::app_events::AppEventDispatcher;
 use core::internal_resolution::InternalResolution;
 use core::pixels_shadow::ShadowShape;
-use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, ScreenLayeringKind, TextureInterpolation};
+use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, TextureInterpolation};
 use js_sys::{Array, Float32Array};
 use std::cell::RefCell;
 use std::fmt::Display;
@@ -110,11 +110,11 @@ impl AppEventDispatcher for WebEventDispatcher {
         self.catch_error(dispatch_event_with("app-event.change_blur_level", &(blur_passes as i32).into()));
     }
 
-    fn dispatch_change_lines_per_pixel(&self, lpp: usize) {
+    fn dispatch_change_horizontal_lpp(&self, lpp: usize) {
         if self.are_extra_messages_enabled() {
-            self.dispatch_top_message(&format!("Lines per pixel: {}", lpp));
+            self.dispatch_top_message(&format!("Horizontal lines per pixel: {}", lpp));
         }
-        self.catch_error(dispatch_event_with("app-event.change_lines_per_pixel", &(lpp as i32).into()));
+        self.catch_error(dispatch_event_with("app-event.change_horizontal_lpp", &(lpp as i32).into()));
     }
 
     fn dispatch_color_representation(&self, color_channels: ColorChannels) {
@@ -148,11 +148,8 @@ impl AppEventDispatcher for WebEventDispatcher {
         ));
     }
 
-    fn dispatch_screen_layering_type(&self, layering_kind: ScreenLayeringKind) {
-        if self.are_extra_messages_enabled() {
-            self.dispatch_top_message(&format!("Layering kind: {}.", layering_kind));
-        }
-        self.catch_error(dispatch_event_with("app-event.screen_layering_type", &(layering_kind.to_string()).into()));
+    fn dispatch_backlight_presence(&self, backlight: f32) {
+        self.catch_error(dispatch_event_with("app-event.backlight_percent", &format!("{:.03}", backlight).into()));
     }
 
     fn dispatch_screen_curvature(&self, screen_curvature_kind: ScreenCurvatureKind) {
