@@ -76,6 +76,8 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) -
         "shift+j" | "blur-level-dec" => input.blur.decrease.input = pressed,
         "k" | "vertical-lpp-inc" => input.vertical_lpp.increase.input = pressed,
         "shift+k" | "vertical-lpp-dec" => input.vertical_lpp.decrease.input = pressed,
+        "l" | "horizontal-lpp-inc" => input.horizontal_lpp.increase.input = pressed,
+        "shift+l" | "horizontal-lpp-dec" => input.horizontal_lpp.decrease.input = pressed,
         "z" | "&lt;" | "pixel-contrast-inc" => input.contrast.increase = pressed,
         "shift+z" | "pixel-contrast-dec" => input.contrast.decrease = pressed,
         "x" | "pixel-brightness-inc" => input.bright.increase = pressed,

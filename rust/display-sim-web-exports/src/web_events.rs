@@ -117,6 +117,13 @@ impl AppEventDispatcher for WebEventDispatcher {
         self.catch_error(dispatch_event_with("app-event.change_vertical_lpp", &(lpp as i32).into()));
     }
 
+    fn dispatch_change_horizontal_lpp(&self, lpp: usize) {
+        if self.are_extra_messages_enabled() {
+            self.dispatch_top_message(&format!("Horizontal lines per pixel: {}", lpp));
+        }
+        self.catch_error(dispatch_event_with("app-event.change_horizontal_lpp", &(lpp as i32).into()));
+    }
+
     fn dispatch_color_representation(&self, color_channels: ColorChannels) {
         if self.are_extra_messages_enabled() {
             self.dispatch_top_message(&format!("Pixel color representation: {}.", color_channels));

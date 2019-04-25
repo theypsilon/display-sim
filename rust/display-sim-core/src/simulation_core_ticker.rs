@@ -296,6 +296,13 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             .set_max(20)
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_vertical_lpp(x))
             .process_with_sums();
+        FilterParams::new(ctx, &mut filters.horizontal_lpp, input.horizontal_lpp.to_just_pressed())
+            .set_progression(1)
+            .set_event_value(read_event_value!(self, HorizontalLpp, HORIZONTAL_LPP))
+            .set_min(1)
+            .set_max(20)
+            .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_horizontal_lpp(x))
+            .process_with_sums();
 
         let pixel_velocity = self.dt * self.res.speed.filter_speed;
         FilterParams::new(ctx, &mut filters.pixels_geometry_kind, input.next_pixel_geometry_kind.to_just_pressed())
@@ -431,6 +438,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         dispatcher.dispatch_change_camera_movement_mode(self.res.camera.locked_mode);
         dispatcher.dispatch_change_blur_level(self.res.filters.blur_passes);
         dispatcher.dispatch_change_vertical_lpp(self.res.filters.vertical_lpp);
+        dispatcher.dispatch_change_horizontal_lpp(self.res.filters.horizontal_lpp);
         dispatcher.dispatch_color_representation(self.res.filters.color_channels);
         dispatcher.dispatch_pixel_geometry(self.res.filters.pixels_geometry_kind);
         dispatcher.dispatch_pixel_shadow_shape(self.res.filters.pixel_shadow_shape_kind);
@@ -532,55 +540,67 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             (filters.cur_pixel_vertical_gap + filters.cur_pixel_vertical_gap) * 0.5 + 1.0,
         ];
 
-        let by_lpp = 1.0 / (filters.vertical_lpp as f32);
+        let by_vertical_lpp = 1.0 / (filters.vertical_lpp as f32);
+        let by_horizontal_lpp = 1.0 / (filters.horizontal_lpp as f32);
         let vl_offset_beginning = -(filters.vertical_lpp as f32 - 1.0) / 2.0;
+        let hl_offset_beginning = -(filters.horizontal_lpp as f32 - 1.0) / 2.0;
 
-        output.pixel_scale_background.resize_with(filters.vertical_lpp, Default::default);
-        output.pixel_offset_background.resize_with(filters.vertical_lpp, Default::default);
-        for vl_idx in 0..filters.vertical_lpp {
-            let pixel_offset = &mut output.pixel_offset_background[vl_idx];
-            let pixel_scale = &mut output.pixel_scale_background[vl_idx];
+        let line_passes = filters.vertical_lpp * filters.horizontal_lpp;
+        output.pixel_scale_background.resize_with(line_passes, Default::default);
+        output.pixel_offset_background.resize_with(line_passes, Default::default);
+        for hl_idx in 0..filters.horizontal_lpp {
+            for vl_idx in 0..filters.vertical_lpp {
+                let pixel_offset = &mut output.pixel_offset_background[vl_idx * filters.horizontal_lpp + hl_idx];
+                let pixel_scale = &mut output.pixel_scale_background[vl_idx * filters.horizontal_lpp + hl_idx];
 
-            *pixel_offset = [0.0, 0.0, 0.0];
-            *pixel_scale = [
-                (filters.cur_pixel_vertical_gap + 1.0) / filters.cur_pixel_width,
-                filters.cur_pixel_horizontal_gap + 1.0,
-                (filters.cur_pixel_vertical_gap + filters.cur_pixel_vertical_gap) * 0.5 + 1.0,
-            ];
-            if filters.vertical_lpp > 1 {
-                let vl_cur_offset = vl_offset_beginning + vl_idx as f32;
-                pixel_offset[0] = (pixel_offset[0] + vl_cur_offset * filters.cur_pixel_width) * by_lpp;
-                pixel_scale[0] *= filters.vertical_lpp as f32;
+                *pixel_offset = [0.0, 0.0, 0.0];
+                *pixel_scale = [
+                    (filters.cur_pixel_vertical_gap + 1.0) / filters.cur_pixel_width,
+                    filters.cur_pixel_horizontal_gap + 1.0,
+                    (filters.cur_pixel_vertical_gap + filters.cur_pixel_vertical_gap) * 0.5 + 1.0,
+                ];
+                if filters.vertical_lpp > 1 {
+                    let vl_cur_offset = vl_offset_beginning + vl_idx as f32;
+                    pixel_offset[0] = (pixel_offset[0] + vl_cur_offset * filters.cur_pixel_width) * by_vertical_lpp;
+                    pixel_scale[0] *= filters.vertical_lpp as f32;
+                }
+                if filters.horizontal_lpp > 1 {
+                    let hl_cur_offset = hl_offset_beginning + hl_idx as f32;
+                    pixel_offset[1] = (pixel_offset[1] + hl_cur_offset) * by_horizontal_lpp;
+                    pixel_scale[1] *= filters.horizontal_lpp as f32;
+                }
             }
         }
 
-        output.pixel_scale_foreground.resize_with(filters.vertical_lpp, Default::default);
-        output.pixel_offset_foreground.resize_with(filters.vertical_lpp, Default::default);
-        for vl_idx in 0..filters.vertical_lpp {
-            for color_idx in 0..output.color_splits {
-                let pixel_offset = &mut output.pixel_offset_foreground[vl_idx][color_idx];
-                let pixel_scale = &mut output.pixel_scale_foreground[vl_idx][color_idx];
-                *pixel_offset = output.pixel_offset_background[vl_idx];
-                *pixel_scale = output.pixel_scale_background[vl_idx];
-                match filters.color_channels {
-                    ColorChannels::Combined => {}
-                    _ => match filters.color_channels {
-                        ColorChannels::SplitHorizontal => {
-                            pixel_offset[0] +=
-                                by_lpp * (color_idx as f32 - 1.0) * (1.0 / 3.0) * filters.cur_pixel_width / (filters.cur_pixel_vertical_gap + 1.0);
-                            pixel_scale[0] *= output.color_splits as f32;
-                        }
-                        ColorChannels::Overlapping => {
-                            pixel_offset[0] +=
-                                by_lpp * (color_idx as f32 - 1.0) * (1.0 / 3.0) * filters.cur_pixel_width / (filters.cur_pixel_vertical_gap + 1.0);
-                            pixel_scale[0] *= 1.5;
-                        }
-                        ColorChannels::SplitVertical => {
-                            pixel_offset[1] += (color_idx as f32 - 1.0) * (1.0 / 3.0) / (filters.cur_pixel_horizontal_gap + 1.0);
-                            pixel_scale[1] *= output.color_splits as f32;
-                        }
-                        _ => unreachable!(),
-                    },
+        output.pixel_scale_foreground.resize_with(line_passes, Default::default);
+        output.pixel_offset_foreground.resize_with(line_passes, Default::default);
+        for hl_idx in 0..filters.horizontal_lpp {
+            for vl_idx in 0..filters.vertical_lpp {
+                for color_idx in 0..output.color_splits {
+                    let pixel_offset = &mut output.pixel_offset_foreground[vl_idx * filters.horizontal_lpp + hl_idx][color_idx];
+                    let pixel_scale = &mut output.pixel_scale_foreground[vl_idx * filters.horizontal_lpp + hl_idx][color_idx];
+                    *pixel_offset = output.pixel_offset_background[vl_idx * filters.horizontal_lpp + hl_idx];
+                    *pixel_scale = output.pixel_scale_background[vl_idx * filters.horizontal_lpp + hl_idx];
+                    match filters.color_channels {
+                        ColorChannels::Combined => {}
+                        _ => match filters.color_channels {
+                            ColorChannels::SplitHorizontal => {
+                                pixel_offset[0] +=
+                                    by_vertical_lpp * (color_idx as f32 - 1.0) * (1.0 / 3.0) * filters.cur_pixel_width / (filters.cur_pixel_vertical_gap + 1.0);
+                                pixel_scale[0] *= output.color_splits as f32;
+                            }
+                            ColorChannels::Overlapping => {
+                                pixel_offset[0] +=
+                                    by_vertical_lpp * (color_idx as f32 - 1.0) * (1.0 / 3.0) * filters.cur_pixel_width / (filters.cur_pixel_vertical_gap + 1.0);
+                                pixel_scale[0] *= 1.5;
+                            }
+                            ColorChannels::SplitVertical => {
+                                pixel_offset[1] += by_horizontal_lpp * (color_idx as f32 - 1.0) * (1.0 / 3.0) / (filters.cur_pixel_horizontal_gap + 1.0);
+                                pixel_scale[1] *= output.color_splits as f32;
+                            }
+                            _ => unreachable!(),
+                        },
+                    }
                 }
             }
         }

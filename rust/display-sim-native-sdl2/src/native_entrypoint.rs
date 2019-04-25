@@ -172,6 +172,9 @@ impl AppEventDispatcher for NativeEventDispatcher {
     fn dispatch_change_vertical_lpp(&self, res: usize) {
         println!("change_vertical_lpp: {}", res);
     }
+    fn dispatch_change_horizontal_lpp(&self, res: usize) {
+        println!("change_horizontal_lpp: {}", res);
+    }
     fn dispatch_color_representation(&self, res: ColorChannels) {
         println!("color_representation: {}", res);
     }

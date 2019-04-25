@@ -85,6 +85,7 @@ const pixelBrigthnessDeo = document.getElementById('pixel-brightness');
 const pixelContrastDeo = document.getElementById('pixel-contrast');
 const blurLevelDeo = document.getElementById('blur-level');
 const verticalLppDeo = document.getElementById('vertical-lpp');
+const horizontalLppDeo = document.getElementById('horizontal-lpp');
 const featureQuitDeo = document.getElementById('feature-quit');
 const featureCaptureFramebufferDeo = document.getElementById('feature-capture-framebuffer');
 const featureClosePanelDeo = document.getElementById('feature-close-panel');
@@ -243,6 +244,7 @@ window.addEventListener('app-event.camera_update', event => {
     { deo: pixelContrastDeo, eventId: 'app-event.change_pixel_contrast' },
     { deo: blurLevelDeo, eventId: 'app-event.change_blur_level' },
     { deo: verticalLppDeo, eventId: 'app-event.change_vertical_lpp' },
+    { deo: horizontalLppDeo, eventId: 'app-event.change_horizontal_lpp' },
     { deo: lightColorDeo, eventId: 'app-event.change_light_color' },
     { deo: brightnessColorDeo, eventId: 'app-event.change_brightness_color' },
     { deo: featureChangeMoveSpeedDeo, eventId: 'app-event.change_movement_speed' },
@@ -306,6 +308,7 @@ customEventOnChange(pixelHorizontalGapDeo, 'pixel_horizontal_gap', a => +a);
 customEventOnChange(pixelVerticalGapDeo, 'pixel_vertical_gap', a => +a);
 customEventOnChange(blurLevelDeo, 'blur_level', a => +a);
 customEventOnChange(verticalLppDeo, 'vertical_lpp', a => +a);
+customEventOnChange(horizontalLppDeo, 'horizontal_lpp', a => +a);
 customEventOnChange(pixelBrigthnessDeo, 'pixel_brightness', a => +a);
 customEventOnChange(pixelContrastDeo, 'pixel_contrast', a => +a);
 customEventOnChange(featureChangePixelShadowHeightDeo, 'pixel_shadow_height', a => +a);
