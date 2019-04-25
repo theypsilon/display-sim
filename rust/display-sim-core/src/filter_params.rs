@@ -136,29 +136,31 @@ fn operate_filter<T, TriggerHandler, Dispatcher>(
     Dispatcher: AppEventDispatcher,
 {
     let last_value = *params.var;
-    let velocity = if let Some(velocity) = params.velocity { velocity } else { Default::default() };
-    if params.incdec.increase {
-        inc_op(params.var, velocity);
-    }
-    if params.incdec.decrease {
-        dec_op(params.var, velocity);
-    }
     if let Some(val) = params.event_value {
         *params.var = val;
     }
+    let is_min = if let Some(min) = params.min { *params.var <= min } else { false };
+    let is_max = if let Some(max) = params.max { *params.var >= max } else { false };
+    let velocity = if let Some(velocity) = params.velocity { velocity } else { Default::default() };
+    if is_min {
+        let min = params.min.expect("is_min should guarantee this.");
+        *params.var = min;
+        if params.incdec.decrease {
+            params.ctx.dispatcher.dispatch_minimum_value(&min);
+        }
+    } else if params.incdec.decrease {
+        dec_op(params.var, velocity);
+    }
+    if is_max {
+        let max = params.max.expect("is_max should guarantee this.");
+        *params.var = max;
+        if params.incdec.increase {
+            params.ctx.dispatcher.dispatch_maximum_value(&max);
+        }
+    } else if params.incdec.increase {
+        inc_op(params.var, velocity);
+    }
     if last_value != *params.var {
-        if let Some(min) = params.min {
-            if *params.var < min {
-                *params.var = min;
-                params.ctx.dispatcher.dispatch_minimum_value(&min);
-            }
-        }
-        if let Some(max) = params.max {
-            if *params.var > max {
-                *params.var = max;
-                params.ctx.dispatcher.dispatch_maximum_value(&max);
-            }
-        }
         if let Some(handler) = params.trigger_handler {
             handler(*params.var);
         }

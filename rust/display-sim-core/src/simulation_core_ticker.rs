@@ -289,7 +289,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         FilterParams::new(ctx, &mut filters.internal_resolution, input.next_internal_resolution.to_just_pressed())
             .set_trigger_handler(|x| ctx.dispatcher.dispatch_internal_resolution(x))
             .process_options();
-        FilterParams::new(ctx, &mut filters.vertical_lpp, input.lpp.to_just_pressed())
+        FilterParams::new(ctx, &mut filters.vertical_lpp, input.vertical_lpp.to_just_pressed())
             .set_progression(1)
             .set_event_value(read_event_value!(self, VerticalLpp, VERTICAL_LPP))
             .set_min(1)

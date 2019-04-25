@@ -497,7 +497,7 @@ pub struct Input {
     pub filter_speed: IncDec<BooleanButton>,
     pub mouse_click: BooleanButton,
     pub blur: IncDec<BooleanButton>,
-    pub lpp: IncDec<BooleanButton>,
+    pub vertical_lpp: IncDec<BooleanButton>,
     pub next_pixel_shadow_shape_kind: IncDec<BooleanButton>,
     pub next_pixels_shadow_height: IncDec<bool>,
     pub next_color_representation_kind: IncDec<BooleanButton>,
