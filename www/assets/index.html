@@ -231,14 +231,17 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
         </div>
         <div class="info-category">
           <h5>Screen Filter Options <div id="reset-filters" class="reset-button"><button class="activate-button" title="All screen filter options will be reset.">Reset Filters</button></div></h5>
-          <label for="filter-presets" >Presets:</label>
-          <select id="filter-presets" name="filter-presets">
-              <option value="crt-aperture-grille">CRT Aperture Grille</option>
-              <option value="crt-shadow-mask">CRT Shadow Mask</option>
-              <option value="sharp">Sharp Pixels</option>
-              <option value="custom">Custom</option>
-          </select>
           <ul id="filter-option-main-list" class="info-options">
+            <li title="Select preset from this list."><div><div class="feature-name">Preset</div></div>
+              <select id="filter-presets" name="filter-presets">
+                  <option value="crt-aperture-grille-1">CRT Aperture Grille 1</option>
+                  <option value="crt-shadow-mask-1">CRT Shadow Mask 1</option>
+                  <option value="crt-shadow-mask-2">CRT Shadow Mask 2</option>
+                  <option value="sharp-1">Sharp Pixels</option>
+                  <option value="strange-1">Strange</option>
+                  <option value="custom">Custom</option>
+              </select>
+            </li>
             <li title="Horizontal gap Hotkeys: U & Shift+U"><div><div class="feature-name">Horizontal gap</div><sup class="feature-hotkeys">(U, Shift+U)</sup></div><div class="feature-value"><input id="pixel-horizontal-gap" class="number-input feature-modificable-input" type="number" placeholder="0" step="0.001" min="0" max="10" value="0"></div></li>
             <li title="Vertical gap Hotkeys: I & Shift+I"><div><div class="feature-name">Vertical gap</div><sup class="feature-hotkeys">(I, Shift+I)</sup></div><div class="feature-value"><input id="pixel-vertical-gap" class="number-input feature-modificable-input" type="number" placeholder="0" step="0.001" min="0" max="10" value="0"></div></li>
             <li title="Width Hotkeys: O & Shift+O"><div><div class="feature-name">Pixel width</div><sup class="feature-hotkeys">(O, Shift+O)</sup></div><div class="feature-value"><input id="pixel-width" class="number-input feature-modificable-input" type="number" placeholder="0" step="0.001" min="0" max="10" value="0"></div></li>

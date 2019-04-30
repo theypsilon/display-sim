@@ -227,6 +227,10 @@ impl AppEventDispatcher for WebEventDispatcher {
         self.catch_error(dispatch_event_with("app-event.screenshot", &array));
     }
 
+    fn dispatch_custom_preset(&self) {
+        self.catch_error(dispatch_event("app-event.preset_selector_custom"));
+    }
+
     fn dispatch_change_camera_movement_mode(&self, locked_mode: bool) {
         let message = if locked_mode { "Lock on Display" } else { "Free Flight" };
         self.dispatch_top_message(&format!("Camera movement: {}.", message));

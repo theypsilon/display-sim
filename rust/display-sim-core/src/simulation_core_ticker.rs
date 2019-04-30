@@ -88,6 +88,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
 
     pub fn update(&mut self) {
         if self.res.resetted {
+            //self.res.filters.internal_resolution.set_resolution(4320);
             self.change_frontend_input_values();
         }
         self.update_timers();
@@ -198,32 +199,23 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
 
     fn update_filters(&mut self) {
         if let InputEventValue::FilterPreset(preset) = self.input.custom_event.get_value(event_kind::FILTER_PRESET) {
-            if !self.res.filters.locked {
+            if self.res.filters.preset_name == "Custom" {
                 self.res.saved_filters = Some(self.res.filters.clone());
             }
-            self.res.filters.locked = match preset.as_ref() {
-                "sharp" => {
-                    self.res.filters = self.res.filters.preset_sharp();
-                    true
-                }
-                "crt-aperture-grille" => {
-                    self.res.filters = self.res.filters.preset_crt_aperture_grille();
-                    true
-                }
-                "crt-shadow-mask" => {
-                    self.res.filters = self.res.filters.preset_crt_shadow_mask();
-                    true
-                }
+            self.res.filters = match preset.as_ref() {
+                "sharp-1" => self.res.filters.preset_sharp_1(),
+                "crt-aperture-grille-1" => self.res.filters.preset_crt_aperture_grille_1(),
+                "crt-shadow-mask-1" => self.res.filters.preset_crt_shadow_mask_1(),
+                "crt-shadow-mask-2" => self.res.filters.preset_crt_shadow_mask_2(),
                 _ => {
                     if let Some(ref saved_filters) = self.res.saved_filters {
-                        self.res.filters = saved_filters.clone();
+                        saved_filters.clone()
+                    } else {
+                        return;
                     }
-                    false
                 }
             };
-        }
-        if self.res.filters.locked {
-            return;
+            self.change_frontend_input_values();
         }
         if self.input.reset_filters {
             self.res.filters = Filters::default();
@@ -249,99 +241,157 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         let filters = &mut self.res.filters;
         let input = &self.input;
 
+        let mut changed = false;
+
         FilterParams::new(ctx, &mut filters.extra_bright, input.bright.clone())
             .set_progression(0.01 * self.dt * self.res.speed.filter_speed)
             .set_event_value(read_event_value!(self, PixelBrighttness, PIXEL_BRIGHTNESS))
             .set_min(-1.0)
             .set_max(1.0)
-            .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_pixel_brightness(x))
+            .set_trigger_handler(|x| {
+                changed = true;
+                ctx.dispatcher.dispatch_change_pixel_brightness(x);
+            })
             .process_with_sums();
         FilterParams::new(ctx, &mut filters.extra_contrast, input.contrast.clone())
             .set_progression(0.01 * self.dt * self.res.speed.filter_speed)
             .set_event_value(read_event_value!(self, PixelContrast, PIXEL_CONTRAST))
             .set_min(0.0)
             .set_max(20.0)
-            .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_pixel_contrast(x))
+            .set_trigger_handler(|x| {
+                changed = true;
+                ctx.dispatcher.dispatch_change_pixel_contrast(x);
+            })
             .process_with_sums();
         FilterParams::new(ctx, &mut filters.blur_passes, input.blur.to_just_pressed())
             .set_progression(1)
             .set_event_value(read_event_value!(self, BlurLevel, BLUR_LEVEL))
             .set_min(0)
             .set_max(100)
-            .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_blur_level(x))
+            .set_trigger_handler(|x| {
+                changed = true;
+                ctx.dispatcher.dispatch_change_blur_level(x);
+            })
             .process_with_sums();
         FilterParams::new(ctx, &mut filters.texture_interpolation, input.next_texture_interpolation.to_just_pressed())
-            .set_trigger_handler(|x: &TextureInterpolation| ctx.dispatcher.dispatch_texture_interpolation(*x))
+            .set_trigger_handler(|x: &TextureInterpolation| {
+                changed = true;
+                ctx.dispatcher.dispatch_texture_interpolation(*x);
+            })
             .process_options();
         FilterParams::new(ctx, &mut filters.screen_curvature_kind, input.next_screen_curvature_type.to_just_pressed())
-            .set_trigger_handler(|x: &ScreenCurvatureKind| ctx.dispatcher.dispatch_screen_curvature(*x))
+            .set_trigger_handler(|x: &ScreenCurvatureKind| {
+                changed = true;
+                ctx.dispatcher.dispatch_screen_curvature(*x);
+            })
             .process_options();
         FilterParams::new(ctx, &mut filters.backlight_presence, input.backlight_percent.clone())
             .set_progression(0.01 * self.dt * self.res.speed.filter_speed)
             .set_event_value(read_event_value!(self, BacklightPercent, BACKLIGHT_PERCENT))
             .set_min(0.0)
             .set_max(1.0)
-            .set_trigger_handler(|x| ctx.dispatcher.dispatch_backlight_presence(x))
+            .set_trigger_handler(|x| {
+                changed = true;
+                ctx.dispatcher.dispatch_backlight_presence(x);
+            })
             .process_with_sums();
         FilterParams::new(ctx, &mut filters.color_channels, input.next_color_representation_kind.to_just_pressed())
-            .set_trigger_handler(|x: &ColorChannels| ctx.dispatcher.dispatch_color_representation(*x))
+            .set_trigger_handler(|x: &ColorChannels| {
+                changed = true;
+                ctx.dispatcher.dispatch_color_representation(*x);
+            })
             .process_options();
         FilterParams::new(ctx, &mut filters.internal_resolution, input.next_internal_resolution.to_just_pressed())
-            .set_trigger_handler(|x| ctx.dispatcher.dispatch_internal_resolution(x))
+            .set_trigger_handler(|x| {
+                changed = true;
+                ctx.dispatcher.dispatch_internal_resolution(x);
+            })
             .process_options();
         FilterParams::new(ctx, &mut filters.vertical_lpp, input.vertical_lpp.to_just_pressed())
             .set_progression(1)
             .set_event_value(read_event_value!(self, VerticalLpp, VERTICAL_LPP))
             .set_min(1)
             .set_max(20)
-            .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_vertical_lpp(x))
+            .set_trigger_handler(|x| {
+                changed = true;
+                ctx.dispatcher.dispatch_change_vertical_lpp(x);
+            })
             .process_with_sums();
         FilterParams::new(ctx, &mut filters.horizontal_lpp, input.horizontal_lpp.to_just_pressed())
             .set_progression(1)
             .set_event_value(read_event_value!(self, HorizontalLpp, HORIZONTAL_LPP))
             .set_min(1)
             .set_max(20)
-            .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_horizontal_lpp(x))
+            .set_trigger_handler(|x| {
+                changed = true;
+                ctx.dispatcher.dispatch_change_horizontal_lpp(x);
+            })
             .process_with_sums();
 
         let pixel_velocity = self.dt * self.res.speed.filter_speed;
         FilterParams::new(ctx, &mut filters.pixels_geometry_kind, input.next_pixel_geometry_kind.to_just_pressed())
-            .set_trigger_handler(|x: &PixelsGeometryKind| ctx.dispatcher.dispatch_pixel_geometry(*x))
+            .set_trigger_handler(|x: &PixelsGeometryKind| {
+                changed = true;
+                ctx.dispatcher.dispatch_pixel_geometry(*x);
+            })
             .process_options();
         FilterParams::new(ctx, &mut filters.pixel_shadow_shape_kind, input.next_pixel_shadow_shape_kind.to_just_pressed())
-            .set_trigger_handler(|x: &ShadowShape| ctx.dispatcher.dispatch_pixel_shadow_shape(*x))
+            .set_trigger_handler(|x: &ShadowShape| {
+                changed = true;
+                ctx.dispatcher.dispatch_pixel_shadow_shape(*x);
+            })
             .process_options();
         FilterParams::new(ctx, &mut filters.pixel_shadow_height, input.next_pixels_shadow_height.clone())
             .set_progression(self.dt * 0.3)
             .set_event_value(read_event_value!(self, PixelShadowHeight, PIXEL_SHADOW_HEIGHT))
             .set_min(0.0)
             .set_max(1.0)
-            .set_trigger_handler(|x| ctx.dispatcher.dispatch_pixel_shadow_height(x))
+            .set_trigger_handler(|x| {
+                changed = true;
+                ctx.dispatcher.dispatch_pixel_shadow_height(x);
+            })
             .process_with_sums();
         FilterParams::new(ctx, &mut filters.cur_pixel_vertical_gap, input.pixel_vertical_gap.clone())
             .set_progression(pixel_velocity * 0.00125)
             .set_event_value(read_event_value!(self, PixelVerticalGap, PIXEL_VERTICAL_GAP))
             .set_min(0.0)
-            .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_pixel_vertical_gap(x))
+            .set_trigger_handler(|x| {
+                changed = true;
+                ctx.dispatcher.dispatch_change_pixel_vertical_gap(x);
+            })
             .process_with_sums();
         FilterParams::new(ctx, &mut filters.cur_pixel_horizontal_gap, input.pixel_horizontal_gap.clone())
             .set_progression(pixel_velocity * 0.00125)
             .set_event_value(read_event_value!(self, PixelHorizontalGap, PIXEL_HORIZONTAL_GAP))
             .set_min(0.0)
-            .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_pixel_horizontal_gap(x))
+            .set_trigger_handler(|x| {
+                changed = true;
+                ctx.dispatcher.dispatch_change_pixel_horizontal_gap(x);
+            })
             .process_with_sums();
         FilterParams::new(ctx, &mut filters.cur_pixel_width, input.pixel_width.clone())
             .set_progression(pixel_velocity * 0.005)
             .set_event_value(read_event_value!(self, PixelWidth, PIXEL_WIDTH))
             .set_min(0.0)
-            .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_pixel_width(x))
+            .set_trigger_handler(|x| {
+                changed = true;
+                ctx.dispatcher.dispatch_change_pixel_width(x);
+            })
             .process_with_sums();
         FilterParams::new(ctx, &mut filters.cur_pixel_spread, input.pixel_spread.clone())
             .set_progression(pixel_velocity * 0.005)
             .set_event_value(read_event_value!(self, PixelSpread, PIXEL_SPREAD))
             .set_min(0.0)
-            .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_pixel_spread(x))
+            .set_trigger_handler(|x| {
+                changed = true;
+                ctx.dispatcher.dispatch_change_pixel_spread(x);
+            })
             .process_with_sums();
+
+        if changed && self.res.filters.preset_name != "Custom" {
+            ctx.dispatcher.dispatch_custom_preset();
+            self.res.filters.preset_name = "Custom".into();
+        }
     }
 
     fn update_camera(&mut self) {
@@ -554,11 +604,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
                 let pixel_scale = &mut output.pixel_scale_background[vl_idx * filters.horizontal_lpp + hl_idx];
 
                 *pixel_offset = [0.0, 0.0, 0.0];
-                *pixel_scale = [
-                    (filters.cur_pixel_vertical_gap + 1.0) / filters.cur_pixel_width,
-                    filters.cur_pixel_horizontal_gap + 1.0,
-                    (filters.cur_pixel_vertical_gap + filters.cur_pixel_vertical_gap) * 0.5 + 1.0,
-                ];
+                *pixel_scale = [(0.0 + 1.0) / filters.cur_pixel_width, 0.0 + 1.0, (0.0 + 0.0) * 0.5 + 1.0];
                 if filters.vertical_lpp > 1 {
                     let vl_cur_offset = vl_offset_beginning + vl_idx as f32;
                     pixel_offset[0] = (pixel_offset[0] + vl_cur_offset * filters.cur_pixel_width) * by_vertical_lpp;
@@ -579,8 +625,25 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
                 for color_idx in 0..output.color_splits {
                     let pixel_offset = &mut output.pixel_offset_foreground[vl_idx * filters.horizontal_lpp + hl_idx][color_idx];
                     let pixel_scale = &mut output.pixel_scale_foreground[vl_idx * filters.horizontal_lpp + hl_idx][color_idx];
-                    *pixel_offset = output.pixel_offset_background[vl_idx * filters.horizontal_lpp + hl_idx];
-                    *pixel_scale = output.pixel_scale_background[vl_idx * filters.horizontal_lpp + hl_idx];
+                    *pixel_offset = [0.0, 0.0, 0.0];
+                    *pixel_scale = [
+                        (filters.cur_pixel_vertical_gap + 1.0) / filters.cur_pixel_width,
+                        filters.cur_pixel_horizontal_gap + 1.0,
+                        (filters.cur_pixel_vertical_gap + filters.cur_pixel_vertical_gap) * 0.5 + 1.0,
+                    ];
+                    if filters.vertical_lpp > 1 {
+                        let vl_cur_offset = vl_offset_beginning + vl_idx as f32;
+                        pixel_offset[0] = (pixel_offset[0] + vl_cur_offset * filters.cur_pixel_width) * by_vertical_lpp;
+                        pixel_scale[0] *= filters.vertical_lpp as f32;
+                    }
+                    if filters.horizontal_lpp > 1 {
+                        let hl_cur_offset = hl_offset_beginning + hl_idx as f32;
+                        pixel_offset[1] = (pixel_offset[1] + hl_cur_offset) * by_horizontal_lpp;
+                        pixel_scale[1] *= filters.horizontal_lpp as f32;
+                        if filters.horizontal_lpp % 2 == 0 && hl_idx % 2 == 1 {
+                            pixel_offset[0] += 0.5 * filters.cur_pixel_width * by_vertical_lpp;
+                        }
+                    }
                     match filters.color_channels {
                         ColorChannels::Combined => {}
                         _ => match filters.color_channels {

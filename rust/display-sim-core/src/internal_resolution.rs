@@ -41,7 +41,7 @@ impl InternalResolution {
         self.viewport = viewport;
         self.max_texture_size = max_texture_size;
     }
-    fn set_resolution(&mut self, resolution: i32) {
+    pub fn set_resolution(&mut self, resolution: i32) {
         self.multiplier = f64::from(resolution) / f64::from(self.viewport.height);
         if self.width() > self.max_texture_size || self.height() > self.max_texture_size {
             self.previous_option();

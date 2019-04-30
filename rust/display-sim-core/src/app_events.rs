@@ -51,6 +51,7 @@ pub trait AppEventDispatcher: Default {
     fn dispatch_exit_pointer_lock(&self);
     fn dispatch_screenshot(&self, pixels: &[u8], multiplier: f64);
     fn dispatch_change_camera_movement_mode(&self, locked_mode: bool);
+    fn dispatch_custom_preset(&self);
     fn dispatch_top_message(&self, message: &str);
     fn dispatch_minimum_value<T: Display>(&self, value: &T);
     fn dispatch_maximum_value<T: Display>(&self, value: &T);

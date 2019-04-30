@@ -29,11 +29,19 @@ const glCanvasHtmlId = 'gl-canvas';
 const topMessageHtmlId = 'top-message';
 const firstPreviewImageId = 'first-preview-image';
 
-const presetApertureGrille = 'crt-aperture-grille';
-const presetShadowMask = 'crt-shadow-mask';
-const presetSharp = 'sharp';
+const presetApertureGrille1 = 'crt-aperture-grille-1';
+const presetShadowMask1 = 'crt-shadow-mask-1';
+const presetShadowMask2 = 'crt-shadow-mask-2';
+const presetSharp1 = 'sharp-1';
+const presetStrange1 = 'strange-1';
 const presetCustom = 'custom';
-const properPresets = [presetApertureGrille, presetShadowMask, presetSharp];
+const properPresets = [
+    presetApertureGrille1,
+    presetShadowMask1,
+    presetShadowMask2,
+    presetSharp1,
+    presetStrange1
+];
 
 const uiDeo = document.getElementById('ui');
 const loadingDeo = document.getElementById('loading');
@@ -403,9 +411,9 @@ filterPresetsDeo.onchange = () => {
     if (filterPresetsDeo.value === presetCustom) {
         visibility.showFilterOptionMainList();
     } else if (properPresets.includes(filterPresetsDeo.value)) {
-        visibility.hideFilterOptionMainList();
+        visibility.showFilterOptionMainList();
     } else {
-        filterPresetsDeo.value = presetApertureGrille;
+        filterPresetsDeo.value = presetApertureGrille1;
     }
     storage.setFilterPresets(filterPresetsDeo.value);
     window.dispatchEvent(new CustomEvent('app-event.custom_input_event', {
@@ -415,6 +423,10 @@ filterPresetsDeo.onchange = () => {
         }
     }));
 };
+
+window.addEventListener('app-event.preset_selector_custom', () => {
+    filterPresetsDeo.value = presetCustom;
+}, false);
 
 inputFileUploadDeo.onchange = () => {
     const file = inputFileUploadDeo.files[0];
@@ -755,7 +767,7 @@ function makeStorage () {
         setCustomStretchNearest: stretch => localStorage.setItem(optionScalingCustomStretchNearest, stretch ? 'true' : 'false'),
         getAntiAliasing: () => localStorage.getItem(optionAntialias) !== 'false',
         setAntiAliasing: antiAliasing => localStorage.setItem(optionAntialias, antiAliasing ? 'true' : 'false'),
-        getFilterPresets: () => localStorage.getItem(optionFilterPresets) || presetApertureGrille,
+        getFilterPresets: () => localStorage.getItem(optionFilterPresets) || presetApertureGrille1,
         setFilterPresets: filterPresets => localStorage.setItem(optionFilterPresets, filterPresets),
         removeAllOptions: () => {
             localStorage.removeItem(optionScalingSelect);

@@ -223,6 +223,9 @@ impl AppEventDispatcher for NativeEventDispatcher {
     fn dispatch_exit_pointer_lock(&self) {
         println!("exit_pointer_lock");
     }
+    fn dispatch_custom_preset(&self) {
+        println!("dispatch_custom_preset");
+    }
     fn dispatch_screenshot(&self, _: &[u8], _: f64) {}
     fn dispatch_change_camera_movement_mode(&self, locked_mode: bool) {
         println!("change_camera_movement_mode: {}", locked_mode);

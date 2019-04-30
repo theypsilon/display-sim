@@ -169,38 +169,38 @@ pub struct Filters {
     pub screen_curvature_kind: ScreenCurvatureKind,
     pub pixel_shadow_shape_kind: ShadowShape,
     pub backlight_presence: f32,
-    pub locked: bool,
+    pub preset_name: String,
 }
 
 impl Default for Filters {
     fn default() -> Self {
         Filters {
-            internal_resolution: InternalResolution::new(1.0),
+            internal_resolution: InternalResolution::new(2.0),
             texture_interpolation: TextureInterpolation::Linear,
             blur_passes: 0,
             vertical_lpp: 1,
             horizontal_lpp: 1,
-            light_color: 0x00FF_FFFF,
+            light_color: 0x00FF_00FF,
             brightness_color: 0x00FF_FFFF,
             extra_bright: 0.0,
             extra_contrast: 1.0,
             cur_pixel_width: 1.0,
             cur_pixel_vertical_gap: 0.0,
             cur_pixel_horizontal_gap: 0.0,
-            cur_pixel_spread: 0.0,
+            cur_pixel_spread: 1.0,
             pixel_shadow_height: 1.0,
-            pixels_geometry_kind: PixelsGeometryKind::Squares,
+            pixels_geometry_kind: PixelsGeometryKind::Cubes,
             pixel_shadow_shape_kind: ShadowShape { value: 0 },
-            color_channels: ColorChannels::Combined,
-            screen_curvature_kind: ScreenCurvatureKind::Flat,
-            backlight_presence: 0.0,
-            locked: false,
+            color_channels: ColorChannels::Overlapping,
+            screen_curvature_kind: ScreenCurvatureKind::Pulse,
+            backlight_presence: 0.2,
+            preset_name: "Custom".into(),
         }
     }
 }
 
 impl Filters {
-    pub fn preset_sharp(&self) -> Filters {
+    pub fn preset_sharp_1(&self) -> Filters {
         Filters {
             internal_resolution: self.internal_resolution.clone(),
             texture_interpolation: TextureInterpolation::Linear,
@@ -221,16 +221,16 @@ impl Filters {
             color_channels: ColorChannels::Combined,
             screen_curvature_kind: ScreenCurvatureKind::Flat,
             backlight_presence: 0.0,
-            locked: false,
+            preset_name: "Sharp".into(),
         }
     }
 
-    pub fn preset_crt_aperture_grille(&self) -> Filters {
+    pub fn preset_crt_aperture_grille_1(&self) -> Filters {
         Filters {
             internal_resolution: self.internal_resolution.clone(),
             texture_interpolation: TextureInterpolation::Linear,
             blur_passes: 1,
-            vertical_lpp: 2,
+            vertical_lpp: 3,
             horizontal_lpp: 1,
             light_color: 0x00FF_FFFF,
             brightness_color: 0x00FF_FFFF,
@@ -240,38 +240,63 @@ impl Filters {
             cur_pixel_vertical_gap: 0.0,
             cur_pixel_horizontal_gap: 0.0,
             cur_pixel_spread: 0.0,
-            pixel_shadow_height: 0.25,
+            pixel_shadow_height: 0.0,
             pixels_geometry_kind: PixelsGeometryKind::Squares,
             pixel_shadow_shape_kind: ShadowShape { value: 3 },
             color_channels: ColorChannels::Combined,
-            screen_curvature_kind: ScreenCurvatureKind::Flat,
+            screen_curvature_kind: ScreenCurvatureKind::Curved1,
             backlight_presence: 0.5,
-            locked: false,
+            preset_name: "CRT Aperture Grille 1".into(),
         }
     }
 
-    pub fn preset_crt_shadow_mask(&self) -> Filters {
+    pub fn preset_crt_shadow_mask_1(&self) -> Filters {
         Filters {
             internal_resolution: self.internal_resolution.clone(),
             texture_interpolation: TextureInterpolation::Linear,
-            blur_passes: 1,
+            blur_passes: 2,
             vertical_lpp: 2,
-            horizontal_lpp: 1,
+            horizontal_lpp: 2,
             light_color: 0x00FF_FFFF,
             brightness_color: 0x00FF_FFFF,
-            extra_bright: 0.0,
-            extra_contrast: 1.0,
+            extra_bright: 0.05,
+            extra_contrast: 1.2,
             cur_pixel_width: self.cur_pixel_width,
-            cur_pixel_vertical_gap: 0.0,
-            cur_pixel_horizontal_gap: 0.0,
+            cur_pixel_vertical_gap: 0.5,
+            cur_pixel_horizontal_gap: 0.5,
             cur_pixel_spread: 0.0,
-            pixel_shadow_height: 0.25,
+            pixel_shadow_height: 1.0,
             pixels_geometry_kind: PixelsGeometryKind::Squares,
             pixel_shadow_shape_kind: ShadowShape { value: 3 },
             color_channels: ColorChannels::Combined,
             screen_curvature_kind: ScreenCurvatureKind::Flat,
-            backlight_presence: 0.5,
-            locked: false,
+            backlight_presence: 0.25,
+            preset_name: "CRT Shadow Mask 1".into(),
+        }
+    }
+
+    pub fn preset_crt_shadow_mask_2(&self) -> Filters {
+        Filters {
+            internal_resolution: self.internal_resolution.clone(),
+            texture_interpolation: TextureInterpolation::Linear,
+            blur_passes: 2,
+            vertical_lpp: 1,
+            horizontal_lpp: 2,
+            light_color: 0x00FF_FFFF,
+            brightness_color: 0x00FF_FFFF,
+            extra_bright: 0.05,
+            extra_contrast: 1.2,
+            cur_pixel_width: self.cur_pixel_width,
+            cur_pixel_vertical_gap: 1.0,
+            cur_pixel_horizontal_gap: 0.5,
+            cur_pixel_spread: 0.0,
+            pixel_shadow_height: 1.0,
+            pixels_geometry_kind: PixelsGeometryKind::Squares,
+            pixel_shadow_shape_kind: ShadowShape { value: 3 },
+            color_channels: ColorChannels::Combined,
+            screen_curvature_kind: ScreenCurvatureKind::Flat,
+            backlight_presence: 0.4,
+            preset_name: "CRT Shadow Mask 2".into(),
         }
     }
 }

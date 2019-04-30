@@ -110,6 +110,7 @@ impl AppEventDispatcher for FakeEventDispatcher {
     fn dispatch_change_blur_level(&self, _: usize) {}
     fn dispatch_change_vertical_lpp(&self, _: usize) {}
     fn dispatch_change_horizontal_lpp(&self, _: usize) {}
+    fn dispatch_custom_preset(&self) {}
     fn dispatch_color_representation(&self, _: ColorChannels) {}
     fn dispatch_pixel_geometry(&self, _: PixelsGeometryKind) {}
     fn dispatch_pixel_shadow_shape(&self, _: ShadowShape) {}
