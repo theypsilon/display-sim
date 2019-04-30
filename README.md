@@ -1,10 +1,8 @@
 # Display Sim [![Build Status](https://travis-ci.com/theypsilon/display-sim.svg?branch=master)](https://travis-ci.com/theypsilon/display-sim)
 
-Port of [Retro-Display-Simulator](https://github.com/theypsilon/Retro-Display-Simulator) to the web, using rust, wasm, and webgl2.
+This is a tool that helps you to recreate the visual feeling of old displays.
 
 Demo at [theypsilon.github.io/display-sim](https://theypsilon.github.io/display-sim).
-
-Testing Rust with WebAssembly for first time was a great learning experience.
 
 ## DEVELOPMENT
 
