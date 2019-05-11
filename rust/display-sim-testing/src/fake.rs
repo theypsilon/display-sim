@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-use core::app_events::AppEventDispatcher;
+use core::app_events::{AppEventDispatcher, FakeEventDispatcher};
 use core::general_types::Size2D;
 use core::internal_resolution::InternalResolution;
 use core::pixels_shadow::ShadowShape;
@@ -90,48 +90,4 @@ impl FakeVideoInput {
         }
         Ok(())
     }
-}
-
-#[derive(Default)]
-struct FakeEventDispatcher {}
-
-impl AppEventDispatcher for FakeEventDispatcher {
-    fn enable_extra_messages(&self, _: bool) {}
-    fn dispatch_camera_update(&self, _: &glm::Vec3, _: &glm::Vec3, _: &glm::Vec3) {}
-    fn dispatch_change_pixel_horizontal_gap(&self, _: f32) {}
-    fn dispatch_change_pixel_vertical_gap(&self, _: f32) {}
-    fn dispatch_change_pixel_width(&self, _: f32) {}
-    fn dispatch_change_pixel_spread(&self, _: f32) {}
-    fn dispatch_change_pixel_brightness(&self, _: f32) {}
-    fn dispatch_change_pixel_contrast(&self, _: f32) {}
-    fn dispatch_change_light_color(&self, _: i32) {}
-    fn dispatch_change_brightness_color(&self, _: i32) {}
-    fn dispatch_change_camera_zoom(&self, _: f32) {}
-    fn dispatch_change_blur_level(&self, _: usize) {}
-    fn dispatch_change_vertical_lpp(&self, _: usize) {}
-    fn dispatch_change_horizontal_lpp(&self, _: usize) {}
-    fn dispatch_custom_preset(&self) {}
-    fn dispatch_color_representation(&self, _: ColorChannels) {}
-    fn dispatch_pixel_geometry(&self, _: PixelsGeometryKind) {}
-    fn dispatch_pixel_shadow_shape(&self, _: ShadowShape) {}
-    fn dispatch_pixel_shadow_height(&self, _: f32) {}
-    fn dispatch_backlight_presence(&self, _: f32) {}
-    fn dispatch_screen_curvature(&self, _: ScreenCurvatureKind) {}
-    fn dispatch_internal_resolution(&self, _: &InternalResolution) {}
-    fn dispatch_texture_interpolation(&self, _: TextureInterpolation) {}
-    fn dispatch_change_pixel_speed(&self, _: f32) {}
-    fn dispatch_change_turning_speed(&self, _: f32) {}
-    fn dispatch_change_movement_speed(&self, _: f32) {}
-    fn dispatch_exiting_session(&self) {}
-    fn dispatch_toggle_info_panel(&self) {}
-    fn dispatch_fps(&self, fps: f32) {
-        println!("frames in 20 seconds: {}", fps);
-    }
-    fn dispatch_request_pointer_lock(&self) {}
-    fn dispatch_exit_pointer_lock(&self) {}
-    fn dispatch_screenshot(&self, _: &[u8], _: f64) {}
-    fn dispatch_change_camera_movement_mode(&self, _: bool) {}
-    fn dispatch_top_message(&self, _: &str) {}
-    fn dispatch_minimum_value<T: Display>(&self, _: &T) {}
-    fn dispatch_maximum_value<T: Display>(&self, _: &T) {}
 }

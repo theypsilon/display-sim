@@ -48,6 +48,8 @@ impl IncDec<bool> {
     }
 }
 
+impl Copy for IncDec<bool> {}
+
 pub trait DefaultReset {
     fn reset(&mut self)
     where

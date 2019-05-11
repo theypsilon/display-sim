@@ -166,3 +166,133 @@ fn operate_filter<T, TriggerHandler, Dispatcher>(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    #![allow(non_snake_case)]
+
+    use super::*;
+    use crate::app_events::FakeEventDispatcher;
+
+    static INCDEC_DOWN: IncDec<bool> = IncDec { increase: false, decrease: true };
+    static INCDEC_UP: IncDec<bool> = IncDec { increase: true, decrease: false };
+    static INCDEC_NONE: IncDec<bool> = IncDec { increase: false, decrease: false };
+    static INCDEC_BOTH: IncDec<bool> = IncDec { increase: true, decrease: true };
+
+    mod process_with_sums {
+        use super::*;
+
+        #[test]
+        fn set_event_value__has_some__changes_parameter() {
+            let mut actual: i32 = 0;
+            sut(&mut actual, INCDEC_UP).set_event_value(Some(3)).process_with_sums();
+            assert_eq!(actual, 3);
+        }
+
+        #[test]
+        fn set_progression__with_false_incdec__does_not_change_parameter() {
+            let mut actual: i32 = 0;
+            sut(&mut actual, INCDEC_NONE).set_progression(1).process_with_sums();
+            assert_eq!(actual, 0);
+        }
+
+
+        #[test]
+        fn set_progression__with_true_inc__changes_parameter_up_as_expected() {
+            let mut actual: i32 = 0;
+            sut(&mut actual, INCDEC_UP).set_progression(1).process_with_sums();
+            assert_eq!(actual, 1);
+        }
+
+        #[test]
+        fn set_progression__with_true_dec__changes_parameter_down_as_expected() {
+            let mut actual: i32 = 0;
+            sut(&mut actual, INCDEC_DOWN).set_progression(1).process_with_sums();
+            assert_eq!(actual, -1);
+        }
+
+        #[test]
+        fn set_progression__with_true_incdec__does_not_change_parameter() {
+            let mut actual: i32 = 0;
+            sut(&mut actual, INCDEC_BOTH).set_progression(1).process_with_sums();
+            assert_eq!(actual, 0);
+        }
+
+        #[test]
+        fn set_min__when_going_down__blocks_change() {
+            let mut actual: i32 = 0;
+            sut(&mut actual, INCDEC_DOWN).set_progression(1).set_min(0).process_with_sums();
+            assert_eq!(actual, 0);
+        }
+
+        #[test]
+        fn set_min__when_going_up__doesnt_block_change() {
+            let mut actual: i32 = 0;
+            sut(&mut actual, INCDEC_UP).set_progression(1).set_min(0).process_with_sums();
+            assert_eq!(actual, 1);
+        }
+
+        #[test]
+        fn set_max__when_going_up__blocks_change() {
+            let mut actual: i32 = 0;
+            sut(&mut actual, INCDEC_UP).set_progression(1).set_max(0).process_with_sums();
+            assert_eq!(actual, 0);
+        }
+
+        #[test]
+        fn set_max__when_going_down__blocks_change() {
+            let mut actual: i32 = 0;
+            sut(&mut actual, INCDEC_DOWN).set_progression(1).set_max(0).process_with_sums();
+            assert_eq!(actual, -1);
+        }
+
+        #[test]
+        fn trigger_handler__on_change__triggers() {
+            let mut actual: i32 = 0;
+            let mut triggered = false;
+            sut_with_handler(&mut actual, INCDEC_DOWN, |_| { triggered = true }).set_progression(1).process_with_sums();
+            assert_eq!(triggered, true);
+        }
+
+
+        #[test]
+        fn trigger_handler__on_blocked_change__doesnt_trigger() {
+            let mut actual: i32 = 0;
+            let mut triggered = false;
+            sut_with_handler(&mut actual, INCDEC_DOWN, |_| { triggered = true }).set_progression(1).set_min(0).process_with_sums();
+            assert_eq!(triggered, false);
+        }
+
+    }
+
+    mod process_with_multiplications {
+        use super::*;
+
+        #[test]
+        fn on_increase__multiplies_by_progression() {
+            let mut actual: i32 = 5;
+            sut(&mut actual, INCDEC_UP).set_progression(3).process_with_multiplications();
+            assert_eq!(actual, 15);
+        }
+
+
+        #[test]
+        fn on_decrease__divides_by_progression() {
+            let mut actual: i32 = 15;
+            sut(&mut actual, INCDEC_DOWN).set_progression(3).process_with_multiplications();
+            assert_eq!(actual, 5);
+        }
+    }
+
+    static CTX: SimulationContext<FakeEventDispatcher> = SimulationContext { dispatcher: FakeEventDispatcher {} };
+
+    fn sut<'a, T>(parameter: &'a mut T, incdec: IncDec<bool>) -> FilterParams<'a, T, T, impl FnOnce(T), FakeEventDispatcher> {
+        FilterParams::new(&CTX, parameter, incdec)
+            .set_trigger_handler(|_| {})
+    }
+
+    fn sut_with_handler<'a, T>(parameter: &'a mut T, incdec: IncDec<bool>, handler: impl FnOnce(T)) -> FilterParams<'a, T, T, impl FnOnce(T), FakeEventDispatcher> {
+        FilterParams::new(&CTX, parameter, incdec)
+            .set_trigger_handler(handler)
+    }
+}
