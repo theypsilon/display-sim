@@ -174,10 +174,22 @@ mod tests {
     use super::*;
     use crate::app_events::FakeEventDispatcher;
 
-    static INCDEC_DOWN: IncDec<bool> = IncDec { increase: false, decrease: true };
-    static INCDEC_UP: IncDec<bool> = IncDec { increase: true, decrease: false };
-    static INCDEC_NONE: IncDec<bool> = IncDec { increase: false, decrease: false };
-    static INCDEC_BOTH: IncDec<bool> = IncDec { increase: true, decrease: true };
+    static INCDEC_DOWN: IncDec<bool> = IncDec {
+        increase: false,
+        decrease: true,
+    };
+    static INCDEC_UP: IncDec<bool> = IncDec {
+        increase: true,
+        decrease: false,
+    };
+    static INCDEC_NONE: IncDec<bool> = IncDec {
+        increase: false,
+        decrease: false,
+    };
+    static INCDEC_BOTH: IncDec<bool> = IncDec {
+        increase: true,
+        decrease: true,
+    };
 
     mod process_with_sums {
         use super::*;
@@ -195,7 +207,6 @@ mod tests {
             sut(&mut actual, INCDEC_NONE).set_progression(1).process_with_sums();
             assert_eq!(actual, 0);
         }
-
 
         #[test]
         fn set_progression__with_true_inc__changes_parameter_up_as_expected() {
@@ -250,16 +261,20 @@ mod tests {
         fn trigger_handler__on_change__triggers() {
             let mut actual: i32 = 0;
             let mut triggered = false;
-            sut_with_handler(&mut actual, INCDEC_DOWN, |_| { triggered = true }).set_progression(1).process_with_sums();
+            sut_with_handler(&mut actual, INCDEC_DOWN, |_| triggered = true)
+                .set_progression(1)
+                .process_with_sums();
             assert_eq!(triggered, true);
         }
-
 
         #[test]
         fn trigger_handler__on_blocked_change__doesnt_trigger() {
             let mut actual: i32 = 0;
             let mut triggered = false;
-            sut_with_handler(&mut actual, INCDEC_DOWN, |_| { triggered = true }).set_progression(1).set_min(0).process_with_sums();
+            sut_with_handler(&mut actual, INCDEC_DOWN, |_| triggered = true)
+                .set_progression(1)
+                .set_min(0)
+                .process_with_sums();
             assert_eq!(triggered, false);
         }
 
@@ -275,7 +290,6 @@ mod tests {
             assert_eq!(actual, 15);
         }
 
-
         #[test]
         fn on_decrease__divides_by_progression() {
             let mut actual: i32 = 15;
@@ -284,15 +298,19 @@ mod tests {
         }
     }
 
-    static CTX: SimulationContext<FakeEventDispatcher> = SimulationContext { dispatcher: FakeEventDispatcher {} };
+    static CTX: SimulationContext<FakeEventDispatcher> = SimulationContext {
+        dispatcher: FakeEventDispatcher {},
+    };
 
     fn sut<'a, T>(parameter: &'a mut T, incdec: IncDec<bool>) -> FilterParams<'a, T, T, impl FnOnce(T), FakeEventDispatcher> {
-        FilterParams::new(&CTX, parameter, incdec)
-            .set_trigger_handler(|_| {})
+        FilterParams::new(&CTX, parameter, incdec).set_trigger_handler(|_| {})
     }
 
-    fn sut_with_handler<'a, T>(parameter: &'a mut T, incdec: IncDec<bool>, handler: impl FnOnce(T)) -> FilterParams<'a, T, T, impl FnOnce(T), FakeEventDispatcher> {
-        FilterParams::new(&CTX, parameter, incdec)
-            .set_trigger_handler(handler)
+    fn sut_with_handler<'a, T>(
+        parameter: &'a mut T,
+        incdec: IncDec<bool>,
+        handler: impl FnOnce(T),
+    ) -> FilterParams<'a, T, T, impl FnOnce(T), FakeEventDispatcher> {
+        FilterParams::new(&CTX, parameter, incdec).set_trigger_handler(handler)
     }
 }
