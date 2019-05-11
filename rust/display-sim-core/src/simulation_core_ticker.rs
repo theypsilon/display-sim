@@ -243,7 +243,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
 
         let mut changed = false;
 
-        FilterParams::new(ctx, &mut filters.extra_bright, input.bright.clone())
+        FilterParams::new(ctx, &mut filters.extra_bright, input.bright)
             .set_progression(0.01 * self.dt * self.res.speed.filter_speed)
             .set_event_value(read_event_value!(self, PixelBrighttness, PIXEL_BRIGHTNESS))
             .set_min(-1.0)
@@ -253,7 +253,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
                 ctx.dispatcher.dispatch_change_pixel_brightness(x);
             })
             .process_with_sums();
-        FilterParams::new(ctx, &mut filters.extra_contrast, input.contrast.clone())
+        FilterParams::new(ctx, &mut filters.extra_contrast, input.contrast)
             .set_progression(0.01 * self.dt * self.res.speed.filter_speed)
             .set_event_value(read_event_value!(self, PixelContrast, PIXEL_CONTRAST))
             .set_min(0.0)
@@ -285,7 +285,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
                 ctx.dispatcher.dispatch_screen_curvature(*x);
             })
             .process_options();
-        FilterParams::new(ctx, &mut filters.backlight_presence, input.backlight_percent.clone())
+        FilterParams::new(ctx, &mut filters.backlight_presence, input.backlight_percent)
             .set_progression(0.01 * self.dt * self.res.speed.filter_speed)
             .set_event_value(read_event_value!(self, BacklightPercent, BACKLIGHT_PERCENT))
             .set_min(0.0)
@@ -341,7 +341,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
                 ctx.dispatcher.dispatch_pixel_shadow_shape(*x);
             })
             .process_options();
-        FilterParams::new(ctx, &mut filters.pixel_shadow_height, input.next_pixels_shadow_height.clone())
+        FilterParams::new(ctx, &mut filters.pixel_shadow_height, input.next_pixels_shadow_height)
             .set_progression(self.dt * 0.3)
             .set_event_value(read_event_value!(self, PixelShadowHeight, PIXEL_SHADOW_HEIGHT))
             .set_min(0.0)
@@ -351,7 +351,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
                 ctx.dispatcher.dispatch_pixel_shadow_height(x);
             })
             .process_with_sums();
-        FilterParams::new(ctx, &mut filters.cur_pixel_vertical_gap, input.pixel_vertical_gap.clone())
+        FilterParams::new(ctx, &mut filters.cur_pixel_vertical_gap, input.pixel_vertical_gap)
             .set_progression(pixel_velocity * 0.00125)
             .set_event_value(read_event_value!(self, PixelVerticalGap, PIXEL_VERTICAL_GAP))
             .set_min(0.0)
@@ -360,7 +360,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
                 ctx.dispatcher.dispatch_change_pixel_vertical_gap(x);
             })
             .process_with_sums();
-        FilterParams::new(ctx, &mut filters.cur_pixel_horizontal_gap, input.pixel_horizontal_gap.clone())
+        FilterParams::new(ctx, &mut filters.cur_pixel_horizontal_gap, input.pixel_horizontal_gap)
             .set_progression(pixel_velocity * 0.00125)
             .set_event_value(read_event_value!(self, PixelHorizontalGap, PIXEL_HORIZONTAL_GAP))
             .set_min(0.0)
@@ -369,7 +369,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
                 ctx.dispatcher.dispatch_change_pixel_horizontal_gap(x);
             })
             .process_with_sums();
-        FilterParams::new(ctx, &mut filters.cur_pixel_width, input.pixel_width.clone())
+        FilterParams::new(ctx, &mut filters.cur_pixel_width, input.pixel_width)
             .set_progression(pixel_velocity * 0.005)
             .set_event_value(read_event_value!(self, PixelWidth, PIXEL_WIDTH))
             .set_min(0.0)
@@ -378,7 +378,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
                 ctx.dispatcher.dispatch_change_pixel_width(x);
             })
             .process_with_sums();
-        FilterParams::new(ctx, &mut filters.cur_pixel_spread, input.pixel_spread.clone())
+        FilterParams::new(ctx, &mut filters.cur_pixel_spread, input.pixel_spread)
             .set_progression(pixel_velocity * 0.005)
             .set_event_value(read_event_value!(self, PixelSpread, PIXEL_SPREAD))
             .set_min(0.0)

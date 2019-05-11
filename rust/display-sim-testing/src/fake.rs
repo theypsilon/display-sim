@@ -13,13 +13,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-use core::app_events::{AppEventDispatcher, FakeEventDispatcher};
+use core::app_events::{FakeEventDispatcher};
 use core::general_types::Size2D;
-use core::internal_resolution::InternalResolution;
-use core::pixels_shadow::ShadowShape;
 use core::simulation_context::SimulationContext;
 use core::simulation_core_state::{AnimationStep, Input, Resources, VideoInputResources};
-use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, TextureInterpolation};
 use core::simulation_core_ticker::SimulationCoreTicker;
 use render::background_render::BackgroundRender;
 use render::blur_render::BlurRender;
@@ -30,7 +27,6 @@ use render::rgb_render::RgbRender;
 use render::simulation_draw::SimulationDrawer;
 use render::simulation_render_state::{Materials, VideoInputMaterials};
 use render::stubs::{WebGl2RenderingContext, WebResult};
-use std::fmt::Display;
 use std::time::SystemTime;
 
 pub struct FakeVideoInput(VideoInputResources, VideoInputMaterials);
