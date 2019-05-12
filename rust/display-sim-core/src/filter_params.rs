@@ -191,77 +191,142 @@ mod tests {
         decrease: true,
     };
 
+    mod process_options {
+        use super::*;
+        use enum_len_derive::EnumLen;
+        use num_derive::{FromPrimitive, ToPrimitive};
+
+        #[derive(FromPrimitive, ToPrimitive, EnumLen, Clone, Copy, PartialEq, Debug)]
+        enum OptionKind {
+            A,
+            B,
+            C,
+        }
+
+        #[test]
+        fn process_options__has_some_event_value__changes_parameter() {
+            let mut actual = OptionKind::A;
+            sut_ref(&mut actual, INCDEC_UP).set_event_value(Some(OptionKind::C)).process_options();
+            assert_eq!(actual, OptionKind::C);
+        }
+
+        #[test]
+        fn process_options__with_false_incdec__does_not_change_parameter() {
+            let mut actual = OptionKind::A;
+            sut_ref(&mut actual, INCDEC_NONE).process_options();
+            assert_eq!(actual, OptionKind::A);
+        }
+
+        #[test]
+        fn process_options__with_true_inc__changes_parameter_up_as_expected() {
+            let mut actual = OptionKind::A;
+            sut_ref(&mut actual, INCDEC_UP).process_options();
+            assert_eq!(actual, OptionKind::B);
+        }
+
+        #[test]
+        fn process_options__with_true_dec__changes_parameter_down_as_expected() {
+            let mut actual = OptionKind::B;
+            sut_ref(&mut actual, INCDEC_DOWN).process_options();
+            assert_eq!(actual, OptionKind::A);
+        }
+
+        #[test]
+        fn process_options__with_true_incdec__does_not_change_parameter() {
+            let mut actual = OptionKind::A;
+            sut_ref(&mut actual, INCDEC_BOTH).process_options();
+            assert_eq!(actual, OptionKind::A);
+        }
+
+        #[test]
+        fn trigger_handler__on_change__triggers() {
+            let mut actual = OptionKind::A;
+            let mut triggered = false;
+            FilterParams::new(&CTX, &mut actual, INCDEC_DOWN)
+                .set_trigger_handler(|_: &OptionKind| triggered = true)
+                .process_options();
+            assert_eq!(triggered, true);
+        }
+
+        impl std::fmt::Display for OptionKind {
+            fn fmt(&self, _: &mut std::fmt::Formatter) -> std::fmt::Result {
+                Ok(())
+            }
+        }
+    }
+
     mod process_with_sums {
         use super::*;
 
         #[test]
         fn set_event_value__has_some__changes_parameter() {
-            let mut actual: i32 = 0;
+            let mut actual = 0;
             sut(&mut actual, INCDEC_UP).set_event_value(Some(3)).process_with_sums();
             assert_eq!(actual, 3);
         }
 
         #[test]
         fn set_progression__with_false_incdec__does_not_change_parameter() {
-            let mut actual: i32 = 0;
+            let mut actual = 0;
             sut(&mut actual, INCDEC_NONE).set_progression(1).process_with_sums();
             assert_eq!(actual, 0);
         }
 
         #[test]
         fn set_progression__with_true_inc__changes_parameter_up_as_expected() {
-            let mut actual: i32 = 0;
+            let mut actual = 0;
             sut(&mut actual, INCDEC_UP).set_progression(1).process_with_sums();
             assert_eq!(actual, 1);
         }
 
         #[test]
         fn set_progression__with_true_dec__changes_parameter_down_as_expected() {
-            let mut actual: i32 = 0;
+            let mut actual = 0;
             sut(&mut actual, INCDEC_DOWN).set_progression(1).process_with_sums();
             assert_eq!(actual, -1);
         }
 
         #[test]
         fn set_progression__with_true_incdec__does_not_change_parameter() {
-            let mut actual: i32 = 0;
+            let mut actual = 0;
             sut(&mut actual, INCDEC_BOTH).set_progression(1).process_with_sums();
             assert_eq!(actual, 0);
         }
 
         #[test]
         fn set_min__when_going_down__blocks_change() {
-            let mut actual: i32 = 0;
+            let mut actual = 0;
             sut(&mut actual, INCDEC_DOWN).set_progression(1).set_min(0).process_with_sums();
             assert_eq!(actual, 0);
         }
 
         #[test]
         fn set_min__when_going_up__doesnt_block_change() {
-            let mut actual: i32 = 0;
+            let mut actual = 0;
             sut(&mut actual, INCDEC_UP).set_progression(1).set_min(0).process_with_sums();
             assert_eq!(actual, 1);
         }
 
         #[test]
         fn set_max__when_going_up__blocks_change() {
-            let mut actual: i32 = 0;
+            let mut actual = 0;
             sut(&mut actual, INCDEC_UP).set_progression(1).set_max(0).process_with_sums();
             assert_eq!(actual, 0);
         }
 
         #[test]
         fn set_max__when_going_down__blocks_change() {
-            let mut actual: i32 = 0;
+            let mut actual = 0;
             sut(&mut actual, INCDEC_DOWN).set_progression(1).set_max(0).process_with_sums();
             assert_eq!(actual, -1);
         }
 
         #[test]
         fn trigger_handler__on_change__triggers() {
-            let mut actual: i32 = 0;
+            let mut actual = 0;
             let mut triggered = false;
-            sut_with_handler(&mut actual, INCDEC_DOWN, |_| triggered = true)
+            FilterParams::new(&CTX, &mut actual, INCDEC_DOWN)
+                .set_trigger_handler(|_| triggered = true)
                 .set_progression(1)
                 .process_with_sums();
             assert_eq!(triggered, true);
@@ -269,9 +334,10 @@ mod tests {
 
         #[test]
         fn trigger_handler__on_blocked_change__doesnt_trigger() {
-            let mut actual: i32 = 0;
+            let mut actual = 0;
             let mut triggered = false;
-            sut_with_handler(&mut actual, INCDEC_DOWN, |_| triggered = true)
+            FilterParams::new(&CTX, &mut actual, INCDEC_DOWN)
+                .set_trigger_handler(|_| triggered = true)
                 .set_progression(1)
                 .set_min(0)
                 .process_with_sums();
@@ -306,11 +372,7 @@ mod tests {
         FilterParams::new(&CTX, parameter, incdec).set_trigger_handler(|_| {})
     }
 
-    fn sut_with_handler<'a, T>(
-        parameter: &'a mut T,
-        incdec: IncDec<bool>,
-        handler: impl FnOnce(T),
-    ) -> FilterParams<'a, T, T, impl FnOnce(T), FakeEventDispatcher> {
-        FilterParams::new(&CTX, parameter, incdec).set_trigger_handler(handler)
+    fn sut_ref<'a, T>(parameter: &'a mut T, incdec: IncDec<bool>) -> FilterParams<'a, T, &'a T, impl FnOnce(&'a T), FakeEventDispatcher> {
+        FilterParams::new(&CTX, parameter, incdec).set_trigger_handler(|_| {})
     }
 }

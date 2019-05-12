@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-use core::app_events::{FakeEventDispatcher};
+use core::app_events::FakeEventDispatcher;
 use core::general_types::Size2D;
 use core::simulation_context::SimulationContext;
 use core::simulation_core_state::{AnimationStep, Input, Resources, VideoInputResources};
