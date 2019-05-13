@@ -277,7 +277,7 @@ dependencies = [
 name = "display-sim"
 version = "0.1.0"
 dependencies = [
- "display-sim-native-sdl2 0.1.0",
+ "display-sim-testing 0.1.0",
  "display-sim-web-exports 0.1.0",
 ]
 

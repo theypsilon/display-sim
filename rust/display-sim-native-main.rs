@@ -14,6 +14,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 #[cfg(target_arch = "x86_64")]
-fn main() {
-    display_sim_native_sdl2::main();
+fn main() -> Result<(), String> {
+    println!(
+        "NOTE: This is a stress test.\n\
+         You should be running 'wasm-pack' instead, './run.sh' will do that for you.\n\
+         For another experimental entrypoint, check the 'display-sim-native-sdl2' project.\n\n\
+         ### STARTING 'display_sim_testing::fake::main' ###\n"
+    );
+    display_sim_testing::fake::main()
 }

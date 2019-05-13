@@ -13,9 +13,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-use display_sim_testing::fake::FakeVideoInput;
-
 fn main() -> Result<(), String> {
-    println!("Running 1.000.000.000.000.000 iterations!!\nTip: Better stop it at some point manually ;)");
-    FakeVideoInput::default().iterate_times(1_000_000_000_000_000).map_err(|e| format!("{:?}", e))
+    display_sim_testing::fake::main()
 }

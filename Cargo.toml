@@ -20,7 +20,7 @@ lto = true
 display-sim-web-exports = { path = "rust/display-sim-web-exports" }
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
-display-sim-native-sdl2 = { path = "rust/display-sim-native-sdl2" }
+display-sim-testing = { path = "rust/display-sim-testing" }
 
 [workspace]
 members = [
