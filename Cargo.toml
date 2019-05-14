@@ -9,8 +9,8 @@ crate-type = ["cdylib"]
 path = "rust/display-sim-wasm.rs"
 
 [[bin]]
-name = "display-sim-native"
-path = "rust/display-sim-native-main.rs"
+name = "display-sim-default-entrypoint"
+path = "rust/display-sim-default-entrypoint.rs"
 
 [profile.release]
 debug = false
