@@ -28,7 +28,7 @@ pub const TURNING_BASE_SPEED: f32 = 3.0;
 pub const MOVEMENT_BASE_SPEED: f32 = 10.0;
 pub const MOVEMENT_SPEED_FACTOR: f32 = 50.0;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct VideoInputResources {
     pub steps: Vec<AnimationStep>,
     pub max_texture_size: i32,
@@ -42,6 +42,7 @@ pub struct VideoInputResources {
     pub needs_buffer_data_load: bool,
 }
 
+#[derive(Clone, Copy)]
 pub struct AnimationStep {
     pub delay: u32,
 }
@@ -180,22 +181,23 @@ impl Default for Filters {
             blur_passes: 0,
             vertical_lpp: 1,
             horizontal_lpp: 1,
-            light_color: 0x00FF_00FF,
+            light_color: 0x00FF_FFFF,
             brightness_color: 0x00FF_FFFF,
             extra_bright: 0.0,
             extra_contrast: 1.0,
             cur_pixel_width: 1.0,
             cur_pixel_vertical_gap: 0.0,
             cur_pixel_horizontal_gap: 0.0,
-            cur_pixel_spread: 1.0,
+            cur_pixel_spread: 0.0,
             pixel_shadow_height: 1.0,
-            pixels_geometry_kind: PixelsGeometryKind::Cubes,
+            pixels_geometry_kind: PixelsGeometryKind::Squares,
             pixel_shadow_shape_kind: ShadowShape { value: 0 },
-            color_channels: ColorChannels::Overlapping,
-            screen_curvature_kind: ScreenCurvatureKind::Pulse,
-            backlight_presence: 0.2,
-            preset_name: "Custom".into(),
+            color_channels: ColorChannels::Combined,
+            screen_curvature_kind: ScreenCurvatureKind::Flat,
+            backlight_presence: 0.0,
+            preset_name: "Sharp".into(),
         }
+        .preset_crazy()
     }
 }
 
@@ -297,6 +299,31 @@ impl Filters {
             screen_curvature_kind: ScreenCurvatureKind::Flat,
             backlight_presence: 0.4,
             preset_name: "CRT Shadow Mask 2".into(),
+        }
+    }
+
+    pub fn preset_crazy(&self) -> Self {
+        Filters {
+            internal_resolution: self.internal_resolution.clone(),
+            texture_interpolation: TextureInterpolation::Linear,
+            blur_passes: 0,
+            vertical_lpp: 1,
+            horizontal_lpp: 1,
+            light_color: 0x00FF_00FF,
+            brightness_color: 0x00FF_FFFF,
+            extra_bright: 0.0,
+            extra_contrast: 1.0,
+            cur_pixel_width: self.cur_pixel_width,
+            cur_pixel_vertical_gap: 0.0,
+            cur_pixel_horizontal_gap: 0.0,
+            cur_pixel_spread: 1.0,
+            pixel_shadow_height: 1.0,
+            pixels_geometry_kind: PixelsGeometryKind::Cubes,
+            pixel_shadow_shape_kind: ShadowShape { value: 0 },
+            color_channels: ColorChannels::Overlapping,
+            screen_curvature_kind: ScreenCurvatureKind::Pulse,
+            backlight_presence: 0.2,
+            preset_name: "Custom".into(),
         }
     }
 }

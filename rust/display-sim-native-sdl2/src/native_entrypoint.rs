@@ -28,6 +28,8 @@ use render::simulation_draw::SimulationDrawer;
 use render::simulation_render_state::{Materials, VideoInputMaterials};
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
+use sdl2::video::FullscreenType;
+use sdl2::Sdl;
 use std::fmt::Display;
 use std::time::SystemTime;
 
@@ -79,9 +81,10 @@ fn program() -> WebResult<()> {
     let materials_input = VideoInputMaterials { buffers: vec![pixels] };
 
     println!("Opening window.");
-    let window = video_subsystem
+    let mut window = video_subsystem
         .window("Display Sim", res_input.viewport_size.width, res_input.viewport_size.height)
         .opengl()
+        .resizable()
         .build()
         .unwrap();
 
@@ -101,6 +104,7 @@ fn program() -> WebResult<()> {
     let mut input = Input::new(get_millis_since(&starting_time)?);
     println!("Preparing simulation context.");
     let mut ctx: SimulationContext<NativeEventDispatcher> = SimulationContext::default();
+    ctx.dispatcher.sdl_ctx = Some(&sdl);
 
     let mut event_pump = sdl.event_pump().unwrap();
     println!("Main loop.");
@@ -114,6 +118,36 @@ fn program() -> WebResult<()> {
                 } => break 'main,
                 Event::KeyDown { keycode: Some(key), .. } => read_key(&mut input, key, true),
                 Event::KeyUp { keycode: Some(key), .. } => read_key(&mut input, key, false),
+                Event::MouseButtonDown {
+                    mouse_btn: sdl2::mouse::MouseButton::Left,
+                    ..
+                } => {
+                    input.mouse_click.input = true;
+                    if let FullscreenType::Off = window.fullscreen_state() {
+                        window.set_fullscreen(FullscreenType::Desktop)?;
+                    }
+                }
+                Event::MouseButtonUp {
+                    mouse_btn: sdl2::mouse::MouseButton::Left,
+                    ..
+                } => {
+                    input.mouse_click.input = false;
+                }
+                Event::MouseMotion { xrel, yrel, .. } => {
+                    input.mouse_position_x = xrel;
+                    input.mouse_position_y = yrel;
+                }
+                Event::MouseWheel { y, .. } => {
+                    input.mouse_scroll_y = y as f32;
+                }
+                Event::Window {
+                    win_event: sdl2::event::WindowEvent::SizeChanged(width, height),
+                    ..
+                } => {
+                    println!("Size changed: ({}, {})", width, height);
+                    res.video.viewport_size.width = width as u32;
+                    res.video.viewport_size.height = height as u32;
+                }
                 _ => {}
             }
         }
@@ -144,9 +178,11 @@ pub fn read_key(input: &mut Input, key: Keycode, pressed: bool) {
 }
 
 #[derive(Default)]
-struct NativeEventDispatcher {}
+struct NativeEventDispatcher<'a> {
+    sdl_ctx: Option<&'a Sdl>,
+}
 
-impl AppEventDispatcher for NativeEventDispatcher {
+impl<'a> AppEventDispatcher for NativeEventDispatcher<'a> {
     fn enable_extra_messages(&self, _: bool) {}
     fn dispatch_camera_update(&self, a: &glm::Vec3, b: &glm::Vec3, c: &glm::Vec3) {
         println!("camera_update {}, {}, {}", a, b, c);
@@ -231,9 +267,11 @@ impl AppEventDispatcher for NativeEventDispatcher {
     }
     fn dispatch_request_pointer_lock(&self) {
         println!("request_pointer_lock");
+        self.sdl_ctx.unwrap().mouse().show_cursor(false);
     }
     fn dispatch_exit_pointer_lock(&self) {
         println!("exit_pointer_lock");
+        self.sdl_ctx.unwrap().mouse().show_cursor(true);
     }
     fn dispatch_custom_preset(&self) {
         println!("dispatch_custom_preset");
