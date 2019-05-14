@@ -39,7 +39,9 @@ pub fn main() {
 }
 
 fn program() -> WebResult<()> {
+    println!("Initializing SDL.");
     let sdl = sdl2::init().unwrap();
+    println!("Initializing Video Subsystem.");
     let video_subsystem = sdl.video().unwrap();
     let gl_attr = video_subsystem.gl_attr();
 
@@ -47,7 +49,9 @@ fn program() -> WebResult<()> {
     gl_attr.set_context_version(4, 3);
     let display_mode = video_subsystem.current_display_mode(0)?;
 
-    let img = image::open("www/assets/pics/frames/seiken.png").map_err(|e| format!("{}", e))?.to_rgba();
+    let img_path = "www/assets/pics/frames/seiken.png";
+    println!("Loading image: {}", img_path);
+    let img = image::open(img_path).map_err(|e| format!("{}", e))?.to_rgba();
     let img_size = img.dimensions();
     let pixels = img.into_vec().into_boxed_slice();
 
@@ -74,24 +78,32 @@ fn program() -> WebResult<()> {
     };
     let materials_input = VideoInputMaterials { buffers: vec![pixels] };
 
+    println!("Opening window.");
     let window = video_subsystem
         .window("Display Sim", res_input.viewport_size.width, res_input.viewport_size.height)
         .opengl()
         .build()
         .unwrap();
 
+    println!("Creating GL Context.");
     let _gl_context = window.gl_create_context().unwrap();
+    println!("Loading GL on Video Subsystem.");
     gl::load_with(|s| video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void);
 
+    println!("Preparing resources.");
     let starting_time = SystemTime::now();
     let mut res = Resources::default();
     res.initialize(res_input, get_millis_since(&starting_time)?);
+    println!("Preparing materials.");
     let mut materials = Materials::new(WebGl2RenderingContext::default(), materials_input)?;
 
+    println!("Preparing input.");
     let mut input = Input::new(get_millis_since(&starting_time)?);
+    println!("Preparing simulation context.");
     let mut ctx: SimulationContext<NativeEventDispatcher> = SimulationContext::default();
 
     let mut event_pump = sdl.event_pump().unwrap();
+    println!("Main loop.");
     'main: loop {
         for event in event_pump.poll_iter() {
             match event {

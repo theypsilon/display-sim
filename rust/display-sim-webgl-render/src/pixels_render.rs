@@ -121,7 +121,7 @@ impl PixelsRender {
     }
 
     fn create_shadow_texture(gl: &WebGl2RenderingContext, weight: &dyn Fn(usize, usize) -> f64) -> WebResult<Option<WebGlTexture>> {
-        let mut texture: [u8; 4 * TEXTURE_SIZE * TEXTURE_SIZE] = [0; TEXTURE_SIZE * TEXTURE_SIZE * 4];
+        let mut texture: Vec<u8> = vec![0; TEXTURE_SIZE * TEXTURE_SIZE * 4];
         {
             for i in TEXTURE_SIZE / 2..TEXTURE_SIZE {
                 for j in TEXTURE_SIZE / 2..TEXTURE_SIZE {
