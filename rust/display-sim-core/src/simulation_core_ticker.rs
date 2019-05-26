@@ -202,11 +202,22 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             if self.res.filters.preset_name == "Custom" {
                 self.res.saved_filters = Some(self.res.filters.clone());
             }
+            if self.res.filters.preset_name == "Demo" {
+                self.res.camera = self.res.camera_backup.clone();
+            }
             self.res.filters = match preset.as_ref() {
                 "sharp-1" => self.res.filters.preset_sharp_1(),
                 "crt-aperture-grille-1" => self.res.filters.preset_crt_aperture_grille_1(),
                 "crt-shadow-mask-1" => self.res.filters.preset_crt_shadow_mask_1(),
                 "crt-shadow-mask-2" => self.res.filters.preset_crt_shadow_mask_2(),
+                "demo-1" => {
+                    self.res.camera_backup = self.res.camera.clone();
+                    self.res.camera.locked_mode = false;
+                    self.res.camera.set_position(glm::vec3(-75.4, -124.85, 8.18));
+                    self.res.camera.direction = glm::vec3(0.52, 0.82, -0.24);
+                    self.res.camera.axis_up = glm::vec3(0.04, 0.26, 0.97);
+                    self.res.filters.preset_demo_1()
+                }
                 _ => {
                     if let Some(ref saved_filters) = self.res.saved_filters {
                         saved_filters.clone()

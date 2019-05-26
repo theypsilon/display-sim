@@ -33,14 +33,14 @@ const presetApertureGrille1 = 'crt-aperture-grille-1';
 const presetShadowMask1 = 'crt-shadow-mask-1';
 const presetShadowMask2 = 'crt-shadow-mask-2';
 const presetSharp1 = 'sharp-1';
-const presetStrange1 = 'strange-1';
+const presetDemo1 = 'demo-1';
 const presetCustom = 'custom';
 const properPresets = [
     presetApertureGrille1,
     presetShadowMask1,
     presetShadowMask2,
     presetSharp1,
-    presetStrange1
+    presetDemo1
 ];
 
 const uiDeo = document.getElementById('ui');

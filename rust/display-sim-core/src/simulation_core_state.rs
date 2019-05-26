@@ -51,6 +51,7 @@ pub struct AnimationStep {
 pub struct Resources {
     pub video: VideoInputResources,
     pub camera: CameraData,
+    pub camera_backup: CameraData,
     pub filters: Filters,
     pub speed: Speeds,
     pub saved_filters: Option<Filters>,
@@ -75,6 +76,7 @@ impl Default for Resources {
             timers: SimulationTimers::default(),
             video: VideoInputResources::default(),
             camera: CameraData::new(MOVEMENT_BASE_SPEED / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED),
+            camera_backup: CameraData::new(0.0, 0.0),
             output: ViewModel::default(),
             speed: Speeds {
                 filter_speed: PIXEL_MANIPULATION_BASE_SPEED,
@@ -197,7 +199,7 @@ impl Default for Filters {
             backlight_presence: 0.0,
             preset_name: "Sharp".into(),
         }
-        .preset_crazy()
+        .preset_crt_aperture_grille_1()
     }
 }
 
@@ -302,7 +304,7 @@ impl Filters {
         }
     }
 
-    pub fn preset_crazy(&self) -> Self {
+    pub fn preset_demo_1(&self) -> Self {
         Filters {
             internal_resolution: self.internal_resolution.clone(),
             texture_interpolation: TextureInterpolation::Linear,
@@ -323,7 +325,7 @@ impl Filters {
             color_channels: ColorChannels::Overlapping,
             screen_curvature_kind: ScreenCurvatureKind::Pulse,
             backlight_presence: 0.2,
-            preset_name: "Custom".into(),
+            preset_name: "Demo".into(),
         }
     }
 }

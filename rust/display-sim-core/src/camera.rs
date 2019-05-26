@@ -55,6 +55,7 @@ impl CameraChange {
     }
 }
 
+#[derive(Clone)]
 pub struct CameraData {
     pub position_destiny: glm::Vec3,
     pub position_eye: glm::Vec3,
