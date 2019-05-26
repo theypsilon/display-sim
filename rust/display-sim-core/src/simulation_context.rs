@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-use crate::app_events::AppEventDispatcher;
+use crate::app_events::{AppEventDispatcher, FakeEventDispatcher};
 use derive_new::new;
 
 #[derive(new)]
@@ -28,6 +28,13 @@ impl<Dispatcher: AppEventDispatcher, Rnd: RandomGenerator> SimulationContext for
     }
     fn random(&self) -> &dyn RandomGenerator {
         &self.rnd
+    }
+}
+
+pub const fn make_fake_simulation_context() -> ConcreteSimulationContext<FakeEventDispatcher, FakeRngGenerator> {
+    ConcreteSimulationContext {
+        dispatcher_instance: FakeEventDispatcher {},
+        rnd: FakeRngGenerator {},
     }
 }
 

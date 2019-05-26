@@ -165,7 +165,7 @@ mod tests {
 
     use super::*;
     use crate::app_events::FakeEventDispatcher;
-    use crate::simulation_context::{ConcreteSimulationContext, FakeRngGenerator};
+    use crate::simulation_context::{make_fake_simulation_context, ConcreteSimulationContext, FakeRngGenerator};
 
     static INCDEC_DOWN: IncDec<bool> = IncDec {
         increase: false,
@@ -357,10 +357,7 @@ mod tests {
         }
     }
 
-    static CTX: ConcreteSimulationContext<FakeEventDispatcher, FakeRngGenerator> = ConcreteSimulationContext {
-        dispatcher_instance: FakeEventDispatcher {},
-        rnd: FakeRngGenerator {},
-    };
+    static CTX: ConcreteSimulationContext<FakeEventDispatcher, FakeRngGenerator> = make_fake_simulation_context();
 
     fn sut<'a, T>(parameter: &'a mut T, incdec: IncDec<bool>) -> FilterParams<'a, T, T, impl FnOnce(T)> {
         FilterParams::new(&CTX, parameter, incdec).set_trigger_handler(|_| {})
