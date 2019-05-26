@@ -18,7 +18,7 @@ use crate::pixels_shadow::ShadowShape;
 use crate::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, TextureInterpolation};
 use std::fmt::Display;
 
-pub trait AppEventDispatcher: Default {
+pub trait AppEventDispatcher {
     fn enable_extra_messages(&self, extra_messages_enabled: bool);
     fn dispatch_camera_update(&self, position: &glm::Vec3, direction: &glm::Vec3, axis_up: &glm::Vec3);
     fn dispatch_change_pixel_horizontal_gap(&self, size: f32);
@@ -53,8 +53,8 @@ pub trait AppEventDispatcher: Default {
     fn dispatch_change_camera_movement_mode(&self, locked_mode: bool);
     fn dispatch_custom_preset(&self);
     fn dispatch_top_message(&self, message: &str);
-    fn dispatch_minimum_value<T: Display>(&self, value: &T);
-    fn dispatch_maximum_value<T: Display>(&self, value: &T);
+    fn dispatch_minimum_value(&self, value: &dyn Display);
+    fn dispatch_maximum_value(&self, value: &dyn Display);
 }
 
 #[derive(Default)]
@@ -97,6 +97,6 @@ impl AppEventDispatcher for FakeEventDispatcher {
     fn dispatch_screenshot(&self, _: &[u8], _: f64) {}
     fn dispatch_change_camera_movement_mode(&self, _: bool) {}
     fn dispatch_top_message(&self, _: &str) {}
-    fn dispatch_minimum_value<T: Display>(&self, _: &T) {}
-    fn dispatch_maximum_value<T: Display>(&self, _: &T) {}
+    fn dispatch_minimum_value(&self, _: &dyn Display) {}
+    fn dispatch_maximum_value(&self, _: &dyn Display) {}
 }

@@ -18,18 +18,17 @@ use crate::web::WebGl2RenderingContext;
 use crate::error::WebResult;
 use crate::pixels_render::PixelsUniform;
 use crate::simulation_render_state::Materials;
-use core::app_events::AppEventDispatcher;
 use core::simulation_context::SimulationContext;
 use core::simulation_core_state::{ColorChannels, Resources, TextureInterpolation};
 
-pub struct SimulationDrawer<'a, T: AppEventDispatcher> {
-    ctx: &'a mut SimulationContext<T>,
+pub struct SimulationDrawer<'a> {
+    ctx: &'a dyn SimulationContext,
     materials: &'a mut Materials,
     res: &'a Resources,
 }
 
-impl<'a, T: AppEventDispatcher> SimulationDrawer<'a, T> {
-    pub fn new(ctx: &'a mut SimulationContext<T>, materials: &'a mut Materials, res: &'a Resources) -> Self {
+impl<'a> SimulationDrawer<'a> {
+    pub fn new(ctx: &'a dyn SimulationContext, materials: &'a mut Materials, res: &'a Resources) -> Self {
         materials.gl.enable(WebGl2RenderingContext::DEPTH_TEST);
         SimulationDrawer { ctx, materials, res }
     }
@@ -199,7 +198,7 @@ impl<'a, T: AppEventDispatcher> SimulationDrawer<'a, T> {
                 Some(&mut *pixels),
             )?;
             self.materials.screenshot_pixels = Some(pixels);
-            self.ctx.dispatcher.dispatch_screenshot(
+            self.ctx.dispatcher().dispatch_screenshot(
                 self.materials.screenshot_pixels.as_ref().expect("Screenshot bug"),
                 self.res.filters.internal_resolution.multiplier,
             );

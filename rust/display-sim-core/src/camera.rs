@@ -112,13 +112,13 @@ impl CameraData {
     }
 }
 
-pub struct CameraSystem<'a, Dispatcher: AppEventDispatcher> {
+pub struct CameraSystem<'a> {
     data: &'a mut CameraData,
-    dispatcher: &'a Dispatcher,
+    dispatcher: &'a dyn AppEventDispatcher,
 }
 
-impl<'a, Dispatcher: AppEventDispatcher> CameraSystem<'a, Dispatcher> {
-    pub fn new(data: &'a mut CameraData, dispatcher: &'a Dispatcher) -> CameraSystem<'a, Dispatcher> {
+impl<'a> CameraSystem<'a> {
+    pub fn new(data: &'a mut CameraData, dispatcher: &'a dyn AppEventDispatcher) -> CameraSystem<'a> {
         CameraSystem { data, dispatcher }
     }
 
@@ -186,7 +186,7 @@ impl<'a, Dispatcher: AppEventDispatcher> CameraSystem<'a, Dispatcher> {
         }
     }
 
-    pub fn change_zoom(&mut self, change: f32, dispatcher: &impl AppEventDispatcher) {
+    pub fn change_zoom(&mut self, change: f32, dispatcher: &dyn AppEventDispatcher) {
         let last_zoom = self.data.zoom;
         if self.data.zoom >= 0.1 && self.data.zoom <= 90.0 {
             self.data.zoom -= change * 0.1;

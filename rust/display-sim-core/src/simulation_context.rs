@@ -14,8 +14,36 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 use crate::app_events::AppEventDispatcher;
+use derive_new::new;
 
-#[derive(Default)]
-pub struct SimulationContext<EventDispatcher: AppEventDispatcher + Default> {
-    pub dispatcher: EventDispatcher,
+#[derive(new)]
+pub struct ConcreteSimulationContext<Dispatcher: AppEventDispatcher, Rnd: RandomGenerator> {
+    pub dispatcher_instance: Dispatcher,
+    pub rnd: Rnd,
+}
+
+impl<Dispatcher: AppEventDispatcher, Rnd: RandomGenerator> SimulationContext for ConcreteSimulationContext<Dispatcher, Rnd> {
+    fn dispatcher(&self) -> &dyn AppEventDispatcher {
+        &self.dispatcher_instance
+    }
+    fn random(&self) -> &dyn RandomGenerator {
+        &self.rnd
+    }
+}
+
+pub trait SimulationContext {
+    fn dispatcher(&self) -> &dyn AppEventDispatcher;
+    fn random(&self) -> &dyn RandomGenerator;
+}
+
+pub trait RandomGenerator {
+    fn next(&self) -> f32;
+}
+
+pub struct FakeRngGenerator {}
+
+impl RandomGenerator for FakeRngGenerator {
+    fn next(&self) -> f32 {
+        0.0
+    }
 }

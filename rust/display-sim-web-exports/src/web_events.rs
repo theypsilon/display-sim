@@ -241,11 +241,11 @@ impl AppEventDispatcher for WebEventDispatcher {
         self.catch_error(dispatch_event_with("app-event.top_message", &message.into()));
     }
 
-    fn dispatch_minimum_value<T: Display>(&self, value: &T) {
+    fn dispatch_minimum_value(&self, value: &dyn Display) {
         self.dispatch_top_message(&format!("Minimum value is {}", value));
     }
 
-    fn dispatch_maximum_value<T: Display>(&self, value: &T) {
+    fn dispatch_maximum_value(&self, value: &dyn Display) {
         self.dispatch_top_message(&format!("Maximum value is {}", value));
     }
 }

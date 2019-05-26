@@ -51,7 +51,7 @@ pub struct AnimationStep {
 pub struct Resources {
     pub video: VideoInputResources,
     pub camera: CameraData,
-    pub camera_backup: CameraData,
+    pub demo_1: FirstDemoData,
     pub filters: Filters,
     pub speed: Speeds,
     pub saved_filters: Option<Filters>,
@@ -62,6 +62,11 @@ pub struct Resources {
     pub drawable: bool,
     pub resetted: bool,
     pub quit: bool,
+}
+
+pub struct FirstDemoData {
+    pub position_target: glm::Vec3,
+    pub camera_backup: CameraData,
 }
 
 pub struct ScreenshotTrigger {
@@ -76,7 +81,7 @@ impl Default for Resources {
             timers: SimulationTimers::default(),
             video: VideoInputResources::default(),
             camera: CameraData::new(MOVEMENT_BASE_SPEED / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED),
-            camera_backup: CameraData::new(0.0, 0.0),
+            demo_1: FirstDemoData::default(),
             output: ViewModel::default(),
             speed: Speeds {
                 filter_speed: PIXEL_MANIPULATION_BASE_SPEED,
@@ -87,6 +92,15 @@ impl Default for Resources {
             drawable: false,
             resetted: true,
             quit: false,
+        }
+    }
+}
+
+impl Default for FirstDemoData {
+    fn default() -> FirstDemoData {
+        FirstDemoData {
+            position_target: glm::vec3(0.0, 0.0, 0.0),
+            camera_backup: CameraData::new(0.0, 0.0),
         }
     }
 }

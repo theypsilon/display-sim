@@ -22,10 +22,9 @@ use crate::console;
 use crate::web_events::WebEventDispatcher;
 use crate::web_utils::{now, window};
 use core::action_bindings::on_button_action;
-use core::app_events::AppEventDispatcher;
 use core::camera::CameraChange;
 use core::internal_resolution::InternalResolution;
-use core::simulation_context::SimulationContext;
+use core::simulation_context::{ConcreteSimulationContext, RandomGenerator, SimulationContext};
 use core::simulation_core_state::{event_kind, Input, InputEventValue, Resources, VideoInputResources};
 use core::simulation_core_ticker::SimulationCoreTicker;
 use render::simulation_draw::SimulationDrawer;
@@ -65,14 +64,14 @@ pub fn web_entrypoint(
         let owned_state = Rc::clone(&owned_state);
         let window = window()?;
         Closure::wrap(Box::new(move |_| {
-            let mut ctx: SimulationContext<WebEventDispatcher> = SimulationContext::default();
+            let mut ctx = ConcreteSimulationContext::new(WebEventDispatcher::default(), WebRnd {});
             if let Err(e) = web_entrypoint_iteration(&owned_state, &window, &mut ctx) {
                 console!(error. "An unexpected error happened during web_entrypoint_iteration.", e.into_js());
-                ctx.dispatcher.dispatch_exiting_session();
-                ctx.dispatcher
+                ctx.dispatcher().dispatch_exiting_session();
+                ctx.dispatcher()
                     .dispatch_top_message("Error! Try restarting your browser. Contact me if this problem persists!");
             }
-            if let Err(e) = ctx.dispatcher.check_error() {
+            if let Err(e) = ctx.dispatcher_instance.check_error() {
                 console!(error. "Error dispatching some events: ", e.into_js());
             }
         }))
@@ -91,7 +90,7 @@ pub fn print_error(e: WebError) {
     console!(error. "An unexpected error ocurred.", e.into_js());
 }
 
-fn web_entrypoint_iteration<T: AppEventDispatcher>(owned_state: &StateOwner, window: &Window, ctx: &mut SimulationContext<T>) -> WebResult<()> {
+fn web_entrypoint_iteration(owned_state: &StateOwner, window: &Window, ctx: &mut dyn SimulationContext) -> WebResult<()> {
     let mut input = owned_state.input.borrow_mut();
     let mut resources = owned_state.resources.borrow_mut();
     let mut materials = owned_state.materials.borrow_mut();
@@ -109,7 +108,17 @@ fn web_entrypoint_iteration<T: AppEventDispatcher>(owned_state: &StateOwner, win
     Ok(())
 }
 
-fn tick<T: AppEventDispatcher>(ctx: &mut SimulationContext<T>, input: &mut Input, res: &mut Resources, materials: &mut Materials) -> WebResult<bool> {
+struct WebRnd {}
+
+impl RandomGenerator for WebRnd {
+    fn next(&self) -> f32 {
+        use rand::Rng;
+        let mut rng = rand::thread_rng();
+        rng.gen_range(0.0, 1.0)
+    }
+}
+
+fn tick(ctx: &dyn SimulationContext, input: &mut Input, res: &mut Resources, materials: &mut Materials) -> WebResult<bool> {
     SimulationCoreTicker::new(ctx, res, input).tick(now()?);
     if res.quit {
         console!(log. "User closed the simulation.");

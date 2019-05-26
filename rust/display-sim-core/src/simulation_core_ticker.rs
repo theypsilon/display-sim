@@ -13,7 +13,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-use crate::app_events::AppEventDispatcher;
 use crate::camera::{CameraData, CameraDirection, CameraSystem};
 use crate::filter_params::FilterParams;
 use crate::general_types::get_3_f32color_from_int;
@@ -26,13 +25,13 @@ use crate::simulation_core_state::{
 use derive_new::new;
 
 #[derive(new)]
-pub struct SimulationCoreTicker<'a, T: AppEventDispatcher> {
-    ctx: &'a mut SimulationContext<T>,
-    res: &'a mut Resources,
-    input: &'a mut Input,
+pub struct SimulationCoreTicker<'a> {
+    pub ctx: &'a dyn SimulationContext,
+    pub res: &'a mut Resources,
+    pub input: &'a mut Input,
 }
 
-impl<'a, T: AppEventDispatcher> SimulationCoreTicker<'a, T> {
+impl<'a> SimulationCoreTicker<'a> {
     pub fn tick(&mut self, now: f64) {
         self.pre_process_input(now);
         SimulationUpdater::new(self.ctx, self.res, self.input).update();
@@ -59,8 +58,8 @@ impl<'a, T: AppEventDispatcher> SimulationCoreTicker<'a, T> {
     }
 }
 
-struct SimulationUpdater<'a, T: AppEventDispatcher> {
-    ctx: &'a mut SimulationContext<T>,
+struct SimulationUpdater<'a> {
+    ctx: &'a dyn SimulationContext,
     res: &'a mut Resources,
     input: &'a Input,
     dt: f32,
@@ -76,8 +75,8 @@ macro_rules! read_event_value {
     };
 }
 
-impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
-    pub fn new(ctx: &'a mut SimulationContext<T>, res: &'a mut Resources, input: &'a Input) -> SimulationUpdater<'a, T> {
+impl<'a> SimulationUpdater<'a> {
+    pub fn new(ctx: &'a dyn SimulationContext, res: &'a mut Resources, input: &'a Input) -> Self {
         SimulationUpdater {
             dt: ((input.now - res.timers.last_time) / 1000.0) as f32,
             ctx,
@@ -96,13 +95,13 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         self.update_animation_buffer();
 
         if self.input.esc.is_just_pressed() {
-            self.ctx.dispatcher.dispatch_exiting_session();
+            self.ctx.dispatcher().dispatch_exiting_session();
             self.res.quit = true;
             return;
         }
 
         if self.input.space.is_just_pressed() {
-            self.ctx.dispatcher.dispatch_toggle_info_panel();
+            self.ctx.dispatcher().dispatch_toggle_info_panel();
         }
 
         self.update_speeds();
@@ -125,7 +124,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             let multiplier = self.res.filters.internal_resolution.multiplier as f32;
             self.res.screenshot_trigger.delay = (2.0 * multiplier * multiplier * (1.0 / self.dt)) as i32; // 2 seconds aprox.
             if self.res.screenshot_trigger.delay as f32 * self.dt > 2.0 {
-                self.ctx.dispatcher.dispatch_top_message("Screenshot about to be downloaded, please wait.");
+                self.ctx.dispatcher().dispatch_top_message("Screenshot about to be downloaded, please wait.");
             }
         }
     }
@@ -136,7 +135,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
 
         if ellapsed >= 1_000.0 {
             let fps = self.res.timers.frame_count as f32;
-            self.ctx.dispatcher.dispatch_fps(fps);
+            self.ctx.dispatcher().dispatch_fps(fps);
             self.res.timers.last_second = self.input.now;
             self.res.timers.frame_count = 0;
         } else {
@@ -166,34 +165,34 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             self.res.camera.turning_speed = TURNING_BASE_SPEED;
             self.res.camera.movement_speed = initial_movement_speed;
             self.res.speed.filter_speed = PIXEL_MANIPULATION_BASE_SPEED;
-            self.ctx.dispatcher.dispatch_top_message("All speeds have been reset.");
+            self.ctx.dispatcher().dispatch_top_message("All speeds have been reset.");
             self.change_frontend_input_values();
         }
         let ctx = &self.ctx;
         let input = &self.input;
-        FilterParams::new(ctx, &mut self.res.camera.turning_speed, input.turn_speed.to_just_pressed())
+        FilterParams::new(*ctx, &mut self.res.camera.turning_speed, input.turn_speed.to_just_pressed())
             .set_progression(2.0)
             .set_min(0.007_812_5 * TURNING_BASE_SPEED)
             .set_max(16_384.0 * TURNING_BASE_SPEED)
-            .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_turning_speed(x / TURNING_BASE_SPEED))
+            .set_trigger_handler(|x| ctx.dispatcher().dispatch_change_turning_speed(x / TURNING_BASE_SPEED))
             .process_with_multiplications();
-        FilterParams::new(ctx, &mut self.res.speed.filter_speed, input.filter_speed.to_just_pressed())
+        FilterParams::new(*ctx, &mut self.res.speed.filter_speed, input.filter_speed.to_just_pressed())
             .set_progression(2.0)
             .set_min(0.007_812_5 * PIXEL_MANIPULATION_BASE_SPEED)
             .set_max(16_384.0 * PIXEL_MANIPULATION_BASE_SPEED)
-            .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_pixel_speed(x / PIXEL_MANIPULATION_BASE_SPEED))
+            .set_trigger_handler(|x| ctx.dispatcher().dispatch_change_pixel_speed(x / PIXEL_MANIPULATION_BASE_SPEED))
             .process_with_multiplications();
-        FilterParams::new(ctx, &mut self.res.camera.turning_speed, input.translation_speed.to_just_pressed())
+        FilterParams::new(*ctx, &mut self.res.camera.turning_speed, input.translation_speed.to_just_pressed())
             .set_progression(2.0)
             .set_min(0.007_812_5 * TURNING_BASE_SPEED)
             .set_max(16_384.0 * TURNING_BASE_SPEED)
-            .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_turning_speed(x / TURNING_BASE_SPEED))
+            .set_trigger_handler(|x| ctx.dispatcher().dispatch_change_turning_speed(x / TURNING_BASE_SPEED))
             .process_with_multiplications();
-        FilterParams::new(ctx, &mut self.res.camera.movement_speed, input.translation_speed.to_just_pressed())
+        FilterParams::new(*ctx, &mut self.res.camera.movement_speed, input.translation_speed.to_just_pressed())
             .set_progression(2.0)
             .set_min(0.007_812_5 * initial_movement_speed)
             .set_max(16_384.0 * initial_movement_speed)
-            .set_trigger_handler(|x| ctx.dispatcher.dispatch_change_movement_speed(x / initial_movement_speed))
+            .set_trigger_handler(|x| ctx.dispatcher().dispatch_change_movement_speed(x / initial_movement_speed))
             .process_with_multiplications();
     }
 
@@ -203,7 +202,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
                 self.res.saved_filters = Some(self.res.filters.clone());
             }
             if self.res.filters.preset_name == "Demo" {
-                self.res.camera = self.res.camera_backup.clone();
+                self.res.camera = self.res.demo_1.camera_backup.clone();
             }
             self.res.filters = match preset.as_ref() {
                 "sharp-1" => self.res.filters.preset_sharp_1(),
@@ -211,11 +210,18 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
                 "crt-shadow-mask-1" => self.res.filters.preset_crt_shadow_mask_1(),
                 "crt-shadow-mask-2" => self.res.filters.preset_crt_shadow_mask_2(),
                 "demo-1" => {
-                    self.res.camera_backup = self.res.camera.clone();
+                    self.res.demo_1.camera_backup = self.res.camera.clone();
                     self.res.camera.locked_mode = false;
                     self.res.camera.set_position(glm::vec3(-75.4, -124.85, 8.18));
                     self.res.camera.direction = glm::vec3(0.52, 0.82, -0.24);
                     self.res.camera.axis_up = glm::vec3(0.04, 0.26, 0.97);
+                    let half_width = self.res.video.image_size.width as f32 / 2.0;
+                    let half_height = self.res.video.image_size.height as f32 / 2.0;
+                    self.res.demo_1.position_target = glm::vec3(
+                        (self.ctx.random().next() - 0.5) * half_width,
+                        (self.ctx.random().next() - 0.5) * half_height,
+                        0.0,
+                    );
                     self.res.filters.preset_demo_1()
                 }
                 _ => {
@@ -228,6 +234,21 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             };
             self.change_frontend_input_values();
         }
+        if self.res.filters.preset_name == "Demo" {
+            let position = self.res.camera.get_position();
+            let distance = self.res.demo_1.position_target - position;
+            let direction = distance.normalize();
+            self.res.camera.set_position(position + direction * self.dt * 10.0);
+            if glm::length(&distance).abs() < 10.0 {
+                let half_width = self.res.video.image_size.width as f32 / 2.0;
+                let half_height = self.res.video.image_size.height as f32 / 2.0;
+                self.res.demo_1.position_target = glm::vec3(
+                    (self.ctx.random().next() - 0.5) * half_width,
+                    (self.ctx.random().next() - 0.5) * half_height,
+                    0.0,
+                );
+            }
+        }
         if self.input.reset_filters {
             self.res.filters = Filters::default();
             self.res.filters.cur_pixel_width = self.res.initial_parameters.initial_pixel_width;
@@ -236,16 +257,16 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
                 .internal_resolution
                 .initialize(self.res.video.viewport_size, self.res.video.max_texture_size);
             self.change_frontend_input_values();
-            self.ctx.dispatcher.dispatch_top_message("All filter options have been reset.");
+            self.ctx.dispatcher().dispatch_top_message("All filter options have been reset.");
             return;
         }
         if let InputEventValue::LightColor(light_color) = self.input.custom_event.get_value(event_kind::LIGHT_COLOR) {
             self.res.filters.light_color = *light_color;
-            self.ctx.dispatcher.dispatch_top_message("Light Color changed.");
+            self.ctx.dispatcher().dispatch_top_message("Light Color changed.");
         }
         if let InputEventValue::BrightnessColor(brightness_color) = self.input.custom_event.get_value(event_kind::LIGHT_COLOR) {
             self.res.filters.brightness_color = *brightness_color;
-            self.ctx.dispatcher.dispatch_top_message("Brightness Color changed.");
+            self.ctx.dispatcher().dispatch_top_message("Brightness Color changed.");
         }
 
         let ctx = &self.ctx;
@@ -254,153 +275,153 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
 
         let mut changed = false;
 
-        FilterParams::new(ctx, &mut filters.extra_bright, input.bright)
+        FilterParams::new(*ctx, &mut filters.extra_bright, input.bright)
             .set_progression(0.01 * self.dt * self.res.speed.filter_speed)
             .set_event_value(read_event_value!(self, PixelBrighttness, PIXEL_BRIGHTNESS))
             .set_min(-1.0)
             .set_max(1.0)
             .set_trigger_handler(|x| {
                 changed = true;
-                ctx.dispatcher.dispatch_change_pixel_brightness(x);
+                ctx.dispatcher().dispatch_change_pixel_brightness(x);
             })
             .process_with_sums();
-        FilterParams::new(ctx, &mut filters.extra_contrast, input.contrast)
+        FilterParams::new(*ctx, &mut filters.extra_contrast, input.contrast)
             .set_progression(0.01 * self.dt * self.res.speed.filter_speed)
             .set_event_value(read_event_value!(self, PixelContrast, PIXEL_CONTRAST))
             .set_min(0.0)
             .set_max(20.0)
             .set_trigger_handler(|x| {
                 changed = true;
-                ctx.dispatcher.dispatch_change_pixel_contrast(x);
+                ctx.dispatcher().dispatch_change_pixel_contrast(x);
             })
             .process_with_sums();
-        FilterParams::new(ctx, &mut filters.blur_passes, input.blur.to_just_pressed())
+        FilterParams::new(*ctx, &mut filters.blur_passes, input.blur.to_just_pressed())
             .set_progression(1)
             .set_event_value(read_event_value!(self, BlurLevel, BLUR_LEVEL))
             .set_min(0)
             .set_max(100)
             .set_trigger_handler(|x| {
                 changed = true;
-                ctx.dispatcher.dispatch_change_blur_level(x);
+                ctx.dispatcher().dispatch_change_blur_level(x);
             })
             .process_with_sums();
-        FilterParams::new(ctx, &mut filters.texture_interpolation, input.next_texture_interpolation.to_just_pressed())
+        FilterParams::new(*ctx, &mut filters.texture_interpolation, input.next_texture_interpolation.to_just_pressed())
             .set_trigger_handler(|x: &TextureInterpolation| {
                 changed = true;
-                ctx.dispatcher.dispatch_texture_interpolation(*x);
+                ctx.dispatcher().dispatch_texture_interpolation(*x);
             })
             .process_options();
-        FilterParams::new(ctx, &mut filters.screen_curvature_kind, input.next_screen_curvature_type.to_just_pressed())
+        FilterParams::new(*ctx, &mut filters.screen_curvature_kind, input.next_screen_curvature_type.to_just_pressed())
             .set_trigger_handler(|x: &ScreenCurvatureKind| {
                 changed = true;
-                ctx.dispatcher.dispatch_screen_curvature(*x);
+                ctx.dispatcher().dispatch_screen_curvature(*x);
             })
             .process_options();
-        FilterParams::new(ctx, &mut filters.backlight_presence, input.backlight_percent)
+        FilterParams::new(*ctx, &mut filters.backlight_presence, input.backlight_percent)
             .set_progression(0.01 * self.dt * self.res.speed.filter_speed)
             .set_event_value(read_event_value!(self, BacklightPercent, BACKLIGHT_PERCENT))
             .set_min(0.0)
             .set_max(1.0)
             .set_trigger_handler(|x| {
                 changed = true;
-                ctx.dispatcher.dispatch_backlight_presence(x);
+                ctx.dispatcher().dispatch_backlight_presence(x);
             })
             .process_with_sums();
-        FilterParams::new(ctx, &mut filters.color_channels, input.next_color_representation_kind.to_just_pressed())
+        FilterParams::new(*ctx, &mut filters.color_channels, input.next_color_representation_kind.to_just_pressed())
             .set_trigger_handler(|x: &ColorChannels| {
                 changed = true;
-                ctx.dispatcher.dispatch_color_representation(*x);
+                ctx.dispatcher().dispatch_color_representation(*x);
             })
             .process_options();
-        FilterParams::new(ctx, &mut filters.internal_resolution, input.next_internal_resolution.to_just_pressed())
+        FilterParams::new(*ctx, &mut filters.internal_resolution, input.next_internal_resolution.to_just_pressed())
             .set_trigger_handler(|x| {
                 changed = true;
-                ctx.dispatcher.dispatch_internal_resolution(x);
+                ctx.dispatcher().dispatch_internal_resolution(x);
             })
             .process_options();
-        FilterParams::new(ctx, &mut filters.vertical_lpp, input.vertical_lpp.to_just_pressed())
+        FilterParams::new(*ctx, &mut filters.vertical_lpp, input.vertical_lpp.to_just_pressed())
             .set_progression(1)
             .set_event_value(read_event_value!(self, VerticalLpp, VERTICAL_LPP))
             .set_min(1)
             .set_max(20)
             .set_trigger_handler(|x| {
                 changed = true;
-                ctx.dispatcher.dispatch_change_vertical_lpp(x);
+                ctx.dispatcher().dispatch_change_vertical_lpp(x);
             })
             .process_with_sums();
-        FilterParams::new(ctx, &mut filters.horizontal_lpp, input.horizontal_lpp.to_just_pressed())
+        FilterParams::new(*ctx, &mut filters.horizontal_lpp, input.horizontal_lpp.to_just_pressed())
             .set_progression(1)
             .set_event_value(read_event_value!(self, HorizontalLpp, HORIZONTAL_LPP))
             .set_min(1)
             .set_max(20)
             .set_trigger_handler(|x| {
                 changed = true;
-                ctx.dispatcher.dispatch_change_horizontal_lpp(x);
+                ctx.dispatcher().dispatch_change_horizontal_lpp(x);
             })
             .process_with_sums();
 
         let pixel_velocity = self.dt * self.res.speed.filter_speed;
-        FilterParams::new(ctx, &mut filters.pixels_geometry_kind, input.next_pixel_geometry_kind.to_just_pressed())
+        FilterParams::new(*ctx, &mut filters.pixels_geometry_kind, input.next_pixel_geometry_kind.to_just_pressed())
             .set_trigger_handler(|x: &PixelsGeometryKind| {
                 changed = true;
-                ctx.dispatcher.dispatch_pixel_geometry(*x);
+                ctx.dispatcher().dispatch_pixel_geometry(*x);
             })
             .process_options();
-        FilterParams::new(ctx, &mut filters.pixel_shadow_shape_kind, input.next_pixel_shadow_shape_kind.to_just_pressed())
+        FilterParams::new(*ctx, &mut filters.pixel_shadow_shape_kind, input.next_pixel_shadow_shape_kind.to_just_pressed())
             .set_trigger_handler(|x: &ShadowShape| {
                 changed = true;
-                ctx.dispatcher.dispatch_pixel_shadow_shape(*x);
+                ctx.dispatcher().dispatch_pixel_shadow_shape(*x);
             })
             .process_options();
-        FilterParams::new(ctx, &mut filters.pixel_shadow_height, input.next_pixels_shadow_height)
+        FilterParams::new(*ctx, &mut filters.pixel_shadow_height, input.next_pixels_shadow_height)
             .set_progression(self.dt * 0.3)
             .set_event_value(read_event_value!(self, PixelShadowHeight, PIXEL_SHADOW_HEIGHT))
             .set_min(0.0)
             .set_max(1.0)
             .set_trigger_handler(|x| {
                 changed = true;
-                ctx.dispatcher.dispatch_pixel_shadow_height(x);
+                ctx.dispatcher().dispatch_pixel_shadow_height(x);
             })
             .process_with_sums();
-        FilterParams::new(ctx, &mut filters.cur_pixel_vertical_gap, input.pixel_vertical_gap)
+        FilterParams::new(*ctx, &mut filters.cur_pixel_vertical_gap, input.pixel_vertical_gap)
             .set_progression(pixel_velocity * 0.00125)
             .set_event_value(read_event_value!(self, PixelVerticalGap, PIXEL_VERTICAL_GAP))
             .set_min(0.0)
             .set_trigger_handler(|x| {
                 changed = true;
-                ctx.dispatcher.dispatch_change_pixel_vertical_gap(x);
+                ctx.dispatcher().dispatch_change_pixel_vertical_gap(x);
             })
             .process_with_sums();
-        FilterParams::new(ctx, &mut filters.cur_pixel_horizontal_gap, input.pixel_horizontal_gap)
+        FilterParams::new(*ctx, &mut filters.cur_pixel_horizontal_gap, input.pixel_horizontal_gap)
             .set_progression(pixel_velocity * 0.00125)
             .set_event_value(read_event_value!(self, PixelHorizontalGap, PIXEL_HORIZONTAL_GAP))
             .set_min(0.0)
             .set_trigger_handler(|x| {
                 changed = true;
-                ctx.dispatcher.dispatch_change_pixel_horizontal_gap(x);
+                ctx.dispatcher().dispatch_change_pixel_horizontal_gap(x);
             })
             .process_with_sums();
-        FilterParams::new(ctx, &mut filters.cur_pixel_width, input.pixel_width)
+        FilterParams::new(*ctx, &mut filters.cur_pixel_width, input.pixel_width)
             .set_progression(pixel_velocity * 0.005)
             .set_event_value(read_event_value!(self, PixelWidth, PIXEL_WIDTH))
             .set_min(0.0)
             .set_trigger_handler(|x| {
                 changed = true;
-                ctx.dispatcher.dispatch_change_pixel_width(x);
+                ctx.dispatcher().dispatch_change_pixel_width(x);
             })
             .process_with_sums();
-        FilterParams::new(ctx, &mut filters.cur_pixel_spread, input.pixel_spread)
+        FilterParams::new(*ctx, &mut filters.cur_pixel_spread, input.pixel_spread)
             .set_progression(pixel_velocity * 0.005)
             .set_event_value(read_event_value!(self, PixelSpread, PIXEL_SPREAD))
             .set_min(0.0)
             .set_trigger_handler(|x| {
                 changed = true;
-                ctx.dispatcher.dispatch_change_pixel_spread(x);
+                ctx.dispatcher().dispatch_change_pixel_spread(x);
             })
             .process_with_sums();
 
         if changed && self.res.filters.preset_name != "Custom" {
-            ctx.dispatcher.dispatch_custom_preset();
+            ctx.dispatcher().dispatch_custom_preset();
             self.res.filters.preset_name = "Custom".into();
         }
     }
@@ -410,15 +431,15 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
             let initial_position = glm::vec3(0.0, 0.0, self.res.initial_parameters.initial_position_z);
             self.res.camera = CameraData::new(self.res.camera.movement_speed, self.res.camera.turning_speed);
             self.res.camera.set_position(initial_position);
-            self.ctx.dispatcher.dispatch_top_message("The camera have been reset.");
+            self.ctx.dispatcher().dispatch_top_message("The camera have been reset.");
         }
 
         if self.input.next_camera_movement_mode.increase.is_just_pressed() || self.input.next_camera_movement_mode.decrease.is_just_pressed() {
             self.res.camera.locked_mode = !self.res.camera.locked_mode;
-            self.ctx.dispatcher.dispatch_change_camera_movement_mode(self.res.camera.locked_mode)
+            self.ctx.dispatcher().dispatch_change_camera_movement_mode(self.res.camera.locked_mode)
         }
 
-        let mut camera = CameraSystem::new(&mut self.res.camera, &self.ctx.dispatcher);
+        let mut camera = CameraSystem::new(&mut self.res.camera, self.ctx.dispatcher());
 
         if self.input.walk_left {
             camera.advance(CameraDirection::Left, self.dt);
@@ -460,19 +481,19 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
         }
 
         if self.input.mouse_click.is_just_pressed() {
-            self.ctx.dispatcher.dispatch_request_pointer_lock();
+            self.ctx.dispatcher().dispatch_request_pointer_lock();
         } else if self.input.mouse_click.is_activated() {
             camera.drag(self.input.mouse_position_x, self.input.mouse_position_y);
         } else if self.input.mouse_click.is_just_released() {
-            self.ctx.dispatcher.dispatch_exit_pointer_lock();
+            self.ctx.dispatcher().dispatch_exit_pointer_lock();
         }
 
         if self.input.camera_zoom.increase {
-            camera.change_zoom(self.dt * -100.0, &self.ctx.dispatcher);
+            camera.change_zoom(self.dt * -100.0, self.ctx.dispatcher());
         } else if self.input.camera_zoom.decrease {
-            camera.change_zoom(self.dt * 100.0, &self.ctx.dispatcher);
+            camera.change_zoom(self.dt * 100.0, self.ctx.dispatcher());
         } else if self.input.mouse_scroll_y != 0.0 {
-            camera.change_zoom(self.input.mouse_scroll_y, &self.ctx.dispatcher);
+            camera.change_zoom(self.input.mouse_scroll_y, self.ctx.dispatcher());
         }
 
         for event_value in self.input.custom_event.get_values() {
@@ -485,7 +506,7 @@ impl<'a, T: AppEventDispatcher> SimulationUpdater<'a, T> {
     }
 
     fn change_frontend_input_values(&self) {
-        let dispatcher = &self.ctx.dispatcher;
+        let dispatcher = self.ctx.dispatcher();
         dispatcher.enable_extra_messages(false);
         dispatcher.dispatch_change_pixel_horizontal_gap(self.res.filters.cur_pixel_horizontal_gap);
         dispatcher.dispatch_change_pixel_vertical_gap(self.res.filters.cur_pixel_vertical_gap);

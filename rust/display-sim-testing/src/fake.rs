@@ -15,7 +15,7 @@
 
 use core::app_events::FakeEventDispatcher;
 use core::general_types::Size2D;
-use core::simulation_context::SimulationContext;
+use core::simulation_context::{ConcreteSimulationContext, FakeRngGenerator};
 use core::simulation_core_state::{AnimationStep, Input, Resources, VideoInputResources};
 use core::simulation_core_ticker::SimulationCoreTicker;
 use render::background_render::BackgroundRender;
@@ -77,9 +77,9 @@ impl FakeVideoInput {
 
         let now = SystemTime::now();
         let mut input = Input::new(0.0);
-        let mut ctx: SimulationContext<FakeEventDispatcher> = SimulationContext::default();
+        let ctx = ConcreteSimulationContext::new(FakeEventDispatcher {}, FakeRngGenerator {});
         for _ in 0..times {
-            SimulationCoreTicker::new(&mut ctx, &mut res, &mut input).tick(now.elapsed().map_err(|e| e.to_string())?.as_millis() as f64 * 0.05);
+            SimulationCoreTicker::new(&ctx, &mut res, &mut input).tick(now.elapsed().map_err(|e| e.to_string())?.as_millis() as f64 * 0.05);
             if res.quit {
                 println!("User closed the simulation.");
                 return Ok(());
@@ -87,7 +87,7 @@ impl FakeVideoInput {
             if !res.drawable {
                 continue;
             }
-            SimulationDrawer::new(&mut ctx, &mut materials, &res).draw()?;
+            SimulationDrawer::new(&ctx, &mut materials, &res).draw()?;
         }
         Ok(())
     }

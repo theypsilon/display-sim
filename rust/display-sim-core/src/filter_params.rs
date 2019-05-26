@@ -13,15 +13,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-use crate::app_events::AppEventDispatcher;
 use crate::general_types::{IncDec, OptionCursor};
 use crate::simulation_context::SimulationContext;
 use std::cmp::{PartialEq, PartialOrd};
 use std::fmt::Display;
 use std::ops::{AddAssign, DivAssign, MulAssign, SubAssign};
 
-pub struct FilterParams<'a, T, U, TriggerHandler: FnOnce(U), Dispatcher: AppEventDispatcher> {
-    ctx: &'a SimulationContext<Dispatcher>,
+pub struct FilterParams<'a, T, U, TriggerHandler: FnOnce(U)> {
+    ctx: &'a dyn SimulationContext,
     var: &'a mut T,
     incdec: IncDec<bool>,
     trigger_handler: Option<TriggerHandler>,
@@ -32,8 +31,8 @@ pub struct FilterParams<'a, T, U, TriggerHandler: FnOnce(U), Dispatcher: AppEven
     _u: std::marker::PhantomData<FnOnce(U)>,
 }
 
-impl<'a, T, U, TriggerHandler: FnOnce(U), Dispatcher: AppEventDispatcher> FilterParams<'a, T, U, TriggerHandler, Dispatcher> {
-    pub fn new(ctx: &'a SimulationContext<Dispatcher>, var: &'a mut T, incdec: IncDec<bool>) -> Self {
+impl<'a, T, U, TriggerHandler: FnOnce(U)> FilterParams<'a, T, U, TriggerHandler> {
+    pub fn new(ctx: &'a dyn SimulationContext, var: &'a mut T, incdec: IncDec<bool>) -> Self {
         FilterParams {
             ctx,
             var,
@@ -56,7 +55,7 @@ impl<'a, T, U, TriggerHandler: FnOnce(U), Dispatcher: AppEventDispatcher> Filter
     }
 }
 
-impl<'a, T: PartialOrd + PartialEq, TriggerHandler: FnOnce(T), Dispatcher: AppEventDispatcher> FilterParams<'a, T, T, TriggerHandler, Dispatcher> {
+impl<'a, T: PartialOrd + PartialEq, TriggerHandler: FnOnce(T)> FilterParams<'a, T, T, TriggerHandler> {
     pub fn set_progression(mut self, velocity: T) -> Self {
         self.velocity = Some(velocity);
         self
@@ -71,11 +70,10 @@ impl<'a, T: PartialOrd + PartialEq, TriggerHandler: FnOnce(T), Dispatcher: AppEv
     }
 }
 
-impl<'a, T, TriggerHandler, Dispatcher> FilterParams<'a, T, &'a T, TriggerHandler, Dispatcher>
+impl<'a, T, TriggerHandler> FilterParams<'a, T, &'a T, TriggerHandler>
 where
     T: OptionCursor + Display,
     TriggerHandler: FnOnce(&'a T),
-    Dispatcher: AppEventDispatcher,
 {
     #[allow(clippy::useless_let_if_seq)]
     pub fn process_options(self) {
@@ -94,9 +92,9 @@ where
         }
         if changed {
             if self.var.has_reached_minimum_limit() {
-                self.ctx.dispatcher.dispatch_minimum_value(self.var);
+                self.ctx.dispatcher().dispatch_minimum_value(self.var);
             } else if self.var.has_reached_maximum_limit() {
-                self.ctx.dispatcher.dispatch_maximum_value(self.var);
+                self.ctx.dispatcher().dispatch_maximum_value(self.var);
             } else if let Some(handler) = self.trigger_handler {
                 handler(self.var);
             }
@@ -104,36 +102,30 @@ where
     }
 }
 
-impl<'a, T, TriggerHandler, Dispatcher> FilterParams<'a, T, T, TriggerHandler, Dispatcher>
+impl<'a, T, TriggerHandler> FilterParams<'a, T, T, TriggerHandler>
 where
     T: Display + AddAssign + SubAssign + PartialOrd + PartialEq + Copy + Default,
     TriggerHandler: FnOnce(T),
-    Dispatcher: AppEventDispatcher,
 {
     pub fn process_with_sums(self) {
         operate_filter(self, AddAssign::add_assign, SubAssign::sub_assign)
     }
 }
 
-impl<'a, T, TriggerHandler, Dispatcher> FilterParams<'a, T, T, TriggerHandler, Dispatcher>
+impl<'a, T, TriggerHandler> FilterParams<'a, T, T, TriggerHandler>
 where
     T: Display + MulAssign + DivAssign + PartialOrd + PartialEq + Copy + Default,
     TriggerHandler: FnOnce(T),
-    Dispatcher: AppEventDispatcher,
 {
     pub fn process_with_multiplications(self) {
         operate_filter(self, MulAssign::mul_assign, DivAssign::div_assign)
     }
 }
 
-fn operate_filter<T, TriggerHandler, Dispatcher>(
-    params: FilterParams<T, T, TriggerHandler, Dispatcher>,
-    inc_op: impl FnOnce(&mut T, T),
-    dec_op: impl FnOnce(&mut T, T),
-) where
+fn operate_filter<T, TriggerHandler>(params: FilterParams<T, T, TriggerHandler>, inc_op: impl FnOnce(&mut T, T), dec_op: impl FnOnce(&mut T, T))
+where
     T: Display + PartialOrd + PartialEq + Copy + Default,
     TriggerHandler: FnOnce(T),
-    Dispatcher: AppEventDispatcher,
 {
     let last_value = *params.var;
     let is_min = if let Some(min) = params.min { *params.var <= min } else { false };
@@ -151,13 +143,13 @@ fn operate_filter<T, TriggerHandler, Dispatcher>(
     if let Some(min) = params.min {
         if *params.var < min || (is_min && params.incdec.decrease) {
             *params.var = min;
-            params.ctx.dispatcher.dispatch_minimum_value(&min);
+            params.ctx.dispatcher().dispatch_minimum_value(&min);
         }
     }
     if let Some(max) = params.max {
         if *params.var > max || (is_max && params.incdec.increase) {
             *params.var = max;
-            params.ctx.dispatcher.dispatch_maximum_value(&max);
+            params.ctx.dispatcher().dispatch_maximum_value(&max);
         }
     }
     if last_value != *params.var {
@@ -173,6 +165,7 @@ mod tests {
 
     use super::*;
     use crate::app_events::FakeEventDispatcher;
+    use crate::simulation_context::{ConcreteSimulationContext, FakeRngGenerator};
 
     static INCDEC_DOWN: IncDec<bool> = IncDec {
         increase: false,
@@ -364,15 +357,16 @@ mod tests {
         }
     }
 
-    static CTX: SimulationContext<FakeEventDispatcher> = SimulationContext {
-        dispatcher: FakeEventDispatcher {},
+    static CTX: ConcreteSimulationContext<FakeEventDispatcher, FakeRngGenerator> = ConcreteSimulationContext {
+        dispatcher_instance: FakeEventDispatcher {},
+        rnd: FakeRngGenerator {},
     };
 
-    fn sut<'a, T>(parameter: &'a mut T, incdec: IncDec<bool>) -> FilterParams<'a, T, T, impl FnOnce(T), FakeEventDispatcher> {
+    fn sut<'a, T>(parameter: &'a mut T, incdec: IncDec<bool>) -> FilterParams<'a, T, T, impl FnOnce(T)> {
         FilterParams::new(&CTX, parameter, incdec).set_trigger_handler(|_| {})
     }
 
-    fn sut_ref<'a, T>(parameter: &'a mut T, incdec: IncDec<bool>) -> FilterParams<'a, T, &'a T, impl FnOnce(&'a T), FakeEventDispatcher> {
+    fn sut_ref<'a, T>(parameter: &'a mut T, incdec: IncDec<bool>) -> FilterParams<'a, T, &'a T, impl FnOnce(&'a T)> {
         FilterParams::new(&CTX, parameter, incdec).set_trigger_handler(|_| {})
     }
 }

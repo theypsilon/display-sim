@@ -20,7 +20,7 @@ use core::app_events::AppEventDispatcher;
 use core::general_types::Size2D;
 use core::internal_resolution::InternalResolution;
 use core::pixels_shadow::ShadowShape;
-use core::simulation_context::SimulationContext;
+use core::simulation_context::{ConcreteSimulationContext, RandomGenerator};
 use core::simulation_core_state::{AnimationStep, Input, Resources, VideoInputResources};
 use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, TextureInterpolation};
 use core::simulation_core_ticker::SimulationCoreTicker;
@@ -37,6 +37,16 @@ pub fn main() {
     if let Err(e) = program() {
         println!("Error: {:?}", e);
         std::process::exit(-1);
+    }
+}
+
+struct NativeRnd {}
+
+impl RandomGenerator for NativeRnd {
+    fn next(&self) -> f32 {
+        use rand::Rng;
+        let mut rng = rand::thread_rng();
+        rng.gen_range(0.0, 1.0)
     }
 }
 
@@ -103,8 +113,8 @@ fn program() -> WebResult<()> {
     println!("Preparing input.");
     let mut input = Input::new(get_millis_since(&starting_time)?);
     println!("Preparing simulation context.");
-    let mut ctx: SimulationContext<NativeEventDispatcher> = SimulationContext::default();
-    ctx.dispatcher.sdl_ctx = Some(&sdl);
+    let mut ctx = ConcreteSimulationContext::new(NativeEventDispatcher::default(), NativeRnd {});
+    ctx.dispatcher_instance.sdl_ctx = Some(&sdl);
 
     let mut event_pump = sdl.event_pump().unwrap();
     println!("Main loop.");
@@ -152,13 +162,13 @@ fn program() -> WebResult<()> {
             }
         }
 
-        SimulationCoreTicker::new(&mut ctx, &mut res, &mut input).tick(get_millis_since(&starting_time)?);
+        SimulationCoreTicker::new(&ctx, &mut res, &mut input).tick(get_millis_since(&starting_time)?);
         if res.quit {
             println!("User closed the simulation.");
             return Ok(());
         }
         if res.drawable {
-            SimulationDrawer::new(&mut ctx, &mut materials, &res).draw()?;
+            SimulationDrawer::new(&ctx, &mut materials, &res).draw()?;
         }
 
         window.gl_swap_window();
@@ -283,10 +293,10 @@ impl<'a> AppEventDispatcher for NativeEventDispatcher<'a> {
     fn dispatch_top_message(&self, message: &str) {
         println!("top_message: {}", message);
     }
-    fn dispatch_minimum_value<T: Display>(&self, value: &T) {
+    fn dispatch_minimum_value(&self, value: &dyn Display) {
         println!("minimum: {}", value);
     }
-    fn dispatch_maximum_value<T: Display>(&self, value: &T) {
+    fn dispatch_maximum_value(&self, value: &dyn Display) {
         println!("maximum: {}", value);
     }
 }
