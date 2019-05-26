@@ -51,7 +51,7 @@ pub struct AnimationStep {
 pub struct Resources {
     pub video: VideoInputResources,
     pub camera: CameraData,
-    pub demo_1: FirstDemoData,
+    pub demo_1: FlightDemoData,
     pub filters: Filters,
     pub speed: Speeds,
     pub saved_filters: Option<Filters>,
@@ -62,11 +62,6 @@ pub struct Resources {
     pub drawable: bool,
     pub resetted: bool,
     pub quit: bool,
-}
-
-pub struct FirstDemoData {
-    pub position_target: glm::Vec3,
-    pub camera_backup: CameraData,
 }
 
 pub struct ScreenshotTrigger {
@@ -81,7 +76,7 @@ impl Default for Resources {
             timers: SimulationTimers::default(),
             video: VideoInputResources::default(),
             camera: CameraData::new(MOVEMENT_BASE_SPEED / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED),
-            demo_1: FirstDemoData::default(),
+            demo_1: FlightDemoData::default(),
             output: ViewModel::default(),
             speed: Speeds {
                 filter_speed: PIXEL_MANIPULATION_BASE_SPEED,
@@ -96,11 +91,28 @@ impl Default for Resources {
     }
 }
 
-impl Default for FirstDemoData {
-    fn default() -> FirstDemoData {
-        FirstDemoData {
-            position_target: glm::vec3(0.0, 0.0, 0.0),
+pub struct FlightDemoData {
+    pub camera_backup: CameraData,
+    pub movement_target: glm::Vec3,
+    pub movement_speed: glm::Vec3,
+    pub movement_max_speed: f32,
+    pub color_target: glm::Vec3,
+    pub color_position: glm::Vec3,
+    pub spreading: bool,
+    pub needs_initialization: bool,
+}
+
+impl Default for FlightDemoData {
+    fn default() -> FlightDemoData {
+        FlightDemoData {
             camera_backup: CameraData::new(0.0, 0.0),
+            movement_target: glm::vec3(0.0, 0.0, 0.0),
+            movement_speed: glm::vec3(0.0, 0.0, 0.0),
+            movement_max_speed: 0.3,
+            color_target: glm::vec3(0.0, 0.0, 0.0),
+            color_position: glm::vec3(0.0, 0.0, 0.0),
+            spreading: true,
+            needs_initialization: true,
         }
     }
 }
@@ -325,7 +337,7 @@ impl Filters {
             blur_passes: 0,
             vertical_lpp: 1,
             horizontal_lpp: 1,
-            light_color: 0x00FF_00FF,
+            light_color: self.light_color,
             brightness_color: 0x00FF_FFFF,
             extra_bright: 0.0,
             extra_contrast: 1.0,
@@ -336,7 +348,7 @@ impl Filters {
             pixel_shadow_height: 1.0,
             pixels_geometry_kind: PixelsGeometryKind::Cubes,
             pixel_shadow_shape_kind: ShadowShape { value: 0 },
-            color_channels: ColorChannels::Overlapping,
+            color_channels: ColorChannels::Combined,
             screen_curvature_kind: ScreenCurvatureKind::Pulse,
             backlight_presence: 0.2,
             preset_name: "Demo".into(),

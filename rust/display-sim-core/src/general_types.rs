@@ -132,6 +132,21 @@ pub fn get_3_f32color_from_int(color: i32) -> [f32; 3] {
     ]
 }
 
+fn get_u8_from_f32color(color: f32) -> u32 {
+    (match color {
+        c if c < 0.0 => 0.0,
+        c if c > 1.0 => 1.0,
+        c => c,
+    } * 255.0) as u32
+}
+
+pub fn get_int_from_3_f32color(color: &[f32; 3]) -> i32 {
+    let r = get_u8_from_f32color(color[0]);
+    let g = get_u8_from_f32color(color[1]);
+    let b = get_u8_from_f32color(color[2]);
+    ((r << 16) + (g << 8) + b) as i32
+}
+
 #[cfg(test)]
 mod tests {
     mod get_3_f32color_from_int {
@@ -159,5 +174,14 @@ mod tests {
                 yellow: (0x00eb_f114, [0.92156863, 0.94509804, 0.078431375]),
             }
         }
+    }
+
+    use super::*;
+
+    #[test]
+    fn test_get_int_from_3_f32color() {
+        let expected = 0x00eb_f114;
+        let actual = get_int_from_3_f32color(&get_3_f32color_from_int(expected));
+        assert_eq!(actual, expected);
     }
 }

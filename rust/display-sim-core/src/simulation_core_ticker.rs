@@ -15,7 +15,7 @@
 
 use crate::camera::{CameraData, CameraDirection, CameraSystem};
 use crate::filter_params::FilterParams;
-use crate::general_types::get_3_f32color_from_int;
+use crate::general_types::{get_3_f32color_from_int, get_int_from_3_f32color};
 use crate::pixels_shadow::ShadowShape;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::{
@@ -108,6 +108,9 @@ impl<'a> SimulationUpdater<'a> {
         self.update_filters();
         self.update_camera();
         self.update_screenshot();
+        if self.res.filters.preset_name == "Demo" {
+            self.update_demo();
+        }
 
         self.update_outputs();
 
@@ -210,18 +213,7 @@ impl<'a> SimulationUpdater<'a> {
                 "crt-shadow-mask-1" => self.res.filters.preset_crt_shadow_mask_1(),
                 "crt-shadow-mask-2" => self.res.filters.preset_crt_shadow_mask_2(),
                 "demo-1" => {
-                    self.res.demo_1.camera_backup = self.res.camera.clone();
-                    self.res.camera.locked_mode = false;
-                    self.res.camera.set_position(glm::vec3(-75.4, -124.85, 8.18));
-                    self.res.camera.direction = glm::vec3(0.52, 0.82, -0.24);
-                    self.res.camera.axis_up = glm::vec3(0.04, 0.26, 0.97);
-                    let half_width = self.res.video.image_size.width as f32 / 2.0;
-                    let half_height = self.res.video.image_size.height as f32 / 2.0;
-                    self.res.demo_1.position_target = glm::vec3(
-                        (self.ctx.random().next() - 0.5) * half_width,
-                        (self.ctx.random().next() - 0.5) * half_height,
-                        0.0,
-                    );
+                    self.res.demo_1.needs_initialization = true;
                     self.res.filters.preset_demo_1()
                 }
                 _ => {
@@ -233,21 +225,6 @@ impl<'a> SimulationUpdater<'a> {
                 }
             };
             self.change_frontend_input_values();
-        }
-        if self.res.filters.preset_name == "Demo" {
-            let position = self.res.camera.get_position();
-            let distance = self.res.demo_1.position_target - position;
-            let direction = distance.normalize();
-            self.res.camera.set_position(position + direction * self.dt * 10.0);
-            if glm::length(&distance).abs() < 10.0 {
-                let half_width = self.res.video.image_size.width as f32 / 2.0;
-                let half_height = self.res.video.image_size.height as f32 / 2.0;
-                self.res.demo_1.position_target = glm::vec3(
-                    (self.ctx.random().next() - 0.5) * half_width,
-                    (self.ctx.random().next() - 0.5) * half_height,
-                    0.0,
-                );
-            }
         }
         if self.input.reset_filters {
             self.res.filters = Filters::default();
@@ -420,7 +397,7 @@ impl<'a> SimulationUpdater<'a> {
             })
             .process_with_sums();
 
-        if changed && self.res.filters.preset_name != "Custom" {
+        if changed && self.res.filters.preset_name != "Custom" && self.res.filters.preset_name != "Demo" {
             ctx.dispatcher().dispatch_custom_preset();
             self.res.filters.preset_name = "Custom".into();
         }
@@ -533,6 +510,89 @@ impl<'a> SimulationUpdater<'a> {
         dispatcher.dispatch_change_turning_speed(self.res.camera.turning_speed / TURNING_BASE_SPEED);
         dispatcher.dispatch_change_movement_speed(self.res.camera.movement_speed / self.res.initial_parameters.initial_movement_speed);
         dispatcher.enable_extra_messages(true);
+    }
+
+    fn update_demo(&mut self) {
+        if self.res.demo_1.needs_initialization {
+            self.res.demo_1.needs_initialization = false;
+            self.res.demo_1.camera_backup = self.res.camera.clone();
+            self.res.camera.locked_mode = false;
+            self.res.demo_1.movement_target = glm::vec3(0.0, 0.0, 0.0);
+            self.res.demo_1.movement_speed = glm::vec3(0.0, 0.0, 0.0);
+            self.res.camera.set_position(glm::vec3(0.0, 0.0, 0.0));
+            self.res.camera.direction = glm::vec3(0.0, 1.0, 0.0);
+            self.res.camera.axis_up = glm::vec3(0.0, 0.0, 1.0);
+            self.res.demo_1.color_target = glm::make_vec3(&get_3_f32color_from_int(self.res.filters.light_color));
+            self.res.demo_1.color_position = self.res.demo_1.color_target;
+        }
+        {
+            // moving position
+            let movement_position = self.res.camera.get_position();
+            let mut movement_route = self.res.demo_1.movement_target - movement_position;
+            if glm::length(&movement_route).abs() <= std::f32::EPSILON {
+                movement_route = glm::vec3(1.0, 0.0, 0.0);
+            }
+            let movement_force = movement_route.normalize() * self.dt * 1.2;
+            self.res.demo_1.movement_speed += movement_force;
+            if glm::length(&self.res.demo_1.movement_speed).abs() > self.res.demo_1.movement_max_speed {
+                self.res.demo_1.movement_speed = self.res.demo_1.movement_speed.normalize() * self.res.demo_1.movement_max_speed;
+            }
+            self.res.camera.set_position(movement_position + self.res.demo_1.movement_speed);
+            if glm::length(&movement_route).abs() <= 15.0 {
+                let rnd_x = self.ctx.random().next() - 0.5;
+                let rnd_y = self.ctx.random().next() - 0.5;
+                let rnd_z = self.ctx.random().next() - 0.5;
+                self.res.demo_1.movement_target = glm::vec3(
+                    0.5 * rnd_x * self.res.video.image_size.width as f32 + self.res.video.image_size.width as f32 * if rnd_x > 0.0 { 0.75 } else { -0.75 },
+                    0.5 * rnd_y * self.res.video.image_size.height as f32 + self.res.video.image_size.height as f32 * if rnd_y > 0.0 { 0.75 } else { -0.75 },
+                    2.0 * rnd_z * self.res.initial_parameters.initial_position_z,
+                );
+                self.res.demo_1.movement_max_speed = self.ctx.random().next() * 0.6 + 0.3;
+                if self.ctx.random().next() < 0.33 {
+                    self.res.filters.color_channels = ColorChannels::Overlapping;
+                } else {
+                    self.res.filters.color_channels = ColorChannels::Combined;
+                }
+                if self.ctx.random().next() < 0.33 {
+                    self.res.filters.pixels_geometry_kind = PixelsGeometryKind::Squares;
+                } else {
+                    self.res.filters.pixels_geometry_kind = PixelsGeometryKind::Cubes;
+                }
+            }
+            CameraSystem::new(&mut self.res.camera, self.ctx.dispatcher()).look_at(glm::vec3(0.0, 0.0, 0.0));
+        }
+        {
+            // moving color
+            let color_route = self.res.demo_1.color_target - self.res.demo_1.color_position;
+            let is_void_route = color_route == glm::vec3(0.0, 0.0, 0.0);
+            if !is_void_route {
+                self.res.demo_1.color_position += color_route.normalize() * self.dt * 0.1;
+                self.res.filters.light_color = get_int_from_3_f32color(&self.res.demo_1.color_position.into());
+                self.ctx.dispatcher().dispatch_change_light_color(self.res.filters.light_color);
+            }
+            if is_void_route || glm::length(&color_route).abs() <= 0.15 {
+                let rnd_r = self.ctx.random().next() * 0.6 + 0.4;
+                let rnd_g = self.ctx.random().next() * 0.6 + 0.4;
+                let rnd_b = self.ctx.random().next() * 0.6 + 0.4;
+                self.res.demo_1.color_target = glm::vec3(rnd_r, rnd_g, rnd_b);
+            }
+        }
+        {
+            // spreading
+            let spread_change = self.dt * 0.03 * self.res.filters.cur_pixel_spread * self.res.filters.cur_pixel_spread;
+            if self.res.demo_1.spreading {
+                self.res.filters.cur_pixel_spread += spread_change;
+                if self.res.filters.cur_pixel_spread > 1000.0 {
+                    self.res.demo_1.spreading = false;
+                }
+            } else {
+                self.res.filters.cur_pixel_spread -= spread_change;
+                if self.res.filters.cur_pixel_spread <= 0.5 {
+                    self.res.demo_1.spreading = true;
+                    self.res.filters.cur_pixel_spread = 0.5;
+                }
+            }
+        }
     }
 
     fn update_outputs(&mut self) {

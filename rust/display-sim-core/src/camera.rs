@@ -171,6 +171,15 @@ impl<'a> CameraSystem<'a> {
         self.data.heading -= yoffset as f32 * 0.0003;
     }
 
+    pub fn look_at(&mut self, target: glm::Vec3) {
+        let mut new_direction = (target - self.data.position_eye).normalize();
+        if glm::length(&new_direction) <= 0.1 {
+            new_direction = self.data.direction;
+        }
+        self.data.direction = new_direction;
+        self.data.axis_right = glm::quat_cross_vec(&glm::quat_look_at(&new_direction, &self.data.axis_up), &self.data.axis_right);
+    }
+
     pub fn handle_camera_change(&mut self, change: CameraChange) {
         match change {
             CameraChange::PosX(x) => self.data.position_destiny.x = x,
