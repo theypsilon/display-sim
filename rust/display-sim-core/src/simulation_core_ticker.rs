@@ -547,6 +547,9 @@ impl<'a> SimulationUpdater<'a> {
                     0.5 * rnd_y * self.res.video.image_size.height as f32 + self.res.video.image_size.height as f32 * if rnd_y > 0.0 { 0.75 } else { -0.75 },
                     2.0 * rnd_z * self.res.initial_parameters.initial_position_z,
                 );
+                if self.res.demo_1.movement_target.z < 0.0 && self.ctx.random().next() > 0.3 {
+                    self.res.demo_1.movement_target.z = - self.res.demo_1.movement_target.z;
+                }
                 self.res.demo_1.movement_max_speed = self.ctx.random().next() * 0.6 + 0.3;
                 if self.ctx.random().next() < 0.33 {
                     self.res.filters.color_channels = ColorChannels::Overlapping;
