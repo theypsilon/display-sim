@@ -52,48 +52,61 @@ pub struct VideoInputWasm {
 }
 
 #[wasm_bindgen]
-#[allow(clippy::too_many_arguments)]
-pub fn new_video_input_wasm(
-    image_width: u32,
-    image_height: u32,
-    background_width: u32,
-    background_height: u32,
-    canvas_width: u32,
-    canvas_height: u32,
-    pixel_width: f32,
-    stretch: bool,
-    max_texture_size: i32,
-) -> VideoInputWasm {
-    VideoInputWasm {
-        resources: VideoInputResources {
-            image_size: Size2D {
-                width: image_width,
-                height: image_height,
+impl VideoInputWasm {
+    #[wasm_bindgen(constructor)]
+    pub fn new(image_width: u32, image_height: u32, canvas_width: u32, canvas_height: u32) -> VideoInputWasm {
+        VideoInputWasm {
+            resources: VideoInputResources {
+                image_size: Size2D {
+                    width: image_width,
+                    height: image_height,
+                },
+                background_size: Size2D {
+                    width: image_width,
+                    height: image_height,
+                },
+                viewport_size: Size2D {
+                    width: canvas_width,
+                    height: canvas_height,
+                },
+                max_texture_size: 8192,
+                steps: Vec::new(),
+                pixel_width: 1.0,
+                stretch: false,
+                current_frame: 0,
+                last_frame_change: -1000.0,
+                needs_buffer_data_load: true,
             },
-            background_size: Size2D {
-                width: background_width,
-                height: background_height,
-            },
-            viewport_size: Size2D {
-                width: canvas_width,
-                height: canvas_height,
-            },
-            max_texture_size,
-            steps: Vec::new(),
-            pixel_width,
-            stretch,
-            current_frame: 0,
-            last_frame_change: -1000.0,
-            needs_buffer_data_load: true,
-        },
-        materials: VideoInputMaterials::default(),
+            materials: VideoInputMaterials::default(),
+        }
     }
-}
 
-#[wasm_bindgen]
-pub fn add_buffer_to_video_input(video_input: &mut VideoInputWasm, buffer: Uint8Array, delay: u32) {
-    video_input.resources.steps.push(AnimationStep { delay });
-    let mut pixels = vec![0; (video_input.resources.image_size.width * video_input.resources.image_size.height * 4) as usize].into_boxed_slice();
-    buffer.copy_to(&mut *pixels);
-    video_input.materials.buffers.push(pixels);
+    #[wasm_bindgen]
+    pub fn set_background_size(&mut self, width: u32, height: u32) {
+        self.resources.background_size.width = width;
+        self.resources.background_size.height = height;
+    }
+
+    #[wasm_bindgen]
+    pub fn add_picture_frame(&mut self, buffer: Uint8Array, delay: u32) {
+        self.resources.steps.push(AnimationStep { delay });
+        let mut pixels = vec![0; (self.resources.image_size.width * self.resources.image_size.height * 4) as usize].into_boxed_slice();
+        buffer.copy_to(&mut *pixels);
+        self.materials.buffers.push(pixels);
+    }
+
+    #[wasm_bindgen]
+    pub fn set_pixel_width(&mut self, pixel_width: f32) {
+        self.resources.pixel_width = pixel_width;
+    }
+
+    #[wasm_bindgen]
+    pub fn stretch(&mut self) {
+        self.resources.stretch = true;
+    }
+
+    #[wasm_bindgen]
+    pub fn set_max_texture_size(&mut self, max_texture_size: i32) {
+        self.resources.max_texture_size = max_texture_size;
+    }
 }

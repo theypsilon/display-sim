@@ -9,4 +9,5 @@ cd "$(dirname $0)/.."
 echo "Setting watcher..."
 echo
 
-watchman-make -p 'rust/**/*.rs' 'Cargo.toml' 'rust/**/*.toml' --make="echo; $(pwd)/scripts/build.sh --dev-server" -t build
+watchexec --exts rs,toml "$(pwd)/scripts/build.sh --dev-server"
+#watchman-make -p 'rust/**/*.rs' 'Cargo.toml' 'rust/**/*.toml' --make="echo; $(pwd)/scripts/build.sh --dev-server" -t build

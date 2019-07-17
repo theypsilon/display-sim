@@ -168,31 +168,98 @@ ul.select-image li img {
     position: absolute;
     top: 18px;
     left: 18px;
-    background: white;
+    background: #333;
     width: 335px;
     z-index: 1;
+    color: #eee
 }
 
-#info-panel-scroll-area {
+/** tab solution, with some "inspiration" from stack overflow */
+.tab-container{
+    background : #333;
+    margin: 0;
+    padding: 0;
+    max-height: 35px;
+}
+
+ul.tabs{
+    margin: 0;
+    list-style-type : none;
+    line-height : 35px;
+    max-height: 35px;
+    overflow: hidden;
+    display: inline-block;
+    padding-right: 20px
+}
+
+ul.tabs > li.active{
+    z-index: 2;
+    background: white;
+}
+
+ul.tabs > li.active:before{
+    border-color : transparent #efefef transparent transparent;
+}
+
+
+ul.tabs > li.active:after{
+    border-color : transparent transparent transparent #efefef;
+}
+
+ul.tabs > li{
+    float : right;
+    margin : 5px -10px 0;
+    border-top-right-radius: 25px 170px;
+    border-top-left-radius: 20px 90px;
+    padding : 0 30px 0 25px;
+    height: 170px;
+    background: #ddd;
+    position : relative;
+    box-shadow: 0 10px 20px rgba(0,0,0,.5);
+    max-width : 200px;
+}
+
+ul.tabs > li > a{
+    display: inline-block;
+    max-width:100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-decoration: none;
+    color: #222;
+}
+
+.clearfix:before, .clearfix:after { content: ""; display: table; }
+.clearfix:after { clear: both; }
+.clearfix { zoom: 1; }
+
+/* end of tab solution */
+
+#info-panel-content h3 {
+    text-align: center;
+}
+
+#info-panel-advanced-settings {
     overflow-y: auto;
     padding: 5px;
+    background-color: white;
+    color: black;
 }
 
-#info-panel-scroll-area::-webkit-scrollbar-thumb:active {
+#info-panel-advanced-settings::-webkit-scrollbar-thumb:active {
     background: linear-gradient(left, #22ADD4, #1E98BA);
 }
 
-#info-panel-scroll-area::-webkit-scrollbar {
+#info-panel-advanced-settings::-webkit-scrollbar {
     width: 6px;
     background-color: #F5F5F5;
 }
 
-#info-panel-scroll-area::-webkit-scrollbar-thumb {
-    background-color: #247E8F;
+#info-panel-advanced-settings::-webkit-scrollbar-thumb {
+    background-color: #111;
     border-radius: 1px;
 }
 
-#info-panel-scroll-area::-webkit-scrollbar-track {
+#info-panel-advanced-settings::-webkit-scrollbar-track {
     -webkit-box-shadow: inset 0 0 6px rgba(61, 61, 61, 0.3);
     background-color: #F5F5F5;
     border-radius: 1px;
@@ -263,9 +330,7 @@ canvas:hover {
 
 #info-panel h5 {
     padding: 2px 5px;
-    border-right: 2px solid #0b2a2f;
-    border-left: 2px solid #0b2a2f;
-    background-color: #247E8F;
+    background-color: #333;
     color: #ffffff;
 }
 

@@ -36,6 +36,9 @@ impl<'a> SimulationDrawer<'a> {
     pub fn draw(&mut self) -> WebResult<()> {
         let gl = &self.materials.gl;
 
+        // @TODO: Delete this, only activated for testing in slow computer
+        //return Ok(());
+
         if self.res.video.needs_buffer_data_load {
             self.materials.pixels_render.load_image(&self.res.video);
         }

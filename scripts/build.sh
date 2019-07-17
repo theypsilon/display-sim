@@ -57,6 +57,10 @@ build() {
         popd
     fi
 
+    if ${npm_deps} ; then
+        source ~/.nvm/nvm.sh
+    fi
+
     if ${npm_deps} && [ ! -d www/node_modules ]; then
         pushd www
         npm install

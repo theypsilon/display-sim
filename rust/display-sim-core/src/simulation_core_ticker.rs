@@ -548,7 +548,7 @@ impl<'a> SimulationUpdater<'a> {
                     2.0 * rnd_z * self.res.initial_parameters.initial_position_z,
                 );
                 if self.res.demo_1.movement_target.z < 0.0 && self.ctx.random().next() > 0.3 {
-                    self.res.demo_1.movement_target.z = - self.res.demo_1.movement_target.z;
+                    self.res.demo_1.movement_target.z = -self.res.demo_1.movement_target.z;
                 }
                 self.res.demo_1.movement_max_speed = self.ctx.random().next() * 0.6 + 0.3;
                 if self.ctx.random().next() < 0.33 {

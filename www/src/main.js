@@ -16,7 +16,7 @@
 import * as fastgif from 'fastgif/fastgif';
 import FontFaceObserver from 'fontfaceobserver';
 
-const wasmPromise = import('./wasm/display_sim');
+const displaySimPromise = import('./wasm/display_sim');
 
 const displayNoneClassName = 'display-none';
 const scalingAutoHtmlId = 'scaling-auto';
@@ -66,7 +66,8 @@ const toggleInfoPanelClass = document.querySelectorAll('.toggle-info-panel');
 const freeModeControlsClas = document.querySelectorAll('.free-mode-only-controls');
 const simulationUiDeo = document.getElementById('simulation-ui');
 const infoPanelDeo = document.getElementById('info-panel');
-const infoPanelScrollAreaDeo = document.getElementById('info-panel-scroll-area');
+const infoPanelAdvancedSettingsDeo = document.getElementById('info-panel-advanced-settings');
+const infoPanelContentDeo = document.getElementById('info-panel-content');
 const fpsCounterDeo = document.getElementById('fps-counter');
 const lightColorDeo = document.getElementById('light-color');
 const brightnessColorDeo = document.getElementById('brightness-color');
@@ -407,6 +408,16 @@ toggleInfoPanelClass.forEach(deo => {
     };
 });
 
+const settingsTabs = document.querySelectorAll('.tabs > li');
+settingsTabs.forEach(clickedTab => {
+    clickedTab.addEventListener('click', () => {
+        settingsTabs.forEach(tab => {
+            tab.classList.remove('active');
+        });
+        clickedTab.classList.add('active');
+    })
+});
+
 filterPresetsDeo.onchange = () => {
     if (filterPresetsDeo.value === presetCustom) {
         visibility.showFilterOptionMainList();
@@ -653,26 +664,32 @@ async function prepareUi () {
         return;
     }
 
-    const wasm = await wasmPromise;
+    const displaySim = await displaySimPromise;
 
-    const videoInput = wasm.new_video_input_wasm(
+    const videoInput = new displaySim.VideoInputWasm(
         imageWidth, imageHeight, // to read the image pixels
-        backgroundWidth, backgroundHeight, // to calculate model distance to the camera
         canvas.width, canvas.height, // gl.viewport
-        +scaleX, stretch, gl.getParameter(gl.MAX_TEXTURE_SIZE)
     );
+    if (backgroundWidth !== imageWidth) {
+        videoInput.set_background_size(backgroundWidth, backgroundHeight); // to calculate model distance to the camera
+    }
+    videoInput.set_pixel_width(scaleX);
+    if (stretch === true) {
+        videoInput.stretch();
+    }
+    videoInput.set_max_texture_size(gl.getParameter(gl.MAX_TEXTURE_SIZE));
     for (let i = 0; i < rawImgs.length; i++) {
         const rawImg = rawImgs[i];
-        wasm.add_buffer_to_video_input(videoInput, new Uint8Array(rawImg.raw.data.buffer), rawImg.delay);
+        videoInput.add_picture_frame(new Uint8Array(rawImg.raw.data.buffer), rawImg.delay);
     }
 
     if (simulationResources === undefined) {
         benchmark('calling wasm load_simulation_resources');
-        simulationResources = wasm.load_simulation_resources();
+        simulationResources = displaySim.load_simulation_resources();
         benchmark('wasm load_simulation_resources done');
     }
     benchmark('calling wasm run_program');
-    wasm.run_program(gl, simulationResources, videoInput);
+    displaySim.run_program(gl, simulationResources, videoInput);
     benchmark('wasm run_program done');
 
     filterPresetsDeo.value = storage.getFilterPresets();
@@ -836,7 +853,9 @@ function fixCanvasSize (canvas) {
 
     benchmark('resolution:', canvas.width, canvas.height, width, height);
 
-    infoPanelScrollAreaDeo.style.setProperty('max-height', (window.innerHeight - 18) * 0.95);
+    const infoPanelContentHeight = (window.innerHeight - 18) * 0.95;
+    infoPanelContentDeo.style.setProperty('max-height', infoPanelContentHeight);
+    infoPanelAdvancedSettingsDeo.style.setProperty('max-height', infoPanelContentHeight - 60);
 }
 
 function mobileAndTabletCheck () {
