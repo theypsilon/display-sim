@@ -415,7 +415,7 @@ settingsTabs.forEach(clickedTab => {
             tab.classList.remove('active');
         });
         clickedTab.classList.add('active');
-    })
+    });
 });
 
 filterPresetsDeo.onchange = () => {
@@ -668,7 +668,7 @@ async function prepareUi () {
 
     const videoInput = new displaySim.VideoInputWasm(
         imageWidth, imageHeight, // to read the image pixels
-        canvas.width, canvas.height, // gl.viewport
+        canvas.width, canvas.height // gl.viewport
     );
     if (backgroundWidth !== imageWidth) {
         videoInput.set_background_size(backgroundWidth, backgroundHeight); // to calculate model distance to the camera
