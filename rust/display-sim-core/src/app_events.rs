@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
+use crate::camera::CameraLockMode;
 use crate::internal_resolution::InternalResolution;
 use crate::pixels_shadow::ShadowShape;
 use crate::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, TextureInterpolation};
@@ -44,14 +45,14 @@ pub trait AppEventDispatcher {
     fn dispatch_change_pixel_speed(&self, speed: f32);
     fn dispatch_change_turning_speed(&self, speed: f32);
     fn dispatch_change_movement_speed(&self, speed: f32);
+    fn dispatch_change_preset_selected(&self, name: &str);
     fn dispatch_exiting_session(&self);
     fn dispatch_toggle_info_panel(&self);
     fn dispatch_fps(&self, fps: f32);
     fn dispatch_request_pointer_lock(&self);
     fn dispatch_exit_pointer_lock(&self);
     fn dispatch_screenshot(&self, pixels: &[u8], multiplier: f64);
-    fn dispatch_change_camera_movement_mode(&self, locked_mode: bool);
-    fn dispatch_custom_preset(&self);
+    fn dispatch_change_camera_movement_mode(&self, locked_mode: CameraLockMode);
     fn dispatch_top_message(&self, message: &str);
     fn dispatch_minimum_value(&self, value: &dyn Display);
     fn dispatch_maximum_value(&self, value: &dyn Display);
@@ -75,7 +76,6 @@ impl AppEventDispatcher for FakeEventDispatcher {
     fn dispatch_change_blur_level(&self, _: usize) {}
     fn dispatch_change_vertical_lpp(&self, _: usize) {}
     fn dispatch_change_horizontal_lpp(&self, _: usize) {}
-    fn dispatch_custom_preset(&self) {}
     fn dispatch_color_representation(&self, _: ColorChannels) {}
     fn dispatch_pixel_geometry(&self, _: PixelsGeometryKind) {}
     fn dispatch_pixel_shadow_shape(&self, _: ShadowShape) {}
@@ -87,6 +87,7 @@ impl AppEventDispatcher for FakeEventDispatcher {
     fn dispatch_change_pixel_speed(&self, _: f32) {}
     fn dispatch_change_turning_speed(&self, _: f32) {}
     fn dispatch_change_movement_speed(&self, _: f32) {}
+    fn dispatch_change_preset_selected(&self, _: &str) {}
     fn dispatch_exiting_session(&self) {}
     fn dispatch_toggle_info_panel(&self) {}
     fn dispatch_fps(&self, fps: f32) {
@@ -95,7 +96,7 @@ impl AppEventDispatcher for FakeEventDispatcher {
     fn dispatch_request_pointer_lock(&self) {}
     fn dispatch_exit_pointer_lock(&self) {}
     fn dispatch_screenshot(&self, _: &[u8], _: f64) {}
-    fn dispatch_change_camera_movement_mode(&self, _: bool) {}
+    fn dispatch_change_camera_movement_mode(&self, _: CameraLockMode) {}
     fn dispatch_top_message(&self, _: &str) {}
     fn dispatch_minimum_value(&self, _: &dyn Display) {}
     fn dispatch_maximum_value(&self, _: &dyn Display) {}

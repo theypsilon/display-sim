@@ -62,6 +62,10 @@ const restoreDefaultOptionsDeo = document.getElementById('restore-default-option
 const optionPowerPreferenceSelect = document.getElementById('option-powerPreference');
 const optionScalingSelect = document.getElementById('option-scaling');
 
+const infoPanelBasicDeo = document.getElementById('info-panel-basic-settings');
+const infoPanelAdvancedDeo = document.getElementById('info-panel-advanced-settings');
+let selectedInfoPanelDeo = infoPanelBasicDeo;
+
 const toggleInfoPanelClass = document.querySelectorAll('.toggle-info-panel');
 const freeModeControlsClas = document.querySelectorAll('.free-mode-only-controls');
 const simulationUiDeo = document.getElementById('simulation-ui');
@@ -85,6 +89,7 @@ const cameraZoomDeo = document.getElementById('camera-zoom');
 const cameraMovementModeDeo = document.getElementById('camera-movement-mode');
 
 const filterPresetsDeo = document.getElementById('filter-presets');
+const filterPresetsBasicDeo = document.getElementById('filter-presets-basic');
 const filterOptionMainListDeo = document.getElementById('filter-option-main-list');
 const pixelWidthDeo = document.getElementById('pixel-width');
 const pixelHorizontalGapDeo = document.getElementById('pixel-horizontal-gap');
@@ -104,7 +109,9 @@ const featureChangePixelGeometryDeo = document.getElementById('feature-change-pi
 const featureChangePixelShadowShapeDeo = document.getElementById('feature-change-pixel-shadow-shape');
 const featureChangePixelShadowHeightDeo = document.getElementById('feature-change-pixel-shadow-height');
 const featureChangeScreenCurvatureDeo = document.getElementById('feature-change-screen-curvature');
+const featureChangeScreenCurvatureBasicDeo = document.getElementById('feature-change-screen-curvature-basic');
 const featureInternalResolutionDeo = document.getElementById('feature-internal-resolution');
+const featureInternalResolutionBasicDeo = document.getElementById('feature-internal-resolution-basic');
 const featureTextureInterpolationDeo = document.getElementById('feature-texture-interpolation');
 const featureBacklightPercentDeo = document.getElementById('feature-backlight-percent');
 
@@ -266,8 +273,10 @@ window.addEventListener('app-event.camera_update', event => {
     { deo: featureChangePixelShadowHeightDeo, eventId: 'app-event.pixel_shadow_height' },
     { deo: featureBacklightPercentDeo, eventId: 'app-event.backlight_percent' },
     { deo: featureInternalResolutionDeo, eventId: 'app-event.internal_resolution' },
+    { deo: featureInternalResolutionBasicDeo, eventId: 'app-event.internal_resolution' },
     { deo: featureTextureInterpolationDeo, eventId: 'app-event.texture_interpolation' },
-    { deo: featureChangeScreenCurvatureDeo, eventId: 'app-event.screen_curvature' }
+    { deo: featureChangeScreenCurvatureDeo, eventId: 'app-event.screen_curvature' },
+    { deo: featureChangeScreenCurvatureBasicDeo, eventId: 'app-event.screen_curvature' }
 ].forEach(({ deo, eventId }) => {
     if (!deo) throw new Error('Wrong deo on defining: ' + eventId);
     window.addEventListener(eventId, event => {
@@ -415,29 +424,50 @@ settingsTabs.forEach(clickedTab => {
             tab.classList.remove('active');
         });
         clickedTab.classList.add('active');
+        selectedInfoPanelDeo.classList.add('display-none');
+        switch (clickedTab.id) {
+        case 'panel-basic':
+            selectedInfoPanelDeo = infoPanelBasicDeo;
+            break;
+        case 'panel-advanced':
+            selectedInfoPanelDeo = infoPanelAdvancedDeo;
+            break;
+        default:
+            console.error('Unknown clicked tab: ' + clickedTab.id);
+            break;
+        }
+        selectedInfoPanelDeo.classList.remove('display-none');
     });
 });
 
-filterPresetsDeo.onchange = () => {
-    if (filterPresetsDeo.value === presetCustom) {
-        visibility.showFilterOptionMainList();
-    } else if (properPresets.includes(filterPresetsDeo.value)) {
-        visibility.showFilterOptionMainList();
-    } else {
-        filterPresetsDeo.value = presetApertureGrille1;
-    }
-    storage.setFilterPresets(filterPresetsDeo.value);
-    window.dispatchEvent(new CustomEvent('app-event.custom_input_event', {
-        detail: {
-            value: filterPresetsDeo.value,
-            kind: 'event_kind:filter_presets_selected'
+configurePresetsDeo(filterPresetsDeo);
+configurePresetsDeo(filterPresetsBasicDeo);
+function configurePresetsDeo (presetsDeo) {
+    presetsDeo.onchange = () => {
+        if (presetsDeo.value === presetCustom) {
+            visibility.showFilterOptionMainList();
+        } else if (properPresets.includes(presetsDeo.value)) {
+            visibility.showFilterOptionMainList();
+        } else {
+            presetsDeo.value = presetApertureGrille1;
         }
-    }));
-};
+        storage.setFilterPresets(presetsDeo.value);
+        window.dispatchEvent(new CustomEvent('app-event.custom_input_event', {
+            detail: {
+                value: presetsDeo.value,
+                kind: 'event_kind:filter_presets_selected'
+            }
+        }));
+    };
 
-window.addEventListener('app-event.preset_selector_custom', () => {
-    filterPresetsDeo.value = presetCustom;
-}, false);
+    window.addEventListener('app-event.preset_selected_name', event => {
+        const presetValue = event.detail.toLowerCase().replace(/\s/g, '-');
+        if (!properPresets.includes(presetValue)) {
+            throw new Error('Wrong preset value:', presetValue);
+        }
+        presetsDeo.value = presetValue;
+    }, false);
+}
 
 inputFileUploadDeo.onchange = () => {
     const file = inputFileUploadDeo.files[0];
@@ -694,6 +724,9 @@ async function prepareUi () {
 
     filterPresetsDeo.value = storage.getFilterPresets();
     filterPresetsDeo.onchange();
+
+    filterPresetsBasicDeo.value = storage.getFilterPresets();
+    filterPresetsBasicDeo.onchange();
 
     visibility.hideLoading();
     visibility.showSimulationUi();

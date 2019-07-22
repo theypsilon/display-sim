@@ -53,7 +53,7 @@ impl OptionCursor for ShadowShape {
     }
 }
 
-pub fn get_shadows() -> [Box<Fn(usize, usize) -> f64>; SHADOWS_LEN] {
+pub fn get_shadows() -> [Box<dyn Fn(usize, usize) -> f64>; SHADOWS_LEN] {
     [
         Box::new(|_i, _j| 255.0),
         Box::new(|i, j| calc_with_log(i, 0) * calc_with_log(j, 0) * 1.0 * 255.0),

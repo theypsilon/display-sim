@@ -38,6 +38,25 @@ pub enum CameraChange {
     DirectionZ(f32),
 }
 
+#[derive(Copy, Clone)]
+pub enum CameraLockMode {
+    LockOnDisplay,
+    FreeFlight,
+}
+
+impl std::fmt::Display for CameraLockMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                CameraLockMode::LockOnDisplay => "Lock on Display",
+                CameraLockMode::FreeFlight => "Free Flight",
+            }
+        )
+    }
+}
+
 impl CameraChange {
     pub fn get_f32(self) -> f32 {
         match self {
@@ -69,7 +88,7 @@ pub struct CameraData {
     pub movement_speed: f32,
     pub turning_speed: f32,
     pub sending_camera_update_event: bool,
-    pub locked_mode: bool,
+    pub locked_mode: CameraLockMode,
     pub position_changed: bool,
 }
 
@@ -89,7 +108,7 @@ impl CameraData {
             turning_speed,
             position_changed: true,
             sending_camera_update_event: true,
-            locked_mode: true,
+            locked_mode: CameraLockMode::LockOnDisplay,
         }
     }
 
@@ -123,31 +142,40 @@ impl<'a> CameraSystem<'a> {
     }
 
     pub fn advance(&mut self, direction: CameraDirection, dt: f32) {
-        let velocity = self.data.movement_speed * dt * if self.data.locked_mode { -1.0 } else { 1.0 };
-        let position_delta = if self.data.locked_mode {
-            match direction {
+        let velocity = self.data.movement_speed
+            * dt
+            * match self.data.locked_mode {
+                CameraLockMode::LockOnDisplay => -1.0,
+                CameraLockMode::FreeFlight => 1.0,
+            };
+        let position_delta = match self.data.locked_mode {
+            CameraLockMode::LockOnDisplay => match direction {
                 CameraDirection::Forward => self.data.axis_up * velocity,
                 CameraDirection::Backward => -self.data.axis_up * velocity,
                 CameraDirection::Left => -self.data.axis_right * velocity,
                 CameraDirection::Right => self.data.axis_right * velocity,
                 _ => glm::vec3(0.0, 0.0, 0.0),
-            }
-        } else {
-            match direction {
+            },
+            CameraLockMode::FreeFlight => match direction {
                 CameraDirection::Up => self.data.axis_up * velocity,
                 CameraDirection::Down => -self.data.axis_up * velocity,
                 CameraDirection::Left => -self.data.axis_right * velocity,
                 CameraDirection::Right => self.data.axis_right * velocity,
                 CameraDirection::Forward => self.data.direction * velocity,
                 CameraDirection::Backward => -self.data.direction * velocity,
-            }
+            },
         };
         self.data.position_destiny += position_delta;
         self.data.position_changed = true;
     }
 
     pub fn turn(&mut self, direction: CameraDirection, dt: f32) {
-        let velocity = dt * self.data.turning_speed * if self.data.locked_mode { 0.03 } else { 0.06 };
+        let velocity = dt
+            * self.data.turning_speed
+            * match self.data.locked_mode {
+                CameraLockMode::LockOnDisplay => 0.03,
+                CameraLockMode::FreeFlight => 0.06,
+            };
         match direction {
             CameraDirection::Up => self.data.heading += velocity,
             CameraDirection::Down => self.data.heading -= velocity,
@@ -158,7 +186,14 @@ impl<'a> CameraSystem<'a> {
     }
 
     pub fn rotate(&mut self, direction: CameraDirection, dt: f32) {
-        let velocity = 60.0 * dt * 0.001 * self.data.turning_speed * if self.data.locked_mode { -1.0 } else { 1.0 };
+        let velocity = 60.0
+            * dt
+            * 0.001
+            * self.data.turning_speed
+            * match self.data.locked_mode {
+                CameraLockMode::LockOnDisplay => -1.0,
+                CameraLockMode::FreeFlight => 1.0,
+            };
         match direction {
             CameraDirection::Left => self.data.rotate += velocity,
             CameraDirection::Right => self.data.rotate -= velocity,
@@ -226,7 +261,12 @@ impl<'a> CameraSystem<'a> {
         let temp = glm::quat_cross(&glm::quat_cross(&pitch_quat, &heading_quat), &rotate_quat);
 
         let new_direction = glm::quat_cross_vec(&temp, &self.data.direction);
-        if !self.data.locked_mode || new_direction.z <= -0.01 {
+
+        if match self.data.locked_mode {
+            CameraLockMode::FreeFlight => true,
+            _ => false,
+        } || new_direction.z <= -0.01
+        {
             self.data.direction = new_direction;
             self.data.axis_up = glm::quat_cross_vec(&temp, &self.data.axis_up);
             self.data.axis_right = glm::quat_cross_vec(&temp, &self.data.axis_right);
@@ -236,7 +276,7 @@ impl<'a> CameraSystem<'a> {
         self.data.pitch *= 0.5;
         self.data.rotate *= 0.5;
 
-        if self.data.locked_mode {
+        if let CameraLockMode::LockOnDisplay = self.data.locked_mode {
             if self.data.pitch.abs() > std::f32::EPSILON || self.data.heading.abs() > std::f32::EPSILON {
                 let distance_to_origin = glm::length(&self.data.position_destiny);
                 self.data.position_destiny = -self.data.direction * distance_to_origin;

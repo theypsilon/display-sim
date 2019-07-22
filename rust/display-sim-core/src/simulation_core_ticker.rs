@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-use crate::camera::{CameraData, CameraDirection, CameraSystem};
+use crate::camera::{CameraData, CameraDirection, CameraLockMode, CameraSystem};
 use crate::filter_params::FilterParams;
 use crate::general_types::{get_3_f32color_from_int, get_int_from_3_f32color};
 use crate::pixels_shadow::ShadowShape;
@@ -398,7 +398,7 @@ impl<'a> SimulationUpdater<'a> {
             .process_with_sums();
 
         if changed && self.res.filters.preset_name != "Custom" && self.res.filters.preset_name != "Demo" {
-            ctx.dispatcher().dispatch_custom_preset();
+            ctx.dispatcher().dispatch_change_preset_selected("Custom");
             self.res.filters.preset_name = "Custom".into();
         }
     }
@@ -412,8 +412,14 @@ impl<'a> SimulationUpdater<'a> {
         }
 
         if self.input.next_camera_movement_mode.increase.is_just_pressed() || self.input.next_camera_movement_mode.decrease.is_just_pressed() {
-            self.res.camera.locked_mode = !self.res.camera.locked_mode;
-            self.ctx.dispatcher().dispatch_change_camera_movement_mode(self.res.camera.locked_mode)
+            self.res.camera.locked_mode = match self.res.camera.locked_mode {
+                CameraLockMode::FreeFlight => CameraLockMode::LockOnDisplay,
+                CameraLockMode::LockOnDisplay => CameraLockMode::FreeFlight,
+            };
+            self.ctx.dispatcher().dispatch_change_camera_movement_mode(self.res.camera.locked_mode);
+            self.ctx
+                .dispatcher()
+                .dispatch_top_message(&format!("Camera movement: {}.", &self.res.camera.locked_mode.to_string()));
         }
 
         let mut camera = CameraSystem::new(&mut self.res.camera, self.ctx.dispatcher());
@@ -509,6 +515,7 @@ impl<'a> SimulationUpdater<'a> {
         dispatcher.dispatch_change_pixel_speed(self.res.speed.filter_speed / PIXEL_MANIPULATION_BASE_SPEED);
         dispatcher.dispatch_change_turning_speed(self.res.camera.turning_speed / TURNING_BASE_SPEED);
         dispatcher.dispatch_change_movement_speed(self.res.camera.movement_speed / self.res.initial_parameters.initial_movement_speed);
+        dispatcher.dispatch_change_preset_selected(&self.res.filters.preset_name);
         dispatcher.enable_extra_messages(true);
     }
 
@@ -516,7 +523,7 @@ impl<'a> SimulationUpdater<'a> {
         if self.res.demo_1.needs_initialization {
             self.res.demo_1.needs_initialization = false;
             self.res.demo_1.camera_backup = self.res.camera.clone();
-            self.res.camera.locked_mode = false;
+            self.res.camera.locked_mode = CameraLockMode::FreeFlight;
             self.res.demo_1.movement_target = glm::vec3(0.0, 0.0, 0.0);
             self.res.demo_1.movement_speed = glm::vec3(0.0, 0.0, 0.0);
             self.res.camera.set_position(glm::vec3(0.0, 0.0, 0.0));

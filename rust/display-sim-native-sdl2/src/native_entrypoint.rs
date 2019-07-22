@@ -21,6 +21,7 @@ use core::general_types::Size2D;
 use core::internal_resolution::InternalResolution;
 use core::pixels_shadow::ShadowShape;
 use core::simulation_context::{ConcreteSimulationContext, RandomGenerator};
+use core::camera::CameraLockMode;
 use core::simulation_core_state::{AnimationStep, Input, Resources, VideoInputResources};
 use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, TextureInterpolation};
 use core::simulation_core_ticker::SimulationCoreTicker;
@@ -283,11 +284,11 @@ impl<'a> AppEventDispatcher for NativeEventDispatcher<'a> {
         println!("exit_pointer_lock");
         self.sdl_ctx.unwrap().mouse().show_cursor(true);
     }
-    fn dispatch_custom_preset(&self) {
-        println!("dispatch_custom_preset");
+    fn dispatch_change_preset_selected(&self, preset_name: &str) {
+        println!("dispatch_change_preset_selected: {}", preset_name);
     }
     fn dispatch_screenshot(&self, _: &[u8], _: f64) {}
-    fn dispatch_change_camera_movement_mode(&self, locked_mode: bool) {
+    fn dispatch_change_camera_movement_mode(&self, locked_mode: CameraLockMode) {
         println!("change_camera_movement_mode: {}", locked_mode);
     }
     fn dispatch_top_message(&self, message: &str) {

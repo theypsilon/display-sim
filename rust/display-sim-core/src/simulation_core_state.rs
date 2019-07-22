@@ -274,7 +274,7 @@ impl Filters {
             pixels_geometry_kind: PixelsGeometryKind::Squares,
             pixel_shadow_shape_kind: ShadowShape { value: 3 },
             color_channels: ColorChannels::Combined,
-            screen_curvature_kind: ScreenCurvatureKind::Curved1,
+            screen_curvature_kind: ScreenCurvatureKind::Flat,
             backlight_presence: 0.5,
             preset_name: "CRT Aperture Grille 1".into(),
         }

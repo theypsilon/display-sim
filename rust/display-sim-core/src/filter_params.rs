@@ -28,7 +28,7 @@ pub struct FilterParams<'a, T, U, TriggerHandler: FnOnce(U)> {
     velocity: Option<T>,
     min: Option<T>,
     max: Option<T>,
-    _u: std::marker::PhantomData<FnOnce(U)>,
+    _u: std::marker::PhantomData<dyn FnOnce(U)>,
 }
 
 impl<'a, T, U, TriggerHandler: FnOnce(U)> FilterParams<'a, T, U, TriggerHandler> {

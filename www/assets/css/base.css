@@ -238,28 +238,28 @@ ul.tabs > li > a{
     text-align: center;
 }
 
-#info-panel-advanced-settings {
+.info-panel-settings {
     overflow-y: auto;
     padding: 5px;
     background-color: white;
     color: black;
 }
 
-#info-panel-advanced-settings::-webkit-scrollbar-thumb:active {
+.info-panel-settings::-webkit-scrollbar-thumb:active {
     background: linear-gradient(left, #22ADD4, #1E98BA);
 }
 
-#info-panel-advanced-settings::-webkit-scrollbar {
+.info-panel-settings::-webkit-scrollbar {
     width: 6px;
     background-color: #F5F5F5;
 }
 
-#info-panel-advanced-settings::-webkit-scrollbar-thumb {
+.info-panel-settings::-webkit-scrollbar-thumb {
     background-color: #111;
     border-radius: 1px;
 }
 
-#info-panel-advanced-settings::-webkit-scrollbar-track {
+.info-panel-settings::-webkit-scrollbar-track {
     -webkit-box-shadow: inset 0 0 6px rgba(61, 61, 61, 0.3);
     background-color: #F5F5F5;
     border-radius: 1px;

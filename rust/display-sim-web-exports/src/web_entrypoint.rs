@@ -31,7 +31,7 @@ use render::simulation_draw::SimulationDrawer;
 use render::simulation_render_state::{Materials, VideoInputMaterials};
 use web_error::{WebError, WebResult};
 
-pub type OwnedClosure = Option<Closure<FnMut(JsValue)>>;
+pub type OwnedClosure = Option<Closure<dyn FnMut(JsValue)>>;
 
 pub struct StateOwner {
     pub closures: RefCell<Vec<OwnedClosure>>,
@@ -60,7 +60,7 @@ pub fn web_entrypoint(
     let gl = gl.dyn_into::<WebGl2RenderingContext>()?;
     res.borrow_mut().initialize(video_input_resources, now()?);
     let owned_state = StateOwner::new_rc(res, Materials::new(gl, video_input_materials)?, Input::new(now()?));
-    let frame_closure: Closure<FnMut(JsValue)> = {
+    let frame_closure: Closure<dyn FnMut(JsValue)> = {
         let owned_state = Rc::clone(&owned_state);
         let window = window()?;
         Closure::wrap(Box::new(move |_| {
@@ -131,7 +131,7 @@ fn tick(ctx: &dyn SimulationContext, input: &mut Input, res: &mut Resources, mat
 }
 
 fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WebResult<Vec<OwnedClosure>> {
-    let onblur: Closure<FnMut(JsValue)> = {
+    let onblur: Closure<dyn FnMut(JsValue)> = {
         let state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |_: JsValue| {
             let mut input = state_owner.input.borrow_mut();
@@ -139,7 +139,7 @@ fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WebResult<Vec<OwnedClosu
         }))
     };
 
-    let onkeydown: Closure<FnMut(JsValue)> = {
+    let onkeydown: Closure<dyn FnMut(JsValue)> = {
         let state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |event: JsValue| {
             if let Ok(e) = event.dyn_into::<KeyboardEvent>() {
@@ -152,7 +152,7 @@ fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WebResult<Vec<OwnedClosu
         }))
     };
 
-    let onkeyup: Closure<FnMut(JsValue)> = {
+    let onkeyup: Closure<dyn FnMut(JsValue)> = {
         let state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |event: JsValue| {
             if let Ok(e) = event.dyn_into::<KeyboardEvent>() {
@@ -162,7 +162,7 @@ fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WebResult<Vec<OwnedClosu
         }))
     };
 
-    let onmousedown: Closure<FnMut(JsValue)> = {
+    let onmousedown: Closure<dyn FnMut(JsValue)> = {
         let state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |event: JsValue| {
             if let Ok(e) = event.dyn_into::<MouseEvent>() {
@@ -172,7 +172,7 @@ fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WebResult<Vec<OwnedClosu
         }))
     };
 
-    let onmouseup: Closure<FnMut(JsValue)> = {
+    let onmouseup: Closure<dyn FnMut(JsValue)> = {
         let state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |event: JsValue| {
             if event.dyn_into::<MouseEvent>().is_ok() {
@@ -182,7 +182,7 @@ fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WebResult<Vec<OwnedClosu
         }))
     };
 
-    let onmousemove: Closure<FnMut(JsValue)> = {
+    let onmousemove: Closure<dyn FnMut(JsValue)> = {
         let state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |event: JsValue| {
             if let Ok(e) = event.dyn_into::<MouseEvent>() {
@@ -193,7 +193,7 @@ fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WebResult<Vec<OwnedClosu
         }))
     };
 
-    let onmousewheel: Closure<FnMut(JsValue)> = {
+    let onmousewheel: Closure<dyn FnMut(JsValue)> = {
         let state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |event: JsValue| {
             if let Ok(e) = event.dyn_into::<WheelEvent>() {
@@ -205,7 +205,7 @@ fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WebResult<Vec<OwnedClosu
         }))
     };
 
-    let oncustominputevent: Closure<FnMut(JsValue)> = {
+    let oncustominputevent: Closure<dyn FnMut(JsValue)> = {
         let state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |event: JsValue| {
             let mut input = state_owner.input.borrow_mut();

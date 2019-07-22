@@ -15,6 +15,7 @@
 
 use crate::dispatch_event::{dispatch_event, dispatch_event_with};
 use core::app_events::AppEventDispatcher;
+use core::camera::CameraLockMode;
 use core::internal_resolution::InternalResolution;
 use core::pixels_shadow::ShadowShape;
 use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, TextureInterpolation};
@@ -227,14 +228,12 @@ impl AppEventDispatcher for WebEventDispatcher {
         self.catch_error(dispatch_event_with("app-event.screenshot", &array));
     }
 
-    fn dispatch_custom_preset(&self) {
-        self.catch_error(dispatch_event("app-event.preset_selector_custom"));
+    fn dispatch_change_preset_selected(&self, name: &str) {
+        self.catch_error(dispatch_event_with("app-event.preset_selected_name", &name.into()));
     }
 
-    fn dispatch_change_camera_movement_mode(&self, locked_mode: bool) {
-        let message = if locked_mode { "Lock on Display" } else { "Free Flight" };
-        self.dispatch_top_message(&format!("Camera movement: {}.", message));
-        self.catch_error(dispatch_event_with("app-event.change_camera_movement_mode", &message.into()));
+    fn dispatch_change_camera_movement_mode(&self, locked_mode: CameraLockMode) {
+        self.catch_error(dispatch_event_with("app-event.change_camera_movement_mode", &locked_mode.to_string().into()));
     }
 
     fn dispatch_top_message(&self, message: &str) {
