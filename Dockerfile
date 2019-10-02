@@ -1,10 +1,11 @@
-FROM debian:stretch-slim as rust-wasm
+FROM debian:buster-slim as rust-wasm
 WORKDIR /app
 ENV RUSTUP_HOME=/usr/local/rustup \
     CARGO_HOME=/usr/local/cargo \
     PATH=/usr/local/cargo/bin:$PATH \
-    BINARYEN_VER="1.38.29" \
-    RUST_TOOLCHAIN="1.35.0"
+    BINARYEN_VER="version_81" \
+    RUST_TOOLCHAIN="1.38.0" \
+    RUSTUP_VER="1.19.0"
 RUN set -eux; \
     apt-get update || true; \
     apt-get install -y --no-install-recommends \
@@ -22,13 +23,13 @@ RUN set -eux; \
     \
     dpkgArch="$(dpkg --print-architecture)"; \
     case "${dpkgArch##*-}" in \
-        amd64) rustArch='x86_64-unknown-linux-gnu'; rustupSha256='02c0464459b2f88ce99f927b14f6aa4d09c96b9eb6e57808d6c567edce66260a' ;; \
-        armhf) rustArch='armv7-unknown-linux-gnueabihf'; rustupSha256='c7a3094b5e81974a5f752c3d6d78f0202e9ee45962140167880a2e0fe5bb3eb7' ;; \
-        arm64) rustArch='aarch64-unknown-linux-gnu'; rustupSha256='d1d6ca6c91fa5c22a53f9c7a79dbc49ac2c9056e2d74636e8f091310f157e351' ;; \
-        i386) rustArch='i686-unknown-linux-gnu'; rustupSha256='63dd42cdc70b9b026a86d514be4392ab24110ae4537285b5d04e98cdc2cf27d1' ;; \
+        amd64) rustArch='x86_64-unknown-linux-gnu'; rustupSha256='36285482ae5c255f2decfab27d32ba19465804cb3ddf5a23e6ff2a7b0f6e0250' ;; \
+        armhf) rustArch='armv7-unknown-linux-gnueabihf'; rustupSha256='cb20e54566d4b13434dea1776a961cf7f97afcc292cb4b0fec533503dd2434d0' ;; \
+        arm64) rustArch='aarch64-unknown-linux-gnu'; rustupSha256='58e19ae12101103ccc50b04a2579b9238163f87a27da5078cefc900098f257ab' ;; \
+        i386) rustArch='i686-unknown-linux-gnu'; rustupSha256='d3c42fb8b25f87eb049b6177611eea7d4fd51273de4113706f43cccf5610cfc7' ;; \
         *) echo >&2 "unsupported architecture: ${dpkgArch}"; exit 1 ;; \
     esac; \
-    url="https://static.rust-lang.org/rustup/archive/1.15.0/${rustArch}/rustup-init"; \
+    url="https://static.rust-lang.org/rustup/archive/${RUSTUP_VER}/${rustArch}/rustup-init"; \
     wget -q "$url"; \
     echo "${rustupSha256} *rustup-init" | sha256sum -c -; \
     chmod +x rustup-init; \
@@ -41,7 +42,7 @@ RUN set -eux; \
     wget -qO- https://rustwasm.github.io/wasm-pack/installer/init.sh | sh; \
     rustup target add wasm32-unknown-unknown --toolchain ${RUST_TOOLCHAIN}; \
     rustup component add clippy; \
-    wget -qO- https://github.com/WebAssembly/binaryen/releases/download/${BINARYEN_VER}/binaryen-${BINARYEN_VER}-x86_64-linux.tar.gz | tar xvz binaryen-${BINARYEN_VER}/wasm-opt ; \
+    wget -qO- https://github.com/WebAssembly/binaryen/releases/download/${BINARYEN_VER}/binaryen-${BINARYEN_VER}-x86-linux.tar.gz | tar xvz binaryen-${BINARYEN_VER}/wasm-opt ; \
     mv binaryen-${BINARYEN_VER}/wasm-opt /usr/bin/; \
     apt-get remove -y --auto-remove wget; \
     rm -rf /var/lib/apt/lists/*; \
