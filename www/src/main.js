@@ -89,7 +89,7 @@ const cameraZoomDeo = document.getElementById('camera-zoom');
 const cameraMovementModeDeo = document.getElementById('camera-movement-mode');
 
 const filterPresetsDeo = document.getElementById('filter-presets');
-const filterPresetsBasicDeo = document.getElementById('filter-presets-basic');
+// const filterPresetsBasicDeo = document.getElementById('filter-presets-basic');
 const filterPresetsButtonDeoList = Array.from(document.getElementsByClassName('preset-btn'));
 const filterOptionMainListDeo = document.getElementById('filter-option-main-list');
 const pixelWidthDeo = document.getElementById('pixel-width');
@@ -445,7 +445,7 @@ filterPresetsButtonDeoList.forEach(deo => {
     deo.onclick = function () {
         filterPresetsButtonDeoList.forEach(otherDeo => {
             otherDeo.classList.remove('active-preset');
-        })
+        });
         deo.classList.add('active-preset');
         window.dispatchEvent(new CustomEvent('app-event.custom_input_event', {
             detail: {
@@ -471,7 +471,7 @@ window.addEventListener('app-event.preset_selected_name', event => {
 }, false);
 
 configurePresetsDeo(filterPresetsDeo);
-//configurePresetsDeo(filterPresetsBasicDeo);
+// configurePresetsDeo(filterPresetsBasicDeo);
 function configurePresetsDeo (presetsDeo) {
     presetsDeo.onchange = () => {
         if (presetsDeo.value === presetCustom) {
@@ -755,8 +755,8 @@ async function prepareUi () {
     filterPresetsDeo.value = storage.getFilterPresets();
     filterPresetsDeo.onchange();
 
-//    filterPresetsBasicDeo.value = storage.getFilterPresets();
-//    filterPresetsBasicDeo.onchange();
+    //    filterPresetsBasicDeo.value = storage.getFilterPresets();
+    //    filterPresetsBasicDeo.onchange();
 
     visibility.hideLoading();
     visibility.showSimulationUi();
