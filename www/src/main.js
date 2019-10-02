@@ -90,6 +90,7 @@ const cameraMovementModeDeo = document.getElementById('camera-movement-mode');
 
 const filterPresetsDeo = document.getElementById('filter-presets');
 const filterPresetsBasicDeo = document.getElementById('filter-presets-basic');
+const filterPresetsButtonDeoList = Array.from(document.getElementsByClassName('preset-btn'));
 const filterOptionMainListDeo = document.getElementById('filter-option-main-list');
 const pixelWidthDeo = document.getElementById('pixel-width');
 const pixelHorizontalGapDeo = document.getElementById('pixel-horizontal-gap');
@@ -440,8 +441,37 @@ settingsTabs.forEach(clickedTab => {
     });
 });
 
+filterPresetsButtonDeoList.forEach(deo => {
+    deo.onclick = function () {
+        filterPresetsButtonDeoList.forEach(otherDeo => {
+            otherDeo.classList.remove('active-preset');
+        })
+        deo.classList.add('active-preset');
+        window.dispatchEvent(new CustomEvent('app-event.custom_input_event', {
+            detail: {
+                value: deo.dataset.preset,
+                kind: 'event_kind:filter_presets_selected'
+            }
+        }));
+    };
+});
+
+window.addEventListener('app-event.preset_selected_name', event => {
+    const presetValue = event.detail.toLowerCase().replace(/\s/g, '-');
+    if (!properPresets.includes(presetValue)) {
+        throw new Error('Wrong preset value:', presetValue);
+    }
+    filterPresetsButtonDeoList.forEach(deo => {
+        if (deo.dataset.preset === presetValue) {
+            deo.classList.add('active-preset');
+        } else {
+            deo.classList.remove('active-preset');
+        }
+    });
+}, false);
+
 configurePresetsDeo(filterPresetsDeo);
-configurePresetsDeo(filterPresetsBasicDeo);
+//configurePresetsDeo(filterPresetsBasicDeo);
 function configurePresetsDeo (presetsDeo) {
     presetsDeo.onchange = () => {
         if (presetsDeo.value === presetCustom) {
@@ -725,8 +755,8 @@ async function prepareUi () {
     filterPresetsDeo.value = storage.getFilterPresets();
     filterPresetsDeo.onchange();
 
-    filterPresetsBasicDeo.value = storage.getFilterPresets();
-    filterPresetsBasicDeo.onchange();
+//    filterPresetsBasicDeo.value = storage.getFilterPresets();
+//    filterPresetsBasicDeo.onchange();
 
     visibility.hideLoading();
     visibility.showSimulationUi();

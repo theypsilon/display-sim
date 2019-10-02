@@ -88,6 +88,17 @@ section > footer {
   color: #247E8F;
 }
 
+
+.btn-red {
+  background-color: #C1435A;
+  border-color: #C1435A;
+}
+
+.btn-red:hover {
+  background-color: #ffffff;
+  color: #C1435A;
+}
+
 .btn-inverted-grey {
   background-color: #fff;
   border-color: #fff;

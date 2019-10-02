@@ -46,6 +46,30 @@
     display: inline-block;
 }
 
+.preset-btn {
+    margin: 3px;
+    font-size: 13 !important;
+    border: 2px solid rgb(187, 187, 187);
+    color: black;
+    background-color: lightgrey;
+}
+
+.preset-btn:hover {
+    background-color: #ffffff;
+    color: black;
+}
+
+.active-preset {
+    border: 2px solid rgb(187, 187, 187);
+    color: white;
+    background-color: #C1435A;
+}
+
+.active-preset:hover {
+    background-color: #ffffff;
+    color: white;
+}
+
 #scaling-custom-inputs {
     display: flex;
 	flex-direction: column;
@@ -246,7 +270,7 @@ ul.tabs > li > a{
 }
 
 .info-panel-settings::-webkit-scrollbar-thumb:active {
-    background: linear-gradient(left, #22ADD4, #1E98BA);
+    background: linear-gradient(left, rgb(228, 90, 115), #C1435A);
 }
 
 .info-panel-settings::-webkit-scrollbar {
@@ -255,7 +279,7 @@ ul.tabs > li > a{
 }
 
 .info-panel-settings::-webkit-scrollbar-thumb {
-    background-color: #111;
+    background-color: #C1435A;
     border-radius: 1px;
 }
 

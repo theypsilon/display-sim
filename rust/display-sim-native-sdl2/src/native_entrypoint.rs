@@ -17,11 +17,11 @@ use render::opengl_hooks::{WebGl2RenderingContext, WebResult};
 
 use core::action_bindings::on_button_action;
 use core::app_events::AppEventDispatcher;
+use core::camera::CameraLockMode;
 use core::general_types::Size2D;
 use core::internal_resolution::InternalResolution;
 use core::pixels_shadow::ShadowShape;
 use core::simulation_context::{ConcreteSimulationContext, RandomGenerator};
-use core::camera::CameraLockMode;
 use core::simulation_core_state::{AnimationStep, Input, Resources, VideoInputResources};
 use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, TextureInterpolation};
 use core::simulation_core_ticker::SimulationCoreTicker;
