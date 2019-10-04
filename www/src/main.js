@@ -15,125 +15,20 @@
 
 import * as fastgif from 'fastgif/fastgif';
 import FontFaceObserver from 'fontfaceobserver';
+import Globals from './global';
 
 const displaySimPromise = import('./wasm/display_sim');
+let selectedInfoPanelDeo = Globals.infoPanelBasicDeo;
 
-const displayNoneClassName = 'display-none';
-const scalingAutoHtmlId = 'scaling-auto';
-const scaling43HtmlId = 'scaling-4:3';
-const scalingCustomHtmlId = 'scaling-custom';
-const scalingStretchToBothEdgesHtmlId = 'scaling-stretch-both';
-const scalingStretchToNearestEdgeHtmlId = 'scaling-stretch-nearest';
-const powerPreferenceDefaultHtml = 'default';
-const glCanvasHtmlId = 'gl-canvas';
-const topMessageHtmlId = 'top-message';
-const firstPreviewImageId = 'first-preview-image';
-
-const presetApertureGrille1 = 'crt-aperture-grille-1';
-const presetShadowMask1 = 'crt-shadow-mask-1';
-const presetShadowMask2 = 'crt-shadow-mask-2';
-const presetSharp1 = 'sharp-1';
-const presetDemo1 = 'demo-1';
-const presetCustom = 'custom';
-const properPresets = [
-    presetApertureGrille1,
-    presetShadowMask1,
-    presetShadowMask2,
-    presetSharp1,
-    presetDemo1
-];
-
-const uiDeo = document.getElementById('ui');
-const loadingDeo = document.getElementById('loading');
-const inputFileUploadDeo = document.getElementById('file');
-const startAnimationDeo = document.getElementById('start-animation');
-const antialiasDeo = document.getElementById('antialias');
-const scalingCustomResWidthDeo = document.getElementById('scaling-custom-resolution-width');
-const scalingCustomResHeightDeo = document.getElementById('scaling-custom-resolution-height');
-const scalingCustomResButtonDeo = document.getElementById('scaling-custom-resolution-button');
-const scalingCustomArXDeo = document.getElementById('scaling-custom-aspect-ratio-x');
-const scalingCustomArYDeo = document.getElementById('scaling-custom-aspect-ratio-y');
-const scalingCustomStretchNearestDeo = document.getElementById('scaling-custom-stretch-nearest');
-const scalingCustomInputsDeo = document.getElementById('scaling-custom-inputs');
-const dropZoneDeo = document.getElementById('drop-zone');
-const selectImageList = document.getElementById('select-image-list');
-const restoreDefaultOptionsDeo = document.getElementById('restore-default-options');
-
-const optionPowerPreferenceSelect = document.getElementById('option-powerPreference');
-const optionScalingSelect = document.getElementById('option-scaling');
-
-const infoPanelBasicDeo = document.getElementById('info-panel-basic-settings');
-const infoPanelAdvancedDeo = document.getElementById('info-panel-advanced-settings');
-let selectedInfoPanelDeo = infoPanelBasicDeo;
-
-const toggleInfoPanelClass = document.querySelectorAll('.toggle-info-panel');
-const freeModeControlsClas = document.querySelectorAll('.free-mode-only-controls');
-const simulationUiDeo = document.getElementById('simulation-ui');
-const infoPanelDeo = document.getElementById('info-panel');
-const infoPanelAdvancedSettingsDeo = document.getElementById('info-panel-advanced-settings');
-const infoPanelContentDeo = document.getElementById('info-panel-content');
-const fpsCounterDeo = document.getElementById('fps-counter');
-const lightColorDeo = document.getElementById('light-color');
-const brightnessColorDeo = document.getElementById('brightness-color');
-
-const cameraPosXDeo = document.getElementById('camera-pos-x');
-const cameraPosYDeo = document.getElementById('camera-pos-y');
-const cameraPosZDeo = document.getElementById('camera-pos-z');
-const cameraDirXDeo = document.getElementById('camera-dir-x');
-const cameraDirYDeo = document.getElementById('camera-dir-y');
-const cameraDirZDeo = document.getElementById('camera-dir-z');
-const cameraAxisUpXDeo = document.getElementById('camera-axis-up-x');
-const cameraAxisUpYDeo = document.getElementById('camera-axis-up-y');
-const cameraAxisUpZDeo = document.getElementById('camera-axis-up-z');
-const cameraZoomDeo = document.getElementById('camera-zoom');
-const cameraMovementModeDeo = document.getElementById('camera-movement-mode');
-
-const filterPresetsDeo = document.getElementById('filter-presets');
-// const filterPresetsBasicDeo = document.getElementById('filter-presets-basic');
-const filterPresetsButtonDeoList = Array.from(document.getElementsByClassName('preset-btn'));
-const filterOptionMainListDeo = document.getElementById('filter-option-main-list');
-const pixelWidthDeo = document.getElementById('pixel-width');
-const pixelHorizontalGapDeo = document.getElementById('pixel-horizontal-gap');
-const pixelVerticalGapDeo = document.getElementById('pixel-vertical-gap');
-const pixelSpreadDeo = document.getElementById('pixel-spread');
-const pixelBrigthnessDeo = document.getElementById('pixel-brightness');
-const pixelContrastDeo = document.getElementById('pixel-contrast');
-const blurLevelDeo = document.getElementById('blur-level');
-const verticalLppDeo = document.getElementById('vertical-lpp');
-const horizontalLppDeo = document.getElementById('horizontal-lpp');
-const featureQuitDeo = document.getElementById('feature-quit');
-const featureCaptureFramebufferDeo = document.getElementById('feature-capture-framebuffer');
-const featureClosePanelDeo = document.getElementById('feature-close-panel');
-
-const featureChangeColorRepresentationDeo = document.getElementById('feature-change-color-representation');
-const featureChangePixelGeometryDeo = document.getElementById('feature-change-pixel-geometry');
-const featureChangePixelShadowShapeDeo = document.getElementById('feature-change-pixel-shadow-shape');
-const featureChangePixelShadowHeightDeo = document.getElementById('feature-change-pixel-shadow-height');
-const featureChangeScreenCurvatureDeo = document.getElementById('feature-change-screen-curvature');
-const featureChangeScreenCurvatureBasicDeo = document.getElementById('feature-change-screen-curvature-basic');
-const featureInternalResolutionDeo = document.getElementById('feature-internal-resolution');
-const featureInternalResolutionBasicDeo = document.getElementById('feature-internal-resolution-basic');
-const featureTextureInterpolationDeo = document.getElementById('feature-texture-interpolation');
-const featureBacklightPercentDeo = document.getElementById('feature-backlight-percent');
-
-const featureChangeMoveSpeedDeo = document.getElementById('feature-change-move-speed');
-const featureChangeTurnSpeedDeo = document.getElementById('feature-change-turn-speed');
-const featureChangePixelSpeedDeo = document.getElementById('feature-change-pixel-speed');
-const featureCameraMovementsDeo = document.getElementById('feature-camera-movements');
-const featureCameraTurnsDeo = document.getElementById('feature-camera-turns');
-const resetCameraDeo = document.getElementById('reset-camera');
-const resetFiltersDeo = document.getElementById('reset-filters');
-const resetSpeedsDeo = document.getElementById('reset-speeds');
-
-const getGlCanvasDeo = () => document.getElementById(glCanvasHtmlId);
-const getTopMessageDeo = () => document.getElementById(topMessageHtmlId);
+const getGlCanvasDeo = () => document.getElementById(Globals.glCanvasHtmlId);
+const getTopMessageDeo = () => document.getElementById(Globals.topMessageHtmlId);
 
 const isRunningOnMobileDevice = mobileAndTabletCheck();
 const visibility = makeVisibility();
 const storage = makeStorage();
 const gifCache = {};
 window.gifCache = gifCache;
-let previewDeo = document.getElementById(firstPreviewImageId);
+let previewDeo = document.getElementById(Globals.firstPreviewImageId);
 let simulationResources;
 
 window.ondrop = event => {
@@ -207,7 +102,7 @@ window.addEventListener('app-event.screenshot', async event => {
 }, false);
 
 window.addEventListener('app-event.fps', event => {
-    fpsCounterDeo.innerHTML = Math.round(event.detail);
+    Globals.fpsCounterDeo.innerHTML = Math.round(event.detail);
 }, false);
 
 window.addEventListener('app-event.top_message', event => {
@@ -216,7 +111,7 @@ window.addEventListener('app-event.top_message', event => {
         existingTopMessage.remove();
     }
     const div = document.createElement('div');
-    div.id = topMessageHtmlId;
+    div.id = Globals.topMessageHtmlId;
     const span = document.createElement('span');
     span.innerHTML = event.detail;
     benchmark('top_message: ' + event.detail);
@@ -239,45 +134,45 @@ window.addEventListener('app-event.top_message', event => {
 }, false);
 
 window.addEventListener('app-event.camera_update', event => {
-    cameraPosXDeo.value = Math.round(event.detail[0] * 100) / 100;
-    cameraPosYDeo.value = Math.round(event.detail[1] * 100) / 100;
-    cameraPosZDeo.value = Math.round(event.detail[2] * 100) / 100;
-    cameraDirXDeo.value = Math.round(event.detail[3] * 100) / 100;
-    cameraDirYDeo.value = Math.round(event.detail[4] * 100) / 100;
-    cameraDirZDeo.value = Math.round(event.detail[5] * 100) / 100;
-    cameraAxisUpXDeo.value = Math.round(event.detail[6] * 100) / 100;
-    cameraAxisUpYDeo.value = Math.round(event.detail[7] * 100) / 100;
-    cameraAxisUpZDeo.value = Math.round(event.detail[8] * 100) / 100;
+    Globals.cameraPosXDeo.value = Math.round(event.detail[0] * 100) / 100;
+    Globals.cameraPosYDeo.value = Math.round(event.detail[1] * 100) / 100;
+    Globals.cameraPosZDeo.value = Math.round(event.detail[2] * 100) / 100;
+    Globals.cameraDirXDeo.value = Math.round(event.detail[3] * 100) / 100;
+    Globals.cameraDirYDeo.value = Math.round(event.detail[4] * 100) / 100;
+    Globals.cameraDirZDeo.value = Math.round(event.detail[5] * 100) / 100;
+    Globals.cameraAxisUpXDeo.value = Math.round(event.detail[6] * 100) / 100;
+    Globals.cameraAxisUpYDeo.value = Math.round(event.detail[7] * 100) / 100;
+    Globals.cameraAxisUpZDeo.value = Math.round(event.detail[8] * 100) / 100;
 }, false);
 
 [
-    { deo: cameraZoomDeo, eventId: 'app-event.change_camera_zoom' },
-    { deo: cameraMovementModeDeo, eventId: 'app-event.change_camera_movement_mode' },
-    { deo: pixelWidthDeo, eventId: 'app-event.change_pixel_width' },
-    { deo: pixelHorizontalGapDeo, eventId: 'app-event.change_pixel_horizontal_gap' },
-    { deo: pixelVerticalGapDeo, eventId: 'app-event.change_pixel_vertical_gap' },
-    { deo: pixelSpreadDeo, eventId: 'app-event.change_pixel_spread' },
-    { deo: pixelBrigthnessDeo, eventId: 'app-event.change_pixel_brightness' },
-    { deo: pixelContrastDeo, eventId: 'app-event.change_pixel_contrast' },
-    { deo: blurLevelDeo, eventId: 'app-event.change_blur_level' },
-    { deo: verticalLppDeo, eventId: 'app-event.change_vertical_lpp' },
-    { deo: horizontalLppDeo, eventId: 'app-event.change_horizontal_lpp' },
-    { deo: lightColorDeo, eventId: 'app-event.change_light_color' },
-    { deo: brightnessColorDeo, eventId: 'app-event.change_brightness_color' },
-    { deo: featureChangeMoveSpeedDeo, eventId: 'app-event.change_movement_speed' },
-    { deo: featureChangePixelSpeedDeo, eventId: 'app-event.change_pixel_speed' },
-    { deo: featureChangeTurnSpeedDeo, eventId: 'app-event.change_turning_speed' },
+    { deo: Globals.cameraZoomDeo, eventId: 'app-event.change_camera_zoom' },
+    { deo: Globals.cameraMovementModeDeo, eventId: 'app-event.change_camera_movement_mode' },
+    { deo: Globals.pixelWidthDeo, eventId: 'app-event.change_pixel_width' },
+    { deo: Globals.pixelHorizontalGapDeo, eventId: 'app-event.change_pixel_horizontal_gap' },
+    { deo: Globals.pixelVerticalGapDeo, eventId: 'app-event.change_pixel_vertical_gap' },
+    { deo: Globals.pixelSpreadDeo, eventId: 'app-event.change_pixel_spread' },
+    { deo: Globals.pixelBrigthnessDeo, eventId: 'app-event.change_pixel_brightness' },
+    { deo: Globals.pixelContrastDeo, eventId: 'app-event.change_pixel_contrast' },
+    { deo: Globals.blurLevelDeo, eventId: 'app-event.change_blur_level' },
+    { deo: Globals.verticalLppDeo, eventId: 'app-event.change_vertical_lpp' },
+    { deo: Globals.horizontalLppDeo, eventId: 'app-event.change_horizontal_lpp' },
+    { deo: Globals.lightColorDeo, eventId: 'app-event.change_light_color' },
+    { deo: Globals.brightnessColorDeo, eventId: 'app-event.change_brightness_color' },
+    { deo: Globals.featureChangeMoveSpeedDeo, eventId: 'app-event.change_movement_speed' },
+    { deo: Globals.featureChangePixelSpeedDeo, eventId: 'app-event.change_pixel_speed' },
+    { deo: Globals.featureChangeTurnSpeedDeo, eventId: 'app-event.change_turning_speed' },
 
-    { deo: featureChangeColorRepresentationDeo, eventId: 'app-event.color_representation' },
-    { deo: featureChangePixelGeometryDeo, eventId: 'app-event.pixel_geometry' },
-    { deo: featureChangePixelShadowShapeDeo, eventId: 'app-event.pixel_shadow_shape' },
-    { deo: featureChangePixelShadowHeightDeo, eventId: 'app-event.pixel_shadow_height' },
-    { deo: featureBacklightPercentDeo, eventId: 'app-event.backlight_percent' },
-    { deo: featureInternalResolutionDeo, eventId: 'app-event.internal_resolution' },
-    { deo: featureInternalResolutionBasicDeo, eventId: 'app-event.internal_resolution' },
-    { deo: featureTextureInterpolationDeo, eventId: 'app-event.texture_interpolation' },
-    { deo: featureChangeScreenCurvatureDeo, eventId: 'app-event.screen_curvature' },
-    { deo: featureChangeScreenCurvatureBasicDeo, eventId: 'app-event.screen_curvature' }
+    { deo: Globals.featureChangeColorRepresentationDeo, eventId: 'app-event.color_representation' },
+    { deo: Globals.featureChangePixelGeometryDeo, eventId: 'app-event.pixel_geometry' },
+    { deo: Globals.featureChangePixelShadowShapeDeo, eventId: 'app-event.pixel_shadow_shape' },
+    { deo: Globals.featureChangePixelShadowHeightDeo, eventId: 'app-event.pixel_shadow_height' },
+    { deo: Globals.featureBacklightPercentDeo, eventId: 'app-event.backlight_percent' },
+    { deo: Globals.featureInternalResolutionDeo, eventId: 'app-event.internal_resolution' },
+    { deo: Globals.featureInternalResolutionBasicDeo, eventId: 'app-event.internal_resolution' },
+    { deo: Globals.featureTextureInterpolationDeo, eventId: 'app-event.texture_interpolation' },
+    { deo: Globals.featureChangeScreenCurvatureDeo, eventId: 'app-event.screen_curvature' },
+    { deo: Globals.featureChangeScreenCurvatureBasicDeo, eventId: 'app-event.screen_curvature' }
 ].forEach(({ deo, eventId }) => {
     if (!deo) throw new Error('Wrong deo on defining: ' + eventId);
     window.addEventListener(eventId, event => {
@@ -286,11 +181,11 @@ window.addEventListener('app-event.camera_update', event => {
             switch (event.detail) {
             case 'Lock on Display':
                 deo.title = 'The camera will move around the picture, always looking at it';
-                freeModeControlsClas.forEach(deo => deo.classList.add(displayNoneClassName));
+                Globals.freeModeControlsClas.forEach(deo => deo.classList.add(Globals.displayNoneClassName));
                 break;
             case 'Free Flight':
                 deo.title = 'The camera can move without any restriction in the whole 3D space with plane-like controls';
-                freeModeControlsClas.forEach(deo => deo.classList.remove(displayNoneClassName));
+                Globals.freeModeControlsClas.forEach(deo => deo.classList.remove(Globals.displayNoneClassName));
                 break;
             default:
                 throw new Error('Unreachable!');
@@ -299,8 +194,8 @@ window.addEventListener('app-event.camera_update', event => {
     }, false);
 });
 
-customEventOnButtonPressed(featureCameraMovementsDeo);
-customEventOnButtonPressed(featureCameraTurnsDeo);
+customEventOnButtonPressed(Globals.featureCameraMovementsDeo);
+customEventOnButtonPressed(Globals.featureCameraTurnsDeo);
 function customEventOnButtonPressed (deo) {
     deo.querySelectorAll('.activate-button').forEach(button => {
         const eventOptions = { key: button.innerHTML.toLowerCase() };
@@ -309,32 +204,32 @@ function customEventOnButtonPressed (deo) {
     });
 }
 
-customEventOnChange(cameraPosXDeo, 'camera_pos_x', a => +a);
-customEventOnChange(cameraPosYDeo, 'camera_pos_y', a => +a);
-customEventOnChange(cameraPosZDeo, 'camera_pos_z', a => +a);
-customEventOnChange(cameraAxisUpXDeo, 'camera_axis_up_x', a => +a);
-customEventOnChange(cameraAxisUpYDeo, 'camera_axis_up_y', a => +a);
-customEventOnChange(cameraAxisUpZDeo, 'camera_axis_up_z', a => +a);
-customEventOnChange(cameraDirXDeo, 'camera_direction_x', a => +a);
-customEventOnChange(cameraDirYDeo, 'camera_direction_y', a => +a);
-customEventOnChange(cameraDirZDeo, 'camera_direction_z', a => +a);
-customEventOnChange(cameraZoomDeo, 'camera_zoom', a => +a);
-customEventOnChange(cameraMovementModeDeo, 'camera_movement_mode', a => +a);
+customEventOnChange(Globals.cameraPosXDeo, 'camera_pos_x', a => +a);
+customEventOnChange(Globals.cameraPosYDeo, 'camera_pos_y', a => +a);
+customEventOnChange(Globals.cameraPosZDeo, 'camera_pos_z', a => +a);
+customEventOnChange(Globals.cameraAxisUpXDeo, 'camera_axis_up_x', a => +a);
+customEventOnChange(Globals.cameraAxisUpYDeo, 'camera_axis_up_y', a => +a);
+customEventOnChange(Globals.cameraAxisUpZDeo, 'camera_axis_up_z', a => +a);
+customEventOnChange(Globals.cameraDirXDeo, 'camera_direction_x', a => +a);
+customEventOnChange(Globals.cameraDirYDeo, 'camera_direction_y', a => +a);
+customEventOnChange(Globals.cameraDirZDeo, 'camera_direction_z', a => +a);
+customEventOnChange(Globals.cameraZoomDeo, 'camera_zoom', a => +a);
+customEventOnChange(Globals.cameraMovementModeDeo, 'camera_movement_mode', a => +a);
 
-customEventOnChange(pixelWidthDeo, 'pixel_width', a => +a);
-customEventOnChange(pixelSpreadDeo, 'pixel_spread', a => +a);
-customEventOnChange(pixelHorizontalGapDeo, 'pixel_horizontal_gap', a => +a);
-customEventOnChange(pixelVerticalGapDeo, 'pixel_vertical_gap', a => +a);
-customEventOnChange(blurLevelDeo, 'blur_level', a => +a);
-customEventOnChange(verticalLppDeo, 'vertical_lpp', a => +a);
-customEventOnChange(horizontalLppDeo, 'horizontal_lpp', a => +a);
-customEventOnChange(pixelBrigthnessDeo, 'pixel_brightness', a => +a);
-customEventOnChange(pixelContrastDeo, 'pixel_contrast', a => +a);
-customEventOnChange(featureChangePixelShadowHeightDeo, 'pixel_shadow_height', a => +a);
-customEventOnChange(featureBacklightPercentDeo, 'backlight_percent', a => +a);
+customEventOnChange(Globals.pixelWidthDeo, 'pixel_width', a => +a);
+customEventOnChange(Globals.pixelSpreadDeo, 'pixel_spread', a => +a);
+customEventOnChange(Globals.pixelHorizontalGapDeo, 'pixel_horizontal_gap', a => +a);
+customEventOnChange(Globals.pixelVerticalGapDeo, 'pixel_vertical_gap', a => +a);
+customEventOnChange(Globals.blurLevelDeo, 'blur_level', a => +a);
+customEventOnChange(Globals.verticalLppDeo, 'vertical_lpp', a => +a);
+customEventOnChange(Globals.horizontalLppDeo, 'horizontal_lpp', a => +a);
+customEventOnChange(Globals.pixelBrigthnessDeo, 'pixel_brightness', a => +a);
+customEventOnChange(Globals.pixelContrastDeo, 'pixel_contrast', a => +a);
+customEventOnChange(Globals.featureChangePixelShadowHeightDeo, 'pixel_shadow_height', a => +a);
+customEventOnChange(Globals.featureBacklightPercentDeo, 'backlight_percent', a => +a);
 const parseColor = (value) => parseInt('0x' + value.substring(1));
-customEventOnChange(lightColorDeo, 'light_color', parseColor);
-customEventOnChange(brightnessColorDeo, 'brightness_color', parseColor);
+customEventOnChange(Globals.lightColorDeo, 'light_color', parseColor);
+customEventOnChange(Globals.brightnessColorDeo, 'brightness_color', parseColor);
 function customEventOnChange (deo, kind, parse) {
     const changed = () => {
         window.dispatchEvent(new CustomEvent('app-event.custom_input_event', {
@@ -348,24 +243,24 @@ function customEventOnChange (deo, kind, parse) {
 }
 
 [
-    featureChangeColorRepresentationDeo,
-    featureChangePixelGeometryDeo,
-    featureChangePixelShadowShapeDeo,
-    featureChangePixelShadowHeightDeo,
-    featureBacklightPercentDeo,
-    featureChangeScreenCurvatureDeo,
-    featureQuitDeo,
-    featureCaptureFramebufferDeo,
-    featureClosePanelDeo
+    Globals.featureChangeColorRepresentationDeo,
+    Globals.featureChangePixelGeometryDeo,
+    Globals.featureChangePixelShadowShapeDeo,
+    Globals.featureChangePixelShadowHeightDeo,
+    Globals.featureBacklightPercentDeo,
+    Globals.featureChangeScreenCurvatureDeo,
+    Globals.featureQuitDeo,
+    Globals.featureCaptureFramebufferDeo,
+    Globals.featureClosePanelDeo
 ].forEach(deo => {
     deo.onmousedown = () => document.dispatchEvent(new KeyboardEvent('keydown', { key: deo.id }));
     deo.onmouseup = () => document.dispatchEvent(new KeyboardEvent('keyup', { key: deo.id }));
 });
 
 [
-    resetCameraDeo,
-    resetSpeedsDeo,
-    resetFiltersDeo
+    Globals.resetCameraDeo,
+    Globals.resetSpeedsDeo,
+    Globals.resetFiltersDeo
 ].forEach(deo => {
     deo.onclick = () => document.dispatchEvent(new KeyboardEvent('keydown', { key: deo.id }));
 });
@@ -402,7 +297,7 @@ document.querySelectorAll('input').forEach(deo => {
     deo.addEventListener('blur', () => document.dispatchEvent(new KeyboardEvent('keyup', eventOptions)));
 });
 
-toggleInfoPanelClass.forEach(deo => {
+Globals.toggleInfoPanelClass.forEach(deo => {
     deo.onclick = () => {
         if (!getGlCanvasDeo()) {
             return;
@@ -428,10 +323,10 @@ settingsTabs.forEach(clickedTab => {
         selectedInfoPanelDeo.classList.add('display-none');
         switch (clickedTab.id) {
         case 'panel-basic':
-            selectedInfoPanelDeo = infoPanelBasicDeo;
+            selectedInfoPanelDeo = Globals.infoPanelBasicDeo;
             break;
         case 'panel-advanced':
-            selectedInfoPanelDeo = infoPanelAdvancedDeo;
+            selectedInfoPanelDeo = Globals.infoPanelAdvancedDeo;
             break;
         default:
             console.error('Unknown clicked tab: ' + clickedTab.id);
@@ -441,9 +336,9 @@ settingsTabs.forEach(clickedTab => {
     });
 });
 
-filterPresetsButtonDeoList.forEach(deo => {
+Globals.filterPresetsButtonDeoList.forEach(deo => {
     deo.onclick = function () {
-        filterPresetsButtonDeoList.forEach(otherDeo => {
+        Globals.filterPresetsButtonDeoList.forEach(otherDeo => {
             otherDeo.classList.remove('active-preset');
         });
         deo.classList.add('active-preset');
@@ -458,10 +353,10 @@ filterPresetsButtonDeoList.forEach(deo => {
 
 window.addEventListener('app-event.preset_selected_name', event => {
     const presetValue = event.detail.toLowerCase().replace(/\s/g, '-');
-    if (!properPresets.includes(presetValue)) {
+    if (!Globals.properPresets.includes(presetValue)) {
         throw new Error('Wrong preset value:', presetValue);
     }
-    filterPresetsButtonDeoList.forEach(deo => {
+    Globals.filterPresetsButtonDeoList.forEach(deo => {
         if (deo.dataset.preset === presetValue) {
             deo.classList.add('active-preset');
         } else {
@@ -470,16 +365,16 @@ window.addEventListener('app-event.preset_selected_name', event => {
     });
 }, false);
 
-configurePresetsDeo(filterPresetsDeo);
-// configurePresetsDeo(filterPresetsBasicDeo);
+configurePresetsDeo(Globals.filterPresetsDeo);
+// configurePresetsDeo(Globals.filterPresetsBasicDeo);
 function configurePresetsDeo (presetsDeo) {
     presetsDeo.onchange = () => {
-        if (presetsDeo.value === presetCustom) {
+        if (presetsDeo.value === Globals.presetCustom) {
             visibility.showFilterOptionMainList();
-        } else if (properPresets.includes(presetsDeo.value)) {
+        } else if (Globals.properPresets.includes(presetsDeo.value)) {
             visibility.showFilterOptionMainList();
         } else {
-            presetsDeo.value = presetApertureGrille1;
+            presetsDeo.value = Globals.presetApertureGrille1;
         }
         storage.setFilterPresets(presetsDeo.value);
         window.dispatchEvent(new CustomEvent('app-event.custom_input_event', {
@@ -492,43 +387,43 @@ function configurePresetsDeo (presetsDeo) {
 
     window.addEventListener('app-event.preset_selected_name', event => {
         const presetValue = event.detail.toLowerCase().replace(/\s/g, '-');
-        if (!properPresets.includes(presetValue)) {
+        if (!Globals.properPresets.includes(presetValue)) {
             throw new Error('Wrong preset value:', presetValue);
         }
         presetsDeo.value = presetValue;
     }, false);
 }
 
-inputFileUploadDeo.onchange = () => {
-    const file = inputFileUploadDeo.files[0];
+Globals.inputFileUploadDeo.onchange = () => {
+    const file = Globals.inputFileUploadDeo.files[0];
     const url = (window.URL || window.webkitURL).createObjectURL(file);
     processFileToUpload(url);
 };
 
-dropZoneDeo.onclick = () => {
-    inputFileUploadDeo.click();
+Globals.dropZoneDeo.onclick = () => {
+    Globals.inputFileUploadDeo.click();
 };
-dropZoneDeo.ondragover = event => {
+Globals.dropZoneDeo.ondragover = event => {
     event.stopPropagation();
     event.preventDefault();
     event.dataTransfer.dropEffect = 'copy';
 };
-dropZoneDeo.ondrop = event => {
+Globals.dropZoneDeo.ondrop = event => {
     event.stopPropagation();
     event.preventDefault();
     var file = event.dataTransfer.files[0];
     const url = (window.URL || window.webkitURL).createObjectURL(file);
     processFileToUpload(url);
 };
-optionScalingSelect.onchange = () => {
-    if (optionScalingSelect.value === scalingCustomHtmlId) {
+Globals.optionScalingSelect.onchange = () => {
+    if (Globals.optionScalingSelect.value === Globals.scalingCustomHtmlId) {
         visibility.showScaleCustomInputs();
     } else {
         visibility.hideScaleCustomInputs();
     }
 };
 
-restoreDefaultOptionsDeo.onclick = () => {
+Globals.restoreDefaultOptionsDeo.onclick = () => {
     storage.removeAllOptions();
     loadInputValuesFromStorage();
 };
@@ -549,13 +444,13 @@ async function prepareUi () {
     visibility.hideLoading();
 
     if (isRunningOnMobileDevice) {
-        startAnimationDeo.disabled = true;
-        startAnimationDeo.title = 'You need a PC with NVIDIA or ATI graphics card with updated drivers and a WebGL2 compatible browser (Firefox, Opera or Chrome) in order to run this without problems.';
+        Globals.startAnimationDeo.disabled = true;
+        Globals.startAnimationDeo.title = 'You need a PC with NVIDIA or ATI graphics card with updated drivers and a WebGL2 compatible browser (Firefox, Opera or Chrome) in order to run this without problems.';
         return;
     }
 
     await new Promise(resolve => {
-        startAnimationDeo.onclick = resolve;
+        Globals.startAnimationDeo.onclick = resolve;
     });
 
     visibility.hideUi();
@@ -564,7 +459,7 @@ async function prepareUi () {
     await new Promise(resolve => setTimeout(resolve, 50));
 
     const rawImgs = await (async function () {
-        if (previewDeo.id === firstPreviewImageId) {
+        if (previewDeo.id === Globals.firstPreviewImageId) {
             const img = new Image();
             img.src = require('../assets/pics/wwix_spritesheet.png');
             await new Promise((resolve, reject) => {
@@ -628,50 +523,50 @@ async function prepareUi () {
 
     let scaleX = 1;
     let stretch = false;
-    storage.setScalingSelectOption(optionScalingSelect.value);
+    storage.setScalingSelectOption(Globals.optionScalingSelect.value);
 
     const imageWidth = rawImgs[0].raw.width;
     const imageHeight = rawImgs[0].raw.height;
     let backgroundWidth = imageWidth;
     let backgroundHeight = imageHeight;
 
-    switch (optionScalingSelect.value) {
-    case scalingAutoHtmlId:
+    switch (Globals.optionScalingSelect.value) {
+    case Globals.scalingAutoHtmlId:
         const autoScaling = calculateAutoScaling(imageWidth, imageHeight);
         scaleX = autoScaling.scaleX;
         window.dispatchEvent(new CustomEvent('app-event.top_message', {
             detail: 'Scaling auto detect: ' + autoScaling.message
         }));
         break;
-    case scaling43HtmlId:
+    case Globals.scaling43HtmlId:
         scaleX = (4 / 3) / (imageWidth / imageHeight);
         break;
-    case scalingStretchToBothEdgesHtmlId:
+    case Globals.scalingStretchToBothEdgesHtmlId:
         scaleX = (window.screen.width / window.screen.height) / (imageWidth / imageHeight);
         stretch = true;
         break;
-    case scalingStretchToNearestEdgeHtmlId:
+    case Globals.scalingStretchToNearestEdgeHtmlId:
         stretch = true;
         break;
-    case scalingCustomHtmlId:
-        stretch = scalingCustomStretchNearestDeo.checked;
-        storage.setCustomResWidth(scalingCustomResWidthDeo.value);
-        storage.setCustomResHeight(scalingCustomResHeightDeo.value);
-        storage.setCustomArX(scalingCustomArXDeo.value);
-        storage.setCustomArY(scalingCustomArYDeo.value);
+    case Globals.scalingCustomHtmlId:
+        stretch = Globals.scalingCustomStretchNearestDeo.checked;
+        storage.setCustomResWidth(Globals.scalingCustomResWidthDeo.value);
+        storage.setCustomResHeight(Globals.scalingCustomResHeightDeo.value);
+        storage.setCustomArX(Globals.scalingCustomArXDeo.value);
+        storage.setCustomArY(Globals.scalingCustomArYDeo.value);
         storage.setCustomStretchNearest(stretch);
-        backgroundWidth = +scalingCustomResWidthDeo.value;
-        backgroundHeight = +scalingCustomResHeightDeo.value;
-        scaleX = (+scalingCustomArXDeo.value / +scalingCustomArYDeo.value) / (backgroundWidth / backgroundHeight);
+        backgroundWidth = +Globals.scalingCustomResWidthDeo.value;
+        backgroundHeight = +Globals.scalingCustomResHeightDeo.value;
+        scaleX = (+Globals.scalingCustomArXDeo.value / +Globals.scalingCustomArYDeo.value) / (backgroundWidth / backgroundHeight);
         break;
     }
 
-    lightColorDeo.value = '#FFFFFF';
-    brightnessColorDeo.value = '#FFFFFF';
+    Globals.lightColorDeo.value = '#FFFFFF';
+    Globals.brightnessColorDeo.value = '#FFFFFF';
 
     const canvas = document.createElement('canvas');
 
-    canvas.id = glCanvasHtmlId;
+    canvas.id = Globals.glCanvasHtmlId;
 
     fixCanvasSize(canvas);
 
@@ -682,17 +577,17 @@ async function prepareUi () {
 
     const ctxOptions = {
         alpha: false,
-        antialias: antialiasDeo.checked,
+        antialias: Globals.antialiasDeo.checked,
         depth: true,
         failIfMajorPerformanceCaveat: false,
-        powerPreference: optionPowerPreferenceSelect.value,
+        powerPreference: Globals.optionPowerPreferenceSelect.value,
         premultipliedAlpha: false,
         preserveDrawingBuffer: false,
         stencil: false
     };
 
     storage.setAntiAliasing(ctxOptions.antialias);
-    storage.setPowerPreferenceSelectOption(optionPowerPreferenceSelect.value);
+    storage.setPowerPreferenceSelectOption(Globals.optionPowerPreferenceSelect.value);
 
     benchmark('gl context form', ctxOptions);
     const gl = canvas.getContext('webgl2', ctxOptions);
@@ -752,30 +647,30 @@ async function prepareUi () {
     displaySim.run_program(gl, simulationResources, videoInput);
     benchmark('wasm run_program done');
 
-    filterPresetsDeo.value = storage.getFilterPresets();
-    filterPresetsDeo.onchange();
+    Globals.filterPresetsDeo.value = storage.getFilterPresets();
+    Globals.filterPresetsDeo.onchange();
 
-    //    filterPresetsBasicDeo.value = storage.getFilterPresets();
-    //    filterPresetsBasicDeo.onchange();
+    //    Globals.filterPresetsBasicDeo.value = storage.getFilterPresets();
+    //    Globals.filterPresetsBasicDeo.onchange();
 
     visibility.hideLoading();
     visibility.showSimulationUi();
 }
 
 function loadInputValuesFromStorage () {
-    optionScalingSelect.value = storage.getScalingSelectOption();
-    optionPowerPreferenceSelect.value = storage.getPowerPreferenceSelectOption();
-    if (optionScalingSelect.value === scalingCustomHtmlId) {
+    Globals.optionScalingSelect.value = storage.getScalingSelectOption();
+    Globals.optionPowerPreferenceSelect.value = storage.getPowerPreferenceSelectOption();
+    if (Globals.optionScalingSelect.value === Globals.scalingCustomHtmlId) {
         visibility.showScaleCustomInputs();
     } else {
         visibility.hideScaleCustomInputs();
     }
-    scalingCustomResWidthDeo.value = storage.getCustomResWidth();
-    scalingCustomResHeightDeo.value = storage.getCustomResHeight();
-    scalingCustomArXDeo.value = storage.getCustomArX();
-    scalingCustomArYDeo.value = storage.getCustomArY();
-    scalingCustomStretchNearestDeo.checked = storage.getCustomStretchNearest();
-    antialiasDeo.checked = storage.getAntiAliasing();
+    Globals.scalingCustomResWidthDeo.value = storage.getCustomResWidth();
+    Globals.scalingCustomResHeightDeo.value = storage.getCustomResHeight();
+    Globals.scalingCustomArXDeo.value = storage.getCustomArX();
+    Globals.scalingCustomArYDeo.value = storage.getCustomArY();
+    Globals.scalingCustomStretchNearestDeo.checked = storage.getCustomStretchNearest();
+    Globals.antialiasDeo.checked = storage.getAntiAliasing();
 }
 
 async function processFileToUpload (url) {
@@ -801,10 +696,10 @@ async function processFileToUpload (url) {
 
     const width = img.width;
     const height = img.height;
-    scalingCustomResButtonDeo.value = 'Set to ' + width + ' ✕ ' + height;
-    scalingCustomResButtonDeo.onclick = () => {
-        scalingCustomResWidthDeo.value = width;
-        scalingCustomResHeightDeo.value = height;
+    Globals.scalingCustomResButtonDeo.value = 'Set to ' + width + ' ✕ ' + height;
+    Globals.scalingCustomResButtonDeo.onclick = () => {
+        Globals.scalingCustomResWidthDeo.value = width;
+        Globals.scalingCustomResHeightDeo.value = height;
     };
     const span = document.createElement('span');
     span.innerHTML = width + ' ✕ ' + height;
@@ -816,7 +711,7 @@ async function processFileToUpload (url) {
     li.appendChild(div);
     makeImageSelectable(li);
     li.click();
-    selectImageList.insertBefore(li, dropZoneDeo);
+    Globals.selectImageList.insertBefore(li, Globals.dropZoneDeo);
     visibility.showScalingCustomResButton();
 }
 
@@ -831,9 +726,9 @@ function makeStorage () {
     const optionAntialias = 'option-antialias';
     const optionFilterPresets = 'option-filter-presets';
     return {
-        getScalingSelectOption: () => localStorage.getItem(optionScalingSelect) || scalingAutoHtmlId,
-        setScalingSelectOption: option => localStorage.setItem(optionScalingSelect, option),
-        getPowerPreferenceSelectOption: () => localStorage.getItem(optionPowerPreferenceSelect) || powerPreferenceDefaultHtml,
+        getScalingSelectOption: () => localStorage.getItem(optionScalingSelect) || Globals.scalingAutoHtmlId,
+        setScalingSelectOption: option => localStorage.setItem(Globals.optionScalingSelect, option),
+        getPowerPreferenceSelectOption: () => localStorage.getItem(optionPowerPreferenceSelect) || Globals.powerPreferenceDefaultHtml,
         setPowerPreferenceSelectOption: option => localStorage.setItem(optionPowerPreferenceSelect, option),
         getCustomResWidth: () => localStorage.getItem(optionScalingCustomResWidth) || 256,
         setCustomResWidth: width => localStorage.setItem(optionScalingCustomResWidth, width),
@@ -847,11 +742,11 @@ function makeStorage () {
         setCustomStretchNearest: stretch => localStorage.setItem(optionScalingCustomStretchNearest, stretch ? 'true' : 'false'),
         getAntiAliasing: () => localStorage.getItem(optionAntialias) !== 'false',
         setAntiAliasing: antiAliasing => localStorage.setItem(optionAntialias, antiAliasing ? 'true' : 'false'),
-        getFilterPresets: () => localStorage.getItem(optionFilterPresets) || presetApertureGrille1,
+        getFilterPresets: () => localStorage.getItem(optionFilterPresets) || Globals.presetApertureGrille1,
         setFilterPresets: filterPresets => localStorage.setItem(optionFilterPresets, filterPresets),
         removeAllOptions: () => {
-            localStorage.removeItem(optionScalingSelect);
-            localStorage.removeItem(optionPowerPreferenceSelect);
+            localStorage.removeItem(Globals.optionScalingSelect);
+            localStorage.removeItem(Globals.optionPowerPreferenceSelect);
             localStorage.removeItem(optionScalingCustomResWidth);
             localStorage.removeItem(optionScalingCustomResHeight);
             localStorage.removeItem(optionScalingCustomArX);
@@ -865,42 +760,42 @@ function makeStorage () {
 
 function makeVisibility () {
     return {
-        showUi: () => showElement(uiDeo),
-        hideUi: () => hideElement(uiDeo),
-        showLoading: () => showElement(loadingDeo),
-        hideLoading: () => hideElement(loadingDeo),
+        showUi: () => showElement(Globals.uiDeo),
+        hideUi: () => hideElement(Globals.uiDeo),
+        showLoading: () => showElement(Globals.loadingDeo),
+        hideLoading: () => hideElement(Globals.loadingDeo),
         showSimulationUi: () => {
             document.body.style.setProperty('overflow', 'hidden');
             document.body.style.setProperty('background-color', 'black');
-            showElement(simulationUiDeo);
+            showElement(Globals.simulationUiDeo);
         },
         hideSimulationUi: () => {
             document.body.style.removeProperty('overflow');
             document.body.style.removeProperty('background-color');
-            hideElement(simulationUiDeo);
+            hideElement(Globals.simulationUiDeo);
         },
-        showInfoPanel: () => showElement(infoPanelDeo),
-        hideInfoPanel: () => hideElement(infoPanelDeo),
-        isInfoPanelVisible: () => isVisible(infoPanelDeo),
-        showFilterOptionMainList: () => showElement(filterOptionMainListDeo),
-        hideFilterOptionMainList: () => hideElement(filterOptionMainListDeo),
-        showScalingCustomResButton: () => showElement(scalingCustomResButtonDeo),
-        showScaleCustomInputs: () => showElement(scalingCustomInputsDeo),
-        hideScaleCustomInputs: () => hideElement(scalingCustomInputsDeo)
+        showInfoPanel: () => showElement(Globals.infoPanelDeo),
+        hideInfoPanel: () => hideElement(Globals.infoPanelDeo),
+        isInfoPanelVisible: () => isVisible(Globals.infoPanelDeo),
+        showFilterOptionMainList: () => showElement(Globals.filterOptionMainListDeo),
+        hideFilterOptionMainList: () => hideElement(Globals.filterOptionMainListDeo),
+        showScalingCustomResButton: () => showElement(Globals.scalingCustomResButtonDeo),
+        showScaleCustomInputs: () => showElement(Globals.scalingCustomInputsDeo),
+        hideScaleCustomInputs: () => hideElement(Globals.scalingCustomInputsDeo)
     };
     function showElement (element) {
-        element.classList.remove(displayNoneClassName);
+        element.classList.remove(Globals.displayNoneClassName);
     }
     function hideElement (element) {
-        element.classList.add(displayNoneClassName);
+        element.classList.add(Globals.displayNoneClassName);
     }
     function isVisible (element) {
-        return element.classList.contains(displayNoneClassName) === false;
+        return element.classList.contains(Globals.displayNoneClassName) === false;
     }
 }
 
 function fixCanvasSize (canvas) {
-    canvas = canvas instanceof HTMLCanvasElement ? canvas : document.getElementById(glCanvasHtmlId);
+    canvas = canvas instanceof HTMLCanvasElement ? canvas : document.getElementById(Globals.glCanvasHtmlId);
     if (!canvas) return;
 
     const dpi = window.devicePixelRatio;
@@ -917,8 +812,8 @@ function fixCanvasSize (canvas) {
     benchmark('resolution:', canvas.width, canvas.height, width, height);
 
     const infoPanelContentHeight = (window.innerHeight - 18) * 0.95;
-    infoPanelContentDeo.style.setProperty('max-height', infoPanelContentHeight);
-    infoPanelAdvancedSettingsDeo.style.setProperty('max-height', infoPanelContentHeight - 60);
+    Globals.infoPanelContentDeo.style.setProperty('max-height', infoPanelContentHeight);
+    Globals.infoPanelAdvancedSettingsDeo.style.setProperty('max-height', infoPanelContentHeight - 60);
 }
 
 function mobileAndTabletCheck () {

@@ -336,7 +336,6 @@ mod tests {
                 .process_with_sums();
             assert_eq!(triggered, false);
         }
-
     }
 
     mod process_with_multiplications {
