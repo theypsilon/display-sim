@@ -15,7 +15,7 @@
 
 import * as fastgif from 'fastgif/fastgif';
 import FontFaceObserver from 'fontfaceobserver';
-import Globals from './global';
+import Globals from './globals';
 
 const displaySimPromise = import('./wasm/display_sim');
 let selectedInfoPanelDeo = Globals.infoPanelBasicDeo;
