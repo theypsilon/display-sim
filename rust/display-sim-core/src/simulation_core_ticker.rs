@@ -108,7 +108,7 @@ impl<'a> SimulationUpdater<'a> {
         self.update_filters();
         self.update_camera();
         self.update_screenshot();
-        if self.res.filters.preset_name == "Demo" {
+        if self.res.filters.preset_name == "Demo 1" {
             self.update_demo();
         }
 
@@ -204,7 +204,7 @@ impl<'a> SimulationUpdater<'a> {
             if self.res.filters.preset_name == "Custom" {
                 self.res.saved_filters = Some(self.res.filters.clone());
             }
-            if self.res.filters.preset_name == "Demo" {
+            if self.res.filters.preset_name == "Demo 1" {
                 self.res.camera = self.res.demo_1.camera_backup.clone();
             }
             self.res.filters = match preset.as_ref() {
@@ -397,7 +397,7 @@ impl<'a> SimulationUpdater<'a> {
             })
             .process_with_sums();
 
-        if changed && self.res.filters.preset_name != "Custom" && self.res.filters.preset_name != "Demo" {
+        if changed && self.res.filters.preset_name != "Custom" && self.res.filters.preset_name != "Demo 1" {
             ctx.dispatcher().dispatch_change_preset_selected("Custom");
             self.res.filters.preset_name = "Custom".into();
         }

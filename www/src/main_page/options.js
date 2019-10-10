@@ -13,6 +13,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import '../assets/styles.css';
-import './main_page/main_page';
-import './sim_page/sim_page';
+import Globals from '../globals';
+
+import { makeVisibility } from '../visibility';
+import { makeStorage } from '../storage';
+
+import { loadInputValuesFromStorage } from './common';
+
+const visibility = makeVisibility();
+const storage = makeStorage();
+
+Globals.optionScalingSelect.onchange = () => {
+    if (Globals.optionScalingSelect.value === Globals.scalingCustomHtmlId) {
+        visibility.showScaleCustomInputs();
+    } else {
+        visibility.hideScaleCustomInputs();
+    }
+};
+
+Globals.restoreDefaultOptionsDeo.onclick = () => {
+    storage.removeAllOptions();
+    loadInputValuesFromStorage();
+};

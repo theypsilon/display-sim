@@ -223,7 +223,7 @@ impl Default for Filters {
             color_channels: ColorChannels::Combined,
             screen_curvature_kind: ScreenCurvatureKind::Flat,
             backlight_presence: 0.0,
-            preset_name: "Sharp".into(),
+            preset_name: "Sharp 1".into(),
         }
         .preset_crt_aperture_grille_1()
     }
@@ -251,7 +251,7 @@ impl Filters {
             color_channels: ColorChannels::Combined,
             screen_curvature_kind: ScreenCurvatureKind::Flat,
             backlight_presence: 0.0,
-            preset_name: "Sharp".into(),
+            preset_name: "Sharp 1".into(),
         }
     }
 
@@ -351,7 +351,7 @@ impl Filters {
             color_channels: ColorChannels::Combined,
             screen_curvature_kind: ScreenCurvatureKind::Pulse,
             backlight_presence: 0.2,
-            preset_name: "Demo".into(),
+            preset_name: "Demo 1".into(),
         }
     }
 }
