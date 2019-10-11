@@ -20,6 +20,7 @@ import Globals from '../globals';
 import { makeVisibility } from '../visibility';
 
 import { playSimulation } from './play_simulation';
+import { playDemo } from './play_demo';
 import { loadInputValuesFromStorage } from './common';
 
 import './select_image'
@@ -38,6 +39,10 @@ Promise.all([
 });
 
 export async function prepareMainPage () {
+    if (window.location.hash.length > 1) {
+        return await playDemo(window.location.hash.substr(1));
+    }
+
     loadInputValuesFromStorage();
 
     visibility.showUi();
