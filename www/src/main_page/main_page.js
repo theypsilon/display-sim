@@ -23,8 +23,8 @@ import { playSimulation } from './play_simulation';
 import { playDemo } from './play_demo';
 import { loadInputValuesFromStorage } from './common';
 
-import './select_image'
-import './options'
+import './select_image';
+import './options';
 
 const isRunningOnMobileDevice = mobileAndTabletCheck();
 const visibility = makeVisibility();
@@ -40,7 +40,7 @@ Promise.all([
 
 export async function prepareMainPage () {
     if (window.location.hash.length > 1) {
-        return await playDemo(window.location.hash.substr(1));
+        return playDemo(window.location.hash.substr(1));
     }
 
     loadInputValuesFromStorage();

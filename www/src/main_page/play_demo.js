@@ -13,15 +13,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
- import * as fastgif from 'fastgif/fastgif';
+import * as fastgif from 'fastgif/fastgif';
 
- import Logger from '../logger';
- 
- import { makeSimLauncher } from '../sim_launcher';
- import { makeVisibility } from '../visibility';
- 
- const simLauncher = makeSimLauncher();
- const visibility = makeVisibility();
+import Logger from '../logger';
+
+import { makeSimLauncher } from '../sim_launcher';
+import { makeVisibility } from '../visibility';
+
+const simLauncher = makeSimLauncher();
+const visibility = makeVisibility();
 
 export async function playDemo (path) {
     console.log(path);
@@ -37,7 +37,7 @@ export async function playDemo (path) {
     canvas.width = img.width;
     canvas.height = img.height;
     ctx.drawImage(img, 0, 0);
-    let rawImgs; 
+    let rawImgs;
     if (isGif) {
         Logger.log('loading gif');
         const decoder = new fastgif.Decoder();
@@ -77,8 +77,6 @@ export async function playDemo (path) {
         stretch: false,
         rawImgs
     });
-
-    //visibility.showSimulationUi();
 }
 
 function calculateAutoScaling (imageWidth, imageHeight) {
