@@ -18,7 +18,7 @@ import FontFaceObserver from 'fontfaceobserver';
 import Constants from '../constants';
 
 import { Visibility } from '../visibility';
-import { mobileAndTabletCheck } from '../mobile_check';
+import { mobileAndTabletCheck } from '../utils';
 
 import { playSimulation } from './play_simulation';
 import { playDemo } from './play_demo';
