@@ -324,11 +324,15 @@ Constants.filterPresetsButtonDeoList.forEach(deo => {
     };
 });
 
+const presetsDeoAvailable = [Constants.filterPresetsDeo];
 window.addEventListener('app-event.preset_selected_name', event => {
     const presetValue = event.detail.toLowerCase().replace(/\s/g, '-');
     if (!Constants.properPresets.includes(presetValue)) {
         throw new Error('Wrong preset value: ' + presetValue);
     }
+    presetsDeoAvailable.forEach(presetsDeo => {
+        presetsDeo.value = presetValue;
+    });
     Constants.filterPresetsButtonDeoList.forEach(deo => {
         if (deo.dataset.preset === presetValue) {
             deo.classList.add('active-preset');
@@ -338,9 +342,7 @@ window.addEventListener('app-event.preset_selected_name', event => {
     });
 }, false);
 
-configurePresetsDeo(Constants.filterPresetsDeo);
-// configurePresetsDeo(Constants.filterPresetsBasicDeo);
-function configurePresetsDeo (presetsDeo) {
+presetsDeoAvailable.forEach(presetsDeo => {
     presetsDeo.onchange = () => {
         if (presetsDeo.value === Constants.presetCustom) {
             visibility.showFilterOptionMainList();
@@ -357,12 +359,4 @@ function configurePresetsDeo (presetsDeo) {
             }
         }));
     };
-
-    window.addEventListener('app-event.preset_selected_name', event => {
-        const presetValue = event.detail.toLowerCase().replace(/\s/g, '-');
-        if (!Constants.properPresets.includes(presetValue)) {
-            throw new Error('Wrong preset value: ' + presetValue);
-        }
-        presetsDeo.value = presetValue;
-    }, false);
-}
+});
