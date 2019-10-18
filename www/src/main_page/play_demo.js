@@ -15,12 +15,12 @@
 
 import Logger from '../logger';
 
-import { makeSimLauncher } from '../sim_launcher';
-import { makeVisibility } from '../visibility';
+import { SimLauncher } from '../sim_launcher';
+import { Visibility } from '../visibility';
 import { AnimationsGateway } from '../animations_gateway';
 
-const simLauncher = makeSimLauncher();
-const visibility = makeVisibility();
+const visibility = Visibility.make();
+const simLauncher = SimLauncher.make();
 const animationsGateway = AnimationsGateway.make({ gifCaching: false });
 
 export async function playDemo (path) {

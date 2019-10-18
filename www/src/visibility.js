@@ -13,40 +13,48 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import Constants from './Constants';
+import Constants from './constants';
 
-export function makeVisibility () {
-    return {
-        showUi: () => showElement(Constants.uiDeo),
-        hideUi: () => hideElement(Constants.uiDeo),
-        showLoading: () => showElement(Constants.loadingDeo),
-        hideLoading: () => hideElement(Constants.loadingDeo),
-        showSimulationUi: () => {
-            document.body.style.setProperty('overflow', 'hidden');
-            document.body.style.setProperty('background-color', 'black');
-            showElement(Constants.simulationUiDeo);
-        },
-        hideSimulationUi: () => {
-            document.body.style.removeProperty('overflow');
-            document.body.style.removeProperty('background-color');
-            hideElement(Constants.simulationUiDeo);
-        },
-        showInfoPanel: () => showElement(Constants.infoPanelDeo),
-        hideInfoPanel: () => hideElement(Constants.infoPanelDeo),
-        isInfoPanelVisible: () => isVisible(Constants.infoPanelDeo),
-        showFilterOptionMainList: () => showElement(Constants.filterOptionMainListDeo),
-        hideFilterOptionMainList: () => hideElement(Constants.filterOptionMainListDeo),
-        showScalingCustomResButton: () => showElement(Constants.scalingCustomResButtonDeo),
-        showScaleCustomInputs: () => showElement(Constants.scalingCustomInputsDeo),
-        hideScaleCustomInputs: () => hideElement(Constants.scalingCustomInputsDeo)
-    };
-    function showElement (element) {
-        element.classList.remove(Constants.displayNoneClassName);
+let instance;
+
+export class Visibility {
+    static make () {
+        return instance;
     }
-    function hideElement (element) {
-        element.classList.add(Constants.displayNoneClassName);
+    showUi () { showElement(Constants.uiDeo); }
+    hideUi () { hideElement(Constants.uiDeo); }
+    showLoading () { showElement(Constants.loadingDeo); }
+    hideLoading () { hideElement(Constants.loadingDeo); }
+    showSimulationUi () {
+        document.body.style.setProperty('overflow', 'hidden');
+        document.body.style.setProperty('background-color', 'black');
+        showElement(Constants.simulationUiDeo);
     }
-    function isVisible (element) {
-        return element.classList.contains(Constants.displayNoneClassName) === false;
+    hideSimulationUi () {
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('background-color');
+        hideElement(Constants.simulationUiDeo);
     }
+    showInfoPanel () { showElement(Constants.infoPanelDeo); }
+    hideInfoPanel () { hideElement(Constants.infoPanelDeo); }
+    isInfoPanelVisible () { isVisible(Constants.infoPanelDeo); }
+    showFilterOptionMainList () { showElement(Constants.filterOptionMainListDeo); }
+    hideFilterOptionMainList () { hideElement(Constants.filterOptionMainListDeo); }
+    showScalingCustomResButton () { showElement(Constants.scalingCustomResButtonDeo); }
+    showScaleCustomInputs () { showElement(Constants.scalingCustomInputsDeo); }
+    hideScaleCustomInputs () { hideElement(Constants.scalingCustomInputsDeo); }
+}
+
+instance = new Visibility();
+
+function showElement (element) {
+    element.classList.remove(Constants.displayNoneClassName);
+}
+
+function hideElement (element) {
+    element.classList.add(Constants.displayNoneClassName);
+}
+
+function isVisible (element) {
+    return element.classList.contains(Constants.displayNoneClassName) === false;
 }

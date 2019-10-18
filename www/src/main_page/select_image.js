@@ -16,9 +16,9 @@
 import Constants from '../constants';
 import GlobalState from '../global_state';
 
-import { makeVisibility } from '../visibility';
+import { Visibility } from '../visibility';
 
-const visibility = makeVisibility();
+const visibility = Visibility.make();
 
 window.ondrop = event => {
     event.preventDefault();

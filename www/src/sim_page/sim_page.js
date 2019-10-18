@@ -13,21 +13,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import Constants from '../globals';
+import Constants from '../constants';
 import Logger from '../logger';
 
 import { prepareMainPage } from '../main_page/main_page';
 
-import { makeVisibility } from '../visibility';
-import { makeStorage } from '../storage';
+import { Visibility } from '../visibility';
+import { Storage } from '../storage';
 
 let selectedInfoPanelDeo = Constants.infoPanelBasicDeo;
 
 const getGlCanvasDeo = () => document.getElementById(Constants.glCanvasHtmlId);
 const getTopMessageDeo = () => document.getElementById(Constants.topMessageHtmlId);
 
-const visibility = makeVisibility();
-const storage = makeStorage();
+const visibility = Visibility.make();
+const storage = Storage.make();
 
 window.addEventListener('app-event.toggle_info_panel', () => {
     if (!getGlCanvasDeo()) {

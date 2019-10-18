@@ -15,9 +15,9 @@
 
 import FontFaceObserver from 'fontfaceobserver';
 
-import Constants from '../globals';
+import Constants from '../constants';
 
-import { makeVisibility } from '../visibility';
+import { Visibility } from '../visibility';
 
 import { playSimulation } from './play_simulation';
 import { playDemo } from './play_demo';
@@ -27,7 +27,7 @@ import './select_image';
 import './options';
 
 const isRunningOnMobileDevice = mobileAndTabletCheck();
-const visibility = makeVisibility();
+const visibility = Visibility.make();
 
 Promise.all([
     new FontFaceObserver('Archivo Black', { weight: 400 }).load(null, 10000),

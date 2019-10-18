@@ -13,13 +13,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import Constants from '../globals';
+import Constants from '../constants';
 
-import { makeVisibility } from '../visibility';
-import { makeStorage } from '../storage';
+import { Visibility } from '../visibility';
+import { Storage } from '../storage';
 
-const visibility = makeVisibility();
-const storage = makeStorage();
+const visibility = Visibility.make();
+const storage = Storage.make();
 
 export function loadInputValuesFromStorage () {
     Constants.optionScalingSelect.value = storage.getScalingSelectOption();

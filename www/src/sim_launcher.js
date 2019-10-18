@@ -13,18 +13,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import Constants from './Constants';
+import Constants from './constants';
 import Logger from './logger';
 
 const displaySimPromise = import('./wasm/display_sim');
 
-export function makeSimLauncher () {
-    return new SimLauncher();
-}
-
 export class SimLauncher {
     SimLauncher () {
         this.simulationResources = null;
+    }
+
+    static make () {
+        return new SimLauncher();
     }
 
     async launch (params) {

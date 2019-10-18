@@ -17,14 +17,14 @@ import Constants from '../constants';
 import GlobalState from '../global_state';
 import Logger from '../logger';
 
-import { makeSimLauncher } from '../sim_launcher';
-import { makeVisibility } from '../visibility';
-import { makeStorage } from '../storage';
+import { SimLauncher } from '../sim_launcher';
+import { Visibility } from '../visibility';
+import { Storage } from '../storage';
 import { AnimationsGateway } from '../animations_gateway';
 
-const simLauncher = makeSimLauncher();
-const visibility = makeVisibility();
-const storage = makeStorage();
+const simLauncher = SimLauncher.make();
+const visibility = Visibility.make();
+const storage = Storage.make();
 const animationsGateway = AnimationsGateway.make({ gifCaching: true });
 
 async function getAnimations () {
