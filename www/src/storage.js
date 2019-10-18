@@ -27,9 +27,7 @@ const optionFilterPresets = 'option-filter-presets';
 
 let instance;
 export class Storage {
-    static make () {
-        return instance;
-    }
+    static make () { return instance; }
     getScalingSelectOption () { return getItem(optionScalingSelect) || Constants.scalingAutoHtmlId; }
     setScalingSelectOption (option) { setItem(Constants.optionScalingSelect, option); }
     getPowerPreferenceSelectOption () { return getItem(optionPowerPreferenceSelect) || Constants.powerPreferenceDefaultHtml; }
@@ -66,11 +64,9 @@ instance = new Storage();
 function getItem (key) {
     return localStorage.getItem('DISPLAY_SIM.' + key);
 }
-
 function setItem (key, value) {
     localStorage.setItem('DISPLAY_SIM.' + key, value);
 }
-
 function removeItem (key) {
     localStorage.removeItem('DISPLAY_SIM.' + key);
 }

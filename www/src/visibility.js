@@ -18,9 +18,7 @@ import Constants from './constants';
 let instance;
 
 export class Visibility {
-    static make () {
-        return instance;
-    }
+    static make () { return instance; }
     showUi () { showElement(Constants.uiDeo); }
     hideUi () { hideElement(Constants.uiDeo); }
     showLoading () { showElement(Constants.loadingDeo); }
@@ -50,11 +48,9 @@ instance = new Visibility();
 function showElement (element) {
     element.classList.remove(Constants.displayNoneClassName);
 }
-
 function hideElement (element) {
     element.classList.add(Constants.displayNoneClassName);
 }
-
 function isVisible (element) {
     return element.classList.contains(Constants.displayNoneClassName) === false;
 }
