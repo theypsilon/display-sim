@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import Globals from './globals';
+import Constants from './Constants';
 
 export function makeStorage () {
     const optionScalingSelect = 'option-scaling';
@@ -26,9 +26,9 @@ export function makeStorage () {
     const optionAntialias = 'option-antialias';
     const optionFilterPresets = 'option-filter-presets';
     return {
-        getScalingSelectOption: () => localStorage.getItem(optionScalingSelect) || Globals.scalingAutoHtmlId,
-        setScalingSelectOption: option => localStorage.setItem(Globals.optionScalingSelect, option),
-        getPowerPreferenceSelectOption: () => localStorage.getItem(optionPowerPreferenceSelect) || Globals.powerPreferenceDefaultHtml,
+        getScalingSelectOption: () => localStorage.getItem(optionScalingSelect) || Constants.scalingAutoHtmlId,
+        setScalingSelectOption: option => localStorage.setItem(Constants.optionScalingSelect, option),
+        getPowerPreferenceSelectOption: () => localStorage.getItem(optionPowerPreferenceSelect) || Constants.powerPreferenceDefaultHtml,
         setPowerPreferenceSelectOption: option => localStorage.setItem(optionPowerPreferenceSelect, option),
         getCustomResWidth: () => localStorage.getItem(optionScalingCustomResWidth) || 256,
         setCustomResWidth: width => localStorage.setItem(optionScalingCustomResWidth, width),
@@ -42,11 +42,11 @@ export function makeStorage () {
         setCustomStretchNearest: stretch => localStorage.setItem(optionScalingCustomStretchNearest, stretch ? 'true' : 'false'),
         getAntiAliasing: () => localStorage.getItem(optionAntialias) !== 'false',
         setAntiAliasing: antiAliasing => localStorage.setItem(optionAntialias, antiAliasing ? 'true' : 'false'),
-        getFilterPresets: () => localStorage.getItem(optionFilterPresets) || Globals.presetApertureGrille1,
+        getFilterPresets: () => localStorage.getItem(optionFilterPresets) || Constants.presetApertureGrille1,
         setFilterPresets: filterPresets => localStorage.setItem(optionFilterPresets, filterPresets),
         removeAllOptions: () => {
-            localStorage.removeItem(Globals.optionScalingSelect);
-            localStorage.removeItem(Globals.optionPowerPreferenceSelect);
+            localStorage.removeItem(Constants.optionScalingSelect);
+            localStorage.removeItem(Constants.optionPowerPreferenceSelect);
             localStorage.removeItem(optionScalingCustomResWidth);
             localStorage.removeItem(optionScalingCustomResHeight);
             localStorage.removeItem(optionScalingCustomArX);

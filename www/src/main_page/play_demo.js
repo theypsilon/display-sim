@@ -13,50 +13,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import * as fastgif from 'fastgif/fastgif';
-
 import Logger from '../logger';
 
 import { makeSimLauncher } from '../sim_launcher';
 import { makeVisibility } from '../visibility';
+import { AnimationsGateway } from '../animations_gateway';
 
 const simLauncher = makeSimLauncher();
 const visibility = makeVisibility();
+const animationsGateway = AnimationsGateway.make({ gifCaching: false });
 
 export async function playDemo (path) {
-    console.log(path);
-    const isGif = path.includes('.gif');
-    const img = new Image();
-    img.src = path;
-    await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
-    });
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = img.width;
-    canvas.height = img.height;
-    ctx.drawImage(img, 0, 0);
-    let rawImgs;
-    if (isGif) {
-        Logger.log('loading gif');
-        const decoder = new fastgif.Decoder();
-        const gif = await window.fetch(img.src)
-            .then(response => response.arrayBuffer())
-            .then(buffer => decoder.decode(buffer));
-        Logger.log('gif loaded');
-        rawImgs = gif.map(frame => ({
-            raw: frame.imageData,
-            delay: frame.delay
-        }));
-    } else {
-        rawImgs = [{ raw: ctx.getImageData(0, 0, img.width, img.height), delay: 16 }];
-    }
+    Logger.log('Loading path: ' + path);
+
+    const animations = await animationsGateway.getFromPath(path);
 
     visibility.hideLoading();
 
-    const imageWidth = rawImgs[0].raw.width;
-    const imageHeight = rawImgs[0].raw.height;
+    const imageWidth = animations[0].raw.width;
+    const imageHeight = animations[0].raw.height;
 
     await simLauncher.launch({
         ctxOptions: {
@@ -75,7 +50,7 @@ export async function playDemo (path) {
         backgroundWidth: imageWidth,
         backgroundHeight: imageHeight,
         stretch: false,
-        rawImgs
+        animations
     });
 }
 

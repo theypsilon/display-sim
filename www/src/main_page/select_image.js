@@ -13,13 +13,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import Globals from '../globals';
+import Constants from '../constants';
+import GlobalState from '../global_state';
 
 import { makeVisibility } from '../visibility';
 
 const visibility = makeVisibility();
-
-let previewDeo = document.getElementById(Globals.firstPreviewImageId);
 
 window.ondrop = event => {
     event.preventDefault();
@@ -30,72 +29,81 @@ window.ondragover = event => {
     event.dataTransfer.dropEffect = 'none';
 };
 
-Globals.inputFileUploadDeo.onchange = () => {
-    const file = Globals.inputFileUploadDeo.files[0];
+Constants.inputFileUploadDeo.onchange = () => {
+    const file = Constants.inputFileUploadDeo.files[0];
     const url = (window.URL || window.webkitURL).createObjectURL(file);
-    processFileToUpload(url);
+    handleFileToUpload(url);
 };
 
-Globals.dropZoneDeo.onclick = () => {
-    Globals.inputFileUploadDeo.click();
+Constants.dropZoneDeo.onclick = () => {
+    Constants.inputFileUploadDeo.click();
 };
 
-Globals.dropZoneDeo.ondragover = event => {
+Constants.dropZoneDeo.ondragover = event => {
     event.stopPropagation();
     event.preventDefault();
     event.dataTransfer.dropEffect = 'copy';
 };
 
-Globals.dropZoneDeo.ondrop = event => {
+Constants.dropZoneDeo.ondrop = event => {
     event.stopPropagation();
     event.preventDefault();
     var file = event.dataTransfer.files[0];
     const url = (window.URL || window.webkitURL).createObjectURL(file);
-    processFileToUpload(url);
+    handleFileToUpload(url);
 };
 
 document.querySelectorAll('.selectable-image').forEach(deo => {
     const img = deo.querySelector('img');
-    img.isGif = img.src.includes('.gif');
-    img.isAsset = true;
+    img.isOptimizedAsset = true;
     makeImageSelectable(deo);
 });
 
 function makeImageSelectable (deo) {
     deo.onclick = () => {
-        previewDeo.classList.remove('selected-image');
-        previewDeo = deo;
-        previewDeo.classList.add('selected-image');
+        GlobalState.previewDeo.classList.remove('selected-image');
+        GlobalState.previewDeo = deo;
+        GlobalState.previewDeo.classList.add('selected-image');
     };
+}
+
+async function handleFileToUpload (url) {
+    try {
+        processFileToUpload(url);
+    } catch (e) {
+        console.error(e);
+        window.dispatchEvent(new CustomEvent('app-event.top_message', {
+            detail: 'That file could not be loaded, try again with a picture.'
+        }));
+    }
 }
 
 async function processFileToUpload (url) {
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', url, true);
-    xhr.responseType = 'blob';
-    xhr.send(null);
-
-    await new Promise(resolve => {
-        xhr.onload = () => resolve();
+    await new Promise((resolve, reject) => {
+        xhr.onload = resolve;
+        xhr.onerror = reject;
+        xhr.open('GET', url, true);
+        xhr.responseType = 'blob';
+        xhr.send(null);
     });
 
     const previewUrl = URL.createObjectURL(xhr.response);
     const img = new Image();
-    img.src = previewUrl;
-
     await new Promise((resolve, reject) => {
         img.onload = resolve;
         img.onerror = reject;
+        img.src = previewUrl;
     });
 
     img.isGif = xhr.response.type === 'image/gif';
 
     const width = img.width;
     const height = img.height;
-    Globals.scalingCustomResButtonDeo.value = 'Set to ' + width + ' ✕ ' + height;
-    Globals.scalingCustomResButtonDeo.onclick = () => {
-        Globals.scalingCustomResWidthDeo.value = width;
-        Globals.scalingCustomResHeightDeo.value = height;
+    Constants.scalingCustomResButtonDeo.value = 'Set to ' + width + ' ✕ ' + height;
+    Constants.scalingCustomResButtonDeo.onclick = () => {
+        Constants.scalingCustomResWidthDeo.value = width;
+        Constants.scalingCustomResHeightDeo.value = height;
     };
     const span = document.createElement('span');
     span.innerHTML = width + ' ✕ ' + height;
@@ -107,6 +115,6 @@ async function processFileToUpload (url) {
     li.appendChild(div);
     makeImageSelectable(li);
     li.click();
-    Globals.selectImageList.insertBefore(li, Globals.dropZoneDeo);
+    Constants.selectImageList.insertBefore(li, Constants.dropZoneDeo);
     visibility.showScalingCustomResButton();
 }

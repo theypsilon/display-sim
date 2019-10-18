@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import Globals from '../globals';
+import Constants from '../globals';
 
 import { makeVisibility } from '../visibility';
 import { makeStorage } from '../storage';
@@ -23,15 +23,15 @@ import { loadInputValuesFromStorage } from './common';
 const visibility = makeVisibility();
 const storage = makeStorage();
 
-Globals.optionScalingSelect.onchange = () => {
-    if (Globals.optionScalingSelect.value === Globals.scalingCustomHtmlId) {
+Constants.optionScalingSelect.onchange = () => {
+    if (Constants.optionScalingSelect.value === Constants.scalingCustomHtmlId) {
         visibility.showScaleCustomInputs();
     } else {
         visibility.hideScaleCustomInputs();
     }
 };
 
-Globals.restoreDefaultOptionsDeo.onclick = () => {
+Constants.restoreDefaultOptionsDeo.onclick = () => {
     storage.removeAllOptions();
     loadInputValuesFromStorage();
 };

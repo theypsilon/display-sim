@@ -13,14 +13,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
+import Constants from './constants';
+
 export default {
-    log: function () {
-        if (!window.display_sim_bench && !window.localStorage.getItem('display_sim_bench')) return;
-        console.log(new Date().toISOString(), ...arguments);
-    },
-    reportIfFalsy: function (o) {
-        if (!o) {
-            throw new Error("shouldn't be falsy");
-        }
-    }
+    previewDeo: document.getElementById(Constants.firstPreviewImageId)
 };

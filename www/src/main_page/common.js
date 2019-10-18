@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import Globals from '../globals';
+import Constants from '../globals';
 
 import { makeVisibility } from '../visibility';
 import { makeStorage } from '../storage';
@@ -22,17 +22,17 @@ const visibility = makeVisibility();
 const storage = makeStorage();
 
 export function loadInputValuesFromStorage () {
-    Globals.optionScalingSelect.value = storage.getScalingSelectOption();
-    Globals.optionPowerPreferenceSelect.value = storage.getPowerPreferenceSelectOption();
-    if (Globals.optionScalingSelect.value === Globals.scalingCustomHtmlId) {
+    Constants.optionScalingSelect.value = storage.getScalingSelectOption();
+    Constants.optionPowerPreferenceSelect.value = storage.getPowerPreferenceSelectOption();
+    if (Constants.optionScalingSelect.value === Constants.scalingCustomHtmlId) {
         visibility.showScaleCustomInputs();
     } else {
         visibility.hideScaleCustomInputs();
     }
-    Globals.scalingCustomResWidthDeo.value = storage.getCustomResWidth();
-    Globals.scalingCustomResHeightDeo.value = storage.getCustomResHeight();
-    Globals.scalingCustomArXDeo.value = storage.getCustomArX();
-    Globals.scalingCustomArYDeo.value = storage.getCustomArY();
-    Globals.scalingCustomStretchNearestDeo.checked = storage.getCustomStretchNearest();
-    Globals.antialiasDeo.checked = storage.getAntiAliasing();
+    Constants.scalingCustomResWidthDeo.value = storage.getCustomResWidth();
+    Constants.scalingCustomResHeightDeo.value = storage.getCustomResHeight();
+    Constants.scalingCustomArXDeo.value = storage.getCustomArX();
+    Constants.scalingCustomArYDeo.value = storage.getCustomArY();
+    Constants.scalingCustomStretchNearestDeo.checked = storage.getCustomStretchNearest();
+    Constants.antialiasDeo.checked = storage.getAntiAliasing();
 }

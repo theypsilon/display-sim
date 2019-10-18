@@ -13,141 +13,87 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import * as fastgif from 'fastgif/fastgif';
-
-import Globals from '../globals';
+import Constants from '../constants';
+import GlobalState from '../global_state';
 import Logger from '../logger';
 
 import { makeSimLauncher } from '../sim_launcher';
 import { makeVisibility } from '../visibility';
 import { makeStorage } from '../storage';
+import { AnimationsGateway } from '../animations_gateway';
 
 const simLauncher = makeSimLauncher();
 const visibility = makeVisibility();
 const storage = makeStorage();
+const animationsGateway = AnimationsGateway.make({ gifCaching: true });
 
-const gifCache = {};
-window.gifCache = gifCache;
-
-let previewDeo = document.getElementById(Globals.firstPreviewImageId);
+async function getAnimations () {
+    if (GlobalState.previewDeo.id === Constants.firstPreviewImageId) {
+        return animationsGateway.getFromHardcodedTileset();
+    } else {
+        const img = GlobalState.previewDeo.querySelector('img');
+        return animationsGateway.getFromImage(img);
+    }
+}
 
 export async function playSimulation () {
     visibility.showLoading();
 
     await new Promise(resolve => setTimeout(resolve, 50));
 
-    const rawImgs = await (async function () {
-        if (previewDeo.id === Globals.firstPreviewImageId) {
-            const img = new Image();
-            img.src = require('../../assets/pics/wwix_spritesheet.png');
-            await new Promise((resolve, reject) => {
-                img.onload = resolve;
-                img.onerror = reject;
-            });
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            ctx.drawImage(img, 0, 0);
-            const columns = Math.floor(img.width / 256);
-            const rawImgs = [];
-            for (let i = 0; i <= 45; i++) {
-                const x = i % columns;
-                const y = Math.floor(i / columns);
-                rawImgs.push({ raw: ctx.getImageData(x * 256, y * 224, 256, 224), delay: 16 });
-            }
-            return rawImgs;
-        } else {
-            let img = previewDeo.querySelector('img');
-            const isAsset = !!img.isAsset;
-            const isGif = !!img.isGif;
-            if (isAsset) {
-                const imgHqSrc = img.dataset.hq;
-                img = new Image();
-                img.src = imgHqSrc;
-                await new Promise((resolve, reject) => {
-                    img.onload = resolve;
-                    img.onerror = reject;
-                });
-            }
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            ctx.drawImage(img, 0, 0);
-            if (!isGif) {
-                return [{ raw: ctx.getImageData(0, 0, img.width, img.height), delay: 16 }];
-            }
-            Logger.log('loading gif');
-            const gifKey = isAsset ? img.src : canvas.toDataURL();
-            let gif = gifCache[gifKey];
-            if (!gif) {
-                Logger.log('decoding...');
-                const decoder = new fastgif.Decoder();
-                gif = await window.fetch(img.src)
-                    .then(response => response.arrayBuffer())
-                    .then(buffer => decoder.decode(buffer));
-                gifCache[gifKey] = gif;
-            }
-            Logger.log('gif loaded');
-            return gif.map(frame => ({
-                raw: frame.imageData,
-                delay: frame.delay
-            }));
-        }
-    }());
+    const animations = await getAnimations();
 
     Logger.log('image readed');
 
     let scaleX = 1;
     let stretch = false;
-    storage.setScalingSelectOption(Globals.optionScalingSelect.value);
+    storage.setScalingSelectOption(Constants.optionScalingSelect.value);
 
-    const imageWidth = rawImgs[0].raw.width;
-    const imageHeight = rawImgs[0].raw.height;
+    const imageWidth = animations[0].raw.width;
+    const imageHeight = animations[0].raw.height;
     let backgroundWidth = imageWidth;
     let backgroundHeight = imageHeight;
 
-    switch (Globals.optionScalingSelect.value) {
-    case Globals.scalingAutoHtmlId:
+    switch (Constants.optionScalingSelect.value) {
+    case Constants.scalingAutoHtmlId:
         const autoScaling = calculateAutoScaling(imageWidth, imageHeight);
         scaleX = autoScaling.scaleX;
         window.dispatchEvent(new CustomEvent('app-event.top_message', {
             detail: 'Scaling auto detect: ' + autoScaling.message
         }));
         break;
-    case Globals.scaling43HtmlId:
+    case Constants.scaling43HtmlId:
         scaleX = (4 / 3) / (imageWidth / imageHeight);
         break;
-    case Globals.scalingStretchToBothEdgesHtmlId:
+    case Constants.scalingStretchToBothEdgesHtmlId:
         scaleX = (window.screen.width / window.screen.height) / (imageWidth / imageHeight);
         stretch = true;
         break;
-    case Globals.scalingStretchToNearestEdgeHtmlId:
+    case Constants.scalingStretchToNearestEdgeHtmlId:
         stretch = true;
         break;
-    case Globals.scalingCustomHtmlId:
-        stretch = Globals.scalingCustomStretchNearestDeo.checked;
-        storage.setCustomResWidth(Globals.scalingCustomResWidthDeo.value);
-        storage.setCustomResHeight(Globals.scalingCustomResHeightDeo.value);
-        storage.setCustomArX(Globals.scalingCustomArXDeo.value);
-        storage.setCustomArY(Globals.scalingCustomArYDeo.value);
+    case Constants.scalingCustomHtmlId:
+        stretch = Constants.scalingCustomStretchNearestDeo.checked;
+        storage.setCustomResWidth(Constants.scalingCustomResWidthDeo.value);
+        storage.setCustomResHeight(Constants.scalingCustomResHeightDeo.value);
+        storage.setCustomArX(Constants.scalingCustomArXDeo.value);
+        storage.setCustomArY(Constants.scalingCustomArYDeo.value);
         storage.setCustomStretchNearest(stretch);
-        backgroundWidth = +Globals.scalingCustomResWidthDeo.value;
-        backgroundHeight = +Globals.scalingCustomResHeightDeo.value;
-        scaleX = (+Globals.scalingCustomArXDeo.value / +Globals.scalingCustomArYDeo.value) / (backgroundWidth / backgroundHeight);
+        backgroundWidth = +Constants.scalingCustomResWidthDeo.value;
+        backgroundHeight = +Constants.scalingCustomResHeightDeo.value;
+        scaleX = (+Constants.scalingCustomArXDeo.value / +Constants.scalingCustomArYDeo.value) / (backgroundWidth / backgroundHeight);
         break;
     }
 
-    Globals.lightColorDeo.value = '#FFFFFF';
-    Globals.brightnessColorDeo.value = '#FFFFFF';
+    Constants.lightColorDeo.value = '#FFFFFF';
+    Constants.brightnessColorDeo.value = '#FFFFFF';
 
     const ctxOptions = {
         alpha: false,
-        antialias: Globals.antialiasDeo.checked,
+        antialias: Constants.antialiasDeo.checked,
         depth: true,
         failIfMajorPerformanceCaveat: false,
-        powerPreference: Globals.optionPowerPreferenceSelect.value,
+        powerPreference: Constants.optionPowerPreferenceSelect.value,
         premultipliedAlpha: false,
         preserveDrawingBuffer: false,
         stencil: false
@@ -164,7 +110,7 @@ export async function playSimulation () {
         backgroundWidth,
         backgroundHeight,
         stretch,
-        rawImgs
+        animations
     });
 
     if (result.glError) {
@@ -174,11 +120,11 @@ export async function playSimulation () {
         return { reloadPage: true };
     }
 
-    Globals.filterPresetsDeo.value = storage.getFilterPresets();
-    Globals.filterPresetsDeo.onchange();
+    Constants.filterPresetsDeo.value = storage.getFilterPresets();
+    Constants.filterPresetsDeo.onchange();
 
-    //    Globals.filterPresetsBasicDeo.value = storage.getFilterPresets();
-    //    Globals.filterPresetsBasicDeo.onchange();
+    //    Constants.filterPresetsBasicDeo.value = storage.getFilterPresets();
+    //    Constants.filterPresetsBasicDeo.onchange();
 
     visibility.hideLoading();
     visibility.showSimulationUi();

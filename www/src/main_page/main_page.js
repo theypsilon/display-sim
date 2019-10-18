@@ -15,7 +15,7 @@
 
 import FontFaceObserver from 'fontfaceobserver';
 
-import Globals from '../globals';
+import Constants from '../globals';
 
 import { makeVisibility } from '../visibility';
 
@@ -49,13 +49,13 @@ export async function prepareMainPage () {
     visibility.hideLoading();
 
     if (isRunningOnMobileDevice) {
-        Globals.startAnimationDeo.disabled = true;
-        Globals.startAnimationDeo.title = 'You need a PC with NVIDIA or ATI graphics card with updated drivers and a WebGL2 compatible browser (Firefox, Opera or Chrome) in order to run this without problems.';
+        Constants.startAnimationDeo.disabled = true;
+        Constants.startAnimationDeo.title = 'You need a PC with NVIDIA or ATI graphics card with updated drivers and a WebGL2 compatible browser (Firefox, Opera or Chrome) in order to run this without problems.';
         return;
     }
 
     await new Promise(resolve => {
-        Globals.startAnimationDeo.onclick = resolve;
+        Constants.startAnimationDeo.onclick = resolve;
     });
 
     visibility.hideUi();

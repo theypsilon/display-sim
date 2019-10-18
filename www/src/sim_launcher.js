@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import Globals from './globals';
+import Constants from './Constants';
 import Logger from './logger';
 
 const displaySimPromise = import('./wasm/display_sim');
@@ -29,7 +29,7 @@ export class SimLauncher {
 
     async launch (params) {
         {
-            const oldCanvas = document.getElementById(Globals.glCanvasHtmlId);
+            const oldCanvas = document.getElementById(Constants.glCanvasHtmlId);
             if (oldCanvas) {
                 oldCanvas.remove();
             }
@@ -37,7 +37,7 @@ export class SimLauncher {
 
         const canvas = document.createElement('canvas');
 
-        canvas.id = Globals.glCanvasHtmlId;
+        canvas.id = Constants.glCanvasHtmlId;
 
         fixCanvasSize(canvas);
         window.addEventListener('resize', fixCanvasSize);
@@ -87,8 +87,8 @@ export class SimLauncher {
             videoInput.stretch();
         }
         videoInput.set_max_texture_size(gl.getParameter(gl.MAX_TEXTURE_SIZE));
-        for (let i = 0; i < params.rawImgs.length; i++) {
-            const rawImg = params.rawImgs[i];
+        for (let i = 0; i < params.animations.length; i++) {
+            const rawImg = params.animations[i];
             videoInput.add_picture_frame(new Uint8Array(rawImg.raw.data.buffer), rawImg.delay);
         }
 
@@ -106,7 +106,7 @@ export class SimLauncher {
 }
 
 function fixCanvasSize (canvas) {
-    canvas = canvas instanceof HTMLCanvasElement ? canvas : document.getElementById(Globals.glCanvasHtmlId);
+    canvas = canvas instanceof HTMLCanvasElement ? canvas : document.getElementById(Constants.glCanvasHtmlId);
     if (!canvas) return;
 
     const dpi = window.devicePixelRatio;
@@ -123,6 +123,6 @@ function fixCanvasSize (canvas) {
     Logger.log('resolution:', canvas.width, canvas.height, width, height);
 
     const infoPanelContentHeight = (window.innerHeight - 18) * 0.95;
-    Globals.infoPanelContentDeo.style.setProperty('max-height', infoPanelContentHeight);
-    Globals.infoPanelAdvancedSettingsDeo.style.setProperty('max-height', infoPanelContentHeight - 60);
+    Constants.infoPanelContentDeo.style.setProperty('max-height', infoPanelContentHeight);
+    Constants.infoPanelAdvancedSettingsDeo.style.setProperty('max-height', infoPanelContentHeight - 60);
 }

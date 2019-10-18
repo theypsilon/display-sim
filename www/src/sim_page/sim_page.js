@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import Globals from '../globals';
+import Constants from '../globals';
 import Logger from '../logger';
 
 import { prepareMainPage } from '../main_page/main_page';
@@ -21,10 +21,10 @@ import { prepareMainPage } from '../main_page/main_page';
 import { makeVisibility } from '../visibility';
 import { makeStorage } from '../storage';
 
-let selectedInfoPanelDeo = Globals.infoPanelBasicDeo;
+let selectedInfoPanelDeo = Constants.infoPanelBasicDeo;
 
-const getGlCanvasDeo = () => document.getElementById(Globals.glCanvasHtmlId);
-const getTopMessageDeo = () => document.getElementById(Globals.topMessageHtmlId);
+const getGlCanvasDeo = () => document.getElementById(Constants.glCanvasHtmlId);
+const getTopMessageDeo = () => document.getElementById(Constants.topMessageHtmlId);
 
 const visibility = makeVisibility();
 const storage = makeStorage();
@@ -89,7 +89,7 @@ window.addEventListener('app-event.screenshot', async event => {
 }, false);
 
 window.addEventListener('app-event.fps', event => {
-    Globals.fpsCounterDeo.innerHTML = Math.round(event.detail);
+    Constants.fpsCounterDeo.innerHTML = Math.round(event.detail);
 }, false);
 
 window.addEventListener('app-event.top_message', event => {
@@ -98,7 +98,7 @@ window.addEventListener('app-event.top_message', event => {
         existingTopMessage.remove();
     }
     const div = document.createElement('div');
-    div.id = Globals.topMessageHtmlId;
+    div.id = Constants.topMessageHtmlId;
     const span = document.createElement('span');
     span.innerHTML = event.detail;
     Logger.log('top_message: ' + event.detail);
@@ -121,45 +121,45 @@ window.addEventListener('app-event.top_message', event => {
 }, false);
 
 window.addEventListener('app-event.camera_update', event => {
-    Globals.cameraPosXDeo.value = Math.round(event.detail[0] * 100) / 100;
-    Globals.cameraPosYDeo.value = Math.round(event.detail[1] * 100) / 100;
-    Globals.cameraPosZDeo.value = Math.round(event.detail[2] * 100) / 100;
-    Globals.cameraDirXDeo.value = Math.round(event.detail[3] * 100) / 100;
-    Globals.cameraDirYDeo.value = Math.round(event.detail[4] * 100) / 100;
-    Globals.cameraDirZDeo.value = Math.round(event.detail[5] * 100) / 100;
-    Globals.cameraAxisUpXDeo.value = Math.round(event.detail[6] * 100) / 100;
-    Globals.cameraAxisUpYDeo.value = Math.round(event.detail[7] * 100) / 100;
-    Globals.cameraAxisUpZDeo.value = Math.round(event.detail[8] * 100) / 100;
+    Constants.cameraPosXDeo.value = Math.round(event.detail[0] * 100) / 100;
+    Constants.cameraPosYDeo.value = Math.round(event.detail[1] * 100) / 100;
+    Constants.cameraPosZDeo.value = Math.round(event.detail[2] * 100) / 100;
+    Constants.cameraDirXDeo.value = Math.round(event.detail[3] * 100) / 100;
+    Constants.cameraDirYDeo.value = Math.round(event.detail[4] * 100) / 100;
+    Constants.cameraDirZDeo.value = Math.round(event.detail[5] * 100) / 100;
+    Constants.cameraAxisUpXDeo.value = Math.round(event.detail[6] * 100) / 100;
+    Constants.cameraAxisUpYDeo.value = Math.round(event.detail[7] * 100) / 100;
+    Constants.cameraAxisUpZDeo.value = Math.round(event.detail[8] * 100) / 100;
 }, false);
 
 [
-    { deo: Globals.cameraZoomDeo, eventId: 'app-event.change_camera_zoom' },
-    { deo: Globals.cameraMovementModeDeo, eventId: 'app-event.change_camera_movement_mode' },
-    { deo: Globals.pixelWidthDeo, eventId: 'app-event.change_pixel_width' },
-    { deo: Globals.pixelHorizontalGapDeo, eventId: 'app-event.change_pixel_horizontal_gap' },
-    { deo: Globals.pixelVerticalGapDeo, eventId: 'app-event.change_pixel_vertical_gap' },
-    { deo: Globals.pixelSpreadDeo, eventId: 'app-event.change_pixel_spread' },
-    { deo: Globals.pixelBrigthnessDeo, eventId: 'app-event.change_pixel_brightness' },
-    { deo: Globals.pixelContrastDeo, eventId: 'app-event.change_pixel_contrast' },
-    { deo: Globals.blurLevelDeo, eventId: 'app-event.change_blur_level' },
-    { deo: Globals.verticalLppDeo, eventId: 'app-event.change_vertical_lpp' },
-    { deo: Globals.horizontalLppDeo, eventId: 'app-event.change_horizontal_lpp' },
-    { deo: Globals.lightColorDeo, eventId: 'app-event.change_light_color' },
-    { deo: Globals.brightnessColorDeo, eventId: 'app-event.change_brightness_color' },
-    { deo: Globals.featureChangeMoveSpeedDeo, eventId: 'app-event.change_movement_speed' },
-    { deo: Globals.featureChangePixelSpeedDeo, eventId: 'app-event.change_pixel_speed' },
-    { deo: Globals.featureChangeTurnSpeedDeo, eventId: 'app-event.change_turning_speed' },
+    { deo: Constants.cameraZoomDeo, eventId: 'app-event.change_camera_zoom' },
+    { deo: Constants.cameraMovementModeDeo, eventId: 'app-event.change_camera_movement_mode' },
+    { deo: Constants.pixelWidthDeo, eventId: 'app-event.change_pixel_width' },
+    { deo: Constants.pixelHorizontalGapDeo, eventId: 'app-event.change_pixel_horizontal_gap' },
+    { deo: Constants.pixelVerticalGapDeo, eventId: 'app-event.change_pixel_vertical_gap' },
+    { deo: Constants.pixelSpreadDeo, eventId: 'app-event.change_pixel_spread' },
+    { deo: Constants.pixelBrigthnessDeo, eventId: 'app-event.change_pixel_brightness' },
+    { deo: Constants.pixelContrastDeo, eventId: 'app-event.change_pixel_contrast' },
+    { deo: Constants.blurLevelDeo, eventId: 'app-event.change_blur_level' },
+    { deo: Constants.verticalLppDeo, eventId: 'app-event.change_vertical_lpp' },
+    { deo: Constants.horizontalLppDeo, eventId: 'app-event.change_horizontal_lpp' },
+    { deo: Constants.lightColorDeo, eventId: 'app-event.change_light_color' },
+    { deo: Constants.brightnessColorDeo, eventId: 'app-event.change_brightness_color' },
+    { deo: Constants.featureChangeMoveSpeedDeo, eventId: 'app-event.change_movement_speed' },
+    { deo: Constants.featureChangePixelSpeedDeo, eventId: 'app-event.change_pixel_speed' },
+    { deo: Constants.featureChangeTurnSpeedDeo, eventId: 'app-event.change_turning_speed' },
 
-    { deo: Globals.featureChangeColorRepresentationDeo, eventId: 'app-event.color_representation' },
-    { deo: Globals.featureChangePixelGeometryDeo, eventId: 'app-event.pixel_geometry' },
-    { deo: Globals.featureChangePixelShadowShapeDeo, eventId: 'app-event.pixel_shadow_shape' },
-    { deo: Globals.featureChangePixelShadowHeightDeo, eventId: 'app-event.pixel_shadow_height' },
-    { deo: Globals.featureBacklightPercentDeo, eventId: 'app-event.backlight_percent' },
-    { deo: Globals.featureInternalResolutionDeo, eventId: 'app-event.internal_resolution' },
-    { deo: Globals.featureInternalResolutionBasicDeo, eventId: 'app-event.internal_resolution' },
-    { deo: Globals.featureTextureInterpolationDeo, eventId: 'app-event.texture_interpolation' },
-    { deo: Globals.featureChangeScreenCurvatureDeo, eventId: 'app-event.screen_curvature' },
-    { deo: Globals.featureChangeScreenCurvatureBasicDeo, eventId: 'app-event.screen_curvature' }
+    { deo: Constants.featureChangeColorRepresentationDeo, eventId: 'app-event.color_representation' },
+    { deo: Constants.featureChangePixelGeometryDeo, eventId: 'app-event.pixel_geometry' },
+    { deo: Constants.featureChangePixelShadowShapeDeo, eventId: 'app-event.pixel_shadow_shape' },
+    { deo: Constants.featureChangePixelShadowHeightDeo, eventId: 'app-event.pixel_shadow_height' },
+    { deo: Constants.featureBacklightPercentDeo, eventId: 'app-event.backlight_percent' },
+    { deo: Constants.featureInternalResolutionDeo, eventId: 'app-event.internal_resolution' },
+    { deo: Constants.featureInternalResolutionBasicDeo, eventId: 'app-event.internal_resolution' },
+    { deo: Constants.featureTextureInterpolationDeo, eventId: 'app-event.texture_interpolation' },
+    { deo: Constants.featureChangeScreenCurvatureDeo, eventId: 'app-event.screen_curvature' },
+    { deo: Constants.featureChangeScreenCurvatureBasicDeo, eventId: 'app-event.screen_curvature' }
 ].forEach(({ deo, eventId }) => {
     if (!deo) throw new Error('Wrong deo on defining: ' + eventId);
     window.addEventListener(eventId, event => {
@@ -168,11 +168,11 @@ window.addEventListener('app-event.camera_update', event => {
             switch (event.detail) {
             case 'Lock on Display':
                 deo.title = 'The camera will move around the picture, always looking at it';
-                Globals.freeModeControlsClas.forEach(deo => deo.classList.add(Globals.displayNoneClassName));
+                Constants.freeModeControlsClas.forEach(deo => deo.classList.add(Constants.displayNoneClassName));
                 break;
             case 'Free Flight':
                 deo.title = 'The camera can move without any restriction in the whole 3D space with plane-like controls';
-                Globals.freeModeControlsClas.forEach(deo => deo.classList.remove(Globals.displayNoneClassName));
+                Constants.freeModeControlsClas.forEach(deo => deo.classList.remove(Constants.displayNoneClassName));
                 break;
             default:
                 throw new Error('Unreachable!');
@@ -181,8 +181,8 @@ window.addEventListener('app-event.camera_update', event => {
     }, false);
 });
 
-customEventOnButtonPressed(Globals.featureCameraMovementsDeo);
-customEventOnButtonPressed(Globals.featureCameraTurnsDeo);
+customEventOnButtonPressed(Constants.featureCameraMovementsDeo);
+customEventOnButtonPressed(Constants.featureCameraTurnsDeo);
 function customEventOnButtonPressed (deo) {
     deo.querySelectorAll('.activate-button').forEach(button => {
         const eventOptions = { key: button.innerHTML.toLowerCase() };
@@ -191,32 +191,32 @@ function customEventOnButtonPressed (deo) {
     });
 }
 
-customEventOnChange(Globals.cameraPosXDeo, 'camera_pos_x', a => +a);
-customEventOnChange(Globals.cameraPosYDeo, 'camera_pos_y', a => +a);
-customEventOnChange(Globals.cameraPosZDeo, 'camera_pos_z', a => +a);
-customEventOnChange(Globals.cameraAxisUpXDeo, 'camera_axis_up_x', a => +a);
-customEventOnChange(Globals.cameraAxisUpYDeo, 'camera_axis_up_y', a => +a);
-customEventOnChange(Globals.cameraAxisUpZDeo, 'camera_axis_up_z', a => +a);
-customEventOnChange(Globals.cameraDirXDeo, 'camera_direction_x', a => +a);
-customEventOnChange(Globals.cameraDirYDeo, 'camera_direction_y', a => +a);
-customEventOnChange(Globals.cameraDirZDeo, 'camera_direction_z', a => +a);
-customEventOnChange(Globals.cameraZoomDeo, 'camera_zoom', a => +a);
-customEventOnChange(Globals.cameraMovementModeDeo, 'camera_movement_mode', a => +a);
+customEventOnChange(Constants.cameraPosXDeo, 'camera_pos_x', a => +a);
+customEventOnChange(Constants.cameraPosYDeo, 'camera_pos_y', a => +a);
+customEventOnChange(Constants.cameraPosZDeo, 'camera_pos_z', a => +a);
+customEventOnChange(Constants.cameraAxisUpXDeo, 'camera_axis_up_x', a => +a);
+customEventOnChange(Constants.cameraAxisUpYDeo, 'camera_axis_up_y', a => +a);
+customEventOnChange(Constants.cameraAxisUpZDeo, 'camera_axis_up_z', a => +a);
+customEventOnChange(Constants.cameraDirXDeo, 'camera_direction_x', a => +a);
+customEventOnChange(Constants.cameraDirYDeo, 'camera_direction_y', a => +a);
+customEventOnChange(Constants.cameraDirZDeo, 'camera_direction_z', a => +a);
+customEventOnChange(Constants.cameraZoomDeo, 'camera_zoom', a => +a);
+customEventOnChange(Constants.cameraMovementModeDeo, 'camera_movement_mode', a => +a);
 
-customEventOnChange(Globals.pixelWidthDeo, 'pixel_width', a => +a);
-customEventOnChange(Globals.pixelSpreadDeo, 'pixel_spread', a => +a);
-customEventOnChange(Globals.pixelHorizontalGapDeo, 'pixel_horizontal_gap', a => +a);
-customEventOnChange(Globals.pixelVerticalGapDeo, 'pixel_vertical_gap', a => +a);
-customEventOnChange(Globals.blurLevelDeo, 'blur_level', a => +a);
-customEventOnChange(Globals.verticalLppDeo, 'vertical_lpp', a => +a);
-customEventOnChange(Globals.horizontalLppDeo, 'horizontal_lpp', a => +a);
-customEventOnChange(Globals.pixelBrigthnessDeo, 'pixel_brightness', a => +a);
-customEventOnChange(Globals.pixelContrastDeo, 'pixel_contrast', a => +a);
-customEventOnChange(Globals.featureChangePixelShadowHeightDeo, 'pixel_shadow_height', a => +a);
-customEventOnChange(Globals.featureBacklightPercentDeo, 'backlight_percent', a => +a);
+customEventOnChange(Constants.pixelWidthDeo, 'pixel_width', a => +a);
+customEventOnChange(Constants.pixelSpreadDeo, 'pixel_spread', a => +a);
+customEventOnChange(Constants.pixelHorizontalGapDeo, 'pixel_horizontal_gap', a => +a);
+customEventOnChange(Constants.pixelVerticalGapDeo, 'pixel_vertical_gap', a => +a);
+customEventOnChange(Constants.blurLevelDeo, 'blur_level', a => +a);
+customEventOnChange(Constants.verticalLppDeo, 'vertical_lpp', a => +a);
+customEventOnChange(Constants.horizontalLppDeo, 'horizontal_lpp', a => +a);
+customEventOnChange(Constants.pixelBrigthnessDeo, 'pixel_brightness', a => +a);
+customEventOnChange(Constants.pixelContrastDeo, 'pixel_contrast', a => +a);
+customEventOnChange(Constants.featureChangePixelShadowHeightDeo, 'pixel_shadow_height', a => +a);
+customEventOnChange(Constants.featureBacklightPercentDeo, 'backlight_percent', a => +a);
 const parseColor = (value) => parseInt('0x' + value.substring(1));
-customEventOnChange(Globals.lightColorDeo, 'light_color', parseColor);
-customEventOnChange(Globals.brightnessColorDeo, 'brightness_color', parseColor);
+customEventOnChange(Constants.lightColorDeo, 'light_color', parseColor);
+customEventOnChange(Constants.brightnessColorDeo, 'brightness_color', parseColor);
 function customEventOnChange (deo, kind, parse) {
     const changed = () => {
         window.dispatchEvent(new CustomEvent('app-event.custom_input_event', {
@@ -230,24 +230,24 @@ function customEventOnChange (deo, kind, parse) {
 }
 
 [
-    Globals.featureChangeColorRepresentationDeo,
-    Globals.featureChangePixelGeometryDeo,
-    Globals.featureChangePixelShadowShapeDeo,
-    Globals.featureChangePixelShadowHeightDeo,
-    Globals.featureBacklightPercentDeo,
-    Globals.featureChangeScreenCurvatureDeo,
-    Globals.featureQuitDeo,
-    Globals.featureCaptureFramebufferDeo,
-    Globals.featureClosePanelDeo
+    Constants.featureChangeColorRepresentationDeo,
+    Constants.featureChangePixelGeometryDeo,
+    Constants.featureChangePixelShadowShapeDeo,
+    Constants.featureChangePixelShadowHeightDeo,
+    Constants.featureBacklightPercentDeo,
+    Constants.featureChangeScreenCurvatureDeo,
+    Constants.featureQuitDeo,
+    Constants.featureCaptureFramebufferDeo,
+    Constants.featureClosePanelDeo
 ].forEach(deo => {
     deo.onmousedown = () => document.dispatchEvent(new KeyboardEvent('keydown', { key: deo.id }));
     deo.onmouseup = () => document.dispatchEvent(new KeyboardEvent('keyup', { key: deo.id }));
 });
 
 [
-    Globals.resetCameraDeo,
-    Globals.resetSpeedsDeo,
-    Globals.resetFiltersDeo
+    Constants.resetCameraDeo,
+    Constants.resetSpeedsDeo,
+    Constants.resetFiltersDeo
 ].forEach(deo => {
     deo.onclick = () => document.dispatchEvent(new KeyboardEvent('keydown', { key: deo.id }));
 });
@@ -270,7 +270,7 @@ document.querySelectorAll('input').forEach(deo => {
     deo.addEventListener('blur', () => document.dispatchEvent(new KeyboardEvent('keyup', eventOptions)));
 });
 
-Globals.toggleInfoPanelClass.forEach(deo => {
+Constants.toggleInfoPanelClass.forEach(deo => {
     deo.onclick = () => {
         if (!getGlCanvasDeo()) {
             return;
@@ -296,10 +296,10 @@ settingsTabs.forEach(clickedTab => {
         selectedInfoPanelDeo.classList.add('display-none');
         switch (clickedTab.id) {
         case 'panel-basic':
-            selectedInfoPanelDeo = Globals.infoPanelBasicDeo;
+            selectedInfoPanelDeo = Constants.infoPanelBasicDeo;
             break;
         case 'panel-advanced':
-            selectedInfoPanelDeo = Globals.infoPanelAdvancedDeo;
+            selectedInfoPanelDeo = Constants.infoPanelAdvancedDeo;
             break;
         default:
             console.error('Unknown clicked tab: ' + clickedTab.id);
@@ -309,9 +309,9 @@ settingsTabs.forEach(clickedTab => {
     });
 });
 
-Globals.filterPresetsButtonDeoList.forEach(deo => {
+Constants.filterPresetsButtonDeoList.forEach(deo => {
     deo.onclick = function () {
-        Globals.filterPresetsButtonDeoList.forEach(otherDeo => {
+        Constants.filterPresetsButtonDeoList.forEach(otherDeo => {
             otherDeo.classList.remove('active-preset');
         });
         deo.classList.add('active-preset');
@@ -326,10 +326,10 @@ Globals.filterPresetsButtonDeoList.forEach(deo => {
 
 window.addEventListener('app-event.preset_selected_name', event => {
     const presetValue = event.detail.toLowerCase().replace(/\s/g, '-');
-    if (!Globals.properPresets.includes(presetValue)) {
+    if (!Constants.properPresets.includes(presetValue)) {
         throw new Error('Wrong preset value: ' + presetValue);
     }
-    Globals.filterPresetsButtonDeoList.forEach(deo => {
+    Constants.filterPresetsButtonDeoList.forEach(deo => {
         if (deo.dataset.preset === presetValue) {
             deo.classList.add('active-preset');
         } else {
@@ -338,16 +338,16 @@ window.addEventListener('app-event.preset_selected_name', event => {
     });
 }, false);
 
-configurePresetsDeo(Globals.filterPresetsDeo);
-// configurePresetsDeo(Globals.filterPresetsBasicDeo);
+configurePresetsDeo(Constants.filterPresetsDeo);
+// configurePresetsDeo(Constants.filterPresetsBasicDeo);
 function configurePresetsDeo (presetsDeo) {
     presetsDeo.onchange = () => {
-        if (presetsDeo.value === Globals.presetCustom) {
+        if (presetsDeo.value === Constants.presetCustom) {
             visibility.showFilterOptionMainList();
-        } else if (Globals.properPresets.includes(presetsDeo.value)) {
+        } else if (Constants.properPresets.includes(presetsDeo.value)) {
             visibility.showFilterOptionMainList();
         } else {
-            presetsDeo.value = Globals.presetApertureGrille1;
+            presetsDeo.value = Constants.presetApertureGrille1;
         }
         storage.setFilterPresets(presetsDeo.value);
         window.dispatchEvent(new CustomEvent('app-event.custom_input_event', {
@@ -360,7 +360,7 @@ function configurePresetsDeo (presetsDeo) {
 
     window.addEventListener('app-event.preset_selected_name', event => {
         const presetValue = event.detail.toLowerCase().replace(/\s/g, '-');
-        if (!Globals.properPresets.includes(presetValue)) {
+        if (!Constants.properPresets.includes(presetValue)) {
             throw new Error('Wrong preset value: ' + presetValue);
         }
         presetsDeo.value = presetValue;
