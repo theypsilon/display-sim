@@ -18,7 +18,7 @@ import Constants from '../constants';
 import { Visibility } from '../visibility';
 import { Storage } from '../storage';
 
-import { loadInputValuesFromStorage } from './common';
+import { loadInputValuesFromStorage } from './load';
 
 const visibility = Visibility.make();
 const storage = Storage.make();

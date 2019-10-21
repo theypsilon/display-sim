@@ -16,3 +16,4 @@
 import '../assets/styles.css';
 import './main_page/main_page';
 import './sim_page/sim_page';
+import './top_message_popup';

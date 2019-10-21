@@ -19,7 +19,7 @@ import { SimLauncher } from '../sim_launcher';
 import { Visibility } from '../visibility';
 import { AnimationsGateway } from '../animations_gateway';
 
-import { calculateAutoScaling } from './common';
+import { calculateAutoScaling } from './play_common';
 
 const visibility = Visibility.make();
 const simLauncher = SimLauncher.make();

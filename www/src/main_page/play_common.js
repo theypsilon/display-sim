@@ -13,30 +13,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import Constants from '../constants';
-
-import { Visibility } from '../visibility';
-import { Storage } from '../storage';
-
-const visibility = Visibility.make();
-const storage = Storage.make();
-
-export function loadInputValuesFromStorage () {
-    Constants.optionScalingSelect.value = storage.getScalingSelectOption();
-    Constants.optionPowerPreferenceSelect.value = storage.getPowerPreferenceSelectOption();
-    if (Constants.optionScalingSelect.value === Constants.scalingCustomHtmlId) {
-        visibility.showScaleCustomInputs();
-    } else {
-        visibility.hideScaleCustomInputs();
-    }
-    Constants.scalingCustomResWidthDeo.value = storage.getCustomResWidth();
-    Constants.scalingCustomResHeightDeo.value = storage.getCustomResHeight();
-    Constants.scalingCustomArXDeo.value = storage.getCustomArX();
-    Constants.scalingCustomArYDeo.value = storage.getCustomArY();
-    Constants.scalingCustomStretchNearestDeo.checked = storage.getCustomStretchNearest();
-    Constants.antialiasDeo.checked = storage.getAntiAliasing();
-}
-
 export function calculateAutoScaling (imageWidth, imageHeight) {
     if (imageHeight > 540) {
         return {

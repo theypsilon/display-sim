@@ -15,30 +15,38 @@
 
 import Constants from '../constants';
 
-import { prepareMainPage } from '../main_page/load';
-
 import { Visibility } from '../visibility';
 
-import './input_fields';
-import './panel_visibility';
-import './presets_selection';
-import './screenshot';
-import './sync_values';
-import './tabs';
-
 const getGlCanvasDeo = () => document.getElementById(Constants.glCanvasHtmlId);
+
 const visibility = Visibility.make();
 
-window.addEventListener('app-event.exit_pointer_lock', () => {
-    document.exitPointerLock();
+window.addEventListener('app-event.toggle_info_panel', () => {
+    if (!getGlCanvasDeo()) {
+        return;
+    }
+    if (visibility.isInfoPanelVisible() === false) {
+        visibility.showInfoPanel();
+    } else {
+        visibility.hideInfoPanel();
+        window.dispatchEvent(new CustomEvent('app-event.top_message', {
+            detail: 'Toggle the Sim Panel by pressing SPACE.'
+        }));
+    }
 }, false);
 
-window.addEventListener('app-event.exiting_session', () => {
-    prepareMainPage();
-    getGlCanvasDeo().remove();
-    visibility.hideSimulationUi();
-}, false);
-
-window.addEventListener('app-event.fps', event => {
-    Constants.fpsCounterDeo.innerHTML = Math.round(event.detail);
-}, false);
+Constants.toggleInfoPanelClass.forEach(deo => {
+    deo.onclick = () => {
+        if (!getGlCanvasDeo()) {
+            return;
+        }
+        if (visibility.isInfoPanelVisible()) {
+            visibility.hideInfoPanel();
+            window.dispatchEvent(new CustomEvent('app-event.top_message', {
+                detail: 'Show the Sim Panel again by pressing SPACE.'
+            }));
+        } else {
+            visibility.showInfoPanel();
+        }
+    };
+});
