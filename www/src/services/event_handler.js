@@ -20,13 +20,13 @@ export class EventHandler {
         this.dict = {};
     }
     static make () { return instance; }
-    listenClass (type, klass, cb) {
-        const registry = this._getTypeRegistry(type);
-        registry.cbByClass[klass] = cb;
-    }
-    listenId (type, id, cb) {
+    subscribeId (type, id, cb) {
         const registry = this._getTypeRegistry(type);
         registry.cbById[id] = cb;
+    }
+    subscribeClass (type, klass, cb) {
+        const registry = this._getTypeRegistry(type);
+        registry.cbByClass[klass] = cb;
     }
     remove (type, match) {
         if (!this.dict[type]) return;
@@ -41,16 +41,16 @@ export class EventHandler {
         if (!this.dict[type]) {
             const typeRegistry = { cbByClass: {}, cbById: {} };
             window.addEventListener(type, event => {
-                this._runIfNotNull(typeRegistry.cbById[event.target.id]);
-                event.target.classList.forEach(klass => this._runIfNotNull(typeRegistry.cbByClass[klass]));
+                this._runIfNotNull(typeRegistry.cbById[event.target.id], event);
+                event.target.classList.forEach(klass => this._runIfNotNull(typeRegistry.cbByClass[klass], event));
             });
             this.dict[type] = typeRegistry;
         }
         return this.dict[type];
     }
-    _runIfNotNull (cb) {
+    _runIfNotNull (cb, event) {
         if (cb) {
-            cb();
+            cb(event);
         }
     }
 }
