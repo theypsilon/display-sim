@@ -13,11 +13,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import Logger from '../logger';
+import Logger from '../../services/logger';
 
-import { SimLauncher } from '../sim_launcher';
-import { Visibility } from '../visibility';
-import { AnimationsGateway } from '../animations_gateway';
+import { SimLauncher } from '../../services/sim_launcher';
+import { Visibility } from '../../services/visibility';
+import { AnimationsGateway } from '../../services/animations_gateway';
 
 import { calculateAutoScaling } from './play_common';
 

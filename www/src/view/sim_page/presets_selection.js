@@ -13,9 +13,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import Constants from '../constants';
-import { Storage } from '../storage';
-import { Visibility } from '../visibility';
+import Constants from '../../services/constants';
+import { Storage } from '../../services/storage';
+import { Visibility } from '../../services/visibility';
 
 const storage = Storage.make();
 const visibility = Visibility.make();

@@ -15,12 +15,12 @@
 
 import FontFaceObserver from 'fontfaceobserver';
 
-import Constants from '../constants';
+import Constants from '../../services/constants';
 
-import { Visibility } from '../visibility';
-import { Storage } from '../storage';
+import { Visibility } from '../../services/visibility';
+import { Storage } from '../../services/storage';
 
-import { mobileAndTabletCheck } from '../utils';
+import { mobileAndTabletCheck } from '../../services/utils';
 
 import { playSimulation } from './play_simulation';
 import { playDemo } from './play_demo';

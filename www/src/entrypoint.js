@@ -14,6 +14,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 import '../assets/styles.css';
-import './main_page/main_page';
-import './sim_page/sim_page';
-import './top_message_popup';
+import './view/main_page/main_page';
+import './view/sim_page/sim_page';
+import './view/top_message_popup';

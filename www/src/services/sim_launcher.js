@@ -16,7 +16,7 @@
 import Constants from './constants';
 import Logger from './logger';
 
-const displaySimPromise = import('./wasm/display_sim');
+const displaySimPromise = import('../wasm/display_sim');
 
 export class SimLauncher {
     SimLauncher () {

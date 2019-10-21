@@ -13,14 +13,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import Constants from '../constants';
-import GlobalState from '../global_state';
-import Logger from '../logger';
+import Constants from '../../services/constants';
+import GlobalState from '../../services/global_state';
+import Logger from '../../services/logger';
 
-import { SimLauncher } from '../sim_launcher';
-import { Visibility } from '../visibility';
-import { Storage } from '../storage';
-import { AnimationsGateway } from '../animations_gateway';
+import { SimLauncher } from '../../services/sim_launcher';
+import { Visibility } from '../../services/visibility';
+import { Storage } from '../../services/storage';
+import { AnimationsGateway } from '../../services/animations_gateway';
 import { calculateAutoScaling } from './play_common';
 
 const simLauncher = SimLauncher.make();

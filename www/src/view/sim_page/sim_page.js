@@ -13,25 +13,32 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import Constants from '../constants';
+import Constants from '../../services/constants';
 
-import { Visibility } from '../visibility';
-import { Storage } from '../storage';
+import { prepareMainPage } from '../main_page/load';
 
-import { loadInputValuesFromStorage } from './load';
+import { Visibility } from '../../services/visibility';
 
+import './input_fields';
+import './panel_visibility';
+import './presets_selection';
+import './screenshot';
+import './sync_values';
+import './tabs';
+
+const getGlCanvasDeo = () => document.getElementById(Constants.glCanvasHtmlId);
 const visibility = Visibility.make();
-const storage = Storage.make();
 
-Constants.optionScalingSelect.onchange = () => {
-    if (Constants.optionScalingSelect.value === Constants.scalingCustomHtmlId) {
-        visibility.showScaleCustomInputs();
-    } else {
-        visibility.hideScaleCustomInputs();
-    }
-};
+window.addEventListener('app-event.exit_pointer_lock', () => {
+    document.exitPointerLock();
+}, false);
 
-Constants.restoreDefaultOptionsDeo.onclick = () => {
-    storage.removeAllOptions();
-    loadInputValuesFromStorage();
-};
+window.addEventListener('app-event.exiting_session', () => {
+    prepareMainPage();
+    getGlCanvasDeo().remove();
+    visibility.hideSimulationUi();
+}, false);
+
+window.addEventListener('app-event.fps', event => {
+    Constants.fpsCounterDeo.innerHTML = Math.round(event.detail);
+}, false);

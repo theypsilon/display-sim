@@ -13,10 +13,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import Constants from '../constants';
-import GlobalState from '../global_state';
+import Constants from '../../services/constants';
+import GlobalState from '../../services/global_state';
 
-import { Visibility } from '../visibility';
+import { Visibility } from '../../services/visibility';
 
 const visibility = Visibility.make();
 

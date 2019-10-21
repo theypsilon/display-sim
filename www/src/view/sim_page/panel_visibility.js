@@ -13,9 +13,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import Constants from '../constants';
+import Constants from '../../services/constants';
 
-import { Visibility } from '../visibility';
+import { Visibility } from '../../services/visibility';
 
 const getGlCanvasDeo = () => document.getElementById(Constants.glCanvasHtmlId);
 
