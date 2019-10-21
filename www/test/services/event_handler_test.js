@@ -5,19 +5,16 @@ import { JSDOM } from 'jsdom';
 
 describe('EventHandler', function () {
     before(() => {
-        const dom = new JSDOM('<!DOCTYPE html><html><head></head><body><div id="my-id" class="my-class"></div></body></html>');
-        global.window = dom.window;
-        global.document = dom.window.document;
+        global.window = new JSDOM('<!DOCTYPE html><html><head></head><body><div id="my-id" class="my-class"></div></body></html>').window;
     });
     after(() => {
         delete global.window;
-        delete global.document;
     });
     let sut, spy, element;
     beforeEach(() => {
         sut = new EventHandler();
         spy = sinon.spy();
-        element = document.getElementById('my-id');
+        element = window.document.getElementById('my-id');
     });
     describe('listenId', function () {
         it('should call the callback after same type of the event is triggered', function () {

@@ -40,7 +40,7 @@ export class EventHandler {
     _getTypeRegistry (type) {
         if (!this.dict[type]) {
             const typeRegistry = { cbByClass: {}, cbById: {} };
-            document.addEventListener(type, event => {
+            window.addEventListener(type, event => {
                 this._runIfNotNull(typeRegistry.cbById[event.target.id]);
                 event.target.classList.forEach(klass => this._runIfNotNull(typeRegistry.cbByClass[klass]));
             });
