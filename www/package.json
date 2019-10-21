@@ -3,7 +3,8 @@
     "build": "webpack --config webpack.prod.js",
     "start": "webpack-dev-server --open --config webpack.dev.js",
     "test": "mocha",
-    "lint": "eslint src test"
+    "lint": "eslint src test",
+    "lintfix": "eslint --fix src test"
   },
   "devDependencies": {
     "babel-eslint": "^10.0.3",

@@ -20,40 +20,37 @@ export class EventHandler {
         this.dict = {};
     }
     static make () { return instance; }
-    listenMatch (type, match, cb) {
-        if (!this.dict[type]) {
-            const typedict = { matchdict: {}, iddict: {} };
-            this.dict[type] = typedict;
-            document.addEventListener(type, event => {
-                Object.keys(this.dict[type].matchdict).forEach(match => {
-                    if (event.target.matches(match)) {
-                        typedict.matchdict[match]();
-                    }
-                });
-            });
-        }
-        this.dict[type].matchdict[match] = cb;
+    listenClass (type, klass, cb) {
+        const registry = this._getTypeRegistry(type);
+        registry.cbByClass[klass] = cb;
     }
-    listen (type, id, cb) {
-        if (!this.dict[type]) {
-            const typedict = { matchdict: {}, iddict: {} };
-            this.dict[type] = typedict;
-            document.addEventListener(type, event => {
-                const callback = this.dict[type].iddict[event.target.id];
-                if (callback) {
-                    callback();
-                }
-            });
-        }
-        this.dict[type].iddict[id] = cb;
+    listenId (type, id, cb) {
+        const registry = this._getTypeRegistry(type);
+        registry.cbById[id] = cb;
     }
     remove (type, match) {
         if (!this.dict[type]) return;
-        if (this.dict[type].matchdict[match]) {
-            delete this.dict[type].matchdict[match];
+        if (this.dict[type].cbByClass[match]) {
+            delete this.dict[type].cbByClass[match];
         }
-        if (this.dict[type].iddict[match]) {
-            delete this.dict[type].iddict[match];
+        if (this.dict[type].cbById[match]) {
+            delete this.dict[type].cbById[match];
+        }
+    }
+    _getTypeRegistry (type) {
+        if (!this.dict[type]) {
+            const typeRegistry = { cbByClass: {}, cbById: {} };
+            document.addEventListener(type, event => {
+                this._runIfNotNull(typeRegistry.cbById[event.target.id]);
+                event.target.classList.forEach(klass => this._runIfNotNull(typeRegistry.cbByClass[klass]));
+            });
+            this.dict[type] = typeRegistry;
+        }
+        return this.dict[type];
+    }
+    _runIfNotNull (cb) {
+        if (cb) {
+            cb();
         }
     }
 }
