@@ -1,4 +1,5 @@
-import assert from 'assert';
+import { assert } from 'chai';
+import sinon from 'sinon';
 import { EventHandler } from '../../src/services/event_handler';
 import { JSDOM } from 'jsdom';
 
@@ -7,55 +8,50 @@ global.window = dom.window;
 global.document = dom.window.document;
 
 describe('EventHandler', function () {
-    let sut;
+    let sut, spy;
     beforeEach(() => {
         sut = new EventHandler();
+        spy = sinon.spy();
     });
     const element = document.getElementById('my-id');
     describe('listen', function () {
         it('should call the callback after same type of the event is triggered', function () {
-            let actual = 0;
-            sut.listen('click', 'my-id', () => { actual = 42; });
+            sut.listen('click', 'my-id', spy);
             element.click();
-            assert.strictEqual(actual, 42);
+            assert.isTrue(spy.calledOnce);
         });
         it('should not call the callback after different type of the event is triggered', function () {
-            let actual = 0;
-            sut.listen('input', 'my-id', () => { actual = 42; });
+            sut.listen('input', 'my-id', spy);
             element.click();
-            assert.strictEqual(actual, 0);
+            assert.isFalse(spy.called);
         });
     });
 
     describe('listenMatch', function () {
         it('should call the callback after same type of the event is triggered', function () {
-            let actual = 0;
-            sut.listenMatch('click', '.my-class', () => { actual = 42; });
+            sut.listenMatch('click', '.my-class', spy);
             element.click();
-            assert.strictEqual(actual, 42);
+            assert.isTrue(spy.calledOnce);
         });
         it('should not call the callback after different type of the event is triggered', function () {
-            let actual = 0;
-            sut.listenMatch('input', '.my-class', () => { actual = 42; });
+            sut.listenMatch('input', '.my-class', spy);
             element.click();
-            assert.strictEqual(actual, 0);
+            assert.isFalse(spy.called);
         });
     });
 
     describe('remove', function () {
         it('should not call the callback after id has been removed', function () {
-            let actual = 0;
-            sut.listen('click', 'my-id', () => { actual = 42; });
+            sut.listen('click', 'my-id', spy);
             sut.remove('click', 'my-id');
             element.click();
-            assert.strictEqual(actual, 0);
+            assert.isFalse(spy.called);
         });
         it('should not call the callback after class has been removed', function () {
-            let actual = 0;
-            sut.listenMatch('click', '.my-class', () => { actual = 42; });
+            sut.listenMatch('click', '.my-class', spy);
             sut.remove('click', '.my-class');
             element.click();
-            assert.strictEqual(actual, 0);
+            assert.isFalse(spy.called);
         });
     });
 });
