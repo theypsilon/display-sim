@@ -67,6 +67,7 @@ RUN npm install
 ADD www .
 COPY --from=wasm-artifact /wasm ./src/wasm
 RUN npm test \
+    && npm run lint \
     && npm run build
 
 FROM nginx:1.15.10-alpine
