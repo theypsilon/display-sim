@@ -3,17 +3,22 @@ import sinon from 'sinon';
 import { EventHandler } from '../../src/services/event_handler';
 import { JSDOM } from 'jsdom';
 
-const dom = new JSDOM('<!DOCTYPE html><html><head></head><body><div id="my-id" class="my-class"></div></body></html>');
-global.window = dom.window;
-global.document = dom.window.document;
-
 describe('EventHandler', function () {
-    let sut, spy;
+    before(() => {
+        const dom = new JSDOM('<!DOCTYPE html><html><head></head><body><div id="my-id" class="my-class"></div></body></html>');
+        global.window = dom.window;
+        global.document = dom.window.document;
+    });
+    after(() => {
+        delete global.window;
+        delete global.document;
+    });
+    let sut, spy, element;
     beforeEach(() => {
         sut = new EventHandler();
         spy = sinon.spy();
+        element = document.getElementById('my-id');
     });
-    const element = document.getElementById('my-id');
     describe('listen', function () {
         it('should call the callback after same type of the event is triggered', function () {
             sut.listen('click', 'my-id', spy);
