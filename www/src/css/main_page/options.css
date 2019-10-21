@@ -1,0 +1,98 @@
+.options {
+    display: flex;
+	flex-direction: column;
+    flex-wrap: nowrap;
+	justify-content: flex-start;
+	align-items: stretch;
+    align-content: stretch;
+    padding: 0;
+}
+
+.option-inputs {
+    border: 1px solid rgb(187, 187, 187);
+    border-radius: 5px 5px 5px 5px;
+    text-align: left;
+    display: inline-block;
+    min-height: 2.5em;
+    background-color: rgb(247, 247, 247);
+}
+
+.option-inputs .scaling-radio {
+    display: inline-block;
+    white-space: wrap;
+}
+
+.option-inputs input[type="radio"] {
+    margin-right: 5px;
+    display: inline-block;
+}
+
+.option-inputs label {
+    margin-right: 10px;
+}
+
+.option-inputs li {
+    display: inline-block;
+}
+
+#restore-default-options {
+    display: block;
+    margin-top: 15px;
+    margin-bottom: 15px;
+    font-size: 80%;
+}
+
+.option-text {
+    margin-bottom: 20px;
+    margin-right: 20px;
+    display: inline-block;
+}
+
+.info-options > li {
+    margin-bottom: 0px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.info-options > li:nth-child(even) {
+    background: #EEE;
+    height: 100%;
+}
+
+.option-custom-scaling {
+    margin-left: 40px;
+    display: inline-block;
+}
+
+.custom-aspect-ratio {
+    width: 3em;
+    text-align: center;
+}
+
+.custom-resolution {
+    width: 5em;
+    text-align: center;
+}
+
+#scaling-custom-inputs {
+    display: flex;
+	flex-direction: column;
+    flex-wrap: nowrap;
+	justify-content: flex-start;
+	align-items: stretch;
+    align-content: stretch;
+    padding: 0;
+}
+
+#scaling-custom-inputs li {
+    display: inline-block;
+}
+
+#scaling-custom-inputs li div {
+    display: inline-block;
+}
+
+.option-inputs {
+    background: transparent;
+    border: none;
+}

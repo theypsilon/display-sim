@@ -1,0 +1,24 @@
+
+.preset-btn {
+    margin: 3px;
+    font-size: 13 !important;
+    border: 2px solid rgb(187, 187, 187);
+    color: black;
+    background-color: lightgrey;
+}
+
+.preset-btn:hover {
+    background-color: #ffffff;
+    color: black;
+}
+
+.active-preset {
+    border: 2px solid rgb(187, 187, 187);
+    color: white;
+    background-color: #C1435A;
+}
+
+.active-preset:hover {
+    background-color: #ffffff;
+    color: white;
+}

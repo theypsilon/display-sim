@@ -1,0 +1,73 @@
+.feature-name {
+    font-weight: bold;
+    margin-left: 5px;
+}
+
+.feature-hotkeys {
+    font-size: 70%;
+    margin-left: 3px;
+}
+
+.feature-modificable-input {
+    width: 40px;
+    text-align: right;
+}
+
+.feature-readonly-input {
+    width: 80px;
+    border: none;
+    text-align: center;
+}
+
+.feature-button {
+    width: 70px;
+    height: 26px;
+}
+
+#movement-mode .feature-name {
+    margin-right: 6px;
+}
+
+.reset-button {
+    float: right;
+    margin-right: 5px;
+}
+
+.info-category {
+    margin-bottom: 20px;
+}
+
+.feature-movement-keys {
+    width: 2em;
+}
+
+.info-button {
+    text-align: center;
+}
+
+#info-panel h3 {
+    margin: 0px;
+    font-weight: 500;
+    line-height: 1.1;
+    border-bottom: 1px solid #eee;
+}
+
+#info-panel h5 {
+    padding: 2px 5px;
+    background-color: #333;
+    color: #ffffff;
+}
+
+#info-panel ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+#info-panel li {
+    text-align: left;
+}
+
+#info-panel li div {
+    display: inline;
+}

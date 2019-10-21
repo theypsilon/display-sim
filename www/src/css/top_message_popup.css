@@ -1,0 +1,23 @@
+
+#top-message {
+    position: fixed;
+    bottom: 30px;
+    width: 100%;
+    text-align: center;
+}
+
+#top-message span {
+    display: inline-block;
+    padding: 10px;
+    padding-left: 20px;
+    padding-right: 20px;
+    width: auto;
+    font-size: 200%;
+    font-weight: bold;
+    background-color: black;
+    border: 1px solid black;
+    border-radius: 5px 5px 5px 5px;
+    text-align: center;
+    color: white;
+    opacity: 0.5;
+}

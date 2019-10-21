@@ -1,0 +1,68 @@
+ul.select-image {
+    text-align: center;
+}
+
+ul.select-image li {
+    display: inline-block;
+    margin: 0px 0px 3px 0px;
+    border: 2px solid rgb(187, 187, 187);
+    height: 130px;
+    width: 114px;
+    border-radius: 5px 5px 5px 5px;
+    vertical-align: middle;
+}
+
+ul.select-image li div {
+    display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	align-content: center;
+    height: 100%;
+}
+
+ul.select-image li img {
+    max-width: 100px;
+    max-height: 100px;
+}
+
+.selectable-image:hover:not(.selected-image) {
+    cursor: pointer;
+    border: 2px solid white;
+}
+
+.selected-image {
+    background-color: white;
+    color: black;
+}
+
+#drop-zone {
+    border: 2px dashed rgb(187, 187, 187);
+    border-radius: 5px 5px 5px 5px;
+    color: rgb(87, 87, 87);
+    text-align: center;
+    display: inline-block;
+}
+
+#drop-zone span {
+    color: white;
+    display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+    align-content: center;
+    height: 100%;
+}
+
+#drop-zone:hover {
+    border: 2px solid #ffffff;
+    cursor: pointer;
+}
+
+.preview-size {
+    display: inline-block;
+}
+
+.render-tests {
+    text-align: center;
+}

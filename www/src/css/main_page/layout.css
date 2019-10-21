@@ -1,0 +1,29 @@
+#fork-me {
+    position: absolute;
+    top: 0;
+    left: 0;
+    border: 0;
+    width: 8%;
+}
+
+#ui {
+    display: block;
+}
+
+@media all and (max-width: 767px) {
+    .margin-sm-bottom {
+        margin-bottom: 25px;
+    }
+  
+    .jumbotron > .row {
+        flex-direction: column
+    }
+  
+    .margin-left {
+        margin-left: 0;
+    }
+  
+    #fork-me {
+        width: 110px;
+    }
+}

@@ -135,20 +135,14 @@ input.btn-white:not([disabled]):hover {
   color: #ffffff
 }
 
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
 .well {
   background: transparent;
   border: none;
   box-shadow: none;
-}
-
-#drop-zone:hover {
-  border: 2px solid #ffffff;
-  cursor: pointer;
-}
-
-.option-inputs {
-  background: transparent;
-  border: none;
 }
 
 footer {
@@ -160,4 +154,8 @@ footer label {
   text-transform: uppercase;
   margin-top: 10px;
   margin-bottom: 0;
+}
+
+.display-none {
+  display: none !important;
 }

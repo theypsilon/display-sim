@@ -1,0 +1,106 @@
+.key-up-center {
+    margin-left: 2.1em;
+    margin-bottom: 0.1em;
+}
+
+.key-up-far-right {
+    margin-left: 2.6em;
+}
+.key-down-far-right {
+    margin-left: 0.5em;
+}
+.key-down-center {
+    margin-left: 0.1em;
+    margin-right: 0.1em;
+}
+
+#feature-camera-movement-mode {
+    float: right;
+}
+
+#feature-camera-movement-mode input {
+    min-width: 140px;
+}
+
+#camera-zoom-parent {
+    margin-left: 30px;
+}
+
+.camera-movements-arrows {
+    position: relative;
+    top: -1em;
+    left: 4.5em;
+}
+
+#camera-right-panel {
+    float: right;
+}
+
+#camera-movement-indicator {
+    margin-top: 10px;
+    margin-bottom: 14px;
+}
+
+.camera-field-header {
+    text-align: center;
+    font-size: 60%;
+    margin-bottom: 2px;
+}
+
+.camera-coordinate {
+    display: inline-block;
+    width: 30px;
+}
+
+.camera-field-group {
+    text-align: right;
+    font-size: 70%;
+}
+
+.camera-field-name {
+    text-align: left;
+    float: left;
+    margin-top: -3px;
+    margin-left: -20px;
+}
+
+input.camera-field::-webkit-inner-spin-button,
+input.camera-field::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.camera-field {
+    border-width: 0;
+    font-size: 60%;
+    margin-top: -5px;
+    display: inline-block;
+    width: 30px;
+    overflow: hidden;
+    text-align: center;
+    padding-top: 3px;
+    padding-bottom: 3px;
+}
+
+.camera-field-left {
+    line-height: 1.1;
+    border-right: 1px solid rgb(187, 187, 187);
+}
+
+.camera-field-right {
+    line-height: 1.1;
+    border-left: 1px solid rgb(187, 187, 187);
+}
+
+.camera-field-center {
+    margin-left: -3px;
+    margin-right: -3px;
+    border-left: 1px solid rgb(187, 187, 187);
+}
+
+.camera-field-mid {
+    line-height: 1.1;
+    border-top: 1px solid rgb(187, 187, 187);
+    border-bottom: 1px solid rgb(187, 187, 187);
+    margin-bottom: -1px;
+}

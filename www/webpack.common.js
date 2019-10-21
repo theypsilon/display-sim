@@ -14,7 +14,7 @@ module.exports = {
             inject: false,
             hash: true,
             favicon: "assets/favicon.ico",
-            template: "assets/index.html",
+            template: "src/index.html",
             filename: "index.html"
         }),
         new MiniCssExtractPlugin({
