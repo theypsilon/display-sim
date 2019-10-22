@@ -44,7 +44,7 @@ export class EventHandler {
             const typeRegistry = { cbByClass: {}, cbById: {}, hasClass: false };
             window.addEventListener(type, event => {
                 this._runIfNotNull(typeRegistry.cbById[event.target.id], event);
-                if (false === typeRegistry.hasClass) return;
+                if (typeRegistry.hasClass === false) return;
                 event.target.classList.forEach(klass => this._runIfNotNull(typeRegistry.cbByClass[klass], event));
             });
             this._dict[type] = typeRegistry;
