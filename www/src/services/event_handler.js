@@ -17,7 +17,7 @@ let instance;
 
 export class EventHandler {
     constructor () {
-        this.dict = {};
+        this._dict = {};
     }
     static make () { return instance; }
     subscribeId (type, id, cb) {
@@ -27,26 +27,29 @@ export class EventHandler {
     subscribeClass (type, klass, cb) {
         const registry = this._getTypeRegistry(type);
         registry.cbByClass[klass] = cb;
+        registry.hasClass = true;
     }
     remove (type, match) {
-        if (!this.dict[type]) return;
-        if (this.dict[type].cbByClass[match]) {
-            delete this.dict[type].cbByClass[match];
+        if (!this._dict[type]) return;
+        if (this._dict[type].cbByClass[match]) {
+            delete this._dict[type].cbByClass[match];
         }
-        if (this.dict[type].cbById[match]) {
-            delete this.dict[type].cbById[match];
+        if (this._dict[type].cbById[match]) {
+            delete this._dict[type].cbById[match];
+            this._dict[type].hasClass = Object.keys(this._dict[type].cbById).length > 0;
         }
     }
     _getTypeRegistry (type) {
-        if (!this.dict[type]) {
-            const typeRegistry = { cbByClass: {}, cbById: {} };
+        if (!this._dict[type]) {
+            const typeRegistry = { cbByClass: {}, cbById: {}, hasClass: false };
             window.addEventListener(type, event => {
                 this._runIfNotNull(typeRegistry.cbById[event.target.id], event);
+                if (false === typeRegistry.hasClass) return;
                 event.target.classList.forEach(klass => this._runIfNotNull(typeRegistry.cbByClass[klass], event));
             });
-            this.dict[type] = typeRegistry;
+            this._dict[type] = typeRegistry;
         }
-        return this.dict[type];
+        return this._dict[type];
     }
     _runIfNotNull (cb, event) {
         if (cb) {
