@@ -17,25 +17,24 @@ import Constants from '../../services/constants';
 
 let selectedInfoPanelDeo = Constants.infoPanelBasicDeo;
 
-const settingsTabs = document.querySelectorAll('.tabs > li');
-settingsTabs.forEach(clickedTab => {
+Constants.tabsSelector.forEach(clickedTab => {
     clickedTab.addEventListener('click', () => {
         settingsTabs.forEach(tab => {
             tab.classList.remove('active');
         });
         clickedTab.classList.add('active');
-        selectedInfoPanelDeo.classList.add('display-none');
+        selectedInfoPanelDeo.classList.add(Constants.DISPLAY_NONE_CLASS);
         switch (clickedTab.id) {
-        case 'panel-basic':
+        case Constants.TAB_PANEL_BASIC:
             selectedInfoPanelDeo = Constants.infoPanelBasicDeo;
             break;
-        case 'panel-advanced':
+        case Constants.TAB_PANEL_ADVANCED:
             selectedInfoPanelDeo = Constants.infoPanelAdvancedDeo;
             break;
         default:
             console.error('Unknown clicked tab: ' + clickedTab.id);
             break;
         }
-        selectedInfoPanelDeo.classList.remove('display-none');
+        selectedInfoPanelDeo.classList.remove(Constants.DISPLAY_NONE_CLASS);
     });
 });

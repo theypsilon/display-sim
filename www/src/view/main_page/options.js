@@ -24,7 +24,7 @@ const visibility = Visibility.make();
 const storage = Storage.make();
 
 Constants.optionScalingSelect.onchange = () => {
-    if (Constants.optionScalingSelect.value === Constants.scalingCustomHtmlId) {
+    if (Constants.optionScalingSelect.value === Constants.SCALING_CUSTOM_ID) {
         visibility.showScaleCustomInputs();
     } else {
         visibility.hideScaleCustomInputs();

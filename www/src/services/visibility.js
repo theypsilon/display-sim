@@ -46,11 +46,11 @@ export class Visibility {
 instance = new Visibility();
 
 function showElement (element) {
-    element.classList.remove(Constants.displayNoneClassName);
+    element.classList.remove(Constants.DISPLAY_NONE_CLASS);
 }
 function hideElement (element) {
-    element.classList.add(Constants.displayNoneClassName);
+    element.classList.add(Constants.DISPLAY_NONE_CLASS);
 }
 function isVisible (element) {
-    return element.classList.contains(Constants.displayNoneClassName) === false;
+    return element.classList.contains(Constants.DISPLAY_NONE_CLASS) === false;
 }

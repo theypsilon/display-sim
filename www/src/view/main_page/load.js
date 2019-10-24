@@ -69,7 +69,7 @@ export async function prepareMainPage () {
 export function loadInputValuesFromStorage () {
     Constants.optionScalingSelect.value = storage.getScalingSelectOption();
     Constants.optionPowerPreferenceSelect.value = storage.getPowerPreferenceSelectOption();
-    if (Constants.optionScalingSelect.value === Constants.scalingCustomHtmlId) {
+    if (Constants.optionScalingSelect.value === Constants.SCALING_CUSTOM_ID) {
         visibility.showScaleCustomInputs();
     } else {
         visibility.hideScaleCustomInputs();

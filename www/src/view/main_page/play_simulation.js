@@ -29,7 +29,7 @@ const storage = Storage.make();
 const animationsGateway = AnimationsGateway.make({ gifCaching: true });
 
 async function getAnimations () {
-    if (GlobalState.previewDeo.id === Constants.firstPreviewImageId) {
+    if (GlobalState.previewDeo.id === Constants.FIRST_PREVIEW_IMAGE_ID) {
         return animationsGateway.getFromHardcodedTileset();
     } else {
         const img = GlobalState.previewDeo.querySelector('img');
@@ -56,24 +56,24 @@ export async function playSimulation () {
     let backgroundHeight = imageHeight;
 
     switch (Constants.optionScalingSelect.value) {
-    case Constants.scalingAutoHtmlId:
+    case Constants.SCALING_AUTO_ID:
         const autoScaling = calculateAutoScaling(imageWidth, imageHeight);
         scaleX = autoScaling.scaleX;
-        window.dispatchEvent(new CustomEvent('app-event.top_message', {
+        window.dispatchEvent(new CustomEvent(Constants.APP_EVENT_TOP_MESSAGE, {
             detail: 'Scaling auto detect: ' + autoScaling.message
         }));
         break;
-    case Constants.scaling43HtmlId:
+    case Constants.SCALING_43_ID:
         scaleX = (4 / 3) / (imageWidth / imageHeight);
         break;
-    case Constants.scalingStretchToBothEdgesHtmlId:
+    case Constants.SCALING_STRETCH_TO_BOTH_EDGES_ID:
         scaleX = (window.screen.width / window.screen.height) / (imageWidth / imageHeight);
         stretch = true;
         break;
-    case Constants.scalingStretchToNearestEdgeHtmlId:
+    case Constants.SCALING_STRETCH_TO_NEAREST_EDGE_ID:
         stretch = true;
         break;
-    case Constants.scalingCustomHtmlId:
+    case Constants.SCALING_CUSTOM_ID:
         stretch = Constants.scalingCustomStretchNearestDeo.checked;
         storage.setCustomResWidth(Constants.scalingCustomResWidthDeo.value);
         storage.setCustomResHeight(Constants.scalingCustomResHeightDeo.value);
@@ -104,7 +104,7 @@ export async function playSimulation () {
     storage.setPowerPreferenceSelectOption(ctxOptions.powerPreference);
 
     const filteredPresets = Constants.filterPresetsButtonDeoList.filter(deo => deo.classList.contains('active-preset'));
-    const activePreset = filteredPresets.length > 0 ? filteredPresets[0].dataset.preset : Constants.presetApertureGrille1;
+    const activePreset = filteredPresets.length > 0 ? filteredPresets[0].dataset.preset : Constants.PRESET_KIND_APERTURE_GRILLE_1;
 
     const result = await simLauncher.launch({
         ctxOptions,
@@ -119,17 +119,11 @@ export async function playSimulation () {
     });
 
     if (result.glError) {
-        window.dispatchEvent(new CustomEvent('app-event.top_message', {
+        window.dispatchEvent(new CustomEvent(Constants.APP_EVENT_TOP_MESSAGE, {
             detail: 'WebGL2 is not working on your browser, try restarting it! And remember, this works only on a PC with updated browser and graphics drivers.'
         }));
         return { reloadPage: true };
     }
-
-    // Constants.filterPresetsDeo.value = storage.getFilterPresets();
-    // Constants.filterPresetsDeo.onchange();
-
-    //    Constants.filterPresetsBasicDeo.value = storage.getFilterPresets();
-    //    Constants.filterPresetsBasicDeo.onchange();
 
     visibility.hideLoading();
     visibility.showSimulationUi();

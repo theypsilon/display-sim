@@ -16,5 +16,5 @@
 import Constants from './constants';
 
 export default {
-    previewDeo: document.getElementById(Constants.firstPreviewImageId)
+    previewDeo: document.getElementById(Constants.FIRST_PREVIEW_IMAGE_ID)
 };

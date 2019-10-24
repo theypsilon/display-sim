@@ -26,19 +26,19 @@ import './screenshot';
 import './sync_values';
 import './tabs';
 
-const getGlCanvasDeo = () => document.getElementById(Constants.glCanvasHtmlId);
+const getGlCanvasDeo = () => document.getElementById(Constants.GL_CANVAS_ID);
 const visibility = Visibility.make();
 
-window.addEventListener('app-event.exit_pointer_lock', () => {
+window.addEventListener(Constants.APP_EVENT_EXIT_POINTER_LOCK, () => {
     document.exitPointerLock();
 }, false);
 
-window.addEventListener('app-event.exiting_session', () => {
+window.addEventListener(Constants.APP_EVENT_EXITING_SESSION, () => {
     prepareMainPage();
     getGlCanvasDeo().remove();
     visibility.hideSimulationUi();
 }, false);
 
-window.addEventListener('app-event.fps', event => {
+window.addEventListener(Constants.APP_EVENT_FPS, event => {
     Constants.fpsCounterDeo.innerHTML = Math.round(event.detail);
 }, false);

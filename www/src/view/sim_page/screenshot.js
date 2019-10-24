@@ -13,7 +13,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-window.addEventListener('app-event.screenshot', async event => {
+import Constants from '../../services/constants';
+
+window.addEventListener(Constants.APP_EVENT_SCREENSHOT, async event => {
     const arrayBuffer = event.detail[0];
     const multiplier = event.detail[1];
 

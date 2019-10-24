@@ -17,11 +17,11 @@ import Constants from '../../services/constants';
 
 import { Visibility } from '../../services/visibility';
 
-const getGlCanvasDeo = () => document.getElementById(Constants.glCanvasHtmlId);
+const getGlCanvasDeo = () => document.getElementById(Constants.GL_CANVAS_ID);
 
 const visibility = Visibility.make();
 
-window.addEventListener('app-event.toggle_info_panel', () => {
+window.addEventListener(Constants.APP_EVENT_TOGGLE_INFO_PANEL, () => {
     if (!getGlCanvasDeo()) {
         return;
     }
@@ -29,7 +29,7 @@ window.addEventListener('app-event.toggle_info_panel', () => {
         visibility.showInfoPanel();
     } else {
         visibility.hideInfoPanel();
-        window.dispatchEvent(new CustomEvent('app-event.top_message', {
+        window.dispatchEvent(new CustomEvent(Constants.APP_EVENT_TOP_MESSAGE, {
             detail: 'Toggle the Sim Panel by pressing SPACE.'
         }));
     }
@@ -42,7 +42,7 @@ Constants.toggleInfoPanelClass.forEach(deo => {
         }
         if (visibility.isInfoPanelVisible()) {
             visibility.hideInfoPanel();
-            window.dispatchEvent(new CustomEvent('app-event.top_message', {
+            window.dispatchEvent(new CustomEvent(Constants.APP_EVENT_TOP_MESSAGE, {
                 detail: 'Show the Sim Panel again by pressing SPACE.'
             }));
         } else {

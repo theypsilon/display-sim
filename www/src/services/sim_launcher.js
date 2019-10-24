@@ -29,7 +29,7 @@ export class SimLauncher {
 
     async launch (params) {
         {
-            const oldCanvas = document.getElementById(Constants.glCanvasHtmlId);
+            const oldCanvas = document.getElementById(Constants.GL_CANVAS_ID);
             if (oldCanvas) {
                 oldCanvas.remove();
             }
@@ -37,7 +37,7 @@ export class SimLauncher {
 
         const canvas = document.createElement('canvas');
 
-        canvas.id = Constants.glCanvasHtmlId;
+        canvas.id = Constants.GL_CANVAS_ID;
 
         fixCanvasSize(canvas);
         window.addEventListener('resize', fixCanvasSize);
@@ -111,7 +111,7 @@ export class SimLauncher {
 }
 
 function fixCanvasSize (canvas) {
-    canvas = canvas instanceof HTMLCanvasElement ? canvas : document.getElementById(Constants.glCanvasHtmlId);
+    canvas = canvas instanceof HTMLCanvasElement ? canvas : document.getElementById(Constants.GL_CANVAS_ID);
     if (!canvas) return;
 
     const dpi = window.devicePixelRatio;

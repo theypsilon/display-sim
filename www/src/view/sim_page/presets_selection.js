@@ -18,49 +18,47 @@ import { Storage } from '../../services/storage';
 
 const storage = Storage.make();
 
-const ACTIVE_PRESET_CLASS = 'active-preset';
-
 const preset = storage.getFilterPresets();
 Constants.filterPresetsButtonDeoList
     .filter(deo => deo.dataset.preset === preset)[0]
-    .classList.add(ACTIVE_PRESET_CLASS);
+    .classList.add(Constants.PRESET_ACTIVE_CLASS);
 
 Constants.filterPresetsButtonDeoList.forEach(deo => {
     deo.onclick = function () {
         const preset = deo.dataset.preset;
         Constants.filterPresetsButtonDeoList.forEach(otherDeo => {
-            otherDeo.classList.remove(ACTIVE_PRESET_CLASS);
+            otherDeo.classList.remove(Constants.PRESET_ACTIVE_CLASS);
         });
-        deo.classList.add(ACTIVE_PRESET_CLASS);
-        if (preset !== 'custom') {
+        deo.classList.add(Constants.PRESET_ACTIVE_CLASS);
+        if (preset !== Constants.PRESET_KIND_CUSTOM) {
             storage.setFilterPresets(preset);
         }
-        window.dispatchEvent(new CustomEvent('app-event.custom_input_event', {
+        window.dispatchEvent(new CustomEvent(Constants.APP_EVENT_CUSTOM_INPUT, {
             detail: {
                 value: preset,
                 kind: 'event_kind:filter_presets_selected'
             }
         }));
 
-        if (preset === Constants.presetCustom) {
-            Array.from(document.querySelectorAll('.tabs > li'))
-                .filter(deo => deo.id === 'panel-advanced')[0]
+        if (preset === Constants.PRESET_KIND_CUSTOM) {
+            Array.from(Constants.tabsSelector)
+                .filter(deo => deo.id === Constants.TAB_PANEL_ADVANCED)[0]
                 .click();
         }
     };
 });
 
-window.addEventListener('app-event.preset_selected_name', event => {
+window.addEventListener(Constants.APP_EVENT_PRESET_SELECTED_NAME, event => {
     Constants.filterPresetsButtonDeoList
         .forEach(deo => {
             if (deo.dataset.preset === event.detail) {
-                deo.classList.add(ACTIVE_PRESET_CLASS);
-            } else if (deo.classList.contains(ACTIVE_PRESET_CLASS)) {
-                deo.classList.remove(ACTIVE_PRESET_CLASS);
+                deo.classList.add(Constants.PRESET_ACTIVE_CLASS);
+            } else if (deo.classList.contains(Constants.PRESET_ACTIVE_CLASS)) {
+                deo.classList.remove(Constants.PRESET_ACTIVE_CLASS);
             }
         });
-    if (event.detail === 'custom') {
-        window.dispatchEvent(new CustomEvent('app-event.top_message', {
+    if (event.detail === Constants.PRESET_KIND_CUSTOM) {
+        window.dispatchEvent(new CustomEvent(Constants.APP_EVENT_TOP_MESSAGE, {
             detail: 'Now you are in the Custom mode, you may change any filter value you want.'
         }));
     }

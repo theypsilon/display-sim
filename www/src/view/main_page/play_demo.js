@@ -53,7 +53,7 @@ export async function playDemo (path) {
         backgroundWidth: imageWidth,
         backgroundHeight: imageHeight,
         stretch: false,
-        activePreset: Constants.presetDemo1,
+        activePreset: Constants.PRESET_KIND_FLIGHT_DEMO_1,
         animations
     });
 }

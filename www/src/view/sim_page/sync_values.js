@@ -15,7 +15,7 @@
 
 import Constants from '../../services/constants';
 
-window.addEventListener('app-event.camera_update', event => {
+window.addEventListener(Constants.APP_EVENT_CAMERA_UPDATE, event => {
     Constants.cameraPosXDeo.value = Math.round(event.detail[0] * 100) / 100;
     Constants.cameraPosYDeo.value = Math.round(event.detail[1] * 100) / 100;
     Constants.cameraPosZDeo.value = Math.round(event.detail[2] * 100) / 100;
@@ -28,46 +28,46 @@ window.addEventListener('app-event.camera_update', event => {
 }, false);
 
 [
-    { deo: Constants.cameraZoomDeo, eventId: 'app-event.change_camera_zoom' },
-    { deo: Constants.cameraMovementModeDeo, eventId: 'app-event.change_camera_movement_mode' },
-    { deo: Constants.pixelWidthDeo, eventId: 'app-event.change_pixel_width' },
-    { deo: Constants.pixelHorizontalGapDeo, eventId: 'app-event.change_pixel_horizontal_gap' },
-    { deo: Constants.pixelVerticalGapDeo, eventId: 'app-event.change_pixel_vertical_gap' },
-    { deo: Constants.pixelSpreadDeo, eventId: 'app-event.change_pixel_spread' },
-    { deo: Constants.pixelBrigthnessDeo, eventId: 'app-event.change_pixel_brightness' },
-    { deo: Constants.pixelContrastDeo, eventId: 'app-event.change_pixel_contrast' },
-    { deo: Constants.blurLevelDeo, eventId: 'app-event.change_blur_level' },
-    { deo: Constants.verticalLppDeo, eventId: 'app-event.change_vertical_lpp' },
-    { deo: Constants.horizontalLppDeo, eventId: 'app-event.change_horizontal_lpp' },
-    { deo: Constants.lightColorDeo, eventId: 'app-event.change_light_color' },
-    { deo: Constants.brightnessColorDeo, eventId: 'app-event.change_brightness_color' },
-    { deo: Constants.featureChangeMoveSpeedDeo, eventId: 'app-event.change_movement_speed' },
-    { deo: Constants.featureChangePixelSpeedDeo, eventId: 'app-event.change_pixel_speed' },
-    { deo: Constants.featureChangeTurnSpeedDeo, eventId: 'app-event.change_turning_speed' },
+    { deo: Constants.cameraZoomDeo, eventId: Constants.APP_EVENT_CHANGE_CAMERA_ZOOM },
+    { deo: Constants.cameraMovementModeDeo, eventId: Constants.APP_EVENT_CHANGE_CAMERA_MOVEMENT_MODE },
+    { deo: Constants.pixelWidthDeo, eventId: Constants.APP_EVENT_CHANGE_PIXEL_WIDTH },
+    { deo: Constants.pixelHorizontalGapDeo, eventId: Constants.APP_EVENT_CHANGE_PIXEL_HORIZONTAL_GAP },
+    { deo: Constants.pixelVerticalGapDeo, eventId: Constants.APP_EVENT_CHANGE_PIXEL_VERTICAL_GAP },
+    { deo: Constants.pixelSpreadDeo, eventId: Constants.APP_EVENT_CHANGE_PIXEL_SPREAD },
+    { deo: Constants.pixelBrigthnessDeo, eventId: Constants.APP_EVENT_CHANGE_PIXEL_BRIGHTNESS },
+    { deo: Constants.pixelContrastDeo, eventId: Constants.APP_EVENT_CHANGE_PIXEL_CONTRAST },
+    { deo: Constants.blurLevelDeo, eventId: Constants.APP_EVENT_CHANGE_BLUR_LEVEL },
+    { deo: Constants.verticalLppDeo, eventId: Constants.APP_EVENT_CHANGE_VERTICAL_LPP },
+    { deo: Constants.horizontalLppDeo, eventId: Constants.APP_EVENT_CHANGE_HORIZONTAL_LPP },
+    { deo: Constants.lightColorDeo, eventId: Constants.APP_EVENT_CHANGE_LIGHT_COLOR },
+    { deo: Constants.brightnessColorDeo, eventId: Constants.APP_EVENT_CHANGE_BRIGHTNESS_COLOR },
+    { deo: Constants.featureChangeMoveSpeedDeo, eventId: Constants.APP_EVENT_CHANGE_MOVEMENT_SPEED },
+    { deo: Constants.featureChangePixelSpeedDeo, eventId: Constants.APP_EVENT_CHANGE_PIXEL_SPEED },
+    { deo: Constants.featureChangeTurnSpeedDeo, eventId: Constants.APP_EVENT_CHANGE_TURNING_SPEED },
 
-    { deo: Constants.featureChangeColorRepresentationDeo, eventId: 'app-event.color_representation' },
-    { deo: Constants.featureChangePixelGeometryDeo, eventId: 'app-event.pixel_geometry' },
-    { deo: Constants.featureChangePixelShadowShapeDeo, eventId: 'app-event.pixel_shadow_shape' },
-    { deo: Constants.featureChangePixelShadowHeightDeo, eventId: 'app-event.pixel_shadow_height' },
-    { deo: Constants.featureBacklightPercentDeo, eventId: 'app-event.backlight_percent' },
-    { deo: Constants.featureInternalResolutionDeo, eventId: 'app-event.internal_resolution' },
-    { deo: Constants.featureInternalResolutionBasicDeo, eventId: 'app-event.internal_resolution' },
-    { deo: Constants.featureTextureInterpolationDeo, eventId: 'app-event.texture_interpolation' },
-    { deo: Constants.featureChangeScreenCurvatureDeo, eventId: 'app-event.screen_curvature' },
-    { deo: Constants.featureChangeScreenCurvatureBasicDeo, eventId: 'app-event.screen_curvature' }
+    { deo: Constants.featureChangeColorRepresentationDeo, eventId: Constants.APP_EVENT_COLOR_REPRESENTATION },
+    { deo: Constants.featureChangePixelGeometryDeo, eventId: Constants.APP_EVENT_PIXEL_GEOMETRY },
+    { deo: Constants.featureChangePixelShadowShapeDeo, eventId: Constants.APP_EVENT_PIXEL_SHADOW_SHAPE },
+    { deo: Constants.featureChangePixelShadowHeightDeo, eventId: Constants.APP_EVENT_PIXEL_SHADOW_HEIGHT },
+    { deo: Constants.featureBacklightPercentDeo, eventId: Constants.APP_EVENT_BACKLIGHT_PERCENT },
+    { deo: Constants.featureInternalResolutionDeo, eventId: Constants.APP_EVENT_INTERNAL_RESOLUTION },
+    { deo: Constants.featureInternalResolutionBasicDeo, eventId: Constants.APP_EVENT_INTERNAL_RESOLUTION },
+    { deo: Constants.featureTextureInterpolationDeo, eventId: Constants.APP_EVENT_TEXTURE_INTERPOLATION },
+    { deo: Constants.featureChangeScreenCurvatureDeo, eventId: Constants.APP_EVENT_SCREEN_CURVATURE },
+    { deo: Constants.featureChangeScreenCurvatureBasicDeo, eventId: Constants.APP_EVENT_SCREEN_CURVATURE }
 ].forEach(({ deo, eventId }) => {
     if (!deo) throw new Error('Wrong deo on defining: ' + eventId);
     window.addEventListener(eventId, event => {
         deo.value = event.detail;
-        if (event.id === 'app-event.change_camera_movement_mode') {
+        if (event.id === Constants.APP_EVENT_CHANGE_CAMERA_MOVEMENT_MODE) {
             switch (event.detail) {
             case 'Lock on Display':
                 deo.title = 'The camera will move around the picture, always looking at it';
-                Constants.freeModeControlsClas.forEach(deo => deo.classList.add(Constants.displayNoneClassName));
+                Constants.freeModeControlsClas.forEach(deo => deo.classList.add(Constants.DISPLAY_NONE_CLASS));
                 break;
             case 'Free Flight':
                 deo.title = 'The camera can move without any restriction in the whole 3D space with plane-like controls';
-                Constants.freeModeControlsClas.forEach(deo => deo.classList.remove(Constants.displayNoneClassName));
+                Constants.freeModeControlsClas.forEach(deo => deo.classList.remove(Constants.DISPLAY_NONE_CLASS));
                 break;
             default:
                 throw new Error('Unreachable!');
@@ -86,39 +86,39 @@ function customEventOnButtonPressed (deo) {
     });
 }
 
-customEventOnChange(Constants.cameraPosXDeo, 'camera_pos_x', a => +a);
-customEventOnChange(Constants.cameraPosYDeo, 'camera_pos_y', a => +a);
-customEventOnChange(Constants.cameraPosZDeo, 'camera_pos_z', a => +a);
-customEventOnChange(Constants.cameraAxisUpXDeo, 'camera_axis_up_x', a => +a);
-customEventOnChange(Constants.cameraAxisUpYDeo, 'camera_axis_up_y', a => +a);
-customEventOnChange(Constants.cameraAxisUpZDeo, 'camera_axis_up_z', a => +a);
-customEventOnChange(Constants.cameraDirXDeo, 'camera_direction_x', a => +a);
-customEventOnChange(Constants.cameraDirYDeo, 'camera_direction_y', a => +a);
-customEventOnChange(Constants.cameraDirZDeo, 'camera_direction_z', a => +a);
-customEventOnChange(Constants.cameraZoomDeo, 'camera_zoom', a => +a);
-customEventOnChange(Constants.cameraMovementModeDeo, 'camera_movement_mode', a => +a);
+customEventOnChange(Constants.cameraPosXDeo, Constants.EVENT_KIND_CAMERA_POS_X, a => +a);
+customEventOnChange(Constants.cameraPosYDeo, Constants.EVENT_KIND_CAMERA_POS_Y, a => +a);
+customEventOnChange(Constants.cameraPosZDeo, Constants.EVENT_KIND_CAMERA_POS_Z, a => +a);
+customEventOnChange(Constants.cameraAxisUpXDeo, Constants.EVENT_KIND_CAMERA_AXIS_UP_X, a => +a);
+customEventOnChange(Constants.cameraAxisUpYDeo, Constants.EVENT_KIND_CAMERA_AXIS_UP_Y, a => +a);
+customEventOnChange(Constants.cameraAxisUpZDeo, Constants.EVENT_KIND_CAMERA_AXIS_UP_Z, a => +a);
+customEventOnChange(Constants.cameraDirXDeo, Constants.EVENT_KIND_CAMERA_DIRECTION_X, a => +a);
+customEventOnChange(Constants.cameraDirYDeo, Constants.EVENT_KIND_CAMERA_DIRECTION_Y, a => +a);
+customEventOnChange(Constants.cameraDirZDeo, Constants.EVENT_KIND_CAMERA_DIRECTION_Z, a => +a);
+customEventOnChange(Constants.cameraZoomDeo, Constants.EVENT_KIND_CAMERA_ZOOM, a => +a);
+customEventOnChange(Constants.cameraMovementModeDeo, Constants.EVENT_KIND_CAMERA_MOVEMENT_MODE, a => +a);
 
-customEventOnChange(Constants.pixelWidthDeo, 'pixel_width', a => +a);
-customEventOnChange(Constants.pixelSpreadDeo, 'pixel_spread', a => +a);
-customEventOnChange(Constants.pixelHorizontalGapDeo, 'pixel_horizontal_gap', a => +a);
-customEventOnChange(Constants.pixelVerticalGapDeo, 'pixel_vertical_gap', a => +a);
-customEventOnChange(Constants.blurLevelDeo, 'blur_level', a => +a);
-customEventOnChange(Constants.verticalLppDeo, 'vertical_lpp', a => +a);
-customEventOnChange(Constants.horizontalLppDeo, 'horizontal_lpp', a => +a);
-customEventOnChange(Constants.pixelBrigthnessDeo, 'pixel_brightness', a => +a);
-customEventOnChange(Constants.pixelContrastDeo, 'pixel_contrast', a => +a);
-customEventOnChange(Constants.featureChangePixelShadowHeightDeo, 'pixel_shadow_height', a => +a);
-customEventOnChange(Constants.featureBacklightPercentDeo, 'backlight_percent', a => +a);
+customEventOnChange(Constants.pixelWidthDeo, Constants.EVENT_KIND_PIXEL_WIDTH, a => +a);
+customEventOnChange(Constants.pixelSpreadDeo, Constants.EVENT_KIND_PIXEL_SPREAD, a => +a);
+customEventOnChange(Constants.pixelHorizontalGapDeo, Constants.EVENT_KIND_PIXEL_HORIZONTAL_GAP, a => +a);
+customEventOnChange(Constants.pixelVerticalGapDeo, Constants.EVENT_KIND_PIXEL_VERTICAL_GAP, a => +a);
+customEventOnChange(Constants.blurLevelDeo, Constants.EVENT_KIND_BLUR_LEVEL, a => +a);
+customEventOnChange(Constants.verticalLppDeo, Constants.EVENT_KIND_VERTICAL_LPP, a => +a);
+customEventOnChange(Constants.horizontalLppDeo, Constants.EVENT_KIND_HORIZONTAL_LPP, a => +a);
+customEventOnChange(Constants.pixelBrigthnessDeo, Constants.EVENT_KIND_PIXEL_BRIGHTNESS, a => +a);
+customEventOnChange(Constants.pixelContrastDeo, Constants.EVENT_KIND_PIXEL_CONTRAST, a => +a);
+customEventOnChange(Constants.featureChangePixelShadowHeightDeo, Constants.EVENT_KIND_PIXEL_SHADOW_HEIGHT, a => +a);
+customEventOnChange(Constants.featureBacklightPercentDeo, Constants.EVENT_KIND_BACKLIGHT_PERCENT, a => +a);
 
 const parseColor = (value) => parseInt('0x' + value.substring(1));
-customEventOnChange(Constants.lightColorDeo, 'light_color', parseColor);
-customEventOnChange(Constants.brightnessColorDeo, 'brightness_color', parseColor);
+customEventOnChange(Constants.lightColorDeo, Constants.EVENT_KIND_LIGHT_COLOR, parseColor);
+customEventOnChange(Constants.brightnessColorDeo, Constants.EVENT_KIND_BRIGHTNESS_COLOR, parseColor);
 function customEventOnChange (deo, kind, parse) {
     const changed = () => {
-        window.dispatchEvent(new CustomEvent('app-event.custom_input_event', {
+        window.dispatchEvent(new CustomEvent(Constants.APP_EVENT_CUSTOM_INPUT, {
             detail: {
                 value: parse(deo.value),
-                kind: 'event_kind:' + kind
+                kind: Constants.EVENT_KIND_PREFIX + kind
             }
         }));
     };

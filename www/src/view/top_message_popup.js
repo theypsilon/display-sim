@@ -16,15 +16,15 @@
 import Constants from '../services/constants';
 import Logger from '../services/logger';
 
-const getTopMessageDeo = () => document.getElementById(Constants.topMessageHtmlId);
+const getTopMessageDeo = () => document.getElementById(Constants.TOP_MESSAGE_ID);
 
-window.addEventListener('app-event.top_message', event => {
+window.addEventListener(Constants.APP_EVENT_TOP_MESSAGE, event => {
     const existingTopMessage = getTopMessageDeo();
     if (existingTopMessage) {
         existingTopMessage.remove();
     }
     const div = document.createElement('div');
-    div.id = Constants.topMessageHtmlId;
+    div.id = Constants.TOP_MESSAGE_ID;
     const span = document.createElement('span');
     span.innerHTML = event.detail;
     Logger.log('top_message: ' + event.detail);

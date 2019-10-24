@@ -72,7 +72,7 @@ async function handleFileToUpload (url) {
         processFileToUpload(url);
     } catch (e) {
         console.error(e);
-        window.dispatchEvent(new CustomEvent('app-event.top_message', {
+        window.dispatchEvent(new CustomEvent(Constants.APP_EVENT_TOP_MESSAGE, {
             detail: 'That file could not be loaded, try again with a picture.'
         }));
     }
