@@ -22,7 +22,7 @@ use core::general_types::Size2D;
 use core::internal_resolution::InternalResolution;
 use core::pixels_shadow::ShadowShape;
 use core::simulation_context::{ConcreteSimulationContext, RandomGenerator};
-use core::simulation_core_state::{AnimationStep, Input, Resources, VideoInputResources};
+use core::simulation_core_state::{AnimationStep, FiltersPreset, Input, Resources, VideoInputResources};
 use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, TextureInterpolation};
 use core::simulation_core_ticker::SimulationCoreTicker;
 use render::simulation_draw::SimulationDrawer;
@@ -86,6 +86,7 @@ fn program() -> WebResult<()> {
         pixel_width: 1.0,
         stretch: false,
         current_frame: 0,
+        preset: FiltersPreset::default(),
         last_frame_change: 0.0,
         needs_buffer_data_load: true,
     };

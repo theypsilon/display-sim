@@ -16,7 +16,7 @@
 use core::app_events::FakeEventDispatcher;
 use core::general_types::Size2D;
 use core::simulation_context::{ConcreteSimulationContext, FakeRngGenerator};
-use core::simulation_core_state::{AnimationStep, Input, Resources, VideoInputResources};
+use core::simulation_core_state::{AnimationStep, FiltersPreset, Input, Resources, VideoInputResources};
 use core::simulation_core_ticker::SimulationCoreTicker;
 use render::background_render::BackgroundRender;
 use render::blur_render::BlurRender;
@@ -49,6 +49,7 @@ impl Default for FakeVideoInput {
                 stretch: false,
                 current_frame: 0,
                 last_frame_change: 0.0,
+                preset: FiltersPreset::default(),
                 needs_buffer_data_load: true,
             },
             VideoInputMaterials {

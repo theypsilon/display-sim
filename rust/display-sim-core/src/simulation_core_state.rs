@@ -56,6 +56,7 @@ pub struct Resources {
     pub filters: Filters,
     pub speed: Speeds,
     pub saved_filters: Option<Filters>,
+    pub custom_is_changed: bool,
     pub output: ViewModel,
     pub timers: SimulationTimers,
     pub initial_parameters: InitialParameters,
@@ -83,7 +84,8 @@ impl Default for Resources {
                 filter_speed: PIXEL_MANIPULATION_BASE_SPEED,
             },
             filters: Filters::default(),
-            saved_filters: None,
+            saved_filters: Some(Filters::default()),
+            custom_is_changed: false,
             screenshot_trigger: ScreenshotTrigger { is_triggered: false, delay: 0 },
             drawable: false,
             resetted: true,
@@ -231,7 +233,7 @@ impl Default for Filters {
     }
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum FiltersPreset {
     Sharp1,
     CrtApertureGrille1,
@@ -244,19 +246,13 @@ pub enum FiltersPreset {
 impl std::fmt::Display for FiltersPreset {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            FiltersPreset::Sharp1 => write!(f, "Sharp 1"),
-            FiltersPreset::CrtApertureGrille1 => write!(f, "CRT Aperture Grille 1"),
-            FiltersPreset::CrtShadowMask1 => write!(f, "CRT Shadow Mask 1"),
-            FiltersPreset::CrtShadowMask2 => write!(f, "CRT Shadow Mask 2"),
-            FiltersPreset::DemoFlight1 => write!(f, "Flight Demo"),
-            FiltersPreset::Custom => write!(f, "Custom"),
+            FiltersPreset::Sharp1 => write!(f, "sharp-1"),
+            FiltersPreset::CrtApertureGrille1 => write!(f, "crt-aperture-grille-1"),
+            FiltersPreset::CrtShadowMask1 => write!(f, "crt-shadow-mask-1"),
+            FiltersPreset::CrtShadowMask2 => write!(f, "crt-shadow-mask-2"),
+            FiltersPreset::DemoFlight1 => write!(f, "demo-1"),
+            FiltersPreset::Custom => write!(f, "custom"),
         }
-    }
-}
-
-impl Default for FiltersPreset {
-    fn default() -> Self {
-        Self::CrtApertureGrille1
     }
 }
 
@@ -271,6 +267,42 @@ impl FiltersPreset {
             "custom" => Some(Self::Custom),
             _ => None,
         }
+    }
+    pub fn get_description(&self) -> &str {
+        match self {
+            FiltersPreset::Sharp1 => "Sharp 1",
+            FiltersPreset::CrtApertureGrille1 => "CRT Aperture Grille 1",
+            FiltersPreset::CrtShadowMask1 => "CRT Shadow Mask 1",
+            FiltersPreset::CrtShadowMask2 => "CRT Shadow Mask 2",
+            FiltersPreset::DemoFlight1 => "Flight Demo",
+            FiltersPreset::Custom => "Custom",
+        }
+    }
+}
+
+#[cfg(test)]
+mod filter_presets_tests {
+    use super::FiltersPreset;
+    #[test]
+    fn test_from_str_to_str() {
+        // @TODO ensure a way to have this array correctly updated automatically
+        let presets: [FiltersPreset; 6] = [
+            FiltersPreset::Sharp1,
+            FiltersPreset::CrtApertureGrille1,
+            FiltersPreset::CrtShadowMask1,
+            FiltersPreset::CrtShadowMask2,
+            FiltersPreset::DemoFlight1,
+            FiltersPreset::Custom,
+        ];
+        for preset in presets.iter() {
+            assert_eq!(FiltersPreset::from_str(preset.to_string().as_ref()).unwrap(), *preset);
+        }
+    }
+}
+
+impl Default for FiltersPreset {
+    fn default() -> Self {
+        Self::CrtApertureGrille1
     }
 }
 

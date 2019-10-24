@@ -199,26 +199,6 @@ impl<'a> SimulationUpdater<'a> {
             .process_with_multiplications();
     }
 
-    fn update_filter_presets_from_event(&mut self) {
-        if let InputEventValue::FilterPreset(preset) = self.input.custom_event.get_value(event_kind::FILTER_PRESET) {
-            let preset = FiltersPreset::from_str(preset).expect("This preset is not valid.");
-            if self.res.filters.preset_kind == preset {
-                return;
-            }
-            if self.res.filters.preset_kind == FiltersPreset::Custom {
-                self.res.saved_filters = Some(self.res.filters.clone());
-            }
-            if self.res.filters.preset_kind == FiltersPreset::DemoFlight1 {
-                self.res.camera = self.res.demo_1.camera_backup.clone();
-            }
-            self.res.filters = self.res.filters.preset_factory(preset, &self.res.saved_filters);
-            if self.res.filters.preset_kind == FiltersPreset::DemoFlight1 {
-                self.res.demo_1.needs_initialization = true;
-            }
-            self.change_frontend_input_values();
-        }
-    }
-
     fn update_filters(&mut self) {
         self.update_filter_presets_from_event();
         if self.input.reset_filters {
@@ -392,10 +372,40 @@ impl<'a> SimulationUpdater<'a> {
             })
             .process_with_sums();
 
-        if changed && self.res.filters.preset_kind != FiltersPreset::Custom && self.res.filters.preset_kind != FiltersPreset::DemoFlight1 {
-            ctx.dispatcher().dispatch_change_preset_selected(&FiltersPreset::Custom.to_string());
-            self.res.filters.preset_kind = FiltersPreset::Custom;
+        if changed {
+            if self.res.filters.preset_kind != FiltersPreset::Custom && self.res.filters.preset_kind != FiltersPreset::DemoFlight1 {
+                ctx.dispatcher().dispatch_change_preset_selected(&FiltersPreset::Custom.to_string());
+                self.res.filters.preset_kind = FiltersPreset::Custom;
+            } else if self.res.filters.preset_kind == FiltersPreset::Custom {
+                self.res.custom_is_changed = true;
+            }
         }
+    }
+
+    fn update_filter_presets_from_event(&mut self) {
+        let preset = if let InputEventValue::FilterPreset(preset) = self.input.custom_event.get_value(event_kind::FILTER_PRESET) {
+            preset
+        } else {
+            return;
+        };
+        let preset = FiltersPreset::from_str(preset).expect("This preset is not valid.");
+        if self.res.filters.preset_kind == preset {
+            return;
+        }
+        if self.res.filters.preset_kind == FiltersPreset::Custom && self.res.custom_is_changed {
+            self.res.saved_filters = Some(self.res.filters.clone());
+        }
+        if self.res.filters.preset_kind == FiltersPreset::DemoFlight1 {
+            self.res.camera = self.res.demo_1.camera_backup.clone();
+        }
+        self.res.filters = self.res.filters.preset_factory(preset, &self.res.saved_filters);
+        if self.res.filters.preset_kind == FiltersPreset::DemoFlight1 {
+            self.res.demo_1.needs_initialization = true;
+        }
+        if self.res.filters.preset_kind == FiltersPreset::Custom {
+            self.res.custom_is_changed = false;
+        }
+        self.change_frontend_input_values();
     }
 
     fn update_camera(&mut self) {
@@ -510,7 +520,8 @@ impl<'a> SimulationUpdater<'a> {
         dispatcher.dispatch_change_pixel_speed(self.res.speed.filter_speed / PIXEL_MANIPULATION_BASE_SPEED);
         dispatcher.dispatch_change_turning_speed(self.res.camera.turning_speed / TURNING_BASE_SPEED);
         dispatcher.dispatch_change_movement_speed(self.res.camera.movement_speed / self.res.initial_parameters.initial_movement_speed);
-        dispatcher.dispatch_change_preset_selected(&self.res.filters.preset_kind.to_string());
+        // This one shouldn't be needed because it's always coming from frontend to backend.
+        //dispatcher.dispatch_change_preset_selected(&self.res.filters.preset_kind.to_string());
         dispatcher.enable_extra_messages(true);
     }
 

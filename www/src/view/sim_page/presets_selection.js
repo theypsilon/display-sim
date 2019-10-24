@@ -18,18 +18,20 @@ import { Storage } from '../../services/storage';
 
 const storage = Storage.make();
 
+const ACTIVE_PRESET_CLASS = 'active-preset';
+
 const preset = storage.getFilterPresets();
 Constants.filterPresetsButtonDeoList
     .filter(deo => deo.dataset.preset === preset)[0]
-    .classList.add('active-preset');
+    .classList.add(ACTIVE_PRESET_CLASS);
 
 Constants.filterPresetsButtonDeoList.forEach(deo => {
     deo.onclick = function () {
         const preset = deo.dataset.preset;
         Constants.filterPresetsButtonDeoList.forEach(otherDeo => {
-            otherDeo.classList.remove('active-preset');
+            otherDeo.classList.remove(ACTIVE_PRESET_CLASS);
         });
-        deo.classList.add('active-preset');
+        deo.classList.add(ACTIVE_PRESET_CLASS);
         if (preset !== 'custom') {
             storage.setFilterPresets(preset);
         }
@@ -46,4 +48,20 @@ Constants.filterPresetsButtonDeoList.forEach(deo => {
                 .click();
         }
     };
+});
+
+window.addEventListener('app-event.preset_selected_name', event => {
+    Constants.filterPresetsButtonDeoList
+        .forEach(deo => {
+            if (deo.dataset.preset === event.detail) {
+                deo.classList.add(ACTIVE_PRESET_CLASS);
+            } else if (deo.classList.contains(ACTIVE_PRESET_CLASS)) {
+                deo.classList.remove(ACTIVE_PRESET_CLASS);
+            }
+        });
+    if (event.detail === 'custom') {
+        window.dispatchEvent(new CustomEvent('app-event.top_message', {
+            detail: 'Now you are in the Custom mode, you may change any filter value you want.'
+        }));
+    }
 });
