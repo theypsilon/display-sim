@@ -19,7 +19,7 @@ let selectedInfoPanelDeo = Constants.infoPanelBasicDeo;
 
 Constants.tabsSelector.forEach(clickedTab => {
     clickedTab.addEventListener('click', () => {
-        settingsTabs.forEach(tab => {
+        Constants.tabsSelector.forEach(tab => {
             tab.classList.remove('active');
         });
         clickedTab.classList.add('active');
