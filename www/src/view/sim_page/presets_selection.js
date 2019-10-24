@@ -15,59 +15,35 @@
 
 import Constants from '../../services/constants';
 import { Storage } from '../../services/storage';
-import { Visibility } from '../../services/visibility';
 
 const storage = Storage.make();
-const visibility = Visibility.make();
+
+const preset = storage.getFilterPresets();
+Constants.filterPresetsButtonDeoList
+    .filter(deo => deo.dataset.preset === preset)[0]
+    .classList.add('active-preset');
 
 Constants.filterPresetsButtonDeoList.forEach(deo => {
     deo.onclick = function () {
+        const preset = deo.dataset.preset;
         Constants.filterPresetsButtonDeoList.forEach(otherDeo => {
             otherDeo.classList.remove('active-preset');
         });
         deo.classList.add('active-preset');
+        if (preset !== 'custom') {
+            storage.setFilterPresets(preset);
+        }
         window.dispatchEvent(new CustomEvent('app-event.custom_input_event', {
             detail: {
-                value: deo.dataset.preset,
+                value: preset,
                 kind: 'event_kind:filter_presets_selected'
             }
         }));
-    };
-});
 
-const presetsDeoAvailable = [Constants.filterPresetsDeo];
-window.addEventListener('app-event.preset_selected_name', event => {
-    const presetValue = event.detail.toLowerCase().replace(/\s/g, '-');
-    if (!Constants.properPresets.includes(presetValue)) {
-        throw new Error('Wrong preset value: ' + presetValue);
-    }
-    presetsDeoAvailable.forEach(presetsDeo => {
-        presetsDeo.value = presetValue;
-    });
-    Constants.filterPresetsButtonDeoList.forEach(deo => {
-        if (deo.dataset.preset === presetValue) {
-            deo.classList.add('active-preset');
-        } else {
-            deo.classList.remove('active-preset');
+        if (preset === Constants.presetCustom) {
+            Array.from(document.querySelectorAll('.tabs > li'))
+                .filter(deo => deo.id === 'panel-advanced')[0]
+                .click();
         }
-    });
-}, false);
-
-presetsDeoAvailable.forEach(presetsDeo => {
-    presetsDeo.onchange = () => {
-        if (presetsDeo.value === Constants.presetCustom) {
-            visibility.showFilterOptionMainList();
-        } else if (Constants.properPresets.includes(presetsDeo.value)) {
-            visibility.showFilterOptionMainList();
-        } else {
-            presetsDeo.value = Constants.presetApertureGrille1;
-        }
-        storage.setFilterPresets(presetsDeo.value);
-        window.dispatchEvent(new CustomEvent('app-event.custom_input_event', {
-            detail: {
-                value: presetsDeo.value,
-                kind: 'event_kind:filter_presets_selected'
-            }
-        }));
     };
 });

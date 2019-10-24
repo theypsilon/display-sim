@@ -18,9 +18,10 @@ use console_error_panic_hook::set_once as set_panic_hook;
 use js_sys::Uint8Array;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
+use crate::console;
 use crate::web_entrypoint::{print_error, web_entrypoint};
 use core::general_types::Size2D;
-use core::simulation_core_state::{AnimationStep, Resources, VideoInputResources};
+use core::simulation_core_state::{AnimationStep, FiltersPreset, Resources, VideoInputResources};
 use render::simulation_render_state::VideoInputMaterials;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -69,6 +70,7 @@ impl VideoInputWasm {
                     width: canvas_width,
                     height: canvas_height,
                 },
+                preset: FiltersPreset::CrtApertureGrille1,
                 max_texture_size: 8192,
                 steps: Vec::new(),
                 pixel_width: 1.0,
@@ -98,6 +100,20 @@ impl VideoInputWasm {
     #[wasm_bindgen]
     pub fn set_pixel_width(&mut self, pixel_width: f32) {
         self.resources.pixel_width = pixel_width;
+    }
+
+    #[wasm_bindgen]
+    pub fn set_preset(&mut self, preset: JsValue) {
+        match preset.as_string() {
+            Some(preset) => {
+                if let Some(preset) = FiltersPreset::from_str(preset.as_str()) {
+                    self.resources.preset = preset;
+                } else {
+                    console!(error. "Input preset is not a valid preset.");
+                }
+            }
+            None => console!(error. "Input preset is not a valid string."),
+        };
     }
 
     #[wasm_bindgen]

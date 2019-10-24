@@ -14,6 +14,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 import Logger from '../../services/logger';
+import Constants from './../../services/constants';
 
 import { SimLauncher } from '../../services/sim_launcher';
 import { Visibility } from '../../services/visibility';
@@ -52,6 +53,7 @@ export async function playDemo (path) {
         backgroundWidth: imageWidth,
         backgroundHeight: imageHeight,
         stretch: false,
+        activePreset: Constants.presetDemo1,
         animations
     });
 }

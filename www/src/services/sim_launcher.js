@@ -97,6 +97,11 @@ export class SimLauncher {
             this.simulationResources = displaySim.load_simulation_resources();
             Logger.log('wasm load_simulation_resources done');
         }
+
+        if (params.activePreset) {
+            videoInput.set_preset(params.activePreset);
+        }
+
         Logger.log('calling wasm run_program');
         displaySim.run_program(gl, this.simulationResources, videoInput);
         Logger.log('wasm run_program done');

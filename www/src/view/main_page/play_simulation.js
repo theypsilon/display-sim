@@ -103,6 +103,9 @@ export async function playSimulation () {
     storage.setAntiAliasing(ctxOptions.antialias);
     storage.setPowerPreferenceSelectOption(ctxOptions.powerPreference);
 
+    const filteredPresets = Constants.filterPresetsButtonDeoList.filter(deo => deo.classList.contains('active-preset'));
+    const activePreset = filteredPresets.length > 0 ? filteredPresets[0].dataset.preset : Constants.presetApertureGrille1;
+
     const result = await simLauncher.launch({
         ctxOptions,
         scaleX,
@@ -111,7 +114,8 @@ export async function playSimulation () {
         backgroundWidth,
         backgroundHeight,
         stretch,
-        animations
+        animations,
+        activePreset
     });
 
     if (result.glError) {
@@ -121,8 +125,8 @@ export async function playSimulation () {
         return { reloadPage: true };
     }
 
-    Constants.filterPresetsDeo.value = storage.getFilterPresets();
-    Constants.filterPresetsDeo.onchange();
+    // Constants.filterPresetsDeo.value = storage.getFilterPresets();
+    // Constants.filterPresetsDeo.onchange();
 
     //    Constants.filterPresetsBasicDeo.value = storage.getFilterPresets();
     //    Constants.filterPresetsBasicDeo.onchange();

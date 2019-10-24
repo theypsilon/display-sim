@@ -19,7 +19,7 @@ use crate::general_types::{get_3_f32color_from_int, get_int_from_3_f32color};
 use crate::pixels_shadow::ShadowShape;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::{
-    event_kind, ColorChannels, Filters, Input, InputEventValue, PixelsGeometryKind, Resources, ScreenCurvatureKind, TextureInterpolation,
+    event_kind, ColorChannels, Filters, FiltersPreset, Input, InputEventValue, PixelsGeometryKind, Resources, ScreenCurvatureKind, TextureInterpolation,
     PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
 };
 use derive_new::new;
@@ -108,7 +108,7 @@ impl<'a> SimulationUpdater<'a> {
         self.update_filters();
         self.update_camera();
         self.update_screenshot();
-        if self.res.filters.preset_name == "Demo 1" {
+        if self.res.filters.preset_kind == FiltersPreset::DemoFlight1 {
             self.update_demo();
         }
 
@@ -199,33 +199,28 @@ impl<'a> SimulationUpdater<'a> {
             .process_with_multiplications();
     }
 
-    fn update_filters(&mut self) {
+    fn update_filter_presets_from_event(&mut self) {
         if let InputEventValue::FilterPreset(preset) = self.input.custom_event.get_value(event_kind::FILTER_PRESET) {
-            if self.res.filters.preset_name == "Custom" {
+            let preset = FiltersPreset::from_str(preset).expect("This preset is not valid.");
+            if self.res.filters.preset_kind == preset {
+                return;
+            }
+            if self.res.filters.preset_kind == FiltersPreset::Custom {
                 self.res.saved_filters = Some(self.res.filters.clone());
             }
-            if self.res.filters.preset_name == "Demo 1" {
+            if self.res.filters.preset_kind == FiltersPreset::DemoFlight1 {
                 self.res.camera = self.res.demo_1.camera_backup.clone();
             }
-            self.res.filters = match preset.as_ref() {
-                "sharp-1" => self.res.filters.preset_sharp_1(),
-                "crt-aperture-grille-1" => self.res.filters.preset_crt_aperture_grille_1(),
-                "crt-shadow-mask-1" => self.res.filters.preset_crt_shadow_mask_1(),
-                "crt-shadow-mask-2" => self.res.filters.preset_crt_shadow_mask_2(),
-                "demo-1" => {
-                    self.res.demo_1.needs_initialization = true;
-                    self.res.filters.preset_demo_1()
-                }
-                _ => {
-                    if let Some(ref saved_filters) = self.res.saved_filters {
-                        saved_filters.clone()
-                    } else {
-                        return;
-                    }
-                }
-            };
+            self.res.filters = self.res.filters.preset_factory(preset, &self.res.saved_filters);
+            if self.res.filters.preset_kind == FiltersPreset::DemoFlight1 {
+                self.res.demo_1.needs_initialization = true;
+            }
             self.change_frontend_input_values();
         }
+    }
+
+    fn update_filters(&mut self) {
+        self.update_filter_presets_from_event();
         if self.input.reset_filters {
             self.res.filters = Filters::default();
             self.res.filters.cur_pixel_width = self.res.initial_parameters.initial_pixel_width;
@@ -397,9 +392,9 @@ impl<'a> SimulationUpdater<'a> {
             })
             .process_with_sums();
 
-        if changed && self.res.filters.preset_name != "Custom" && self.res.filters.preset_name != "Demo 1" {
-            ctx.dispatcher().dispatch_change_preset_selected("Custom");
-            self.res.filters.preset_name = "Custom".into();
+        if changed && self.res.filters.preset_kind != FiltersPreset::Custom && self.res.filters.preset_kind != FiltersPreset::DemoFlight1 {
+            ctx.dispatcher().dispatch_change_preset_selected(&FiltersPreset::Custom.to_string());
+            self.res.filters.preset_kind = FiltersPreset::Custom;
         }
     }
 
@@ -515,7 +510,7 @@ impl<'a> SimulationUpdater<'a> {
         dispatcher.dispatch_change_pixel_speed(self.res.speed.filter_speed / PIXEL_MANIPULATION_BASE_SPEED);
         dispatcher.dispatch_change_turning_speed(self.res.camera.turning_speed / TURNING_BASE_SPEED);
         dispatcher.dispatch_change_movement_speed(self.res.camera.movement_speed / self.res.initial_parameters.initial_movement_speed);
-        dispatcher.dispatch_change_preset_selected(&self.res.filters.preset_name);
+        dispatcher.dispatch_change_preset_selected(&self.res.filters.preset_kind.to_string());
         dispatcher.enable_extra_messages(true);
     }
 

@@ -36,6 +36,7 @@ pub struct VideoInputResources {
     pub background_size: Size2D<u32>,
     pub viewport_size: Size2D<u32>,
     pub pixel_width: f32,
+    pub preset: FiltersPreset,
     pub stretch: bool,
     pub current_frame: usize,
     pub last_frame_change: f64,
@@ -140,6 +141,7 @@ impl Resources {
         }
         self.quit = false;
         self.resetted = true;
+        self.filters = self.filters.preset_factory(video_input.preset, &None);
         self.filters.cur_pixel_width = cur_pixel_width;
         self.timers = SimulationTimers {
             frame_count: 0,
@@ -198,7 +200,7 @@ pub struct Filters {
     pub screen_curvature_kind: ScreenCurvatureKind,
     pub pixel_shadow_shape_kind: ShadowShape,
     pub backlight_presence: f32,
-    pub preset_name: String,
+    pub preset_kind: FiltersPreset,
 }
 
 impl Default for Filters {
@@ -223,13 +225,69 @@ impl Default for Filters {
             color_channels: ColorChannels::Combined,
             screen_curvature_kind: ScreenCurvatureKind::Flat,
             backlight_presence: 0.0,
-            preset_name: "Sharp 1".into(),
+            preset_kind: FiltersPreset::Sharp1,
         }
         .preset_crt_aperture_grille_1()
     }
 }
 
+#[derive(Clone, Copy, PartialEq)]
+pub enum FiltersPreset {
+    Sharp1,
+    CrtApertureGrille1,
+    CrtShadowMask1,
+    CrtShadowMask2,
+    DemoFlight1,
+    Custom,
+}
+
+impl std::fmt::Display for FiltersPreset {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            FiltersPreset::Sharp1 => write!(f, "Sharp 1"),
+            FiltersPreset::CrtApertureGrille1 => write!(f, "CRT Aperture Grille 1"),
+            FiltersPreset::CrtShadowMask1 => write!(f, "CRT Shadow Mask 1"),
+            FiltersPreset::CrtShadowMask2 => write!(f, "CRT Shadow Mask 2"),
+            FiltersPreset::DemoFlight1 => write!(f, "Flight Demo"),
+            FiltersPreset::Custom => write!(f, "Custom"),
+        }
+    }
+}
+
+impl Default for FiltersPreset {
+    fn default() -> Self {
+        Self::CrtApertureGrille1
+    }
+}
+
+impl FiltersPreset {
+    pub fn from_str(name: &str) -> Option<Self> {
+        match name {
+            "sharp-1" => Some(Self::Sharp1),
+            "crt-aperture-grille-1" => Some(Self::CrtApertureGrille1),
+            "crt-shadow-mask-1" => Some(Self::CrtShadowMask1),
+            "crt-shadow-mask-2" => Some(Self::CrtShadowMask2),
+            "demo-1" => Some(Self::DemoFlight1),
+            "custom" => Some(Self::Custom),
+            _ => None,
+        }
+    }
+}
+
 impl Filters {
+    pub fn preset_factory(&self, preset: FiltersPreset, previous_custom: &Option<Filters>) -> Filters {
+        match preset {
+            FiltersPreset::Sharp1 => self.preset_sharp_1(),
+            FiltersPreset::CrtApertureGrille1 => self.preset_crt_aperture_grille_1(),
+            FiltersPreset::CrtShadowMask1 => self.preset_crt_shadow_mask_1(),
+            FiltersPreset::CrtShadowMask2 => self.preset_crt_shadow_mask_2(),
+            FiltersPreset::DemoFlight1 => self.preset_demo_1(),
+            FiltersPreset::Custom => match previous_custom {
+                Some(ref filter) => filter.clone(),
+                None => self.preset_custom(),
+            },
+        }
+    }
     pub fn preset_sharp_1(&self) -> Filters {
         Filters {
             internal_resolution: self.internal_resolution.clone(),
@@ -251,7 +309,7 @@ impl Filters {
             color_channels: ColorChannels::Combined,
             screen_curvature_kind: ScreenCurvatureKind::Flat,
             backlight_presence: 0.0,
-            preset_name: "Sharp 1".into(),
+            preset_kind: FiltersPreset::Sharp1,
         }
     }
 
@@ -276,7 +334,7 @@ impl Filters {
             color_channels: ColorChannels::Combined,
             screen_curvature_kind: ScreenCurvatureKind::Flat,
             backlight_presence: 0.5,
-            preset_name: "CRT Aperture Grille 1".into(),
+            preset_kind: FiltersPreset::CrtApertureGrille1,
         }
     }
 
@@ -301,7 +359,7 @@ impl Filters {
             color_channels: ColorChannels::Combined,
             screen_curvature_kind: ScreenCurvatureKind::Flat,
             backlight_presence: 0.25,
-            preset_name: "CRT Shadow Mask 1".into(),
+            preset_kind: FiltersPreset::CrtShadowMask1,
         }
     }
 
@@ -326,7 +384,7 @@ impl Filters {
             color_channels: ColorChannels::Combined,
             screen_curvature_kind: ScreenCurvatureKind::Flat,
             backlight_presence: 0.4,
-            preset_name: "CRT Shadow Mask 2".into(),
+            preset_kind: FiltersPreset::CrtShadowMask2,
         }
     }
 
@@ -351,8 +409,14 @@ impl Filters {
             color_channels: ColorChannels::Combined,
             screen_curvature_kind: ScreenCurvatureKind::Pulse,
             backlight_presence: 0.2,
-            preset_name: "Demo 1".into(),
+            preset_kind: FiltersPreset::DemoFlight1,
         }
+    }
+
+    pub fn preset_custom(&self) -> Self {
+        let mut clone = self.clone();
+        clone.preset_kind = FiltersPreset::Custom;
+        return clone;
     }
 }
 
