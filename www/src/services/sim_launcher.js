@@ -27,14 +27,15 @@ export class SimLauncher {
         return new SimLauncher();
     }
 
-    async launch (params) {
-        {
-            const oldCanvas = document.getElementById(Constants.GL_CANVAS_ID);
-            if (oldCanvas) {
-                oldCanvas.remove();
-            }
+    removeOldCanvasIfExists () {
+        const oldCanvas = document.getElementById(Constants.GL_CANVAS_ID);
+        if (oldCanvas) {
+            oldCanvas.remove();
         }
+    }
 
+    async launch (params) {
+        this.removeOldCanvasIfExists();
         const canvas = document.createElement('canvas');
 
         canvas.id = Constants.GL_CANVAS_ID;
@@ -123,7 +124,7 @@ function fixCanvasSize (canvas) {
     canvas.height = Math.round(height * dpi / zoom / 60) * 60;
 
     canvas.style.width = window.innerWidth;
-    canvas.style.height = window.innerHeight;
+    canvas.style.height = window.innerHeight + 0.5;
 
     Logger.log('resolution:', canvas.width, canvas.height, width, height);
 

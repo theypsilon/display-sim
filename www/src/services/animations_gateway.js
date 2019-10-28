@@ -66,8 +66,8 @@ export class AnimationsGateway {
         }
     }
 
-    async getFromPath (path) {
-        const isGif = path.endsWith('.gif');
+    async getFromPath (path, forceGif) {
+        const isGif = forceGif === true || path.endsWith('.gif');
         if (isGif) {
             return this.extractDataFromGifUrl(path);
         } else {
@@ -75,6 +75,7 @@ export class AnimationsGateway {
             await new Promise((resolve, reject) => {
                 img.onload = resolve;
                 img.onerror = reject;
+                img.setAttribute('crossOrigin', '');
                 img.src = path;
             });
             return this.extractDataFromImg(img);
@@ -98,7 +99,7 @@ export class AnimationsGateway {
     }
 
     async privateFetchGif (url) {
-        const response = await window.fetch(url);
+        const response = await window.fetch(url, { mode: 'no-cors' });
         const buffer = await response.arrayBuffer();
         const gif = await this.decoder.decode(buffer);
         return gif.map(frame => ({
@@ -108,6 +109,7 @@ export class AnimationsGateway {
     }
 
     extractDataFromImg (img) {
+        img.setAttribute('crossOrigin', '');
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         canvas.width = img.width;

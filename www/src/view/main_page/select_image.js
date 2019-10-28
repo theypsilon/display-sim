@@ -93,6 +93,7 @@ async function processFileToUpload (url) {
     await new Promise((resolve, reject) => {
         img.onload = resolve;
         img.onerror = reject;
+        img.setAttribute('crossOrigin', '');
         img.src = previewUrl;
     });
 

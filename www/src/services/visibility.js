@@ -36,11 +36,16 @@ export class Visibility {
     showInfoPanel () { showElement(Constants.infoPanelDeo); }
     hideInfoPanel () { hideElement(Constants.infoPanelDeo); }
     isInfoPanelVisible () { isVisible(Constants.infoPanelDeo); }
-    showFilterOptionMainList () { showElement(Constants.filterOptionMainListDeo); }
-    hideFilterOptionMainList () { hideElement(Constants.filterOptionMainListDeo); }
     showScalingCustomResButton () { showElement(Constants.scalingCustomResButtonDeo); }
     showScaleCustomInputs () { showElement(Constants.scalingCustomInputsDeo); }
     hideScaleCustomInputs () { hideElement(Constants.scalingCustomInputsDeo); }
+    hideAll () {
+        this.hideUi();
+        this.hideLoading();
+        this.hideSimulationUi();
+        this.hideInfoPanel();
+        this.hideScaleCustomInputs();
+    }
 }
 
 instance = new Visibility();

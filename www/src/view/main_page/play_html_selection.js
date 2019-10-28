@@ -37,7 +37,7 @@ async function getAnimations () {
     }
 }
 
-export async function playSimulation () {
+export async function playHtmlSelection () {
     visibility.showLoading();
 
     await new Promise(resolve => setTimeout(resolve, 50));

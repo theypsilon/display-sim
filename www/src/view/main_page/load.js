@@ -22,8 +22,8 @@ import { Storage } from '../../services/storage';
 
 import { mobileAndTabletCheck } from '../../services/utils';
 
-import { playSimulation } from './play_simulation';
-import { playDemo } from './play_demo';
+import { playHtmlSelection } from './play_html_selection';
+import { playQuerystring } from './play_querystring';
 
 const isRunningOnMobileDevice = mobileAndTabletCheck();
 const visibility = Visibility.make();
@@ -38,9 +38,27 @@ Promise.all([
     prepareMainPage();
 });
 
+let savedHash = '';
+let hashNotChanged = false;
+window.onhashchange = () => {
+    if (hashNotChanged) {
+        hashNotChanged = false;
+        return;
+    }
+    if (window.location.hash.length === 0) {
+        hashNotChanged = true;
+        window.location.hash = savedHash;
+        return;
+    }
+    visibility.hideAll();
+    visibility.showLoading();
+    prepareMainPage();
+};
+
 export async function prepareMainPage () {
     if (window.location.hash.length > 1) {
-        return playDemo(window.location.hash.substr(1));
+        savedHash = window.location.hash;
+        return playQuerystring(window.location.hash.substr(1));
     }
 
     loadInputValuesFromStorage();
@@ -60,7 +78,7 @@ export async function prepareMainPage () {
 
     visibility.hideUi();
 
-    const result = await playSimulation();
+    const result = await playHtmlSelection();
     if (result.reloadPage) {
         prepareMainPage();
     }
