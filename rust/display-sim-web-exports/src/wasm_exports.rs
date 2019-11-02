@@ -78,6 +78,7 @@ impl VideoInputWasm {
                 current_frame: 0,
                 last_frame_change: -1000.0,
                 needs_buffer_data_load: true,
+                drawing_activation: true,
             },
             materials: VideoInputMaterials::default(),
         }
@@ -124,5 +125,10 @@ impl VideoInputWasm {
     #[wasm_bindgen]
     pub fn set_max_texture_size(&mut self, max_texture_size: i32) {
         self.resources.max_texture_size = max_texture_size;
+    }
+
+    #[wasm_bindgen]
+    pub fn set_drawing_activation(&mut self, activation: bool) {
+        self.resources.drawing_activation = activation;
     }
 }

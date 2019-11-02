@@ -41,6 +41,7 @@ pub struct VideoInputResources {
     pub current_frame: usize,
     pub last_frame_change: f64,
     pub needs_buffer_data_load: bool,
+    pub drawing_activation: bool,
 }
 
 #[derive(Clone, Copy)]

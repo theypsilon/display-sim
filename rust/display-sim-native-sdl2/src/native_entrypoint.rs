@@ -89,6 +89,7 @@ fn program() -> WebResult<()> {
         preset: FiltersPreset::default(),
         last_frame_change: 0.0,
         needs_buffer_data_load: true,
+        drawing_activation: true,
     };
     let materials_input = VideoInputMaterials { buffers: vec![pixels] };
 

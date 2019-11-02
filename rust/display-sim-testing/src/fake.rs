@@ -51,6 +51,7 @@ impl Default for FakeVideoInput {
                 last_frame_change: 0.0,
                 preset: FiltersPreset::default(),
                 needs_buffer_data_load: true,
+                drawing_activation: true,
             },
             VideoInputMaterials {
                 buffers: vec![Box::new([0; 256 * 224 * 4 * 4])],
