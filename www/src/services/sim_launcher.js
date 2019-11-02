@@ -19,12 +19,13 @@ import Logger from './logger';
 const displaySimPromise = import('../wasm/display_sim');
 
 export class SimLauncher {
-    SimLauncher () {
+    SimLauncher (ctx) {
         this.simulationResources = null;
+        this.ctx = ctx;
     }
 
-    static make () {
-        return new SimLauncher();
+    static make (ctx) {
+        return new SimLauncher(ctx);
     }
 
     removeOldCanvasIfExists () {
@@ -103,6 +104,10 @@ export class SimLauncher {
             videoInput.set_preset(params.activePreset);
         }
 
+        if (params.skipDrawing) {
+            videoInput.set_drawing_activation(false);
+        }
+
         Logger.log('calling wasm run_program');
         displaySim.run_program(gl, this.simulationResources, videoInput);
         Logger.log('wasm run_program done');
@@ -127,8 +132,4 @@ function fixCanvasSize (canvas) {
     canvas.style.height = window.innerHeight + 0.5;
 
     Logger.log('resolution:', canvas.width, canvas.height, width, height);
-
-    const infoPanelContentHeight = (window.innerHeight - 18) * 0.95;
-    Constants.infoPanelContentDeo.style.setProperty('max-height', infoPanelContentHeight);
-    Constants.infoPanelAdvancedSettingsDeo.style.setProperty('max-height', infoPanelContentHeight - 60);
 }

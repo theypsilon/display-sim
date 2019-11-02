@@ -17,36 +17,44 @@ import Constants from '../../services/constants';
 
 import { Visibility } from '../../services/visibility';
 
-const getGlCanvasDeo = () => document.getElementById(Constants.GL_CANVAS_ID);
+export default function (ctx) {
+    const getGlCanvasDeo = () => document.getElementById(Constants.GL_CANVAS_ID);
 
-const visibility = Visibility.make();
+    const visibility = Visibility.make();
 
-window.addEventListener(Constants.APP_EVENT_TOGGLE_INFO_PANEL, () => {
-    if (!getGlCanvasDeo()) {
-        return;
-    }
-    if (visibility.isInfoPanelVisible() === false) {
-        visibility.showInfoPanel();
-    } else {
-        visibility.hideInfoPanel();
-        window.dispatchEvent(new CustomEvent(Constants.APP_EVENT_TOP_MESSAGE, {
-            detail: 'Toggle the Sim Panel by pressing SPACE.'
-        }));
-    }
-}, false);
-
-Constants.toggleInfoPanelClass.forEach(deo => {
-    deo.onclick = () => {
+    window.addEventListener(ctx.constants.APP_EVENT_TOGGLE_INFO_PANEL, () => {
         if (!getGlCanvasDeo()) {
             return;
         }
-        if (visibility.isInfoPanelVisible()) {
+        if (visibility.isInfoPanelVisible() === false) {
+            visibility.showInfoPanel();
+        } else {
             visibility.hideInfoPanel();
             window.dispatchEvent(new CustomEvent(Constants.APP_EVENT_TOP_MESSAGE, {
-                detail: 'Show the Sim Panel again by pressing SPACE.'
+                detail: 'Toggle the Sim Panel by pressing SPACE.'
             }));
-        } else {
-            visibility.showInfoPanel();
         }
-    };
-});
+    }, false);
+
+    ctx.constants.toggleInfoPanelClass.forEach(deo => {
+        deo.onclick = () => {
+            if (!getGlCanvasDeo()) {
+                return;
+            }
+            if (visibility.isInfoPanelVisible()) {
+                visibility.hideInfoPanel();
+                window.dispatchEvent(new CustomEvent(Constants.APP_EVENT_TOP_MESSAGE, {
+                    detail: 'Show the Sim Panel again by pressing SPACE.'
+                }));
+            } else {
+                visibility.showInfoPanel();
+            }
+        };
+    });
+
+    window.addEventListener('resize', () => {
+        const infoPanelContentHeight = (window.innerHeight - 18) * 0.95;
+        ctx.constants.infoPanelContentDeo.style.setProperty('max-height', infoPanelContentHeight);
+        ctx.constants.infoPanelAdvancedSettingsDeo.style.setProperty('max-height', infoPanelContentHeight - 60); 
+    });
+}

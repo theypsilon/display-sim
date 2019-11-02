@@ -15,26 +15,28 @@
 
 import Constants from '../../services/constants';
 
-let selectedInfoPanelDeo = Constants.infoPanelBasicDeo;
+export default function (ctx) {
+    let selectedInfoPanelDeo = ctx.constants.infoPanelBasicDeo;
 
-Constants.tabsSelector.forEach(clickedTab => {
-    clickedTab.addEventListener('click', () => {
-        Constants.tabsSelector.forEach(tab => {
-            tab.classList.remove('active');
+    ctx.constants.tabsSelector.forEach(clickedTab => {
+        clickedTab.addEventListener('click', () => {
+            ctx.constants.tabsSelector.forEach(tab => {
+                tab.classList.remove('active');
+            });
+            clickedTab.classList.add('active');
+            selectedInfoPanelDeo.classList.add(Constants.DISPLAY_NONE_CLASS);
+            switch (clickedTab.id) {
+            case ctx.constants.TAB_PANEL_BASIC:
+                selectedInfoPanelDeo = ctx.constants.infoPanelBasicDeo;
+                break;
+            case ctx.constants.TAB_PANEL_ADVANCED:
+                selectedInfoPanelDeo = ctx.constants.infoPanelAdvancedDeo;
+                break;
+            default:
+                console.error('Unknown clicked tab: ' + clickedTab.id);
+                break;
+            }
+            selectedInfoPanelDeo.classList.remove(Constants.DISPLAY_NONE_CLASS);
         });
-        clickedTab.classList.add('active');
-        selectedInfoPanelDeo.classList.add(Constants.DISPLAY_NONE_CLASS);
-        switch (clickedTab.id) {
-        case Constants.TAB_PANEL_BASIC:
-            selectedInfoPanelDeo = Constants.infoPanelBasicDeo;
-            break;
-        case Constants.TAB_PANEL_ADVANCED:
-            selectedInfoPanelDeo = Constants.infoPanelAdvancedDeo;
-            break;
-        default:
-            console.error('Unknown clicked tab: ' + clickedTab.id);
-            break;
-        }
-        selectedInfoPanelDeo.classList.remove(Constants.DISPLAY_NONE_CLASS);
     });
-});
+}

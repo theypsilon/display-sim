@@ -19,6 +19,9 @@ let instance;
 
 export class Visibility {
     static make () { return instance; }
+    setSimPageConstants(simPageConstants) {
+        this.simPageConstants = simPageConstants;
+    }
     showUi () { showElement(Constants.uiDeo); }
     hideUi () { hideElement(Constants.uiDeo); }
     showLoading () { showElement(Constants.loadingDeo); }
@@ -26,15 +29,15 @@ export class Visibility {
     showSimulationUi () {
         document.body.style.setProperty('overflow', 'hidden');
         document.body.style.setProperty('background-color', 'black');
-        showElement(Constants.simulationUiDeo);
+        showElement(this.simPageConstants.simulationUiDeo);
     }
     hideSimulationUi () {
         document.body.style.removeProperty('overflow');
         document.body.style.removeProperty('background-color');
-        hideElement(Constants.simulationUiDeo);
+        hideElement(this.simPageConstants.simulationUiDeo);
     }
-    showInfoPanel () { showElement(Constants.infoPanelDeo); }
-    hideInfoPanel () { hideElement(Constants.infoPanelDeo); }
+    showInfoPanel () { showElement(this.simPageConstants.infoPanelDeo); }
+    hideInfoPanel () { hideElement(this.simPageConstants.infoPanelDeo); }
     isInfoPanelVisible () { isVisible(Constants.infoPanelDeo); }
     showScalingCustomResButton () { showElement(Constants.scalingCustomResButtonDeo); }
     showScaleCustomInputs () { showElement(Constants.scalingCustomInputsDeo); }

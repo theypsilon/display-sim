@@ -16,50 +16,53 @@
 import Constants from '../../services/constants';
 import { Storage } from '../../services/storage';
 
-const storage = Storage.make();
+export default function (ctx) {
 
-const preset = storage.getFilterPresets();
-Constants.filterPresetsButtonDeoList
-    .filter(deo => deo.dataset.preset === preset)[0]
-    .classList.add(Constants.PRESET_ACTIVE_CLASS);
+    const storage = Storage.make();
 
-Constants.filterPresetsButtonDeoList.forEach(deo => {
-    deo.onclick = function () {
-        const preset = deo.dataset.preset;
-        Constants.filterPresetsButtonDeoList.forEach(otherDeo => {
-            otherDeo.classList.remove(Constants.PRESET_ACTIVE_CLASS);
-        });
-        deo.classList.add(Constants.PRESET_ACTIVE_CLASS);
-        if (preset !== Constants.PRESET_KIND_CUSTOM) {
-            storage.setFilterPresets(preset);
-        }
-        window.dispatchEvent(new CustomEvent(Constants.APP_EVENT_CUSTOM_INPUT, {
-            detail: {
-                value: preset,
-                kind: 'event_kind:filter_presets_selected'
+    const preset = storage.getFilterPresets();
+    ctx.constants.filterPresetsButtonDeoList
+        .filter(deo => deo.dataset.preset === preset)[0]
+        .classList.add(ctx.constants.PRESET_ACTIVE_CLASS);
+
+    ctx.constants.filterPresetsButtonDeoList.forEach(deo => {
+        deo.onclick = function () {
+            const preset = deo.dataset.preset;
+            ctx.constants.filterPresetsButtonDeoList.forEach(otherDeo => {
+                otherDeo.classList.remove(ctx.constants.PRESET_ACTIVE_CLASS);
+            });
+            deo.classList.add(ctx.constants.PRESET_ACTIVE_CLASS);
+            if (preset !== ctx.constants.PRESET_KIND_CUSTOM) {
+                storage.setFilterPresets(preset);
             }
-        }));
+            window.dispatchEvent(new CustomEvent(ctx.constants.APP_EVENT_CUSTOM_INPUT, {
+                detail: {
+                    value: preset,
+                    kind: 'event_kind:filter_presets_selected'
+                }
+            }));
 
-        if (preset === Constants.PRESET_KIND_CUSTOM) {
-            Array.from(Constants.tabsSelector)
-                .filter(deo => deo.id === Constants.TAB_PANEL_ADVANCED)[0]
-                .click();
-        }
-    };
-});
-
-window.addEventListener(Constants.APP_EVENT_PRESET_SELECTED_NAME, event => {
-    Constants.filterPresetsButtonDeoList
-        .forEach(deo => {
-            if (deo.dataset.preset === event.detail) {
-                deo.classList.add(Constants.PRESET_ACTIVE_CLASS);
-            } else if (deo.classList.contains(Constants.PRESET_ACTIVE_CLASS)) {
-                deo.classList.remove(Constants.PRESET_ACTIVE_CLASS);
+            if (preset === ctx.constants.PRESET_KIND_CUSTOM) {
+                Array.from(ctx.constants.tabsSelector)
+                    .filter(deo => deo.id === ctx.constants.TAB_PANEL_ADVANCED)[0]
+                    .click();
             }
-        });
-    if (event.detail === Constants.PRESET_KIND_CUSTOM) {
-        window.dispatchEvent(new CustomEvent(Constants.APP_EVENT_TOP_MESSAGE, {
-            detail: 'Now you are in the Custom mode, you may change any filter value you want.'
-        }));
-    }
-});
+        };
+    });
+
+    window.addEventListener(ctx.constants.APP_EVENT_PRESET_SELECTED_NAME, event => {
+        ctx.constants.filterPresetsButtonDeoList
+            .forEach(deo => {
+                if (deo.dataset.preset === event.detail) {
+                    deo.classList.add(ctx.constants.PRESET_ACTIVE_CLASS);
+                } else if (deo.classList.contains(ctx.constants.PRESET_ACTIVE_CLASS)) {
+                    deo.classList.remove(ctx.constants.PRESET_ACTIVE_CLASS);
+                }
+            });
+        if (event.detail === ctx.constants.PRESET_KIND_CUSTOM) {
+            window.dispatchEvent(new CustomEvent(ctx.constants.APP_EVENT_TOP_MESSAGE, {
+                detail: 'Now you are in the Custom mode, you may change any filter value you want.'
+            }));
+        }
+    });
+}

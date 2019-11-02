@@ -44,36 +44,33 @@ export async function playQuerystring (querystring) {
     const animations = searchParams.has('file') ? await animationsGateway.getFromPath(searchParams.get('file'), hasGif) : await animationsGateway.getFromHardcodedTileset();
     const hasBackgroundUi = searchParams.has('bg-ui');
     const hasControllerUi = searchParams.has('ui');
-    const skipsBackend = searchParams.has('skip-backend');
+    const skipDrawing = searchParams.has('skip-drawing');
     const fullscreen = searchParams.has('fullscreen');
 
     const imageWidth = animations[0].raw.width;
     const imageHeight = animations[0].raw.height;
 
-    if (skipsBackend) {
-        simLauncher.removeOldCanvasIfExists();
-    } else {
-        await simLauncher.launch({
-            ctxOptions: {
-                alpha: false,
-                antialias: false,
-                depth: true,
-                failIfMajorPerformanceCaveat: false,
-                powerPreference: 'high-performance',
-                premultipliedAlpha: false,
-                preserveDrawingBuffer: false,
-                stencil: false
-            },
-            scaleX: calculateAutoScaling(imageWidth, imageHeight).scaleX,
-            imageWidth: imageWidth,
-            imageHeight: imageHeight,
-            backgroundWidth: imageWidth,
-            backgroundHeight: imageHeight,
-            stretch: false,
-            activePreset: selectedPreset,
-            animations
-        });
-    }
+    await simLauncher.launch({
+        ctxOptions: {
+            alpha: false,
+            antialias: false,
+            depth: true,
+            failIfMajorPerformanceCaveat: false,
+            powerPreference: 'high-performance',
+            premultipliedAlpha: false,
+            preserveDrawingBuffer: false,
+            stencil: false
+        },
+        scaleX: calculateAutoScaling(imageWidth, imageHeight).scaleX,
+        imageWidth: imageWidth,
+        imageHeight: imageHeight,
+        backgroundWidth: imageWidth,
+        backgroundHeight: imageHeight,
+        stretch: false,
+        activePreset: selectedPreset,
+        animations,
+        skipDrawing
+    });
 
     visibility.hideLoading();
 
