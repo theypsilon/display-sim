@@ -156,7 +156,7 @@ template.innerHTML = `
 `;
 
 class SimPage extends HTMLElement {
-    constructor() {
+    constructor () {
         super();
         const root = this.attachShadow({ mode: 'open' });
         root.appendChild(template.content.cloneNode(true));

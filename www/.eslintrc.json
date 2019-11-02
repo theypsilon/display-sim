@@ -13,6 +13,7 @@
     "rules": {
         "indent": ["error", 4],
         "eol-last": "off",
-        "no-trailing-spaces": "off"
+        "no-trailing-spaces": "off",
+        "import/no-webpack-loader-syntax": "off"
     }
 }

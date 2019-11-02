@@ -16,7 +16,6 @@
 import Constants from '../../services/constants';
 
 export default function (ctx) {
-
     window.addEventListener(ctx.constants.APP_EVENT_CAMERA_UPDATE, event => {
         ctx.constants.cameraPosXDeo.value = Math.round(event.detail[0] * 100) / 100;
         ctx.constants.cameraPosYDeo.value = Math.round(event.detail[1] * 100) / 100;
@@ -126,5 +125,4 @@ export default function (ctx) {
         };
         deo.onchange = changed;
     }
-
 }

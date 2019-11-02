@@ -13,11 +13,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import Constants from '../../services/constants';
 import { Storage } from '../../services/storage';
 
 export default function (ctx) {
-
     const storage = Storage.make();
 
     const preset = storage.getFilterPresets();

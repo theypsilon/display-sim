@@ -19,7 +19,7 @@ let instance;
 
 export class Visibility {
     static make () { return instance; }
-    setSimPageConstants(simPageConstants) {
+    setSimPageConstants (simPageConstants) {
         this.simPageConstants = simPageConstants;
     }
     showUi () { showElement(Constants.uiDeo); }

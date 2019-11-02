@@ -53,6 +53,5 @@ export default function (ctx) {
         const eventOptions = { key: 'input_focused' };
         deo.addEventListener('focus', () => document.dispatchEvent(new KeyboardEvent('keydown', eventOptions)));
         deo.addEventListener('blur', () => document.dispatchEvent(new KeyboardEvent('keyup', eventOptions)));
-    });    
-
+    });
 }
