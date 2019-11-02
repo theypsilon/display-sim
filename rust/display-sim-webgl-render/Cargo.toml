@@ -11,7 +11,7 @@ webgl_to_opengl_hooks = []
 
 [dependencies]
 derive-new = "0.5.6"
-glm = { version = "0.1", package = "nalgebra-glm" }
+glm = { version = "0.5", package = "nalgebra-glm" }
 core = { path = "../display-sim-core", package = "display-sim-core" }
 web-error = { path = "../display-sim-web-error", package = "display-sim-web-error" }
 
