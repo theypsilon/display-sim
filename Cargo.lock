@@ -422,7 +422,6 @@ version = "0.1.0"
 dependencies = [
  "display-sim-core 0.1.0",
  "display-sim-opengl-render 0.1.0",
- "gl 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "glutin 0.22.0-alpha3 (registry+https://github.com/rust-lang/crates.io-index)",
  "image 0.21.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra-glm 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",

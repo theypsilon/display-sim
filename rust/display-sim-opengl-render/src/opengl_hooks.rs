@@ -36,11 +36,22 @@ struct GlData {
     debugging: bool,
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct WebGl2RenderingContext {
     data: Rc<GlData>,
 }
 impl WebGl2RenderingContext {
+    pub fn new(cb: impl FnMut(&'static str) -> *const std::ffi::c_void) -> Self {
+        gl::load_with(cb);
+        let version = unsafe {
+            let data = std::ffi::CStr::from_ptr(gl::GetString(gl::VERSION) as *const _)
+                .to_bytes()
+                .to_vec();
+            String::from_utf8(data).unwrap()
+        };
+        println!("OpenGL version {}", version);
+        WebGl2RenderingContext{ data: Default::default() }
+    }
     pub const RGBA: u32 = gl::RGBA;
     pub const TRIANGLES: u32 = gl::TRIANGLES;
     pub const LINEAR: u32 = gl::LINEAR;

@@ -91,15 +91,7 @@ fn program() -> WebResult<()> {
         windowed_context.get_pixel_format()
     );
 
-    gl::load_with(|ptr| windowed_context.context().get_proc_address(ptr) as *const _);
-
-    let version = unsafe {
-        let data = std::ffi::CStr::from_ptr(gl::GetString(gl::VERSION) as *const _)
-            .to_bytes()
-            .to_vec();
-        String::from_utf8(data).unwrap()
-    };
-    println!("OpenGL version {}", version);
+    let gl_ctx = WebGl2RenderingContext::new(|ptr| windowed_context.context().get_proc_address(ptr) as *const _);
 
 
     let img_path = "www/assets/pics/frames/seiken.png";
@@ -138,7 +130,7 @@ fn program() -> WebResult<()> {
     let mut res = Resources::default();
     res.initialize(res_input, 0.0);
     println!("Preparing materials.");
-    let mut materials = Materials::new(WebGl2RenderingContext::default(), materials_input)?;
+    let mut materials = Materials::new(gl_ctx, materials_input)?;
 
     println!("Preparing input.");
     let mut input = Input::new(0.0);

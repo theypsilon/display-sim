@@ -9,7 +9,6 @@ test = false
 
 [dependencies]
 image = "0.21.0"
-gl = "0.14.0"
 glm = { version = "0.5", package = "nalgebra-glm" }
 render = { path = "../display-sim-opengl-render", package = "display-sim-opengl-render" }
 core = { path = "../display-sim-core", package = "display-sim-core" }
