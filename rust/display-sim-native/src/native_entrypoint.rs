@@ -83,15 +83,13 @@ fn program() -> WebResult<()> {
         .build_windowed(wb, &el)
         .map_err(|e| format!("{}", e))?;
 
-    let windowed_context = unsafe { windowed_context.make_current().unwrap() };
+    let windowed_context = unsafe { windowed_context.make_current().map_err(|e| format!("Context Error: {:?}", e))? };
     let windowed_context = Rc::new(windowed_context);
-
+    let gl_ctx = WebGl2RenderingContext::new(|ptr| windowed_context.context().get_proc_address(ptr) as *const _);
     println!(
         "Pixel format of the window's GL context: {:?}",
         windowed_context.get_pixel_format()
     );
-
-    let gl_ctx = WebGl2RenderingContext::new(|ptr| windowed_context.context().get_proc_address(ptr) as *const _);
 
 
     let img_path = "www/assets/pics/frames/seiken.png";
@@ -126,7 +124,6 @@ fn program() -> WebResult<()> {
     let materials_input = VideoInputMaterials { buffers: vec![pixels] };
 
     println!("Preparing resources.");
-    let starting_time = Instant::now();
     let mut res = Resources::default();
     res.initialize(res_input, 0.0);
     println!("Preparing materials.");
@@ -138,7 +135,9 @@ fn program() -> WebResult<()> {
     let mut ctx = ConcreteSimulationContext::new(NativeEventDispatcher::default(), NativeRnd {});
     ctx.dispatcher_instance.video_ctx = Some(windowed_context.clone());
 
-    let mut last_time = Instant::now();
+    let starting_time = Instant::now();
+    let framerate = Duration::from_secs_f64(1.0 / 60.0);
+    let mut last_time = starting_time - framerate;
 
     el.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
@@ -192,7 +191,7 @@ fn program() -> WebResult<()> {
         }
 
         let now = Instant::now();
-        if (now - last_time) >= Duration::from_secs_f64(1.0 / 60.0) {
+        if (now - last_time) >= framerate {
             last_time = now;
 
             SimulationCoreTicker::new(&ctx, &mut res, &mut input).tick(starting_time.elapsed().as_millis() as f64);
