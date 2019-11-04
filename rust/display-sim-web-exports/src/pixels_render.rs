@@ -55,7 +55,7 @@ pub struct PixelsUniform<'a> {
 }
 
 impl PixelsRender {
-    pub fn new(gl: &WebGl2RenderingContext, video_materials: VideoInputMaterials) -> WebResult<PixelsRender> {
+    pub fn new(gl: &glow::Context, video_materials: VideoInputMaterials) -> WebResult<PixelsRender> {
         let shader = make_shader(&gl, PIXEL_VERTEX_SHADER, PIXEL_FRAGMENT_SHADER)?;
 
         let vao = gl.create_vertex_array();
@@ -118,7 +118,7 @@ impl PixelsRender {
         })
     }
 
-    fn create_shadow_texture(gl: &WebGl2RenderingContext, weight: &dyn Fn(usize, usize) -> f64) -> WebResult<Option<WebGlTexture>> {
+    fn create_shadow_texture(gl: &glow::Context, weight: &dyn Fn(usize, usize) -> f64) -> WebResult<Option<WebGlTexture>> {
         let mut texture: [u8; 4 * TEXTURE_SIZE * TEXTURE_SIZE] = [0; TEXTURE_SIZE * TEXTURE_SIZE * 4];
         {
             for i in TEXTURE_SIZE / 2..TEXTURE_SIZE {
@@ -197,7 +197,7 @@ impl PixelsRender {
         Ok(pixel_shadow_texture)
     }
 
-    pub fn load_image(&mut self, gl: &WebGl2RenderingContext, video_res: &VideoInputResources) {
+    pub fn load_image(&mut self, gl: &glow::Context, video_res: &VideoInputResources) {
         if video_res.image_size.width != self.width || video_res.image_size.height != self.height {
             self.width = video_res.image_size.width;
             self.height = video_res.image_size.height;
@@ -220,7 +220,7 @@ impl PixelsRender {
         );
     }
 
-    pub fn render(&self, gl: &WebGl2RenderingContext, uniforms: PixelsUniform) {
+    pub fn render(&self, gl: &glow::Context, uniforms: PixelsUniform) {
         gl.use_program(Some(&self.shader));
         if uniforms.shadow_kind >= self.shadows.len() {
             panic!("Bug on shadow_kind!")

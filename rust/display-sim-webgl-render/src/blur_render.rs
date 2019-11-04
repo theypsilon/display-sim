@@ -13,26 +13,27 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-use crate::web::{WebGl2RenderingContext, WebGlProgram, WebGlTexture, WebGlVertexArrayObject};
-
 use crate::error::WebResult;
 use crate::render_types::{TextureBuffer, TextureBufferStack};
 use crate::shaders::{make_quad_vao, make_shader, TEXTURE_VERTEX_SHADER};
 
-pub struct BlurRender {
-    shader: WebGlProgram,
-    vao: Option<WebGlVertexArrayObject>,
-    gl: WebGl2RenderingContext,
+use glow::HasContext;
+use std::rc::Rc;
+
+pub struct BlurRender<GL: HasContext> {
+    shader: GL::Program,
+    vao: Option<GL::VertexArray>,
+    gl: Rc<GL>,
 }
 
-impl BlurRender {
-    pub fn new(gl: &WebGl2RenderingContext) -> WebResult<BlurRender> {
-        let shader = make_shader(gl, TEXTURE_VERTEX_SHADER, BLUR_FRAGMENT_SHADER)?;
-        let vao = make_quad_vao(gl, &shader)?;
-        Ok(BlurRender { shader, vao, gl: gl.clone() })
+impl<GL: HasContext> BlurRender<GL> {
+    pub fn new(gl: Rc<GL>) -> WebResult<BlurRender<GL>> {
+        let shader = make_shader(&*gl, TEXTURE_VERTEX_SHADER, BLUR_FRAGMENT_SHADER)?;
+        let vao = make_quad_vao(&*gl, &shader)?;
+        Ok(BlurRender { shader, vao, gl })
     }
 
-    pub fn render(&self, stack: &mut TextureBufferStack, source: &TextureBuffer, target: &TextureBuffer, passes: usize) -> WebResult<()> {
+    pub fn render(&self, stack: &mut TextureBufferStack<GL>, source: &TextureBuffer<GL>, target: &TextureBuffer<GL>, passes: usize) -> WebResult<()> {
         if passes < 1 {
             panic!("Should not be called when passes < 1!");
         }
@@ -42,22 +43,20 @@ impl BlurRender {
 
         let texture_buffers = [stack.get_nth(0)?, stack.get_nth(-1)?];
 
-        let blur_iteration = |texture: Option<&WebGlTexture>, tb: &TextureBuffer, horizontal: bool| {
-            self.gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, tb.framebuffer());
+        let blur_iteration = |texture: Option<GL::Texture>, tb: &TextureBuffer<GL>, horizontal: bool| unsafe {
+            self.gl.bind_framebuffer(glow::FRAMEBUFFER, tb.framebuffer());
             self.gl.viewport(0, 0, tb.width, tb.height);
-            self.gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, texture);
-            self.gl.uniform1i(
-                self.gl.get_uniform_location(&self.shader, "horizontal").as_ref(),
-                if horizontal { 1 } else { 0 },
-            );
+            self.gl.bind_texture(glow::TEXTURE_2D, texture);
             self.gl
-                .clear(WebGl2RenderingContext::COLOR_BUFFER_BIT | WebGl2RenderingContext::DEPTH_BUFFER_BIT);
-            self.gl
-                .draw_elements_with_i32(WebGl2RenderingContext::TRIANGLES, 6, WebGl2RenderingContext::UNSIGNED_INT, 0);
+                .uniform_1_i32(self.gl.get_uniform_location(self.shader, "horizontal"), if horizontal { 1 } else { 0 });
+            self.gl.clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
+            self.gl.draw_elements(glow::TRIANGLES, 6, glow::UNSIGNED_INT, 0);
         };
 
-        self.gl.use_program(Some(&self.shader));
-        self.gl.bind_vertex_array(self.vao.as_ref());
+        unsafe {
+            self.gl.use_program(Some(self.shader));
+            self.gl.bind_vertex_array(self.vao);
+        }
 
         blur_iteration(source.texture(), texture_buffers[0], true);
         for i in 1..passes {
@@ -68,8 +67,10 @@ impl BlurRender {
         let buffer_index = passes % 2;
         let texture_index = (passes + 1) % 2;
         blur_iteration(texture_buffers[texture_index].texture(), target, buffer_index == 0);
-        self.gl.bind_vertex_array(None);
-        self.gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, None);
+        unsafe {
+            self.gl.bind_vertex_array(None);
+            self.gl.bind_texture(glow::TEXTURE_2D, None);
+        }
         stack.pop()?;
         stack.pop()?;
         Ok(())

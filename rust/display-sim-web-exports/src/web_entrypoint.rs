@@ -57,7 +57,7 @@ pub fn web_entrypoint(
     video_input_resources: VideoInputResources,
     video_input_materials: VideoInputMaterials,
 ) -> WebResult<()> {
-    let gl = gl.dyn_into::<WebGl2RenderingContext>()?;
+    let gl = Rc::new(glow::Context::from_webgl2_context(gl.dyn_into::<WebGl2RenderingContext>()?));
     res.borrow_mut().initialize(video_input_resources, now()?);
     let owned_state = StateOwner::new_rc(res, Materials::new(gl, video_input_materials)?, Input::new(now()?));
     let frame_closure: Closure<dyn FnMut(JsValue)> = {

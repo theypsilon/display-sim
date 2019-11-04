@@ -13,31 +13,33 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-use crate::web::{WebGl2RenderingContext, WebGlProgram, WebGlVertexArrayObject};
-
 use crate::error::WebResult;
 use crate::shaders::{make_quad_vao, make_shader, TEXTURE_VERTEX_SHADER};
 
-pub struct BackgroundRender {
-    vao: Option<WebGlVertexArrayObject>,
-    shader: WebGlProgram,
-    gl: WebGl2RenderingContext,
+use glow::HasContext;
+use std::rc::Rc;
+
+pub struct BackgroundRender<GL: HasContext> {
+    vao: Option<GL::VertexArray>,
+    shader: GL::Program,
+    gl: Rc<GL>,
 }
 
-impl BackgroundRender {
-    pub fn new(gl: &WebGl2RenderingContext) -> WebResult<BackgroundRender> {
-        let shader = make_shader(gl, TEXTURE_VERTEX_SHADER, BACKGROUND_FRAGMENT_SHADER)?;
-        let vao = make_quad_vao(gl, &shader)?;
-        Ok(BackgroundRender { vao, shader, gl: gl.clone() })
+impl<GL: HasContext> BackgroundRender<GL> {
+    pub fn new(gl: Rc<GL>) -> WebResult<BackgroundRender<GL>> {
+        let shader = make_shader(&*gl, TEXTURE_VERTEX_SHADER, BACKGROUND_FRAGMENT_SHADER)?;
+        let vao = make_quad_vao(&*gl, &shader)?;
+        Ok(BackgroundRender { vao, shader, gl })
     }
 
     pub fn render(&self) {
-        self.gl.bind_vertex_array(self.vao.as_ref());
-        self.gl.use_program(Some(&self.shader));
-        self.gl.uniform1i(self.gl.get_uniform_location(&self.shader, "foregroundImage").as_ref(), 0);
-        self.gl.uniform1i(self.gl.get_uniform_location(&self.shader, "backgroundImage").as_ref(), 1);
-        self.gl
-            .draw_elements_with_i32(WebGl2RenderingContext::TRIANGLES, 6, WebGl2RenderingContext::UNSIGNED_INT, 0);
+        unsafe {
+            self.gl.bind_vertex_array(self.vao);
+            self.gl.use_program(Some(self.shader));
+            self.gl.uniform_1_i32(self.gl.get_uniform_location(self.shader, "foregroundImage"), 0);
+            self.gl.uniform_1_i32(self.gl.get_uniform_location(self.shader, "backgroundImage"), 1);
+            self.gl.draw_elements(glow::TRIANGLES, 6, glow::UNSIGNED_INT, 0);
+        }
     }
 }
 

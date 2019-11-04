@@ -13,8 +13,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-use crate::web::{WebGl2RenderingContext, WebGlBuffer, WebGlProgram, WebGlTexture, WebGlVertexArrayObject};
-
 use crate::error::WebResult;
 use crate::shaders::make_shader;
 use crate::simulation_render_state::VideoInputMaterials;
@@ -22,105 +20,98 @@ use core::general_types::f32_to_u8;
 use core::pixels_shadow::{get_shadows, TEXTURE_SIZE};
 use core::simulation_core_state::{PixelsGeometryKind, VideoInputResources};
 
+use glow::HasContext;
 use std::mem::size_of;
+use std::rc::Rc;
 
-pub struct PixelsRender {
-    shader: WebGlProgram,
-    vao: Option<WebGlVertexArrayObject>,
-    colors_vbo: WebGlBuffer,
-    offsets_vbo: WebGlBuffer,
+pub struct PixelsRender<GL: HasContext> {
+    shader: GL::Program,
+    vao: Option<GL::VertexArray>,
+    colors_vbo: GL::Buffer,
+    offsets_vbo: GL::Buffer,
     width: u32,
     height: u32,
     offset_inverse_max_length: f32,
-    shadows: Vec<Option<WebGlTexture>>,
+    shadows: Vec<Option<GL::Texture>>,
     video_buffers: Vec<Box<[u8]>>,
-    gl: WebGl2RenderingContext,
+    gl: Rc<GL>,
 }
 
 pub struct PixelsUniform<'a> {
     pub shadow_kind: usize,
     pub geometry_kind: PixelsGeometryKind,
-    pub view: &'a [f32],
-    pub projection: &'a [f32],
-    pub light_pos: &'a [f32],
-    pub light_color: &'a [f32],
-    pub extra_light: &'a [f32],
+    pub view: &'a [f32; 16],
+    pub projection: &'a [f32; 16],
+    pub light_pos: &'a [f32; 3],
+    pub light_color: &'a [f32; 3],
+    pub extra_light: &'a [f32; 3],
     pub ambient_strength: f32,
     pub contrast_factor: f32,
     pub screen_curvature: f32,
-    pub pixel_spread: &'a [f32],
-    pub pixel_scale: &'a [f32],
-    pub pixel_offset: &'a [f32],
+    pub pixel_spread: &'a [f32; 2],
+    pub pixel_scale: &'a [f32; 3],
+    pub pixel_offset: &'a [f32; 3],
     pub pixel_pulse: f32,
     pub height_modifier_factor: f32,
 }
 
-impl PixelsRender {
-    pub fn new(gl: &WebGl2RenderingContext, video_materials: VideoInputMaterials) -> WebResult<PixelsRender> {
-        let shader = make_shader(&gl, PIXEL_VERTEX_SHADER, PIXEL_FRAGMENT_SHADER)?;
+impl<GL: HasContext> PixelsRender<GL> {
+    pub fn new(gl: Rc<GL>, video_materials: VideoInputMaterials) -> WebResult<PixelsRender<GL>> {
+        unsafe {
+            let shader = make_shader(&*gl, PIXEL_VERTEX_SHADER, PIXEL_FRAGMENT_SHADER)?;
 
-        let vao = gl.create_vertex_array();
-        gl.bind_vertex_array(vao.as_ref());
+            let vao = Some(gl.create_vertex_array()?);
+            gl.bind_vertex_array(vao);
 
-        let pixels_vbo = gl.create_buffer().ok_or("cannot create pixels_vbo")?;
-        gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&pixels_vbo));
-        gl.buffer_data_with_u8_array(
-            WebGl2RenderingContext::ARRAY_BUFFER,
-            f32_to_u8(&CUBE_GEOMETRY),
-            WebGl2RenderingContext::STATIC_DRAW,
-        );
+            let pixels_vbo = gl.create_buffer()?;
+            gl.bind_buffer(glow::ARRAY_BUFFER, Some(pixels_vbo));
+            gl.buffer_data_u8_slice(glow::ARRAY_BUFFER, f32_to_u8(&CUBE_GEOMETRY), glow::STATIC_DRAW);
 
-        let a_pos_position = gl.get_attrib_location(&shader, "aPos") as u32;
-        gl.vertex_attrib_pointer_with_i32(a_pos_position, 3, WebGl2RenderingContext::FLOAT, false, 6 * size_of::<f32>() as i32, 0);
-        gl.enable_vertex_attrib_array(a_pos_position);
+            let a_pos_position = gl.get_attrib_location(shader, "aPos") as u32;
+            gl.vertex_attrib_pointer_i32(a_pos_position, 3, glow::FLOAT, 6 * size_of::<f32>() as i32, 0);
+            gl.enable_vertex_attrib_array(a_pos_position);
 
-        let a_normal_position = gl.get_attrib_location(&shader, "aNormal") as u32;
-        gl.vertex_attrib_pointer_with_i32(
-            a_normal_position,
-            3,
-            WebGl2RenderingContext::FLOAT,
-            false,
-            6 * size_of::<f32>() as i32,
-            3 * size_of::<f32>() as i32,
-        );
-        gl.enable_vertex_attrib_array(a_normal_position);
+            let a_normal_position = gl.get_attrib_location(shader, "aNormal") as u32;
+            gl.vertex_attrib_pointer_i32(a_normal_position, 3, glow::FLOAT, 6 * size_of::<f32>() as i32, 3 * size_of::<f32>() as i32);
+            gl.enable_vertex_attrib_array(a_normal_position);
 
-        let colors_vbo = gl.create_buffer().ok_or("cannot create colors_vbo")?;
-        gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&colors_vbo));
+            let colors_vbo = gl.create_buffer()?;
+            gl.bind_buffer(glow::ARRAY_BUFFER, Some(colors_vbo));
 
-        let a_color_position = gl.get_attrib_location(&shader, "aColor") as u32;
-        gl.enable_vertex_attrib_array(a_color_position);
-        gl.vertex_attrib_pointer_with_i32(a_color_position, 1, WebGl2RenderingContext::FLOAT, false, size_of::<f32>() as i32, 0);
-        gl.vertex_attrib_divisor(a_color_position, 1);
+            let a_color_position = gl.get_attrib_location(shader, "aColor") as u32;
+            gl.enable_vertex_attrib_array(a_color_position);
+            gl.vertex_attrib_pointer_i32(a_color_position, 1, glow::FLOAT, size_of::<f32>() as i32, 0);
+            gl.vertex_attrib_divisor(a_color_position, 1);
 
-        let offsets_vbo = gl.create_buffer().ok_or("cannot create offsets_vbo")?;
-        gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&offsets_vbo));
+            let offsets_vbo = gl.create_buffer()?;
+            gl.bind_buffer(glow::ARRAY_BUFFER, Some(offsets_vbo));
 
-        let a_offset_position = gl.get_attrib_location(&shader, "aOffset") as u32;
-        gl.enable_vertex_attrib_array(a_offset_position);
-        gl.vertex_attrib_pointer_with_i32(a_offset_position, 2, WebGl2RenderingContext::FLOAT, false, 2 * size_of::<f32>() as i32, 0);
-        gl.vertex_attrib_divisor(a_offset_position, 1);
+            let a_offset_position = gl.get_attrib_location(shader, "aOffset") as u32;
+            gl.enable_vertex_attrib_array(a_offset_position);
+            gl.vertex_attrib_pointer_i32(a_offset_position, 2, glow::FLOAT, 2 * size_of::<f32>() as i32, 0);
+            gl.vertex_attrib_divisor(a_offset_position, 1);
 
-        let shadows = get_shadows()
-            .iter()
-            .map(|closure| Self::create_shadow_texture(gl, &**closure))
-            .collect::<WebResult<Vec<Option<WebGlTexture>>>>()?;
+            let shadows = get_shadows()
+                .iter()
+                .map(|closure| Self::create_shadow_texture(&*gl, &**closure))
+                .collect::<WebResult<Vec<Option<GL::Texture>>>>()?;
 
-        Ok(PixelsRender {
-            video_buffers: video_materials.buffers,
-            vao,
-            shader,
-            offsets_vbo,
-            colors_vbo,
-            width: 0,
-            height: 0,
-            offset_inverse_max_length: 0.0,
-            shadows,
-            gl: gl.clone(),
-        })
+            Ok(PixelsRender {
+                video_buffers: video_materials.buffers,
+                vao,
+                shader,
+                offsets_vbo,
+                colors_vbo,
+                width: 0,
+                height: 0,
+                offset_inverse_max_length: 0.0,
+                shadows,
+                gl,
+            })
+        }
     }
 
-    fn create_shadow_texture(gl: &WebGl2RenderingContext, weight: &dyn Fn(usize, usize) -> f64) -> WebResult<Option<WebGlTexture>> {
+    fn create_shadow_texture(gl: &GL, weight: &dyn Fn(usize, usize) -> f64) -> WebResult<Option<GL::Texture>> {
         let mut texture: Vec<u8> = vec![0; TEXTURE_SIZE * TEXTURE_SIZE * 4];
         {
             for i in TEXTURE_SIZE / 2..TEXTURE_SIZE {
@@ -160,119 +151,99 @@ impl PixelsRender {
             }
             console!(log. line);
         }*/
+        unsafe {
+            let pixel_shadow_texture = Some(gl.create_texture()?);
+            gl.bind_texture(glow::TEXTURE_2D, pixel_shadow_texture);
+            gl.tex_image_2d(
+                glow::TEXTURE_2D,
+                0,
+                glow::RGBA as i32,
+                TEXTURE_SIZE as i32,
+                TEXTURE_SIZE as i32,
+                0,
+                glow::RGBA,
+                glow::UNSIGNED_BYTE,
+                Some(&texture),
+            );
+            gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_MIN_FILTER, glow::LINEAR as i32);
+            gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_MAG_FILTER, glow::LINEAR as i32);
+            gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_WRAP_S, glow::CLAMP_TO_EDGE as i32);
+            gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_WRAP_T, glow::CLAMP_TO_EDGE as i32);
+            gl.bind_texture(glow::TEXTURE_2D, None);
 
-        let pixel_shadow_texture = gl.create_texture();
-        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, pixel_shadow_texture.as_ref());
-        gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
-            WebGl2RenderingContext::TEXTURE_2D,
-            0,
-            WebGl2RenderingContext::RGBA as i32,
-            TEXTURE_SIZE as i32,
-            TEXTURE_SIZE as i32,
-            0,
-            WebGl2RenderingContext::RGBA,
-            WebGl2RenderingContext::UNSIGNED_BYTE,
-            Some(&texture),
-        )?;
-        gl.tex_parameteri(
-            WebGl2RenderingContext::TEXTURE_2D,
-            WebGl2RenderingContext::TEXTURE_MIN_FILTER,
-            WebGl2RenderingContext::LINEAR as i32,
-        );
-        gl.tex_parameteri(
-            WebGl2RenderingContext::TEXTURE_2D,
-            WebGl2RenderingContext::TEXTURE_MAG_FILTER,
-            WebGl2RenderingContext::LINEAR as i32,
-        );
-        gl.tex_parameteri(
-            WebGl2RenderingContext::TEXTURE_2D,
-            WebGl2RenderingContext::TEXTURE_WRAP_S,
-            WebGl2RenderingContext::CLAMP_TO_EDGE as i32,
-        );
-        gl.tex_parameteri(
-            WebGl2RenderingContext::TEXTURE_2D,
-            WebGl2RenderingContext::TEXTURE_WRAP_T,
-            WebGl2RenderingContext::CLAMP_TO_EDGE as i32,
-        );
-        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, None);
-
-        Ok(pixel_shadow_texture)
+            Ok(pixel_shadow_texture)
+        }
     }
 
     pub fn load_image(&mut self, video_res: &VideoInputResources) {
-        if video_res.image_size.width != self.width || video_res.image_size.height != self.height {
-            self.width = video_res.image_size.width;
-            self.height = video_res.image_size.height;
-            self.offset_inverse_max_length = 1.0 / ((self.width as f32 * 0.5).powi(2) + (self.height as f32 * 0.5).powi(2)).sqrt();
-            self.gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&self.offsets_vbo));
-            let offsets = calculate_offsets(self.width, self.height);
-            self.gl
-                .buffer_data_with_u8_array(WebGl2RenderingContext::ARRAY_BUFFER, f32_to_u8(&offsets), WebGl2RenderingContext::STATIC_DRAW);
-        }
-        self.gl.bind_vertex_array(self.vao.as_ref());
-        self.gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&self.colors_vbo));
+        unsafe {
+            if video_res.image_size.width != self.width || video_res.image_size.height != self.height {
+                self.width = video_res.image_size.width;
+                self.height = video_res.image_size.height;
+                self.offset_inverse_max_length = 1.0 / ((self.width as f32 * 0.5).powi(2) + (self.height as f32 * 0.5).powi(2)).sqrt();
+                self.gl.bind_buffer(glow::ARRAY_BUFFER, Some(self.offsets_vbo));
+                let offsets = calculate_offsets(self.width, self.height);
+                self.gl.buffer_data_u8_slice(glow::ARRAY_BUFFER, f32_to_u8(&offsets), glow::STATIC_DRAW);
+            }
+            self.gl.bind_vertex_array(self.vao);
+            self.gl.bind_buffer(glow::ARRAY_BUFFER, Some(self.colors_vbo));
 
-        self.gl.buffer_data_with_u8_array(
-            WebGl2RenderingContext::ARRAY_BUFFER,
-            &self.video_buffers[video_res.current_frame],
-            WebGl2RenderingContext::STATIC_DRAW,
-        );
+            self.gl
+                .buffer_data_u8_slice(glow::ARRAY_BUFFER, &self.video_buffers[video_res.current_frame], glow::STATIC_DRAW);
+        }
     }
 
     pub fn render(&self, uniforms: PixelsUniform) {
-        self.gl.use_program(Some(&self.shader));
-        if uniforms.shadow_kind >= self.shadows.len() {
-            panic!("Bug on shadow_kind!")
-        }
-        self.gl
-            .bind_texture(WebGl2RenderingContext::TEXTURE_2D, self.shadows[uniforms.shadow_kind].as_ref());
-        self.gl
-            .uniform_matrix4fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "view").as_ref(), false, uniforms.view);
-        self.gl
-            .uniform_matrix4fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "projection").as_ref(), false, uniforms.projection);
-        self.gl
-            .uniform3fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "lightPos").as_ref(), uniforms.light_pos);
-        self.gl
-            .uniform3fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "lightColor").as_ref(), uniforms.light_color);
-        self.gl
-            .uniform3fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "extraLight").as_ref(), uniforms.extra_light);
-        self.gl.uniform1f(
-            self.gl.get_uniform_location(&self.shader, "ambientStrength").as_ref(),
-            uniforms.ambient_strength,
-        );
-        self.gl
-            .uniform1f(self.gl.get_uniform_location(&self.shader, "contrastFactor").as_ref(), uniforms.contrast_factor);
-        self.gl.uniform1f(
-            self.gl.get_uniform_location(&self.shader, "offset_inverse_max_length").as_ref(),
-            self.offset_inverse_max_length,
-        );
-        self.gl.uniform1f(
-            self.gl.get_uniform_location(&self.shader, "screen_curvature").as_ref(),
-            uniforms.screen_curvature,
-        );
-        self.gl
-            .uniform2fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "pixel_spread").as_ref(), uniforms.pixel_spread);
-        self.gl
-            .uniform3fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "pixel_scale").as_ref(), uniforms.pixel_scale);
-        self.gl
-            .uniform3fv_with_f32_array(self.gl.get_uniform_location(&self.shader, "pixel_offset").as_ref(), uniforms.pixel_offset);
-        self.gl
-            .uniform1f(self.gl.get_uniform_location(&self.shader, "pixel_pulse").as_ref(), uniforms.pixel_pulse);
-        self.gl.uniform1f(
-            self.gl.get_uniform_location(&self.shader, "heightModifierFactor").as_ref(),
-            uniforms.height_modifier_factor,
-        );
+        unsafe {
+            self.gl.use_program(Some(self.shader));
+            if uniforms.shadow_kind >= self.shadows.len() {
+                panic!("Bug on shadow_kind!")
+            }
+            self.gl.bind_texture(glow::TEXTURE_2D, self.shadows[uniforms.shadow_kind]);
+            self.gl
+                .uniform_matrix_4_f32_slice(self.gl.get_uniform_location(self.shader, "view"), false, uniforms.view);
+            self.gl
+                .uniform_matrix_4_f32_slice(self.gl.get_uniform_location(self.shader, "projection"), false, uniforms.projection);
+            self.gl
+                .uniform_3_f32_slice(self.gl.get_uniform_location(self.shader, "lightPos"), uniforms.light_pos);
+            self.gl
+                .uniform_3_f32_slice(self.gl.get_uniform_location(self.shader, "lightColor"), uniforms.light_color);
+            self.gl
+                .uniform_3_f32_slice(self.gl.get_uniform_location(self.shader, "extraLight"), uniforms.extra_light);
+            self.gl
+                .uniform_1_f32(self.gl.get_uniform_location(self.shader, "ambientStrength"), uniforms.ambient_strength);
+            self.gl
+                .uniform_1_f32(self.gl.get_uniform_location(self.shader, "contrastFactor"), uniforms.contrast_factor);
+            self.gl.uniform_1_f32(
+                self.gl.get_uniform_location(self.shader, "offset_inverse_max_length"),
+                self.offset_inverse_max_length,
+            );
+            self.gl
+                .uniform_1_f32(self.gl.get_uniform_location(self.shader, "screen_curvature"), uniforms.screen_curvature);
+            self.gl
+                .uniform_2_f32_slice(self.gl.get_uniform_location(self.shader, "pixel_spread"), uniforms.pixel_spread);
+            self.gl
+                .uniform_3_f32_slice(self.gl.get_uniform_location(self.shader, "pixel_scale"), uniforms.pixel_scale);
+            self.gl
+                .uniform_3_f32_slice(self.gl.get_uniform_location(self.shader, "pixel_offset"), uniforms.pixel_offset);
+            self.gl
+                .uniform_1_f32(self.gl.get_uniform_location(self.shader, "pixel_pulse"), uniforms.pixel_pulse);
+            self.gl.uniform_1_f32(
+                self.gl.get_uniform_location(self.shader, "heightModifierFactor"),
+                uniforms.height_modifier_factor,
+            );
 
-        self.gl.bind_vertex_array(self.vao.as_ref());
-        self.gl.draw_arrays_instanced(
-            WebGl2RenderingContext::TRIANGLES,
-            0,
-            match uniforms.geometry_kind {
-                PixelsGeometryKind::Squares => 6,
-                PixelsGeometryKind::Cubes => 36,
-            },
-            (self.width * self.height) as i32,
-        );
+            self.gl.bind_vertex_array(self.vao);
+            self.gl.draw_arrays_instanced(
+                glow::TRIANGLES,
+                0,
+                match uniforms.geometry_kind {
+                    PixelsGeometryKind::Squares => 6,
+                    PixelsGeometryKind::Cubes => 36,
+                },
+                (self.width * self.height) as i32,
+            );
+        }
     }
 }
 

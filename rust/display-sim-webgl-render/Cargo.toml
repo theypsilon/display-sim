@@ -14,17 +14,4 @@ derive-new = "0.5.6"
 glm = { version = "0.5", package = "nalgebra-glm" }
 core = { path = "../display-sim-core", package = "display-sim-core" }
 web-error = { path = "../display-sim-web-error", package = "display-sim-web-error" }
-
-[dependencies.web-sys]
-version = "0.3.19"
-features = [
-  'WebGlBuffer',
-  'WebGl2RenderingContext',
-  'WebGlProgram',
-  'WebGlShader',
-  'WebGlVertexArrayObject',
-  'WebGlUniformLocation',
-  'WebGlTexture',
-  'WebGlFramebuffer',
-  'WebGlRenderbuffer'
-]
+glow = "0.3.0-alpha3"

@@ -13,87 +13,81 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-use crate::web::{WebGl2RenderingContext, WebGlProgram, WebGlShader, WebGlVertexArrayObject};
-
 use crate::error::WebResult;
 use core::general_types::{f32_to_u8, i32_to_u8};
+use glow::HasContext;
 use std::mem::size_of;
 
-pub fn make_shader(gl: &WebGl2RenderingContext, vertex_shader: &str, fragment_shader: &str) -> WebResult<WebGlProgram> {
-    let vert_shader = compile_shader(&gl, WebGl2RenderingContext::VERTEX_SHADER, vertex_shader)?;
-    let frag_shader = compile_shader(&gl, WebGl2RenderingContext::FRAGMENT_SHADER, fragment_shader)?;
-    link_shader(&gl, [vert_shader, frag_shader].iter())
+pub fn make_shader<GL: HasContext>(gl: &GL, vertex_shader: &str, fragment_shader: &str) -> WebResult<GL::Program> {
+    let vert_shader = compile_shader(gl, glow::VERTEX_SHADER, vertex_shader)?;
+    let frag_shader = compile_shader(gl, glow::FRAGMENT_SHADER, fragment_shader)?;
+    link_shader(gl, [vert_shader, frag_shader].iter())
 }
 
-fn compile_shader(gl: &WebGl2RenderingContext, shader_type: u32, source: &str) -> WebResult<WebGlShader> {
-    let shader = gl.create_shader(shader_type).ok_or("Unable to create shader object")?;
-    gl.shader_source(&shader, source);
-    gl.compile_shader(&shader);
+fn compile_shader<GL: HasContext>(gl: &GL, shader_type: u32, source: &str) -> WebResult<GL::Shader> {
+    unsafe {
+        let shader = gl.create_shader(shader_type)?;
+        gl.shader_source(shader, source);
+        gl.compile_shader(shader);
 
-    if gl
-        .get_shader_parameter(&shader, WebGl2RenderingContext::COMPILE_STATUS)
+        if true
+        /* @TODO restore when get_shader_parameter gets into glow
+        gl
+        .get_shader_parameter(shader, WebGl2RenderingContext::COMPILE_STATUS)
         .as_bool()
-        .unwrap_or(false)
-    {
-        Ok(shader)
-    } else {
-        Err(gl.get_shader_info_log(&shader).ok_or("Unknown error creating shader")?.into())
+        .unwrap_or(false)*/
+        {
+            Ok(shader)
+        } else {
+            Err(gl.get_shader_info_log(shader).into())
+        }
     }
 }
 
-fn link_shader<'a, T: IntoIterator<Item = &'a WebGlShader>>(gl: &WebGl2RenderingContext, shaders: T) -> WebResult<WebGlProgram> {
-    let program = gl.create_program().ok_or("Unable to create shader object")?;
-    for shader in shaders {
-        gl.attach_shader(&program, shader)
-    }
-    gl.link_program(&program);
+fn link_shader<'a, GL: HasContext + 'a, T: IntoIterator<Item = &'a GL::Shader>>(gl: &GL, shaders: T) -> WebResult<GL::Program> {
+    unsafe {
+        let program = gl.create_program()?;
+        for shader in shaders {
+            gl.attach_shader(program, *shader)
+        }
+        gl.link_program(program);
 
-    if gl
+        if true
+        /* @TODO restore when get_program_parameters gets into glow
+        gl
         .get_program_parameter(&program, WebGl2RenderingContext::LINK_STATUS)
         .as_bool()
-        .unwrap_or(false)
-    {
-        Ok(program)
-    } else {
-        Err(gl.get_program_info_log(&program).ok_or("cannot get program info log")?.into())
+        .unwrap_or(false)*/
+        {
+            Ok(program)
+        } else {
+            Err(gl.get_program_info_log(program).into())
+        }
     }
 }
 
-pub fn make_quad_vao(gl: &WebGl2RenderingContext, shader: &WebGlProgram) -> WebResult<Option<WebGlVertexArrayObject>> {
-    let vao = gl.create_vertex_array();
-    gl.bind_vertex_array(vao.as_ref());
+pub fn make_quad_vao<GL: HasContext>(gl: &GL, shader: &GL::Program) -> WebResult<Option<GL::VertexArray>> {
+    unsafe {
+        let vao = gl.create_vertex_array()?;
+        gl.bind_vertex_array(Some(vao));
 
-    let quad_vbo = gl.create_buffer().ok_or("cannot create quad_vbo")?;
-    let quad_ebo = gl.create_buffer().ok_or("cannot create quad_ebo")?;
-    gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&quad_vbo));
-    gl.buffer_data_with_u8_array(
-        WebGl2RenderingContext::ARRAY_BUFFER,
-        f32_to_u8(&QUAD_GEOMETRY),
-        WebGl2RenderingContext::STATIC_DRAW,
-    );
-    gl.bind_buffer(WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER, Some(&quad_ebo));
-    gl.buffer_data_with_u8_array(
-        WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER,
-        i32_to_u8(&QUAD_INDICES),
-        WebGl2RenderingContext::STATIC_DRAW,
-    );
+        let quad_vbo = gl.create_buffer()?;
+        let quad_ebo = gl.create_buffer()?;
+        gl.bind_buffer(glow::ARRAY_BUFFER, Some(quad_vbo));
+        gl.buffer_data_u8_slice(glow::ARRAY_BUFFER, f32_to_u8(&QUAD_GEOMETRY), glow::STATIC_DRAW);
+        gl.bind_buffer(glow::ELEMENT_ARRAY_BUFFER, Some(quad_ebo));
+        gl.buffer_data_u8_slice(glow::ELEMENT_ARRAY_BUFFER, i32_to_u8(&QUAD_INDICES), glow::STATIC_DRAW);
 
-    let q_pos_position = gl.get_attrib_location(shader, "qPos") as u32;
-    let q_texture_position = gl.get_attrib_location(shader, "qTexCoords") as u32;
+        let q_pos_position = gl.get_attrib_location(*shader, "qPos") as u32;
+        let q_texture_position = gl.get_attrib_location(*shader, "qTexCoords") as u32;
 
-    gl.enable_vertex_attrib_array(q_pos_position);
-    gl.enable_vertex_attrib_array(q_texture_position);
+        gl.enable_vertex_attrib_array(q_pos_position);
+        gl.enable_vertex_attrib_array(q_texture_position);
 
-    gl.vertex_attrib_pointer_with_i32(q_pos_position, 3, WebGl2RenderingContext::FLOAT, false, 5 * size_of::<f32>() as i32, 0);
-    gl.vertex_attrib_pointer_with_i32(
-        q_texture_position,
-        2,
-        WebGl2RenderingContext::FLOAT,
-        false,
-        5 * size_of::<f32>() as i32,
-        3 * size_of::<f32>() as i32,
-    );
-    Ok(vao)
+        gl.vertex_attrib_pointer_i32(q_pos_position, 3, glow::FLOAT, 5 * size_of::<f32>() as i32, 0);
+        gl.vertex_attrib_pointer_i32(q_texture_position, 2, glow::FLOAT, 5 * size_of::<f32>() as i32, 3 * size_of::<f32>() as i32);
+        Ok(Some(vao))
+    }
 }
 
 #[rustfmt::skip]
