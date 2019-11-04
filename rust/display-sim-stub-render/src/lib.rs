@@ -19,6 +19,7 @@
 #![allow(clippy::unreadable_literal)]
 #![allow(clippy::too_many_arguments)]
 #![allow(non_upper_case_globals)]
+
 include!(concat!(env!("OUT_DIR"), "/display-sim-render-copy.rs"));
 
 pub mod glow_test_stub;
