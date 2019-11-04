@@ -23,6 +23,7 @@ use crate::simulation_core_state::{
     PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
 };
 use derive_new::new;
+use std::str::FromStr;
 
 #[derive(new)]
 pub struct SimulationCoreTicker<'a> {
@@ -388,7 +389,7 @@ impl<'a> SimulationUpdater<'a> {
         } else {
             return;
         };
-        let preset = FiltersPreset::from_str(preset).expect("This preset is not valid.");
+        let preset = FromStr::from_str(preset).unwrap();
         if self.res.filters.preset_kind == preset {
             return;
         }

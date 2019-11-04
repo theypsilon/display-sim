@@ -23,22 +23,22 @@ use js_sys::{Array, Float32Array};
 use std::cell::RefCell;
 use std::fmt::Display;
 use web_error::{WebError, WebResult};
+use web_sys::WebGl2RenderingContext;
 
 pub struct WebEventDispatcher {
     error: RefCell<Option<WebError>>,
     extra_messages_enabled: RefCell<bool>,
-}
-
-impl Default for WebEventDispatcher {
-    fn default() -> Self {
-        WebEventDispatcher {
-            error: Default::default(),
-            extra_messages_enabled: RefCell::new(true),
-        }
-    }
+    gl: WebGl2RenderingContext,
 }
 
 impl WebEventDispatcher {
+    pub fn new(gl: WebGl2RenderingContext) -> Self {
+        WebEventDispatcher {
+            error: Default::default(),
+            extra_messages_enabled: RefCell::new(true),
+            gl,
+        }
+    }
     fn are_extra_messages_enabled(&self) -> bool {
         *self.extra_messages_enabled.borrow()
     }
@@ -218,6 +218,14 @@ impl AppEventDispatcher for WebEventDispatcher {
 
     fn dispatch_exit_pointer_lock(&self) {
         self.catch_error(dispatch_event("app-event.exit_pointer_lock"));
+    }
+
+    // @TODO no other way to handle this by now, find better way later
+    fn fire_screenshot(&self, width: i32, height: i32, pixels: &mut [u8], multiplier: f64) {
+        self.gl
+            .read_pixels_with_opt_u8_array(0, 0, width, height, glow::RGBA, glow::UNSIGNED_BYTE, Some(&mut *pixels))
+            .expect("gl.read_pixels failed");
+        self.dispatch_screenshot(pixels, multiplier)
     }
 
     fn dispatch_screenshot(&self, pixels: &[u8], multiplier: f64) {

@@ -58,16 +58,15 @@ pub fn web_entrypoint(
     video_input_resources: VideoInputResources,
     video_input_materials: VideoInputMaterials,
 ) -> WebResult<()> {
-    let gl = Rc::new(GlowSafeAdapter::new(glow::Context::from_webgl2_context(
-        gl.dyn_into::<WebGl2RenderingContext>()?,
-    )));
+    let webgl = gl.dyn_into::<WebGl2RenderingContext>()?;
+    let gl = Rc::new(GlowSafeAdapter::new(glow::Context::from_webgl2_context(webgl.clone())));
     res.borrow_mut().initialize(video_input_resources, now()?);
     let owned_state = StateOwner::new_rc(res, Materials::new(gl, video_input_materials)?, Input::new(now()?));
     let frame_closure: Closure<dyn FnMut(JsValue)> = {
         let owned_state = Rc::clone(&owned_state);
         let window = window()?;
         Closure::wrap(Box::new(move |_| {
-            let mut ctx = ConcreteSimulationContext::new(WebEventDispatcher::default(), WebRnd {});
+            let mut ctx = ConcreteSimulationContext::new(WebEventDispatcher::new(webgl.clone()), WebRnd {});
             if let Err(e) = web_entrypoint_iteration(&owned_state, &window, &mut ctx) {
                 console!(error. "An unexpected error happened during web_entrypoint_iteration.", e.into_js());
                 ctx.dispatcher().dispatch_exiting_session();

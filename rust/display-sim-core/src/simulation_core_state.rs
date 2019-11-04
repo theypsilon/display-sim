@@ -257,18 +257,22 @@ impl std::fmt::Display for FiltersPreset {
     }
 }
 
-impl FiltersPreset {
-    pub fn from_str(name: &str) -> Option<Self> {
+impl std::str::FromStr for FiltersPreset {
+    type Err = String;
+    fn from_str(name: &str) -> Result<Self, Self::Err> {
         match name {
-            "sharp-1" => Some(Self::Sharp1),
-            "crt-aperture-grille-1" => Some(Self::CrtApertureGrille1),
-            "crt-shadow-mask-1" => Some(Self::CrtShadowMask1),
-            "crt-shadow-mask-2" => Some(Self::CrtShadowMask2),
-            "demo-1" => Some(Self::DemoFlight1),
-            "custom" => Some(Self::Custom),
-            _ => None,
+            "sharp-1" => Ok(Self::Sharp1),
+            "crt-aperture-grille-1" => Ok(Self::CrtApertureGrille1),
+            "crt-shadow-mask-1" => Ok(Self::CrtShadowMask1),
+            "crt-shadow-mask-2" => Ok(Self::CrtShadowMask2),
+            "demo-1" => Ok(Self::DemoFlight1),
+            "custom" => Ok(Self::Custom),
+            _ => Err("Unknown name for a preset".into()),
         }
     }
+}
+
+impl FiltersPreset {
     pub fn get_description(&self) -> &str {
         match self {
             FiltersPreset::Sharp1 => "Sharp 1",
@@ -284,6 +288,7 @@ impl FiltersPreset {
 #[cfg(test)]
 mod filter_presets_tests {
     use super::FiltersPreset;
+    use std::str::FromStr;
     #[test]
     fn test_from_str_to_str() {
         // @TODO ensure a way to have this array correctly updated automatically
@@ -449,7 +454,7 @@ impl Filters {
     pub fn preset_custom(&self) -> Self {
         let mut clone = self.clone();
         clone.preset_kind = FiltersPreset::Custom;
-        return clone;
+        clone
     }
 }
 

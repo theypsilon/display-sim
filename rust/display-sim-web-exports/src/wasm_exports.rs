@@ -25,6 +25,7 @@ use core::simulation_core_state::{AnimationStep, FiltersPreset, Resources, Video
 use render::simulation_render_state::VideoInputMaterials;
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::str::FromStr;
 
 #[wasm_bindgen]
 pub fn load_simulation_resources() -> ResourcesWasm {
@@ -107,7 +108,7 @@ impl VideoInputWasm {
     pub fn set_preset(&mut self, preset: JsValue) {
         match preset.as_string() {
             Some(preset) => {
-                if let Some(preset) = FiltersPreset::from_str(preset.as_str()) {
+                if let Ok(preset) = FiltersPreset::from_str(preset.as_str()) {
                     self.resources.preset = preset;
                 } else {
                     console!(error. "Input preset is not a valid preset.");

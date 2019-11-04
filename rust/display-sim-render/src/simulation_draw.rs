@@ -190,27 +190,18 @@ impl<'a> SimulationDrawer<'a> {
 
         self.materials.screenshot_pixels = None;
 
-        /*
-        @TODO enable read_pixels_with_opt_u8_array
         if self.res.screenshot_trigger.is_triggered {
             let width = self.res.filters.internal_resolution.width();
             let height = self.res.filters.internal_resolution.height();
-            let mut pixels: Box<[u8]> = vec![0; (width * height * 4) as usize].into_boxed_slice();
-            gl.read_pixels_with_opt_u8_array(
-                0,
-                0,
+            let pixels: Box<[u8]> = vec![0; (width * height * 4) as usize].into_boxed_slice();
+            self.materials.screenshot_pixels = Some(pixels);
+            self.ctx.dispatcher().fire_screenshot(
                 width,
                 height,
-                glow::RGBA,
-                glow::UNSIGNED_BYTE,
-                Some(&mut *pixels),
-            )?;
-            self.materials.screenshot_pixels = Some(pixels);
-            self.ctx.dispatcher().dispatch_screenshot(
-                self.materials.screenshot_pixels.as_ref().expect("Screenshot bug"),
+                self.materials.screenshot_pixels.as_mut().expect("Screenshot bug"),
                 self.res.filters.internal_resolution.multiplier,
             );
-        }*/
+        }
 
         self.materials.main_buffer_stack.pop()?;
         self.materials.main_buffer_stack.assert_no_stack()?;
