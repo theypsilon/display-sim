@@ -397,13 +397,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "display-sim-build-tools"
-version = "0.1.0"
-dependencies = [
- "glob 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "display-sim-core"
 version = "0.1.0"
 dependencies = [
@@ -421,8 +414,8 @@ name = "display-sim-native"
 version = "0.1.0"
 dependencies = [
  "display-sim-core 0.1.0",
- "display-sim-opengl-render 0.1.0",
- "glow 0.3.0-alpha3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "display-sim-render 0.1.0",
+ "glow-safe-adapter 0.1.0",
  "glutin 0.22.0-alpha3 (registry+https://github.com/rust-lang/crates.io-index)",
  "image 0.21.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra-glm 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -430,15 +423,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "display-sim-opengl-render"
+name = "display-sim-render"
 version = "0.1.0"
 dependencies = [
  "derive-new 0.5.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "display-sim-build-tools 0.1.0",
  "display-sim-core 0.1.0",
- "display-sim-webgl-render 0.1.0",
- "gl 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "glow 0.3.0-alpha3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "display-sim-web-error 0.1.0",
+ "glow-safe-adapter 0.1.0",
  "nalgebra-glm 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -447,9 +438,10 @@ name = "display-sim-stub-render"
 version = "0.1.0"
 dependencies = [
  "derive-new 0.5.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "display-sim-build-tools 0.1.0",
  "display-sim-core 0.1.0",
- "display-sim-webgl-render 0.1.0",
+ "display-sim-render 0.1.0",
+ "display-sim-web-error 0.1.0",
+ "glob 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra-glm 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -477,26 +469,15 @@ dependencies = [
  "console_error_panic_hook 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "derive-new 0.5.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "display-sim-core 0.1.0",
+ "display-sim-render 0.1.0",
  "display-sim-web-error 0.1.0",
- "display-sim-webgl-render 0.1.0",
- "glow 0.3.0-alpha3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "glow-safe-adapter 0.1.0",
  "js-sys 0.3.30 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra-glm 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "paste 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasm-bindgen 0.2.53 (registry+https://github.com/rust-lang/crates.io-index)",
  "web-sys 0.3.30 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "display-sim-webgl-render"
-version = "0.1.0"
-dependencies = [
- "derive-new 0.5.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "display-sim-core 0.1.0",
- "display-sim-web-error 0.1.0",
- "glow 0.3.0-alpha3 (registry+https://github.com/rust-lang/crates.io-index)",
- "nalgebra-glm 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -620,14 +601,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gl"
-version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "gl_generator 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "gl_generator"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -640,16 +613,6 @@ dependencies = [
 [[package]]
 name = "gl_generator"
 version = "0.13.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "khronos_api 3.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "xml-rs 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "gl_generator"
-version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "khronos_api 3.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -680,6 +643,13 @@ dependencies = [
  "slotmap 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasm-bindgen 0.2.53 (registry+https://github.com/rust-lang/crates.io-index)",
  "web-sys 0.3.30 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "glow-safe-adapter"
+version = "0.1.0"
+dependencies = [
+ "glow 0.3.0-alpha3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -2041,10 +2011,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum getrandom 0.1.13 (registry+https://github.com/rust-lang/crates.io-index)" = "e7db7ca94ed4cd01190ceee0d8a8052f08a247aa1b469a7f68c6a3b71afcf407"
 "checksum getters-by-type 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)" = "bb9834945f24528a51e8d6b8734e1eb4b6dbedffed084d4721c344d8ba79f232"
 "checksum gif 0.10.3 (registry+https://github.com/rust-lang/crates.io-index)" = "471d90201b3b223f3451cd4ad53e34295f16a1df17b1edf3736d47761c3981af"
-"checksum gl 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)" = "a94edab108827d67608095e269cf862e60d920f144a5026d3dbcfd8b877fb404"
 "checksum gl_generator 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)" = "39a23d5e872a275135d66895d954269cf5e8661d234eb1c2480f4ce0d586acbd"
 "checksum gl_generator 0.13.1 (registry+https://github.com/rust-lang/crates.io-index)" = "ca98bbde17256e02d17336a6bdb5a50f7d0ccacee502e191d3e3d0ec2f96f84a"
-"checksum gl_generator 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)" = "1a95dfc23a2b4a9a2f5ab41d194f8bfda3cabec42af4e39f08c339eb2a0c124d"
 "checksum gleam 0.6.19 (registry+https://github.com/rust-lang/crates.io-index)" = "cae10d7c99d0e77b4766e850a60898a17c1abaf01075531f1066f03dc7dc5fc5"
 "checksum glob 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "9b919933a397b79c37e33b77bb2aa3dc8eb6e165ad809e58ff75bc7db2e34574"
 "checksum glow 0.3.0-alpha3 (registry+https://github.com/rust-lang/crates.io-index)" = "cd065222bc1c5bd0255dc974f237ef595bfcd4174422f0e8d8df96f1d14bb816"

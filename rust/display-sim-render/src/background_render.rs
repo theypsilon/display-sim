@@ -16,30 +16,29 @@
 use crate::error::WebResult;
 use crate::shaders::{make_quad_vao, make_shader, TEXTURE_VERTEX_SHADER};
 
+use glow::GlowSafeAdapter;
 use glow::HasContext;
 use std::rc::Rc;
 
 pub struct BackgroundRender<GL: HasContext> {
     vao: Option<GL::VertexArray>,
     shader: GL::Program,
-    gl: Rc<GL>,
+    gl: Rc<GlowSafeAdapter<GL>>,
 }
 
 impl<GL: HasContext> BackgroundRender<GL> {
-    pub fn new(gl: Rc<GL>) -> WebResult<BackgroundRender<GL>> {
+    pub fn new(gl: Rc<GlowSafeAdapter<GL>>) -> WebResult<BackgroundRender<GL>> {
         let shader = make_shader(&*gl, TEXTURE_VERTEX_SHADER, BACKGROUND_FRAGMENT_SHADER)?;
         let vao = make_quad_vao(&*gl, &shader)?;
         Ok(BackgroundRender { vao, shader, gl })
     }
 
     pub fn render(&self) {
-        unsafe {
-            self.gl.bind_vertex_array(self.vao);
-            self.gl.use_program(Some(self.shader));
-            self.gl.uniform_1_i32(self.gl.get_uniform_location(self.shader, "foregroundImage"), 0);
-            self.gl.uniform_1_i32(self.gl.get_uniform_location(self.shader, "backgroundImage"), 1);
-            self.gl.draw_elements(glow::TRIANGLES, 6, glow::UNSIGNED_INT, 0);
-        }
+        self.gl.bind_vertex_array(self.vao);
+        self.gl.use_program(Some(self.shader));
+        self.gl.uniform_1_i32(self.gl.get_uniform_location(self.shader, "foregroundImage"), 0);
+        self.gl.uniform_1_i32(self.gl.get_uniform_location(self.shader, "backgroundImage"), 1);
+        self.gl.draw_elements(glow::TRIANGLES, 6, glow::UNSIGNED_INT, 0);
     }
 }
 

@@ -17,17 +17,18 @@ use crate::error::WebResult;
 use crate::render_types::{TextureBuffer, TextureBufferStack};
 use crate::shaders::{make_quad_vao, make_shader, TEXTURE_VERTEX_SHADER};
 
+use glow::GlowSafeAdapter;
 use glow::HasContext;
 use std::rc::Rc;
 
 pub struct BlurRender<GL: HasContext> {
     shader: GL::Program,
     vao: Option<GL::VertexArray>,
-    gl: Rc<GL>,
+    gl: Rc<GlowSafeAdapter<GL>>,
 }
 
 impl<GL: HasContext> BlurRender<GL> {
-    pub fn new(gl: Rc<GL>) -> WebResult<BlurRender<GL>> {
+    pub fn new(gl: Rc<GlowSafeAdapter<GL>>) -> WebResult<BlurRender<GL>> {
         let shader = make_shader(&*gl, TEXTURE_VERTEX_SHADER, BLUR_FRAGMENT_SHADER)?;
         let vao = make_quad_vao(&*gl, &shader)?;
         Ok(BlurRender { shader, vao, gl })
@@ -43,7 +44,7 @@ impl<GL: HasContext> BlurRender<GL> {
 
         let texture_buffers = [stack.get_nth(0)?, stack.get_nth(-1)?];
 
-        let blur_iteration = |texture: Option<GL::Texture>, tb: &TextureBuffer<GL>, horizontal: bool| unsafe {
+        let blur_iteration = |texture: Option<GL::Texture>, tb: &TextureBuffer<GL>, horizontal: bool| {
             self.gl.bind_framebuffer(glow::FRAMEBUFFER, tb.framebuffer());
             self.gl.viewport(0, 0, tb.width, tb.height);
             self.gl.bind_texture(glow::TEXTURE_2D, texture);
@@ -53,10 +54,8 @@ impl<GL: HasContext> BlurRender<GL> {
             self.gl.draw_elements(glow::TRIANGLES, 6, glow::UNSIGNED_INT, 0);
         };
 
-        unsafe {
-            self.gl.use_program(Some(self.shader));
-            self.gl.bind_vertex_array(self.vao);
-        }
+        self.gl.use_program(Some(self.shader));
+        self.gl.bind_vertex_array(self.vao);
 
         blur_iteration(source.texture(), texture_buffers[0], true);
         for i in 1..passes {
@@ -67,10 +66,8 @@ impl<GL: HasContext> BlurRender<GL> {
         let buffer_index = passes % 2;
         let texture_index = (passes + 1) % 2;
         blur_iteration(texture_buffers[texture_index].texture(), target, buffer_index == 0);
-        unsafe {
-            self.gl.bind_vertex_array(None);
-            self.gl.bind_texture(glow::TEXTURE_2D, None);
-        }
+        self.gl.bind_vertex_array(None);
+        self.gl.bind_texture(glow::TEXTURE_2D, None);
         stack.pop()?;
         stack.pop()?;
         Ok(())

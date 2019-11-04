@@ -13,8 +13,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-use render::opengl_hooks::{WebGl2RenderingContext, WebResult};
-
 use core::action_bindings::on_button_action;
 use core::app_events::AppEventDispatcher;
 use core::camera::CameraLockMode;
@@ -25,6 +23,7 @@ use core::simulation_context::{ConcreteSimulationContext, RandomGenerator};
 use core::simulation_core_state::{AnimationStep, FiltersPreset, Input, Resources, VideoInputResources};
 use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, TextureInterpolation};
 use core::simulation_core_ticker::SimulationCoreTicker;
+use render::error::WebResult;
 use render::simulation_draw::SimulationDrawer;
 use render::simulation_render_state::{Materials, VideoInputMaterials};
 
@@ -36,6 +35,8 @@ use glutin::event::{ElementState, Event, MouseButton, MouseScrollDelta, VirtualK
 use glutin::event_loop::{ControlFlow, EventLoop};
 use glutin::window::{Fullscreen, WindowBuilder};
 use glutin::{ContextBuilder, GlProfile, GlRequest, PossiblyCurrent, Robustness, WindowedContext};
+
+use glow::GlowSafeAdapter;
 
 pub fn main() {
     if let Err(e) = program() {
@@ -122,7 +123,7 @@ fn program() -> WebResult<()> {
     let mut res = Resources::default();
     res.initialize(res_input, 0.0);
     println!("Preparing materials.");
-    let mut materials = Materials::new(Rc::new(gl_ctx), materials_input)?;
+    let mut materials = Materials::new(Rc::new(GlowSafeAdapter::new(gl_ctx)), materials_input)?;
 
     println!("Preparing input.");
     let mut input = Input::new(0.0);

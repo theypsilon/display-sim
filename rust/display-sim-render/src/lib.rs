@@ -25,6 +25,6 @@ mod shaders;
 pub mod simulation_draw;
 pub mod simulation_render_state;
 
-mod error {
+pub mod error {
     pub use web_error::*;
 }

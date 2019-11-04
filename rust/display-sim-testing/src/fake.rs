@@ -26,8 +26,11 @@ use render::render_types::TextureBufferStack;
 use render::rgb_render::RgbRender;
 use render::simulation_draw::SimulationDrawer;
 use render::simulation_render_state::{Materials, VideoInputMaterials};
-use render::stubs::{WebGl2RenderingContext, WebResult};
+use render::error::WebResult;
+
 use std::time::SystemTime;
+use std::rc::Rc;
+use render::glow_test_stub::{GlowSafeAdapter, Context};
 
 pub fn main() -> Result<(), String> {
     println!("Running 1.000.000.000.000.000 iterations!!\nTip: Better stop it at some point manually ;)");
@@ -64,15 +67,15 @@ impl FakeVideoInput {
     pub fn iterate_times(self, times: u128) -> WebResult<()> {
         let mut res = Resources::default();
         res.initialize(self.0, 0.0);
-        let gl = WebGl2RenderingContext {};
+        let gl = Rc::new(GlowSafeAdapter::new(Context{}));
         let mut materials = Materials {
-            main_buffer_stack: TextureBufferStack::new(&gl),
-            bg_buffer_stack: TextureBufferStack::new(&gl),
-            pixels_render: PixelsRender::new(&gl, self.1)?,
-            blur_render: BlurRender::new(&gl)?,
-            internal_resolution_render: InternalResolutionRender::new(&gl)?,
-            rgb_render: RgbRender::new(&gl)?,
-            background_render: BackgroundRender::new(&gl)?,
+            main_buffer_stack: TextureBufferStack::new(gl.clone()),
+            bg_buffer_stack: TextureBufferStack::new(gl.clone()),
+            pixels_render: PixelsRender::new(gl.clone(), self.1)?,
+            blur_render: BlurRender::new(gl.clone())?,
+            internal_resolution_render: InternalResolutionRender::new(gl.clone())?,
+            rgb_render: RgbRender::new(gl.clone())?,
+            background_render: BackgroundRender::new(gl.clone())?,
             screenshot_pixels: None,
             gl,
         };

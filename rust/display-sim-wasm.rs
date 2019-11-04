@@ -13,4 +13,5 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
+#[cfg(target_arch = "wasm32")]
 pub use display_sim_web_exports::wasm_exports;

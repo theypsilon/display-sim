@@ -13,6 +13,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
+#![cfg(target_arch = "wasm32")]
+
 mod console;
 mod dispatch_event;
 pub mod wasm_exports;

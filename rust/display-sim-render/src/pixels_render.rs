@@ -20,6 +20,7 @@ use core::general_types::f32_to_u8;
 use core::pixels_shadow::{get_shadows, TEXTURE_SIZE};
 use core::simulation_core_state::{PixelsGeometryKind, VideoInputResources};
 
+use glow::GlowSafeAdapter;
 use glow::HasContext;
 use std::mem::size_of;
 use std::rc::Rc;
@@ -34,7 +35,7 @@ pub struct PixelsRender<GL: HasContext> {
     offset_inverse_max_length: f32,
     shadows: Vec<Option<GL::Texture>>,
     video_buffers: Vec<Box<[u8]>>,
-    gl: Rc<GL>,
+    gl: Rc<GlowSafeAdapter<GL>>,
 }
 
 pub struct PixelsUniform<'a> {
@@ -56,62 +57,67 @@ pub struct PixelsUniform<'a> {
 }
 
 impl<GL: HasContext> PixelsRender<GL> {
-    pub fn new(gl: Rc<GL>, video_materials: VideoInputMaterials) -> WebResult<PixelsRender<GL>> {
-        unsafe {
-            let shader = make_shader(&*gl, PIXEL_VERTEX_SHADER, PIXEL_FRAGMENT_SHADER)?;
+    pub fn new(gl: Rc<GlowSafeAdapter<GL>>, video_materials: VideoInputMaterials) -> WebResult<PixelsRender<GL>> {
+        let shader = make_shader(&*gl, PIXEL_VERTEX_SHADER, PIXEL_FRAGMENT_SHADER)?;
 
-            let vao = Some(gl.create_vertex_array()?);
-            gl.bind_vertex_array(vao);
+        let vao = Some(gl.create_vertex_array()?);
+        gl.bind_vertex_array(vao);
 
-            let pixels_vbo = gl.create_buffer()?;
-            gl.bind_buffer(glow::ARRAY_BUFFER, Some(pixels_vbo));
-            gl.buffer_data_u8_slice(glow::ARRAY_BUFFER, f32_to_u8(&CUBE_GEOMETRY), glow::STATIC_DRAW);
+        let pixels_vbo = gl.create_buffer()?;
+        gl.bind_buffer(glow::ARRAY_BUFFER, Some(pixels_vbo));
+        gl.buffer_data_u8_slice(glow::ARRAY_BUFFER, f32_to_u8(&CUBE_GEOMETRY), glow::STATIC_DRAW);
 
-            let a_pos_position = gl.get_attrib_location(shader, "aPos") as u32;
-            gl.vertex_attrib_pointer_i32(a_pos_position, 3, glow::FLOAT, 6 * size_of::<f32>() as i32, 0);
-            gl.enable_vertex_attrib_array(a_pos_position);
+        let a_pos_position = gl.get_attrib_location(shader, "aPos") as u32;
+        gl.vertex_attrib_pointer_f32(a_pos_position, 3, glow::FLOAT, false, 6 * size_of::<f32>() as i32, 0);
+        gl.enable_vertex_attrib_array(a_pos_position);
 
-            let a_normal_position = gl.get_attrib_location(shader, "aNormal") as u32;
-            gl.vertex_attrib_pointer_i32(a_normal_position, 3, glow::FLOAT, 6 * size_of::<f32>() as i32, 3 * size_of::<f32>() as i32);
-            gl.enable_vertex_attrib_array(a_normal_position);
+        let a_normal_position = gl.get_attrib_location(shader, "aNormal") as u32;
+        gl.vertex_attrib_pointer_f32(
+            a_normal_position,
+            3,
+            glow::FLOAT,
+            false,
+            6 * size_of::<f32>() as i32,
+            3 * size_of::<f32>() as i32,
+        );
+        gl.enable_vertex_attrib_array(a_normal_position);
 
-            let colors_vbo = gl.create_buffer()?;
-            gl.bind_buffer(glow::ARRAY_BUFFER, Some(colors_vbo));
+        let colors_vbo = gl.create_buffer()?;
+        gl.bind_buffer(glow::ARRAY_BUFFER, Some(colors_vbo));
 
-            let a_color_position = gl.get_attrib_location(shader, "aColor") as u32;
-            gl.enable_vertex_attrib_array(a_color_position);
-            gl.vertex_attrib_pointer_i32(a_color_position, 1, glow::FLOAT, size_of::<f32>() as i32, 0);
-            gl.vertex_attrib_divisor(a_color_position, 1);
+        let a_color_position = gl.get_attrib_location(shader, "aColor") as u32;
+        gl.enable_vertex_attrib_array(a_color_position);
+        gl.vertex_attrib_pointer_f32(a_color_position, 1, glow::FLOAT, false, size_of::<f32>() as i32, 0);
+        gl.vertex_attrib_divisor(a_color_position, 1);
 
-            let offsets_vbo = gl.create_buffer()?;
-            gl.bind_buffer(glow::ARRAY_BUFFER, Some(offsets_vbo));
+        let offsets_vbo = gl.create_buffer()?;
+        gl.bind_buffer(glow::ARRAY_BUFFER, Some(offsets_vbo));
 
-            let a_offset_position = gl.get_attrib_location(shader, "aOffset") as u32;
-            gl.enable_vertex_attrib_array(a_offset_position);
-            gl.vertex_attrib_pointer_i32(a_offset_position, 2, glow::FLOAT, 2 * size_of::<f32>() as i32, 0);
-            gl.vertex_attrib_divisor(a_offset_position, 1);
+        let a_offset_position = gl.get_attrib_location(shader, "aOffset") as u32;
+        gl.enable_vertex_attrib_array(a_offset_position);
+        gl.vertex_attrib_pointer_f32(a_offset_position, 2, glow::FLOAT, false, 2 * size_of::<f32>() as i32, 0);
+        gl.vertex_attrib_divisor(a_offset_position, 1);
 
-            let shadows = get_shadows()
-                .iter()
-                .map(|closure| Self::create_shadow_texture(&*gl, &**closure))
-                .collect::<WebResult<Vec<Option<GL::Texture>>>>()?;
+        let shadows = get_shadows()
+            .iter()
+            .map(|closure| Self::create_shadow_texture(&*gl, &**closure))
+            .collect::<WebResult<Vec<Option<GL::Texture>>>>()?;
 
-            Ok(PixelsRender {
-                video_buffers: video_materials.buffers,
-                vao,
-                shader,
-                offsets_vbo,
-                colors_vbo,
-                width: 0,
-                height: 0,
-                offset_inverse_max_length: 0.0,
-                shadows,
-                gl,
-            })
-        }
+        Ok(PixelsRender {
+            video_buffers: video_materials.buffers,
+            vao,
+            shader,
+            offsets_vbo,
+            colors_vbo,
+            width: 0,
+            height: 0,
+            offset_inverse_max_length: 0.0,
+            shadows,
+            gl,
+        })
     }
 
-    fn create_shadow_texture(gl: &GL, weight: &dyn Fn(usize, usize) -> f64) -> WebResult<Option<GL::Texture>> {
+    fn create_shadow_texture(gl: &GlowSafeAdapter<GL>, weight: &dyn Fn(usize, usize) -> f64) -> WebResult<Option<GL::Texture>> {
         let mut texture: Vec<u8> = vec![0; TEXTURE_SIZE * TEXTURE_SIZE * 4];
         {
             for i in TEXTURE_SIZE / 2..TEXTURE_SIZE {
@@ -151,99 +157,93 @@ impl<GL: HasContext> PixelsRender<GL> {
             }
             console!(log. line);
         }*/
-        unsafe {
-            let pixel_shadow_texture = Some(gl.create_texture()?);
-            gl.bind_texture(glow::TEXTURE_2D, pixel_shadow_texture);
-            gl.tex_image_2d(
-                glow::TEXTURE_2D,
-                0,
-                glow::RGBA as i32,
-                TEXTURE_SIZE as i32,
-                TEXTURE_SIZE as i32,
-                0,
-                glow::RGBA,
-                glow::UNSIGNED_BYTE,
-                Some(&texture),
-            );
-            gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_MIN_FILTER, glow::LINEAR as i32);
-            gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_MAG_FILTER, glow::LINEAR as i32);
-            gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_WRAP_S, glow::CLAMP_TO_EDGE as i32);
-            gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_WRAP_T, glow::CLAMP_TO_EDGE as i32);
-            gl.bind_texture(glow::TEXTURE_2D, None);
+        let pixel_shadow_texture = Some(gl.create_texture()?);
+        gl.bind_texture(glow::TEXTURE_2D, pixel_shadow_texture);
+        gl.tex_image_2d(
+            glow::TEXTURE_2D,
+            0,
+            glow::RGBA as i32,
+            TEXTURE_SIZE as i32,
+            TEXTURE_SIZE as i32,
+            0,
+            glow::RGBA,
+            glow::UNSIGNED_BYTE,
+            Some(&texture),
+        );
+        gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_MIN_FILTER, glow::LINEAR as i32);
+        gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_MAG_FILTER, glow::LINEAR as i32);
+        gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_WRAP_S, glow::CLAMP_TO_EDGE as i32);
+        gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_WRAP_T, glow::CLAMP_TO_EDGE as i32);
+        gl.bind_texture(glow::TEXTURE_2D, None);
 
-            Ok(pixel_shadow_texture)
-        }
+        Ok(pixel_shadow_texture)
     }
 
     pub fn load_image(&mut self, video_res: &VideoInputResources) {
-        unsafe {
-            if video_res.image_size.width != self.width || video_res.image_size.height != self.height {
-                self.width = video_res.image_size.width;
-                self.height = video_res.image_size.height;
-                self.offset_inverse_max_length = 1.0 / ((self.width as f32 * 0.5).powi(2) + (self.height as f32 * 0.5).powi(2)).sqrt();
-                self.gl.bind_buffer(glow::ARRAY_BUFFER, Some(self.offsets_vbo));
-                let offsets = calculate_offsets(self.width, self.height);
-                self.gl.buffer_data_u8_slice(glow::ARRAY_BUFFER, f32_to_u8(&offsets), glow::STATIC_DRAW);
-            }
-            self.gl.bind_vertex_array(self.vao);
-            self.gl.bind_buffer(glow::ARRAY_BUFFER, Some(self.colors_vbo));
-
-            self.gl
-                .buffer_data_u8_slice(glow::ARRAY_BUFFER, &self.video_buffers[video_res.current_frame], glow::STATIC_DRAW);
+        if video_res.image_size.width != self.width || video_res.image_size.height != self.height {
+            self.width = video_res.image_size.width;
+            self.height = video_res.image_size.height;
+            self.offset_inverse_max_length = 1.0 / ((self.width as f32 * 0.5).powi(2) + (self.height as f32 * 0.5).powi(2)).sqrt();
+            self.gl.bind_buffer(glow::ARRAY_BUFFER, Some(self.offsets_vbo));
+            let offsets = calculate_offsets(self.width, self.height);
+            self.gl.buffer_data_u8_slice(glow::ARRAY_BUFFER, f32_to_u8(&offsets), glow::STATIC_DRAW);
         }
+        self.gl.bind_vertex_array(self.vao);
+        self.gl.bind_buffer(glow::ARRAY_BUFFER, Some(self.colors_vbo));
+
+        self.gl
+            .buffer_data_u8_slice(glow::ARRAY_BUFFER, &self.video_buffers[video_res.current_frame], glow::STATIC_DRAW);
     }
 
     pub fn render(&self, uniforms: PixelsUniform) {
-        unsafe {
-            self.gl.use_program(Some(self.shader));
-            if uniforms.shadow_kind >= self.shadows.len() {
-                panic!("Bug on shadow_kind!")
-            }
-            self.gl.bind_texture(glow::TEXTURE_2D, self.shadows[uniforms.shadow_kind]);
-            self.gl
-                .uniform_matrix_4_f32_slice(self.gl.get_uniform_location(self.shader, "view"), false, uniforms.view);
-            self.gl
-                .uniform_matrix_4_f32_slice(self.gl.get_uniform_location(self.shader, "projection"), false, uniforms.projection);
-            self.gl
-                .uniform_3_f32_slice(self.gl.get_uniform_location(self.shader, "lightPos"), uniforms.light_pos);
-            self.gl
-                .uniform_3_f32_slice(self.gl.get_uniform_location(self.shader, "lightColor"), uniforms.light_color);
-            self.gl
-                .uniform_3_f32_slice(self.gl.get_uniform_location(self.shader, "extraLight"), uniforms.extra_light);
-            self.gl
-                .uniform_1_f32(self.gl.get_uniform_location(self.shader, "ambientStrength"), uniforms.ambient_strength);
-            self.gl
-                .uniform_1_f32(self.gl.get_uniform_location(self.shader, "contrastFactor"), uniforms.contrast_factor);
-            self.gl.uniform_1_f32(
-                self.gl.get_uniform_location(self.shader, "offset_inverse_max_length"),
-                self.offset_inverse_max_length,
-            );
-            self.gl
-                .uniform_1_f32(self.gl.get_uniform_location(self.shader, "screen_curvature"), uniforms.screen_curvature);
-            self.gl
-                .uniform_2_f32_slice(self.gl.get_uniform_location(self.shader, "pixel_spread"), uniforms.pixel_spread);
-            self.gl
-                .uniform_3_f32_slice(self.gl.get_uniform_location(self.shader, "pixel_scale"), uniforms.pixel_scale);
-            self.gl
-                .uniform_3_f32_slice(self.gl.get_uniform_location(self.shader, "pixel_offset"), uniforms.pixel_offset);
-            self.gl
-                .uniform_1_f32(self.gl.get_uniform_location(self.shader, "pixel_pulse"), uniforms.pixel_pulse);
-            self.gl.uniform_1_f32(
-                self.gl.get_uniform_location(self.shader, "heightModifierFactor"),
-                uniforms.height_modifier_factor,
-            );
-
-            self.gl.bind_vertex_array(self.vao);
-            self.gl.draw_arrays_instanced(
-                glow::TRIANGLES,
-                0,
-                match uniforms.geometry_kind {
-                    PixelsGeometryKind::Squares => 6,
-                    PixelsGeometryKind::Cubes => 36,
-                },
-                (self.width * self.height) as i32,
-            );
+        self.gl.use_program(Some(self.shader));
+        if uniforms.shadow_kind >= self.shadows.len() {
+            panic!("Bug on shadow_kind!")
         }
+        self.gl.bind_texture(glow::TEXTURE_2D, self.shadows[uniforms.shadow_kind]);
+        self.gl
+            .uniform_matrix_4_f32_slice(self.gl.get_uniform_location(self.shader, "view"), false, uniforms.view);
+        self.gl
+            .uniform_matrix_4_f32_slice(self.gl.get_uniform_location(self.shader, "projection"), false, uniforms.projection);
+        self.gl
+            .uniform_3_f32_slice(self.gl.get_uniform_location(self.shader, "lightPos"), uniforms.light_pos);
+        self.gl
+            .uniform_3_f32_slice(self.gl.get_uniform_location(self.shader, "lightColor"), uniforms.light_color);
+        self.gl
+            .uniform_3_f32_slice(self.gl.get_uniform_location(self.shader, "extraLight"), uniforms.extra_light);
+        self.gl
+            .uniform_1_f32(self.gl.get_uniform_location(self.shader, "ambientStrength"), uniforms.ambient_strength);
+        self.gl
+            .uniform_1_f32(self.gl.get_uniform_location(self.shader, "contrastFactor"), uniforms.contrast_factor);
+        self.gl.uniform_1_f32(
+            self.gl.get_uniform_location(self.shader, "offset_inverse_max_length"),
+            self.offset_inverse_max_length,
+        );
+        self.gl
+            .uniform_1_f32(self.gl.get_uniform_location(self.shader, "screen_curvature"), uniforms.screen_curvature);
+        self.gl
+            .uniform_2_f32_slice(self.gl.get_uniform_location(self.shader, "pixel_spread"), uniforms.pixel_spread);
+        self.gl
+            .uniform_3_f32_slice(self.gl.get_uniform_location(self.shader, "pixel_scale"), uniforms.pixel_scale);
+        self.gl
+            .uniform_3_f32_slice(self.gl.get_uniform_location(self.shader, "pixel_offset"), uniforms.pixel_offset);
+        self.gl
+            .uniform_1_f32(self.gl.get_uniform_location(self.shader, "pixel_pulse"), uniforms.pixel_pulse);
+        self.gl.uniform_1_f32(
+            self.gl.get_uniform_location(self.shader, "heightModifierFactor"),
+            uniforms.height_modifier_factor,
+        );
+
+        self.gl.bind_vertex_array(self.vao);
+        self.gl.draw_arrays_instanced(
+            glow::TRIANGLES,
+            0,
+            match uniforms.geometry_kind {
+                PixelsGeometryKind::Squares => 6,
+                PixelsGeometryKind::Cubes => 36,
+            },
+            (self.width * self.height) as i32,
+        );
     }
 }
 

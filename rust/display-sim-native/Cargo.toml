@@ -10,8 +10,8 @@ test = false
 [dependencies]
 image = "0.21.0"
 glm = { version = "0.5", package = "nalgebra-glm" }
-render = { path = "../display-sim-opengl-render", package = "display-sim-opengl-render" }
+render = { path = "../display-sim-render", package = "display-sim-render" }
 core = { path = "../display-sim-core", package = "display-sim-core" }
 rand = "0.6.5"
 glutin = "0.22.0-alpha2"
-glow = "0.3.0-alpha3"
+glow = { path = "../glow-safe-adapter", package = "glow-safe-adapter" }

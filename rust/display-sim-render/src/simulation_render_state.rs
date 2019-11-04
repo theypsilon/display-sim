@@ -22,6 +22,7 @@ use crate::render_types::TextureBufferStack;
 use crate::rgb_render::RgbRender;
 
 use glow::Context;
+use glow::GlowSafeAdapter;
 use std::rc::Rc;
 
 #[derive(Default)]
@@ -31,7 +32,7 @@ pub struct VideoInputMaterials {
 
 // Rendering Materials
 pub struct Materials {
-    pub gl: Rc<Context>,
+    pub gl: Rc<GlowSafeAdapter<Context>>,
     pub main_buffer_stack: TextureBufferStack<Context>,
     pub bg_buffer_stack: TextureBufferStack<Context>,
     pub pixels_render: PixelsRender<Context>,
@@ -43,7 +44,7 @@ pub struct Materials {
 }
 
 impl Materials {
-    pub fn new(gl: Rc<Context>, video: VideoInputMaterials) -> WebResult<Materials> {
+    pub fn new(gl: Rc<GlowSafeAdapter<Context>>, video: VideoInputMaterials) -> WebResult<Materials> {
         Ok(Materials {
             main_buffer_stack: TextureBufferStack::new(gl.clone()),
             bg_buffer_stack: TextureBufferStack::new(gl.clone()),

@@ -16,33 +16,32 @@
 use crate::error::WebResult;
 use crate::shaders::{make_quad_vao, make_shader, TEXTURE_VERTEX_SHADER};
 
+use glow::GlowSafeAdapter;
 use glow::HasContext;
 use std::rc::Rc;
 
 pub struct RgbRender<GL: HasContext> {
     vao: Option<GL::VertexArray>,
     shader: GL::Program,
-    gl: Rc<GL>,
+    gl: Rc<GlowSafeAdapter<GL>>,
 }
 
 impl<GL: HasContext> RgbRender<GL> {
-    pub fn new(gl: Rc<GL>) -> WebResult<RgbRender<GL>> {
+    pub fn new(gl: Rc<GlowSafeAdapter<GL>>) -> WebResult<RgbRender<GL>> {
         let shader = make_shader(&*gl, TEXTURE_VERTEX_SHADER, RGB_FRAGMENT_SHADER)?;
         let vao = make_quad_vao(&*gl, &shader)?;
         Ok(RgbRender { vao, shader, gl })
     }
 
     pub fn render(&self) {
-        unsafe {
-            self.gl.bind_vertex_array(self.vao);
-            self.gl.use_program(Some(self.shader));
+        self.gl.bind_vertex_array(self.vao);
+        self.gl.use_program(Some(self.shader));
 
-            self.gl.uniform_1_i32(self.gl.get_uniform_location(self.shader, "redImage"), 0);
-            self.gl.uniform_1_i32(self.gl.get_uniform_location(self.shader, "greenImage"), 1);
-            self.gl.uniform_1_i32(self.gl.get_uniform_location(self.shader, "blueImage"), 2);
+        self.gl.uniform_1_i32(self.gl.get_uniform_location(self.shader, "redImage"), 0);
+        self.gl.uniform_1_i32(self.gl.get_uniform_location(self.shader, "greenImage"), 1);
+        self.gl.uniform_1_i32(self.gl.get_uniform_location(self.shader, "blueImage"), 2);
 
-            self.gl.draw_elements(glow::TRIANGLES, 6, glow::UNSIGNED_INT, 0);
-        }
+        self.gl.draw_elements(glow::TRIANGLES, 6, glow::UNSIGNED_INT, 0);
     }
 }
 

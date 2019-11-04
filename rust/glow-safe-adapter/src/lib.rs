@@ -6,15 +6,17 @@
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * but WITHOUT ANY WARRANTY {
+ * } without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-#![allow(clippy::identity_op)]
+#![allow(clippy::too_many_arguments)]
 
-include!(concat!(env!("OUT_DIR"), "/display-sim-webgl-render-copy.rs"));
+mod glow_safe_adapter;
 
-pub mod opengl_hooks;
+pub use crate::glow_safe_adapter::*;
+pub use glow::*;

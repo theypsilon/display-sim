@@ -27,6 +27,7 @@ use core::internal_resolution::InternalResolution;
 use core::simulation_context::{ConcreteSimulationContext, RandomGenerator, SimulationContext};
 use core::simulation_core_state::{event_kind, Input, InputEventValue, Resources, VideoInputResources};
 use core::simulation_core_ticker::SimulationCoreTicker;
+use glow::GlowSafeAdapter;
 use render::simulation_draw::SimulationDrawer;
 use render::simulation_render_state::{Materials, VideoInputMaterials};
 use web_error::{WebError, WebResult};
@@ -57,7 +58,9 @@ pub fn web_entrypoint(
     video_input_resources: VideoInputResources,
     video_input_materials: VideoInputMaterials,
 ) -> WebResult<()> {
-    let gl = Rc::new(glow::Context::from_webgl2_context(gl.dyn_into::<WebGl2RenderingContext>()?));
+    let gl = Rc::new(GlowSafeAdapter::new(glow::Context::from_webgl2_context(
+        gl.dyn_into::<WebGl2RenderingContext>()?,
+    )));
     res.borrow_mut().initialize(video_input_resources, now()?);
     let owned_state = StateOwner::new_rc(res, Materials::new(gl, video_input_materials)?, Input::new(now()?));
     let frame_closure: Closure<dyn FnMut(JsValue)> = {
