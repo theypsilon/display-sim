@@ -13,8 +13,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-use render::opengl_hooks::{WebGl2RenderingContext, WebResult};
-
 use core::action_bindings::on_button_action;
 use core::app_events::AppEventDispatcher;
 use core::camera::CameraLockMode;
@@ -25,17 +23,20 @@ use core::simulation_context::{ConcreteSimulationContext, RandomGenerator};
 use core::simulation_core_state::{AnimationStep, FiltersPreset, Input, Resources, VideoInputResources};
 use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, TextureInterpolation};
 use core::simulation_core_ticker::SimulationCoreTicker;
+use render::error::WebResult;
 use render::simulation_draw::SimulationDrawer;
 use render::simulation_render_state::{Materials, VideoInputMaterials};
 
 use std::fmt::Display;
-use std::time::{Instant, Duration};
 use std::rc::Rc;
+use std::time::{Duration, Instant};
 
-use glutin::event::{Event, WindowEvent, ElementState, MouseButton, MouseScrollDelta, VirtualKeyCode};
+use glutin::event::{ElementState, Event, MouseButton, MouseScrollDelta, VirtualKeyCode, WindowEvent};
 use glutin::event_loop::{ControlFlow, EventLoop};
-use glutin::window::{WindowBuilder, Fullscreen};
-use glutin::{ContextBuilder, WindowedContext, PossiblyCurrent, GlRequest, GlProfile, Robustness};
+use glutin::window::{Fullscreen, WindowBuilder};
+use glutin::{ContextBuilder, GlProfile, GlRequest, PossiblyCurrent, Robustness, WindowedContext};
+
+use glow::GlowSafeAdapter;
 
 pub fn main() {
     if let Err(e) = program() {
@@ -55,7 +56,6 @@ impl RandomGenerator for NativeRnd {
 }
 
 fn program() -> WebResult<()> {
-
     println!("Initializing Window.");
     let el = EventLoop::new();
     let monitor = el.primary_monitor();
@@ -85,12 +85,8 @@ fn program() -> WebResult<()> {
 
     let windowed_context = unsafe { windowed_context.make_current().map_err(|e| format!("Context Error: {:?}", e))? };
     let windowed_context = Rc::new(windowed_context);
-    let gl_ctx = WebGl2RenderingContext::new(|ptr| windowed_context.context().get_proc_address(ptr) as *const _);
-    println!(
-        "Pixel format of the window's GL context: {:?}",
-        windowed_context.get_pixel_format()
-    );
-
+    let gl_ctx = glow::Context::from_loader_function(|ptr| windowed_context.context().get_proc_address(ptr) as *const _);
+    println!("Pixel format of the window's GL context: {:?}", windowed_context.get_pixel_format());
 
     let img_path = "www/assets/pics/frames/seiken.png";
     println!("Loading image: {}", img_path);
@@ -127,7 +123,7 @@ fn program() -> WebResult<()> {
     let mut res = Resources::default();
     res.initialize(res_input, 0.0);
     println!("Preparing materials.");
-    let mut materials = Materials::new(gl_ctx, materials_input)?;
+    let mut materials = Materials::new(Rc::new(GlowSafeAdapter::new(gl_ctx)), materials_input)?;
 
     println!("Preparing input.");
     let mut input = Input::new(0.0);
@@ -146,10 +142,8 @@ fn program() -> WebResult<()> {
             Event::LoopDestroyed => return,
             Event::WindowEvent { ref event, .. } => match event {
                 WindowEvent::Resized(size) => {
-                    let dpi_factor =
-                        windowed_context.window().hidpi_factor();
-                    windowed_context
-                        .resize(size.to_physical(dpi_factor));
+                    let dpi_factor = windowed_context.window().hidpi_factor();
+                    windowed_context.resize(size.to_physical(dpi_factor));
 
                     println!("Size changed: ({}, {})", size.width, size.height);
                     res.video.viewport_size.width = (size.width * dpi_factor) as u32;
@@ -161,30 +155,43 @@ fn program() -> WebResult<()> {
                 }
                 WindowEvent::KeyboardInput { input: keyevent, .. } => {
                     if let Some(key) = keyevent.virtual_keycode {
-                        read_key(&mut input, key, match keyevent.state { ElementState::Pressed => true, ElementState::Released => false});
+                        read_key(
+                            &mut input,
+                            key,
+                            match keyevent.state {
+                                ElementState::Pressed => true,
+                                ElementState::Released => false,
+                            },
+                        );
                     }
-                },
+                }
                 WindowEvent::MouseInput { button, state, .. } => {
                     if *button == MouseButton::Left {
-                        input.mouse_click.input = match state { ElementState::Pressed => true, ElementState::Released => false };
-                        if input.mouse_click.input && match windowed_context.window().fullscreen() { None => true, _ => false } {
-                             windowed_context.window().set_fullscreen(Some(Fullscreen::Borderless(monitor.clone())));
+                        input.mouse_click.input = match state {
+                            ElementState::Pressed => true,
+                            ElementState::Released => false,
+                        };
+                        if input.mouse_click.input
+                            && match windowed_context.window().fullscreen() {
+                                None => true,
+                                _ => false,
+                            }
+                        {
+                            windowed_context.window().set_fullscreen(Some(Fullscreen::Borderless(monitor.clone())));
                         }
                     }
-                },
+                }
                 WindowEvent::MouseWheel { delta, .. } => {
                     input.mouse_scroll_y = match delta {
                         MouseScrollDelta::LineDelta(y, ..) => *y,
-                        MouseScrollDelta::PixelDelta(position) => position.y as f32
+                        MouseScrollDelta::PixelDelta(position) => position.y as f32,
                     };
-                },
+                }
                 WindowEvent::CursorMoved { position, .. } => {
                     input.mouse_position_x = position.x as i32;
                     input.mouse_position_y = position.y as i32;
-                },
-                WindowEvent::CloseRequested => {
-                    *control_flow = ControlFlow::Exit
                 }
+                WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                 _ => (),
             },
             _ => (),
@@ -318,6 +325,7 @@ impl AppEventDispatcher for NativeEventDispatcher {
     fn dispatch_change_preset_selected(&self, preset_name: &str) {
         println!("dispatch_change_preset_selected: {}", preset_name);
     }
+    fn fire_screenshot(&self, _: i32, _: i32, _: &mut [u8], _: f64) {}
     fn dispatch_screenshot(&self, _: &[u8], _: f64) {}
     fn dispatch_change_camera_movement_mode(&self, locked_mode: CameraLockMode) {
         println!("change_camera_movement_mode: {}", locked_mode);

@@ -14,62 +14,43 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 use crate::error::WebResult;
-use crate::web::{WebGl2RenderingContext, WebGlFramebuffer, WebGlTexture};
+use glow::GlowSafeAdapter;
+use glow::HasContext;
+use std::rc::Rc;
 
-#[derive(Debug, Clone)]
-pub struct TextureBuffer {
-    texture: Option<WebGlTexture>,
-    framebuffer: Option<WebGlFramebuffer>,
+#[derive(Debug, Copy)]
+pub struct TextureBuffer<GL: HasContext> {
+    texture: Option<GL::Texture>,
+    framebuffer: Option<GL::Framebuffer>,
     pub width: i32,
     pub height: i32,
 }
 
-impl TextureBuffer {
-    pub fn new(gl: &WebGl2RenderingContext, width: i32, height: i32, interpolation: u32) -> WebResult<TextureBuffer> {
-        let framebuffer = gl.create_framebuffer();
-        gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, framebuffer.as_ref());
+impl<GL: HasContext> std::clone::Clone for TextureBuffer<GL> {
+    fn clone(&self) -> Self {
+        TextureBuffer {
+            texture: self.texture,
+            framebuffer: self.framebuffer,
+            width: self.width,
+            height: self.height,
+        }
+    }
+}
 
-        let texture = gl.create_texture();
-        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, texture.as_ref());
+impl<GL: HasContext> TextureBuffer<GL> {
+    pub fn new(gl: &GlowSafeAdapter<GL>, width: i32, height: i32, interpolation: u32) -> WebResult<TextureBuffer<GL>> {
+        let framebuffer = Some(gl.create_framebuffer()?);
+        gl.bind_framebuffer(glow::FRAMEBUFFER, framebuffer);
 
-        gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
-            WebGl2RenderingContext::TEXTURE_2D,
-            0,
-            WebGl2RenderingContext::RGBA as i32,
-            width,
-            height,
-            0,
-            WebGl2RenderingContext::RGBA,
-            WebGl2RenderingContext::UNSIGNED_BYTE,
-            None,
-        )?;
-        gl.tex_parameteri(
-            WebGl2RenderingContext::TEXTURE_2D,
-            WebGl2RenderingContext::TEXTURE_MIN_FILTER,
-            interpolation as i32,
-        );
-        gl.tex_parameteri(
-            WebGl2RenderingContext::TEXTURE_2D,
-            WebGl2RenderingContext::TEXTURE_MAG_FILTER,
-            interpolation as i32,
-        );
-        gl.tex_parameteri(
-            WebGl2RenderingContext::TEXTURE_2D,
-            WebGl2RenderingContext::TEXTURE_WRAP_S,
-            WebGl2RenderingContext::CLAMP_TO_EDGE as i32,
-        );
-        gl.tex_parameteri(
-            WebGl2RenderingContext::TEXTURE_2D,
-            WebGl2RenderingContext::TEXTURE_WRAP_T,
-            WebGl2RenderingContext::CLAMP_TO_EDGE as i32,
-        );
-        gl.framebuffer_texture_2d(
-            WebGl2RenderingContext::FRAMEBUFFER,
-            WebGl2RenderingContext::COLOR_ATTACHMENT0,
-            WebGl2RenderingContext::TEXTURE_2D,
-            texture.as_ref(),
-            0,
-        );
+        let texture = Some(gl.create_texture()?);
+        gl.bind_texture(glow::TEXTURE_2D, texture);
+
+        gl.tex_image_2d(glow::TEXTURE_2D, 0, glow::RGBA as i32, width, height, 0, glow::RGBA, glow::UNSIGNED_BYTE, None);
+        gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_MIN_FILTER, interpolation as i32);
+        gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_MAG_FILTER, interpolation as i32);
+        gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_WRAP_S, glow::CLAMP_TO_EDGE as i32);
+        gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_WRAP_T, glow::CLAMP_TO_EDGE as i32);
+        gl.framebuffer_texture_2d(glow::FRAMEBUFFER, glow::COLOR_ATTACHMENT0, glow::TEXTURE_2D, texture, 0);
 
         Ok(TextureBuffer {
             texture,
@@ -79,51 +60,46 @@ impl TextureBuffer {
         })
     }
 
-    pub fn new_with_depthbuffer(gl: &WebGl2RenderingContext, width: i32, height: i32, interpolation: u32) -> WebResult<TextureBuffer> {
-        let depthbuffer = gl.create_renderbuffer();
+    pub fn new_with_depthbuffer(gl: &GlowSafeAdapter<GL>, width: i32, height: i32, interpolation: u32) -> WebResult<TextureBuffer<GL>> {
+        let depthbuffer = Some(gl.create_renderbuffer()?);
         let texture_buffer = Self::new(gl, width, height, interpolation)?;
-        gl.bind_renderbuffer(WebGl2RenderingContext::RENDERBUFFER, depthbuffer.as_ref());
-        gl.renderbuffer_storage(WebGl2RenderingContext::RENDERBUFFER, WebGl2RenderingContext::DEPTH_COMPONENT16, width, height);
-        gl.framebuffer_renderbuffer(
-            WebGl2RenderingContext::FRAMEBUFFER,
-            WebGl2RenderingContext::DEPTH_ATTACHMENT,
-            WebGl2RenderingContext::RENDERBUFFER,
-            depthbuffer.as_ref(),
-        );
+        gl.bind_renderbuffer(glow::RENDERBUFFER, depthbuffer);
+        gl.renderbuffer_storage(glow::RENDERBUFFER, glow::DEPTH_COMPONENT16, width, height);
+        gl.framebuffer_renderbuffer(glow::FRAMEBUFFER, glow::DEPTH_ATTACHMENT, glow::RENDERBUFFER, depthbuffer);
         Ok(texture_buffer)
     }
 
-    pub fn texture(&self) -> Option<&WebGlTexture> {
-        self.texture.as_ref()
+    pub fn texture(&self) -> Option<GL::Texture> {
+        self.texture
     }
 
-    pub fn framebuffer(&self) -> Option<&WebGlFramebuffer> {
-        self.framebuffer.as_ref()
+    pub fn framebuffer(&self) -> Option<GL::Framebuffer> {
+        self.framebuffer
     }
 }
 
-pub struct TextureBufferStack {
-    pub stack: Vec<TextureBuffer>,
+pub struct TextureBufferStack<GL: HasContext> {
+    pub stack: Vec<TextureBuffer<GL>>,
     width: i32,
     height: i32,
     interpolation: u32,
     cursor: usize,
     max_cursor: usize,
     depthbuffer_active: bool,
-    gl: WebGl2RenderingContext,
+    gl: Rc<GlowSafeAdapter<GL>>,
 }
 
-impl TextureBufferStack {
-    pub fn new(gl: &WebGl2RenderingContext) -> TextureBufferStack {
+impl<GL: HasContext> TextureBufferStack<GL> {
+    pub fn new(gl: Rc<GlowSafeAdapter<GL>>) -> TextureBufferStack<GL> {
         TextureBufferStack {
             stack: vec![],
             width: 800,
             height: 600,
-            interpolation: WebGl2RenderingContext::LINEAR,
+            interpolation: glow::LINEAR,
             cursor: 0,
             max_cursor: 0,
             depthbuffer_active: false,
-            gl: gl.clone(),
+            gl,
         }
     }
 
@@ -156,8 +132,8 @@ impl TextureBufferStack {
         self.cursor = 0;
         self.max_cursor = 0;
         for tb in self.stack.iter() {
-            self.gl.delete_framebuffer(tb.framebuffer());
-            self.gl.delete_texture(tb.texture());
+            self.gl.delete_framebuffer(tb.framebuffer().unwrap());
+            self.gl.delete_texture(tb.texture().unwrap());
         }
         self.stack.clear();
     }
@@ -165,9 +141,9 @@ impl TextureBufferStack {
     pub fn push(&mut self) -> WebResult<()> {
         if self.stack.len() == self.cursor {
             let tb = if self.depthbuffer_active {
-                TextureBuffer::new_with_depthbuffer(&self.gl, self.width, self.height, self.interpolation)?
+                TextureBuffer::new_with_depthbuffer(&*self.gl, self.width, self.height, self.interpolation)?
             } else {
-                TextureBuffer::new(&self.gl, self.width, self.height, self.interpolation)?
+                TextureBuffer::new(&*self.gl, self.width, self.height, self.interpolation)?
             };
             self.stack.push(tb);
         }
@@ -186,19 +162,19 @@ impl TextureBufferStack {
 
     pub fn bind_current(&self) -> WebResult<()> {
         let current = self.get_current()?;
-        self.gl.bind_framebuffer(WebGl2RenderingContext::FRAMEBUFFER, current.framebuffer());
+        self.gl.bind_framebuffer(glow::FRAMEBUFFER, current.framebuffer());
         self.gl.viewport(0, 0, self.width, self.height);
         Ok(())
     }
 
-    pub fn get_current(&self) -> WebResult<&TextureBuffer> {
+    pub fn get_current(&self) -> WebResult<&TextureBuffer<GL>> {
         if self.cursor == 0 {
             return Err("Bad texture buffer stack access on cursor == 0.".into());
         }
         Ok(&self.stack[self.cursor - 1])
     }
 
-    pub fn get_nth(&self, n: i32) -> WebResult<&TextureBuffer> {
+    pub fn get_nth(&self, n: i32) -> WebResult<&TextureBuffer<GL>> {
         let index = self.cursor as i32 + n - 1;
         if index < 0 || index >= self.stack.len() as i32 {
             return Err(format!("Bad texture buffer sttack access on index == {}", index).into());

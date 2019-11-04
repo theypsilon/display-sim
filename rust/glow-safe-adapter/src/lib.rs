@@ -6,29 +6,18 @@
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * but WITHOUT ANY WARRANTY {
+ * } without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-#![allow(clippy::identity_op)]
+#![allow(clippy::too_many_arguments)]
+#![allow(clippy::trivially_copy_pass_by_ref)]
 
-pub mod background_render;
-pub mod blur_render;
-pub mod internal_resolution_render;
-pub mod pixels_render;
-pub mod render_types;
-pub mod rgb_render;
-mod shaders;
-pub mod simulation_draw;
-pub mod simulation_render_state;
+mod glow_safe_adapter;
 
-mod web {
-    pub use web_sys::*;
-}
-
-mod error {
-    pub use web_error::*;
-}
+pub use crate::glow_safe_adapter::*;
+pub use glow::*;

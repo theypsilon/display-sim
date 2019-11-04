@@ -26,13 +26,12 @@ display-sim-testing = { path = "rust/display-sim-testing" }
 members = [
     "rust/enum-len-derive",
     "rust/enum-len-trait",
+    "rust/glow-safe-adapter",
     "rust/display-sim-core",
-    "rust/display-sim-webgl-render",
+    "rust/display-sim-render",
     "rust/display-sim-web-error",
     "rust/display-sim-web-exports",
-    "rust/display-sim-stub-render",
-    "rust/display-sim-opengl-render",
     "rust/display-sim-native",
-    "rust/display-sim-build-tools",
+    "rust/display-sim-stub-render",
     "rust/display-sim-testing",
 ]

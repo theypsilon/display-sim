@@ -14,7 +14,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 #![allow(clippy::identity_op)]
+#![allow(clippy::trivially_copy_pass_by_ref)]
+#![allow(clippy::clone_on_copy)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::too_many_arguments)]
+#![allow(non_upper_case_globals)]
 
-include!(concat!(env!("OUT_DIR"), "/display-sim-webgl-render-copy.rs"));
+include!(concat!(env!("OUT_DIR"), "/display-sim-render-copy.rs"));
 
-pub mod stubs;
+pub mod glow_test_stub;
