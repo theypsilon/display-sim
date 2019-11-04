@@ -28,7 +28,7 @@ use render::rgb_render::RgbRender;
 use render::simulation_draw::SimulationDrawer;
 use render::simulation_render_state::{Materials, VideoInputMaterials};
 
-use render::glow_test_stub::{Context, GlowSafeAdapter};
+use render::glow_test_stub::new_glow_stub;
 use std::rc::Rc;
 use std::time::SystemTime;
 
@@ -67,7 +67,7 @@ impl FakeVideoInput {
     pub fn iterate_times(self, times: u128) -> WebResult<()> {
         let mut res = Resources::default();
         res.initialize(self.0, 0.0);
-        let gl = Rc::new(GlowSafeAdapter::new(Context {}));
+        let gl = Rc::new(new_glow_stub());
         let mut materials = Materials {
             main_buffer_stack: TextureBufferStack::new(gl.clone()),
             bg_buffer_stack: TextureBufferStack::new(gl.clone()),

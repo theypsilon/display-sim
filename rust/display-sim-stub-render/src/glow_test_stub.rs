@@ -31,11 +31,11 @@ impl HasContext for Context {
     type UniformLocation = u32;
 }
 
-impl<GL: HasContext> GlowSafeAdapter<GL> {
-    pub fn new(ctx: GL) -> Self {
-        GlowSafeAdapter { ctx }
-    }
+pub fn new_glow_stub() -> GlowSafeAdapter<Context> {
+    GlowSafeAdapter { ctx: Context{} }
+}
 
+impl<GL: HasContext> GlowSafeAdapter<GL> {
     pub fn enable(&self, _: u32) {}
     pub fn enable_vertex_attrib_array(&self, _: u32) {}
     pub fn create_framebuffer(&self) -> Result<GL::Framebuffer, String> {
