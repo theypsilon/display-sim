@@ -14,7 +14,7 @@ pub trait HasContext {
 pub struct Context {}
 #[derive(Copy, Clone)]
 pub struct GlowSafeAdapter<GL: HasContext> {
-    ctx: GL
+    ctx: GL,
 }
 pub type ActiveAttribute = u32;
 
@@ -33,35 +33,61 @@ impl HasContext for Context {
 
 impl<GL: HasContext> GlowSafeAdapter<GL> {
     pub fn new(ctx: GL) -> Self {
-        GlowSafeAdapter{ctx}
+        GlowSafeAdapter { ctx }
     }
 
     pub fn enable(&self, _: u32) {}
     pub fn enable_vertex_attrib_array(&self, _: u32) {}
-    pub fn create_framebuffer(&self) -> Result<GL::Framebuffer, String> {Ok(Default::default())}
-    pub fn create_renderbuffer(&self) -> Result<GL::Renderbuffer, String> {Ok(Default::default())}
-    pub fn create_sampler(&self) -> Result<GL::Sampler, String> {Ok(Default::default())}
-    pub fn create_shader(&self, _: u32) -> Result<GL::Shader, String> {Ok(Default::default())}
-    pub fn create_texture(&self) -> Result<GL::Texture, String> {Ok(Default::default())}
+    pub fn create_framebuffer(&self) -> Result<GL::Framebuffer, String> {
+        Ok(Default::default())
+    }
+    pub fn create_renderbuffer(&self) -> Result<GL::Renderbuffer, String> {
+        Ok(Default::default())
+    }
+    pub fn create_sampler(&self) -> Result<GL::Sampler, String> {
+        Ok(Default::default())
+    }
+    pub fn create_shader(&self, _: u32) -> Result<GL::Shader, String> {
+        Ok(Default::default())
+    }
+    pub fn create_texture(&self) -> Result<GL::Texture, String> {
+        Ok(Default::default())
+    }
     pub fn delete_shader(&self, _: GL::Shader) {}
     pub fn shader_source(&self, _: GL::Shader, _: &str) {}
     pub fn compile_shader(&self, _: GL::Shader) {}
-    pub fn get_shader_compile_status(&self, _: GL::Shader) -> bool {true}
-    pub fn get_shader_info_log(&self, _: GL::Shader) -> String {"get_shader_info_log".into()}
-    pub fn create_program(&self) -> Result<GL::Program, String> {Ok(Default::default())}
+    pub fn get_shader_compile_status(&self, _: GL::Shader) -> bool {
+        true
+    }
+    pub fn get_shader_info_log(&self, _: GL::Shader) -> String {
+        "get_shader_info_log".into()
+    }
+    pub fn create_program(&self) -> Result<GL::Program, String> {
+        Ok(Default::default())
+    }
     pub fn delete_program(&self, _: GL::Program) {}
     pub fn attach_shader(&self, _: GL::Program, _: GL::Shader) {}
     pub fn detach_shader(&self, _: GL::Program, _: GL::Shader) {}
     pub fn link_program(&self, _: GL::Program) {}
-    pub fn get_program_link_status(&self, _: GL::Program) -> bool {true}
-    pub fn get_program_info_log(&self, _: GL::Program) -> String {"get_program_info_log".into()}
-    pub fn get_active_uniforms(&self, _: GL::Program) -> u32 {0}
+    pub fn get_program_link_status(&self, _: GL::Program) -> bool {
+        true
+    }
+    pub fn get_program_info_log(&self, _: GL::Program) -> String {
+        "get_program_info_log".into()
+    }
+    pub fn get_active_uniforms(&self, _: GL::Program) -> u32 {
+        0
+    }
     pub fn use_program(&self, _: Option<GL::Program>) {}
-    pub fn create_buffer(&self) -> Result<GL::Buffer, String> {Ok(Default::default())}
+    pub fn create_buffer(&self) -> Result<GL::Buffer, String> {
+        Ok(Default::default())
+    }
     pub fn bind_buffer(&self, _: u32, _: Option<GL::Buffer>) {}
     pub fn bind_framebuffer(&self, _: u32, _: Option<GL::Framebuffer>) {}
     pub fn bind_renderbuffer(&self, _: u32, _: Option<GL::Renderbuffer>) {}
-    pub fn create_vertex_array(&self) -> Result<GL::VertexArray, String> {Ok(Default::default())}
+    pub fn create_vertex_array(&self) -> Result<GL::VertexArray, String> {
+        Ok(Default::default())
+    }
     pub fn delete_vertex_array(&self, _: GL::VertexArray) {}
     pub fn bind_vertex_array(&self, _: Option<GL::VertexArray>) {}
     pub fn clear_color(&self, _: f32, _: f32, _: f32, _: f32) {}
@@ -80,24 +106,23 @@ impl<GL: HasContext> GlowSafeAdapter<GL> {
     pub fn framebuffer_renderbuffer(&self, _: u32, _: u32, _: u32, _: Option<GL::Renderbuffer>) {}
     pub fn framebuffer_texture(&self, _: u32, _: u32, _: Option<GL::Texture>, _: i32) {}
     pub fn framebuffer_texture_2d(&self, _: u32, _: u32, _: u32, _: Option<GL::Texture>, _: i32) {}
-    pub fn get_error(&self) -> u32 {0}
-    pub fn get_uniform_location(&self, _: GL::Program, _: &str) -> Option<GL::UniformLocation> {Some(Default::default())}
-    pub fn get_attrib_location(&self, _: GL::Program, _: &str) -> i32 {0}
-    pub fn get_active_attributes(&self, _: GL::Program) -> u32 {0}
-    pub fn get_active_attribute(&self, _: GL::Program, _: u32) -> Option<ActiveAttribute> {Some(0)}
+    pub fn get_error(&self) -> u32 {
+        0
+    }
+    pub fn get_uniform_location(&self, _: GL::Program, _: &str) -> Option<GL::UniformLocation> {
+        Some(Default::default())
+    }
+    pub fn get_attrib_location(&self, _: GL::Program, _: &str) -> i32 {
+        0
+    }
+    pub fn get_active_attributes(&self, _: GL::Program) -> u32 {
+        0
+    }
+    pub fn get_active_attribute(&self, _: GL::Program, _: u32) -> Option<ActiveAttribute> {
+        Some(0)
+    }
     pub fn renderbuffer_storage(&self, _: u32, _: u32, _: i32, _: i32) {}
-    pub fn tex_image_2d(
-        &self,
-        _: u32,
-        _: i32,
-        _: i32,
-        _: i32,
-        _: i32,
-        _: i32,
-        _: u32,
-        _: u32,
-        _: Option<&[u8]>,
-    ) {}
+    pub fn tex_image_2d(&self, _: u32, _: i32, _: i32, _: i32, _: i32, _: i32, _: u32, _: u32, _: Option<&[u8]>) {}
     pub fn uniform_1_i32(&self, _: Option<GL::UniformLocation>, _: i32) {}
     pub fn uniform_2_i32(&self, _: Option<GL::UniformLocation>, _: i32, _: i32) {}
     pub fn uniform_3_i32(&self, _: Option<GL::UniformLocation>, _: i32, _: i32, _: i32) {}
@@ -114,7 +139,9 @@ impl<GL: HasContext> GlowSafeAdapter<GL> {
     pub fn vertex_attrib_pointer_i32(&self, _: u32, _: i32, _: u32, _: i32, _: i32) {}
     pub fn viewport(&self, _: i32, _: i32, _: i32, _: i32) {}
     pub fn pop_debug_group(&self) {}
-    pub fn get_uniform_block_index(&self, _: GL::Program, _: &str) -> Option<u32> {Some(0)}
+    pub fn get_uniform_block_index(&self, _: GL::Program, _: &str) -> Option<u32> {
+        Some(0)
+    }
 }
 
 pub const ACTIVE_ATOMIC_COUNTER_BUFFERS: u32 = 0x92D9;
