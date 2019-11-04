@@ -86,8 +86,8 @@ export async function playHtmlSelection () {
         break;
     }
 
-    //Constants.lightColorDeo.value = '#FFFFFF';
-    //Constants.brightnessColorDeo.value = '#FFFFFF';
+    // Constants.lightColorDeo.value = '#FFFFFF';
+    // Constants.brightnessColorDeo.value = '#FFFFFF';
 
     const ctxOptions = {
         alpha: false,
@@ -103,8 +103,8 @@ export async function playHtmlSelection () {
     storage.setAntiAliasing(ctxOptions.antialias);
     storage.setPowerPreferenceSelectOption(ctxOptions.powerPreference);
 
-    //const filteredPresets = Constants.filterPresetsButtonDeoList.filter(deo => deo.classList.contains('active-preset'));
-    //const activePreset = filteredPresets.length > 0 ? filteredPresets[0].dataset.preset : Constants.PRESET_KIND_APERTURE_GRILLE_1;
+    // const filteredPresets = Constants.filterPresetsButtonDeoList.filter(deo => deo.classList.contains('active-preset'));
+    // const activePreset = filteredPresets.length > 0 ? filteredPresets[0].dataset.preset : Constants.PRESET_KIND_APERTURE_GRILLE_1;
 
     const result = await simLauncher.launch({
         ctxOptions,
