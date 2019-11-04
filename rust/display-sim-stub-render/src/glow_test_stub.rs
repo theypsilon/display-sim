@@ -32,7 +32,7 @@ impl HasContext for Context {
 }
 
 pub fn new_glow_stub() -> GlowSafeAdapter<Context> {
-    GlowSafeAdapter { ctx: Context{} }
+    GlowSafeAdapter { ctx: Context {} }
 }
 
 impl<GL: HasContext> GlowSafeAdapter<GL> {
