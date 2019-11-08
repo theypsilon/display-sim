@@ -16,7 +16,7 @@
 use crate::general_types::{OptionCursor, Size2D};
 use std::fmt::{Display, Error, Formatter};
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct InternalResolution {
     pub multiplier: f64,
     backup_multiplier: f64,
@@ -29,16 +29,6 @@ pub struct InternalResolution {
 const RESOLUTION_4K: f64 = 2160.0;
 
 impl InternalResolution {
-    pub fn new() -> InternalResolution {
-        InternalResolution {
-            multiplier: 1.0,
-            minimum_reached: false,
-            maximium_reached: false,
-            backup_multiplier: 1.0,
-            viewport: Size2D { width: 0, height: 0 },
-            max_texture_size: 16384,
-        }
-    }
     pub fn initialize(&mut self, viewport: Size2D<u32>, max_texture_size: i32) {
         self.viewport = viewport;
         self.max_texture_size = max_texture_size;

@@ -51,8 +51,8 @@ export default function (ctx) {
             deo.parentNode.insertBefore(button, o.placement === 'before' ? deo : deo.nextSibling);
         });
         if (deo.classList.contains('feature-readonly-input')) {
-            deo.onmousedown = e => { e.preventDefault(); document.dispatchEvent(new KeyboardEvent('keydown', { key: deo.id + '-inc' })) };
-            deo.onmouseup = e => { e.preventDefault(); document.dispatchEvent(new KeyboardEvent('keyup', { key: deo.id + '-inc' })) };
+            deo.onmousedown = e => { e.preventDefault(); document.dispatchEvent(new KeyboardEvent('keydown', { key: deo.id + '-inc' })); };
+            deo.onmouseup = e => { e.preventDefault(); document.dispatchEvent(new KeyboardEvent('keyup', { key: deo.id + '-inc' })); };
             deo.onmouseenter = () => button.classList.add('hover');
             deo.onmouseleave = () => button.classList.remove('hover');
             button.onmouseenter = () => deo.classList.add('hover');
@@ -68,8 +68,10 @@ export default function (ctx) {
         deo.addEventListener('blur', () => document.dispatchEvent(new KeyboardEvent('keyup', eventOptions)));
     });
 
-    ctx.root.querySelectorAll('.hk-inc').forEach(deo => deo.setAttribute('title', 'Press \'' + deo.innerText + '\' to increse the value of this field'))
-    ctx.root.querySelectorAll('.hk-dec').forEach(deo => deo.setAttribute('title', 'Press \'' + deo.innerText + '\' to decrease the value of this field'))
+    ctx.root.querySelectorAll('.hk-inc').forEach(deo => deo.setAttribute('title', 'Press \'' + deo.innerText + '\' to increse the value of this field'));
+    ctx.root.querySelectorAll('.hk-dec').forEach(deo => deo.setAttribute('title', 'Press \'' + deo.innerText + '\' to decrease the value of this field'));
     
-    ctx.root.querySelectorAll('.menu-button').forEach(deo => deo.onclick = () => document.dispatchEvent(new KeyboardEvent('keydown', { key: deo.id })));
+    ctx.root.querySelectorAll('.menu-button').forEach(deo => {
+        deo.onclick = () => document.dispatchEvent(new KeyboardEvent('keydown', { key: deo.id }));
+    });
 }

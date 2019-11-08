@@ -162,7 +162,7 @@ class SimPage extends HTMLElement {
             featureChangeTurnSpeedDeo: root.getElementById('feature-change-turn-speed'),
             featureChangePixelSpeedDeo: root.getElementById('feature-change-pixel-speed'),
             featureCameraMovementsDeo: root.getElementById('feature-camera-movements'),
-            featureCameraTurnsDeo: root.getElementById('feature-camera-turns'),
+            featureCameraTurnsDeo: root.getElementById('feature-camera-turns')
         };
 
         const ctx = { root, constants };

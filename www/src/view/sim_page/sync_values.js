@@ -53,7 +53,7 @@ export default function (ctx) {
         { deo: ctx.constants.featureBacklightPercentDeo, eventId: ctx.constants.APP_EVENT_BACKLIGHT_PERCENT },
         { deo: ctx.constants.featureInternalResolutionDeo, eventId: ctx.constants.APP_EVENT_INTERNAL_RESOLUTION },
         { deo: ctx.constants.featureTextureInterpolationDeo, eventId: ctx.constants.APP_EVENT_TEXTURE_INTERPOLATION },
-        { deo: ctx.constants.featureChangeScreenCurvatureDeo, eventId: ctx.constants.APP_EVENT_SCREEN_CURVATURE },
+        { deo: ctx.constants.featureChangeScreenCurvatureDeo, eventId: ctx.constants.APP_EVENT_SCREEN_CURVATURE }
     ].forEach(({ deo, eventId }) => {
         if (!deo) throw new Error('Wrong deo on defining: ' + eventId);
         window.addEventListener(eventId, event => {
