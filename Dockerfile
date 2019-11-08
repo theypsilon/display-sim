@@ -3,9 +3,9 @@ WORKDIR /app
 ENV RUSTUP_HOME=/usr/local/rustup \
     CARGO_HOME=/usr/local/cargo \
     PATH=/usr/local/cargo/bin:$PATH \
-    BINARYEN_VER="version_81" \
-    RUST_TOOLCHAIN="1.38.0" \
-    RUSTUP_VER="1.19.0"
+    BINARYEN_VER="1.39.1" \
+    RUST_TOOLCHAIN="1.39.0" \
+    RUSTUP_VER="1.20.2"
 RUN set -eux; \
     apt-get update || true; \
     apt-get install -y --no-install-recommends \
