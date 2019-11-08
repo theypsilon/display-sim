@@ -13,8 +13,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-const simPage = document.getElementsByTagName('sim-page');
-console.log(simPage);
 export default {
     DISPLAY_NONE_CLASS: 'display-none',
     SCALING_AUTO_ID: 'scaling-auto',

@@ -56,6 +56,8 @@ window.onhashchange = () => {
 };
 
 export async function prepareMainPage () {
+    visibility.showLoading();
+    
     if (window.location.hash.length > 1) {
         savedHash = window.location.hash;
         return playQuerystring(window.location.hash.substr(1));

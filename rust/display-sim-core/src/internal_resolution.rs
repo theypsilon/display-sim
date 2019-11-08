@@ -26,13 +26,15 @@ pub struct InternalResolution {
     maximium_reached: bool,
 }
 
+const RESOLUTION_4K: f64 = 2160.0;
+
 impl InternalResolution {
-    pub fn new(multiplier: f64) -> InternalResolution {
+    pub fn new() -> InternalResolution {
         InternalResolution {
-            multiplier,
+            multiplier: 1.0,
             minimum_reached: false,
             maximium_reached: false,
-            backup_multiplier: multiplier,
+            backup_multiplier: 1.0,
             viewport: Size2D { width: 0, height: 0 },
             max_texture_size: 16384,
         }
@@ -40,6 +42,9 @@ impl InternalResolution {
     pub fn initialize(&mut self, viewport: Size2D<u32>, max_texture_size: i32) {
         self.viewport = viewport;
         self.max_texture_size = max_texture_size;
+        let height = viewport.height as f64;
+        self.multiplier = if height >= RESOLUTION_4K { 1.0 } else { RESOLUTION_4K / height };
+        self.backup_multiplier = self.multiplier;
     }
     pub fn set_resolution(&mut self, resolution: i32) {
         self.multiplier = f64::from(resolution) / f64::from(self.viewport.height);

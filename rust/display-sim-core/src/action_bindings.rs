@@ -86,16 +86,14 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) -
         "shift+c" | "feature-change-color-representation-dec" => input.next_color_representation_kind.decrease.input = pressed,
         "v" | "feature-change-pixel-geometry-inc" => input.next_pixel_geometry_kind.increase.input = pressed,
         "shift+v" | "feature-change-pixel-geometry-dec" => input.next_pixel_geometry_kind.decrease.input = pressed,
-        "b" | "feature-change-screen-curvature-inc" | "feature-change-screen-curvature-basic-inc" => input.next_screen_curvature_type.increase.input = pressed,
-        "shift+b" | "feature-change-screen-curvature-dec" | "feature-change-screen-curvature-basic-dec" => {
-            input.next_screen_curvature_type.decrease.input = pressed
-        }
+        "b" | "feature-change-screen-curvature-inc" => input.next_screen_curvature_type.increase.input = pressed,
+        "shift+b" | "feature-change-screen-curvature-dec" => input.next_screen_curvature_type.decrease.input = pressed,
         "n" | "feature-change-pixel-shadow-shape-inc" => input.next_pixel_shadow_shape_kind.increase.input = pressed,
         "shift+n" | "feature-change-pixel-shadow-shape-dec" => input.next_pixel_shadow_shape_kind.decrease.input = pressed,
         "m" | "feature-change-pixel-shadow-height-inc" => input.next_pixels_shadow_height.increase = pressed,
         "shift+m" | "feature-change-pixel-shadow-height-dec" => input.next_pixels_shadow_height.decrease = pressed,
-        "y" | "feature-internal-resolution-inc" | "feature-internal-resolution-basic-inc" => input.next_internal_resolution.increase.input = pressed,
-        "shift+y" | "feature-internal-resolution-dec" | "feature-internal-resolution-basic-dec" => input.next_internal_resolution.decrease.input = pressed,
+        "y" | "feature-internal-resolution-inc" => input.next_internal_resolution.increase.input = pressed,
+        "shift+y" | "feature-internal-resolution-dec" => input.next_internal_resolution.decrease.input = pressed,
         "h" | "feature-texture-interpolation-inc" => input.next_texture_interpolation.increase.input = pressed,
         "shift+h" | "feature-texture-interpolation-dec" => input.next_texture_interpolation.decrease.input = pressed,
         "," | "feature-backlight-percent-inc" => input.backlight_percent.increase = pressed,

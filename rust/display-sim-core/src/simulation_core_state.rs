@@ -209,7 +209,7 @@ pub struct Filters {
 impl Default for Filters {
     fn default() -> Self {
         Filters {
-            internal_resolution: InternalResolution::new(2.0),
+            internal_resolution: InternalResolution::new(),
             texture_interpolation: TextureInterpolation::Linear,
             blur_passes: 0,
             vertical_lpp: 1,

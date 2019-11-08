@@ -1,106 +1,197 @@
-.key-up-center {
-    margin-left: 2.1em;
-    margin-bottom: 0.1em;
+.menu-dual-entry-container {
+    display: grid;
+    grid-template-columns: 201px 195px;
 }
 
-.key-up-far-right {
-    margin-left: 2.6em;
-}
-.key-down-far-right {
-    margin-left: 0.5em;
-}
-.key-down-center {
-    margin-left: 0.1em;
-    margin-right: 0.1em;
+.menu-dual-entry-2 {
+    border-left-color:rgb(44, 44, 44);
+    border-left-style:solid;
+    border-left-width:1px;
 }
 
-#feature-camera-movement-mode {
-    float: right;
+.menu-dual-entry-item {
+    padding-top: 5px;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: space-evenly;
+    align-items: center;
+    border-bottom-color:rgb(44, 44, 44);
+    border-bottom-style:solid;
+    border-bottom-width:1px;
+    background-attachment:scroll;
+    background-clip:border-box;
+    background-color:rgb(26, 26, 26);
+    background-image:none;
+    background-origin:padding-box;
+    background-position-x:0%;
+    background-position-y:0%;
+    background-size:auto;
+    line-height:27px;
+    list-style-image:none;
+    list-style-position:outside;
+    list-style-type:none;
+    font-family:"Lucida Grande", sans-serif;
+    font-size:16px;
+    font-stretch:100%;
+    font-style:normal;
+    font-variant-caps:normal;
+    font-variant-east-asian:normal;
+    font-variant-ligatures:normal;
+    font-variant-numeric:normal;
+    font-weight:400;
 }
 
-#feature-camera-movement-mode input {
-    min-width: 140px;
+.arrows-grid {
+    display: grid;
+    grid-template-rows: 26px 26px;
+    justify-items: center;
+    align-items: center;
+    margin: 15px;        
 }
 
-#camera-zoom-parent {
-    margin-left: 30px;
+.arrows-grid-move-free {
+    grid-template-columns: 31px 31px 31px 4px 31px;
 }
 
-.camera-movements-arrows {
-    position: relative;
-    top: -1em;
-    left: 4.5em;
+.arrows-grid-move-lock {
+    grid-template-columns: 31px 31px 31px 0px 0px;
 }
 
-#camera-right-panel {
-    float: right;
+.arrows-grid-turn {
+    grid-template-columns: 31px 31px 31px 4px 31px 20px;
 }
 
-#camera-movement-indicator {
-    margin-top: 10px;
-    margin-bottom: 14px;
-}
-
-.camera-field-header {
+.arrows-grid input[type="button"] {
+    width: 31px;
+    height: 26px;
     text-align: center;
-    font-size: 60%;
-    margin-bottom: 2px;
 }
 
-.camera-coordinate {
+.arrows-grid input[type="button"]:hover {
+    color: white !important;
+    background-color: rgb(70, 70, 70) !important;
+    cursor: pointer;
+}
+
+.camera-matrix {
+    display: grid;
+    grid-template-columns: 66px 110px 110px 110px;
+    grid-template-rows: 28px 28px 28px 28px;
+    align-items: center;
+    justify-items: center;
+}
+
+.matrix-top-row label {
     display: inline-block;
-    width: 30px;
-}
-
-.camera-field-group {
-    text-align: right;
-    font-size: 70%;
-}
-
-.camera-field-name {
-    text-align: left;
-    float: left;
-    margin-top: -3px;
-    margin-left: -20px;
-}
-
-input.camera-field::-webkit-inner-spin-button,
-input.camera-field::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-}
-
-.camera-field {
-    border-width: 0;
-    font-size: 60%;
-    margin-top: -5px;
-    display: inline-block;
-    width: 30px;
-    overflow: hidden;
+    width: 100%;
     text-align: center;
-    padding-top: 3px;
-    padding-bottom: 3px;
 }
 
-.camera-field-left {
-    line-height: 1.1;
-    border-right: 1px solid rgb(187, 187, 187);
+.matrix-top-row {
+    height: 27px;
+    width: 100%;
+    border-bottom-color:rgb(44, 44, 44);
+    border-bottom-style:solid;
+    border-bottom-width:1px;
+    background-attachment:scroll;
+    background-clip:border-box;
+    background-color:rgb(26, 26, 26);
+    background-image:none;
+    background-origin:padding-box;
+    background-position-x:0%;
+    background-position-y:0%;
+    background-size:auto;
+    justify-self: center;
+    align-self: center;
+    line-height:27px;
+    list-style-image:none;
+    list-style-position:outside;
+    list-style-type:none;    
 }
 
-.camera-field-right {
-    line-height: 1.1;
-    border-left: 1px solid rgb(187, 187, 187);
+.camera-matrix .matrix-row {
+    height: 27px;
+    width: 63px;
+    border-bottom-color:rgb(44, 44, 44);
+    border-bottom-style:solid;
+    border-bottom-width:1px;
+    background-attachment:scroll;
+    background-clip:border-box;
+    background-color:rgb(26, 26, 26);
+    background-image:none;
+    background-origin:padding-box;
+    background-position-x:0%;
+    background-position-y:0%;
+    background-size:auto;
+    justify-self: center;
+    align-self: center;
+    line-height:27px;
+    list-style-image:none;
+    list-style-position:outside;
+    list-style-type:none;
 }
 
-.camera-field-center {
-    margin-left: -3px;
-    margin-right: -3px;
-    border-left: 1px solid rgb(187, 187, 187);
+.matrix-row .matrix-row-head {
+    margin-left: 5px;
+    font-family:"Lucida Grande", sans-serif;
+    font-size:11px;
+    font-stretch:100%;
+    font-style:normal;
+    font-variant-caps:normal;
+    font-variant-east-asian:normal;
+    font-variant-ligatures:normal;
+    font-variant-numeric:normal;
+    font-weight:400;
 }
 
-.camera-field-mid {
-    line-height: 1.1;
-    border-top: 1px solid rgb(187, 187, 187);
-    border-bottom: 1px solid rgb(187, 187, 187);
-    margin-bottom: -1px;
+.camera-matrix input {
+    height: 21px;
+    width: 100px;
+    margin-top: 3px;
+    margin-bottom: 3px;
+    text-align: center;
+}
+
+.camera-matrix .input-cell {
+    width: 110px;
+    height: 27px;
+    text-align: center;
+    border-bottom-color:rgb(44, 44, 44);
+    border-bottom-style:solid;
+    border-bottom-width:1px;
+    background-attachment:scroll;
+    background-clip:border-box;
+    background-color:rgb(26, 26, 26);
+    background-image:none;
+    background-origin:padding-box;
+    background-position-x:0%;
+    background-position-y:0%;
+    background-size:auto;
+}
+
+.menu-dual-entry-container input[type="button"] {
+    color: #2FA1D6;
+    background: #303030;
+    outline: none;
+    border: 0;
+    padding: 3px;
+}
+
+.menu-dual-entry-container input[type="button"]:hover {
+    color: #2FA1D6;
+    background: #303030;
+    outline: none;
+    border: 0;
+    padding: 3px;
+}
+
+.rotator {
+    margin-left: 5px;
+    color: rgb(88, 88, 88);
+    font-size: 11;
+}
+
+.text-center {
+    text-align: center;
 }

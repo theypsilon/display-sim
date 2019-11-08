@@ -1,15 +1,7 @@
-#fps-counter-holder {
-    width: 100px;
-    display: block;
-    float: right;
-    text-align: right;
-}
-
-#fps-counter-holder span {
-    display: inline-block;
-    margin-left: 5px;
-}
-
-#fps-counter-holder div {
-    display: inline-block;
+#fps-counter {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 20px;
+    color: white;
 }

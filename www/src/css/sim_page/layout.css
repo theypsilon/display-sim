@@ -2,40 +2,6 @@
     position: relative;
 }
 
-#simulation-text {
-    cursor: move;
-    position: absolute;
-    left: 18px;
-    top: 18px;
-    display: flex;
-    flex-direction: column;
-    color: white;
-    background-color: rgba(0.0,0.0,0.0,0.5);
-    border: 1px solid rgba(0.0,0.0,0.0,0.5);
-    border-radius: 5px 5px 5px 5px;
-    padding-inline-start: 0px;
-    padding: 0;
-    margin: 0;
-}
-
-#simulation-text ul {
-    margin-top: 10px;
-    margin-left: -30px;
-    margin-right: 5px;
-    margin-bottom: 0px;
-}
-
-#simulation-text li {
-    list-style: none;
-    margin-bottom: 10px;
-}
-
-#simulation-text span {
-    border: 1px solid white;
-    padding: 2px;
-    cursor: pointer;
-}
-
 canvas:hover {
     cursor: move;
 }

@@ -52,22 +52,24 @@ export default function (ctx) {
         { deo: ctx.constants.featureChangePixelShadowHeightDeo, eventId: ctx.constants.APP_EVENT_PIXEL_SHADOW_HEIGHT },
         { deo: ctx.constants.featureBacklightPercentDeo, eventId: ctx.constants.APP_EVENT_BACKLIGHT_PERCENT },
         { deo: ctx.constants.featureInternalResolutionDeo, eventId: ctx.constants.APP_EVENT_INTERNAL_RESOLUTION },
-        { deo: ctx.constants.featureInternalResolutionBasicDeo, eventId: ctx.constants.APP_EVENT_INTERNAL_RESOLUTION },
         { deo: ctx.constants.featureTextureInterpolationDeo, eventId: ctx.constants.APP_EVENT_TEXTURE_INTERPOLATION },
         { deo: ctx.constants.featureChangeScreenCurvatureDeo, eventId: ctx.constants.APP_EVENT_SCREEN_CURVATURE },
-        { deo: ctx.constants.featureChangeScreenCurvatureBasicDeo, eventId: ctx.constants.APP_EVENT_SCREEN_CURVATURE }
     ].forEach(({ deo, eventId }) => {
         if (!deo) throw new Error('Wrong deo on defining: ' + eventId);
         window.addEventListener(eventId, event => {
             deo.value = event.detail;
-            if (event.id === ctx.constants.APP_EVENT_CHANGE_CAMERA_MOVEMENT_MODE) {
+            if (eventId === ctx.constants.APP_EVENT_CHANGE_CAMERA_MOVEMENT_MODE) {
                 switch (event.detail) {
                 case 'Lock on Display':
                     deo.title = 'The camera will move around the picture, always looking at it';
+                    ctx.constants.featureCameraMovementsDeo.classList.remove('arrows-grid-move-free');
+                    ctx.constants.featureCameraMovementsDeo.classList.add('arrows-grid-move-lock');
                     ctx.constants.freeModeControlsClas.forEach(deo => deo.classList.add(Constants.DISPLAY_NONE_CLASS));
                     break;
                 case 'Free Flight':
                     deo.title = 'The camera can move without any restriction in the whole 3D space with plane-like controls';
+                    ctx.constants.featureCameraMovementsDeo.classList.remove('arrows-grid-move-lock');
+                    ctx.constants.featureCameraMovementsDeo.classList.add('arrows-grid-move-free');
                     ctx.constants.freeModeControlsClas.forEach(deo => deo.classList.remove(Constants.DISPLAY_NONE_CLASS));
                     break;
                 default:
@@ -81,7 +83,7 @@ export default function (ctx) {
     customEventOnButtonPressed(ctx.constants.featureCameraTurnsDeo);
     function customEventOnButtonPressed (deo) {
         deo.querySelectorAll('.activate-button').forEach(button => {
-            const eventOptions = { key: button.innerHTML.toLowerCase() };
+            const eventOptions = { key: button.value.toLowerCase() };
             button.onmousedown = () => document.dispatchEvent(new KeyboardEvent('keydown', eventOptions));
             button.onmouseup = () => document.dispatchEvent(new KeyboardEvent('keyup', eventOptions));
         });
@@ -123,6 +125,6 @@ export default function (ctx) {
                 }
             }));
         };
-        deo.onchange = changed;
+        deo.addEventListener('change', changed);
     }
 }

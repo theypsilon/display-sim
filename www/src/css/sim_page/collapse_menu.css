@@ -1,0 +1,285 @@
+.collapse-button {
+    cursor: pointer;
+}
+
+.collapse-controller:hover {
+    background-color: #111;
+}
+
+.collapse-controller {
+    background-color: rgb(9, 9, 9);
+    color:rgb(238, 238, 238);
+    text-align: center;
+    text-shadow: rgb(17, 17, 17) 0px -1px 0px;
+    font-family:"Lucida Grande", sans-serif;
+    font-size:11px;
+    font-stretch:100%;
+    font-style:normal;
+    font-variant-caps:normal;
+    font-variant-east-asian:normal;
+    font-variant-ligatures:normal;
+    font-variant-numeric:normal;
+    font-weight:400;
+    height: 20px;
+    line-height:20px;
+    list-style-image:none;
+    list-style-position:outside;
+    list-style-type:none;
+}
+
+.collapse-top-menu.not-collapsed {
+    background: rgb(9, 9, 9) url(data:image/gif;base64,R0lGODlhBQAFAJEAAP////Pz8////////yH5BAEAAAIALAAAAAAFAAUAAAIIlI+hKgFxoCgAOw==) 6px 10px no-repeat;
+}
+
+.collapse-top-menu.collapsed {
+    background: rgb(9, 9, 9) url(data:image/gif;base64,R0lGODlhBQAFAJEAAP////Pz8////////yH5BAEAAAIALAAAAAAFAAUAAAIIlGIWqMCbWAEAOw==) 6px 10px no-repeat;
+}
+
+.collapse-top-menu {
+    background-color: rgb(9, 9, 9);
+    color: #eee;
+    display:list-item;
+    font-family:"Lucida Grande", sans-serif;
+    font-size:11px;
+    font-stretch:100%;
+    font-style:normal;
+    font-variant-caps:normal;
+    font-variant-east-asian:normal;
+    font-variant-ligatures:normal;
+    font-variant-numeric:normal;
+    font-weight:400;
+    text-align:left;
+    text-shadow:rgb(17, 17, 17) 0px -1px 0px;
+    padding-bottom:0px;
+    padding-left:16px;
+    padding-right:4px;
+    padding-top:0px;
+    line-height:27px;
+    list-style-image:none;
+    list-style-position:outside;
+    list-style-type:none;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+    border-bottom-color: rgb(44, 44, 44);
+    height: 27px;
+}
+
+.menu-entry {
+    border-left-color:rgb(26, 26, 26);
+    border-left-style:solid;
+    border-left-width:3px;
+    border-bottom-color:rgb(44, 44, 44);
+    border-bottom-style:solid;
+    border-bottom-width:1px;
+    background-attachment:scroll;
+    background-clip:border-box;
+    background-color:rgb(26, 26, 26);
+    background-image:none;
+    background-origin:padding-box;
+    background-position-x:0%;
+    background-position-y:0%;
+    background-size:auto;
+    line-height:27px;
+    list-style-image:none;
+    list-style-position:outside;
+    list-style-type:none;
+    font-family:"Lucida Grande", sans-serif;
+    font-size:11px;
+    font-stretch:100%;
+    font-style:normal;
+    font-variant-caps:normal;
+    font-variant-east-asian:normal;
+    font-variant-ligatures:normal;
+    font-variant-numeric:normal;
+    font-weight:400;
+    height: 27px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.menu-1 {
+    width: 397px;
+}
+
+.menu-2 {
+    width: 393px;
+}
+
+.menu-blc-red {
+    border-left-color:rgb(230, 29, 95);
+    border-left-style:solid;
+    border-left-width:3px;
+}
+
+.menu-blc-blue {
+    border-left-color:rgb(47, 161, 214);
+    border-left-style:solid;
+    border-left-width:3px;
+}
+
+.menu-blc-green {
+    border-left-color:rgb(0, 255, 127);
+    border-left-style:solid;
+    border-left-width:3px;
+}
+
+.menu-blc-yellow {
+    border-left-color:#F0E68C;
+    border-left-style:solid;
+    border-left-width:3px;
+}
+
+.menu-blc-lila {
+    border-left-color:#806787;
+    border-left-style:solid;
+    border-left-width:3px;
+}
+
+.menu-blc-white {
+    border-left-color:rgb(238, 238, 238);
+    border-left-style:solid;
+    border-left-width:3px;
+}
+
+.menu-blc-grey {
+    border-left-color:rgb(140, 140, 140);
+    border-left-style:solid;
+    border-left-width:3px;
+}
+
+.feature-pack {
+    width: 197px;    
+    margin-left: 5px;
+    height: 27px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.feature-value {
+    width: 200px;
+    height: 27px;
+    display: flex;
+    align-items: center;
+    margin-right: 5px;
+}
+
+.input-holder input {
+    height: 21px;
+    width: 200px;
+}
+
+.input-holder input[type="number"], input[type="text"], input[type="color"] {
+    color: #2FA1D6;
+    background: #303030;
+    outline: none;
+    border: 0;
+    padding: 3px;
+}
+
+.input-holder input[type="color"] {
+    cursor: pointer;
+}
+
+.input-holder input[type="number"]:hover, input[type="text"]:hover, input[type="text"].hover, input[type="color"]:hover {
+    background-color: rgb(60, 60, 60);
+}
+
+.button-inc-dec:hover, .button-inc-dec.hover {
+    background-color: rgb(60, 60, 60);
+}
+
+.input-holder input:focus {
+    color: white;
+    background-color: rgb(70, 70, 70) !important;
+}
+
+.feature-pack {
+    cursor: default;
+}
+
+.menu-button:hover {
+    cursor: pointer;
+    background-color: rgb(60, 60, 60);
+}
+
+.menu-button .feature-pack:hover {
+    cursor: pointer;
+}
+
+.feature-pack sup {
+    padding: 2px;
+}
+
+.button-inc-dec {
+    width: 15px;
+    margin-left: 0px;
+    margin-right: 0px;
+    padding: 3px;
+    color: #2FA1D6;
+    background: #303030;
+    outline: none;
+    border: 0;
+    cursor: pointer;
+    height: 21px;
+}
+
+/* Hide HTML5 Up and Down arrows. */
+input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.info-category .feature-name {
+    text-transform: lowercase;
+}
+
+.info-category {
+    background-color: rgb(9, 9, 9);
+    padding-left: 4px;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.feature-hotkeys {
+    font-size: 70%;
+    margin-left: 3px;
+    color: rgb(88, 88, 88);
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.hotkey {
+    margin: 3px;
+}
+
+.feature-modificable-input {
+    width: 40px;
+    text-align: right;
+}
+
+.feature-readonly-input {
+    width: 80px;
+    border: none;
+    text-align: center;
+    cursor: pointer;
+}
+
+#movement-mode .feature-name {
+    margin-right: 6px;
+}
+
+.feature-movement-keys {
+    width: 2em;
+}

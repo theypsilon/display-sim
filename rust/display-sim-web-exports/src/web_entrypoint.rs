@@ -23,7 +23,6 @@ use crate::web_events::WebEventDispatcher;
 use crate::web_utils::{now, window};
 use core::action_bindings::on_button_action;
 use core::camera::CameraChange;
-use core::internal_resolution::InternalResolution;
 use core::simulation_context::{ConcreteSimulationContext, RandomGenerator, SimulationContext};
 use core::simulation_core_state::{event_kind, Input, InputEventValue, Resources, VideoInputResources};
 use core::simulation_core_ticker::SimulationCoreTicker;
@@ -102,10 +101,7 @@ fn web_entrypoint_iteration(owned_state: &StateOwner, window: &Window, ctx: &mut
             window.request_animation_frame(closures[0].as_ref().ok_or("Wrong closure.")?.as_ref().unchecked_ref())?;
         }
         Ok(false) => {}
-        Err(e) => {
-            resources.filters.internal_resolution = InternalResolution::new(1.0);
-            return Err(e);
-        }
+        Err(e) => return Err(e),
     };
     Ok(())
 }
@@ -148,7 +144,7 @@ fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WebResult<Vec<OwnedClosu
                 let mut input = state_owner.input.borrow_mut();
                 let used = on_button_action(&mut input, e.key().to_lowercase().as_ref(), true);
                 if !used {
-                    console!(log. format!("Ignored key: {}", e.key()));
+                    console!(log. format!("Ignored keydown: {}", e.key()));
                 }
             }
         }))
@@ -159,7 +155,10 @@ fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WebResult<Vec<OwnedClosu
         Closure::wrap(Box::new(move |event: JsValue| {
             if let Ok(e) = event.dyn_into::<KeyboardEvent>() {
                 let mut input = state_owner.input.borrow_mut();
-                on_button_action(&mut input, e.key().to_lowercase().as_ref(), false);
+                let used = on_button_action(&mut input, e.key().to_lowercase().as_ref(), false);
+                if !used {
+                    console!(log. format!("Ignored keyup: {}", e.key()));
+                }
             }
         }))
     };
