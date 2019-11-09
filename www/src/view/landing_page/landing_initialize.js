@@ -23,7 +23,6 @@ import { playHtmlSelection, playQuerystring } from './play_simulation';
 const navigator = Navigator.make();
 
 export default function (ctx) {
-    initializeHashtagHandling(ctx);
     initializeOptions(ctx);
     initializeSelectImage(ctx);
 
@@ -35,24 +34,8 @@ export default function (ctx) {
         console.error(e);
         prepareLandingPage(ctx);
     });
-}
 
-let savedHash = '';
-let hashNotChanged = false;
-function initializeHashtagHandling (ctx) {
-    window.onhashchange = () => {
-        if (hashNotChanged) {
-            hashNotChanged = false;
-            return;
-        }
-        if (window.location.hash.length === 0) {
-            hashNotChanged = true;
-            window.location.hash = savedHash;
-            return;
-        }
-        ctx.visibility.showLoading();
-        navigator.goToLandingPage();
-    };
+    window.onhashchange = () => window.location.reload();
 }
 
 function initializeOptions (ctx) {
@@ -116,7 +99,6 @@ async function prepareLandingPage (ctx) {
     ctx.visibility.showLoading();
     
     if (window.location.hash.length > 1) {
-        savedHash = window.location.hash;
         return playQuerystring(ctx, window.location.hash.substr(1));
     }
 

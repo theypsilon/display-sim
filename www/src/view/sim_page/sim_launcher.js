@@ -36,7 +36,7 @@ export class SimLauncher {
         if (resizeListenerId) {
             window.removeEventListener(resizeListenerId);
         }
-        resizeListenerId = window.addEventListener('resize', () => fixCanvasSize(canvas));
+        resizeListenerId = window.addEventListener('resize', () => setTimeout(() => fixCanvasSize(canvas), 16));
 
         canvas.onfocus = () => ctx.eventBus.dispatchEvent(new KeyboardEvent('keydown', { key: 'canvas_focused' }));
         canvas.onblur = () => ctx.eventBus.dispatchEvent(new KeyboardEvent('keyup', { key: 'canvas_focused' }));
