@@ -303,8 +303,8 @@ function initializeExitActions (ctx) {
     }, false);
 
     ctx.eventBus.addEventListener(ctx.constants.APP_EVENT_EXITING_SESSION, () => {
-        ctx.visibility.showLoading();
-        navigator.goToLandingPage();
+        window.location.hash = '';
+        window.location.reload();
     }, false);
 }
 
