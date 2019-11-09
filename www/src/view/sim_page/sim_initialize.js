@@ -311,43 +311,42 @@ function initializeExitActions (ctx) {
 function readInbox (ctx) {
     messenger.consumeInbox('sim-page').forEach(async msg => {
         switch (msg.topic) {
-            case 'launch': {
-                ctx.elements.lightColorDeo.value = '#FFFFFF';
-                ctx.elements.brightnessColorDeo.value = '#FFFFFF';
+        case 'launch': {
+            ctx.elements.lightColorDeo.value = '#FFFFFF';
+            ctx.elements.brightnessColorDeo.value = '#FFFFFF';
 
-                const filteredPresets = ctx.elements.filterPresetsButtonDeoList.filter(deo => deo.classList.contains('active-preset'));
-                msg.launcherParams.activePreset = filteredPresets.length > 0 ? filteredPresets[0].dataset.preset : ctx.constants.PRESET_KIND_APERTURE_GRILLE_1;
+            const filteredPresets = ctx.elements.filterPresetsButtonDeoList.filter(deo => deo.classList.contains('active-preset'));
+            msg.launcherParams.activePreset = filteredPresets.length > 0 ? filteredPresets[0].dataset.preset : ctx.constants.PRESET_KIND_APERTURE_GRILLE_1;
 
-                const result = await simLauncher.launch(ctx, msg.launcherParams);
+            const result = await simLauncher.launch(ctx, msg.launcherParams);
 
-                if (result.glError) {
-                    ctx.visibility.showLoading();
+            if (result.glError) {
+                ctx.visibility.showLoading();
 
-                    navigator.openTopMessage('WebGL2 is not working on your browser, try restarting it! And remember, this works only on a PC with updated browser and graphics drivers.');
-                    navigator.goToLandingPage();
-                    return;
-                }
-            
-                ctx.visibility.hideLoading();
-                ctx.visibility.showSimulationUi();
-
-
-                if (msg.hasBackgroundUi) {
-                    ctx.visibility.showSimulationUi();
-                }
-            
-                if (msg.hasControllerUi) {
-                    ctx.visibility.showSimulationUi();
-                    ctx.visibility.showInfoPanel();
-                }
-            
-                if (msg.fullscreen) {
-                    document.body.requestFullscreen();
-                }
-
-                break;
+                navigator.openTopMessage('WebGL2 is not working on your browser, try restarting it! And remember, this works only on a PC with updated browser and graphics drivers.');
+                navigator.goToLandingPage();
+                return;
             }
-            default: throw new Error('Wrong topic: ' + msg.topic);
+            
+            ctx.visibility.hideLoading();
+            ctx.visibility.showSimulationUi();
+
+            if (msg.hasBackgroundUi) {
+                ctx.visibility.showSimulationUi();
+            }
+            
+            if (msg.hasControllerUi) {
+                ctx.visibility.showSimulationUi();
+                ctx.visibility.showInfoPanel();
+            }
+            
+            if (msg.fullscreen) {
+                document.body.requestFullscreen();
+            }
+
+            break;
+        }
+        default: throw new Error('Wrong topic: ' + msg.topic);
         }
     });
 }

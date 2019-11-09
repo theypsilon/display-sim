@@ -18,7 +18,7 @@ export class LocalStorage {
         this.root = root || window;
         this.prefix = prefix;
     }
-    static make(prefix, root) {
+    static make (prefix, root) {
         return new LocalStorage(prefix, root);
     }
     getItem (key) {

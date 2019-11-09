@@ -17,15 +17,15 @@ import Constants from './constants';
 
 let instance;
 
-const DISPLAY_NONE_CLASS = 'display-none'
+const DISPLAY_NONE_CLASS = 'display-none';
 
 export class Visibility {
     static make () { return instance; }
     showLoading () { showElement(Constants.loadingDeo); }
     hideLoading () { hideElement(Constants.loadingDeo); }
-    showDeo (deo) { showElement(deo) }
-    hideDeo (deo) { hideElement(deo) }
-    canSee (deo) { return isVisible(deo) }
+    showDeo (deo) { showElement(deo); }
+    hideDeo (deo) { hideElement(deo); }
+    canSee (deo) { return isVisible(deo); }
 }
 
 instance = new Visibility();

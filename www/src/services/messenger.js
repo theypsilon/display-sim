@@ -20,16 +20,16 @@ export class Messenger {
         this._dict = {};
     }
     static make () { return instance; }
-    sendMessage(address, content) {
+    sendMessage (address, content) {
         if (!this._dict[address]) {
             this._dict[address] = [];
         }
         this._dict[address].push(content);
     }
-    consumeInbox(address) {
-    const inbox = this._dict[address];
-    this._dict[address] = [];
-    return inbox;
+    consumeInbox (address) {
+        const inbox = this._dict[address];
+        this._dict[address] = [];
+        return inbox;
     }
 }
 

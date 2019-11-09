@@ -17,8 +17,8 @@ import Logger from '../../services/logger';
 
 const displaySimPromise = import('../../wasm/display_sim');
 
-let resizeListenerId = undefined;
-let simulationResources = undefined;
+let resizeListenerId;
+let simulationResources;
 
 export class SimLauncher {
     SimLauncher (ctx) {

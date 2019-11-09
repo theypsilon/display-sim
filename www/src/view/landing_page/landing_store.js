@@ -29,7 +29,7 @@ export class LandingStore {
         this.localStorage = localStorage;
         this.constants = constants;
     }
-    static make(constants) {
+    static make (constants) {
         return new LandingStore(constants, new LocalStorage('LandingStore'));
     }
     getScalingSelectOption () { return this.localStorage.getItem(OPTION_SCALING_SELECT) || this.constants.SCALING_AUTO_ID; }

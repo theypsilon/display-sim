@@ -20,7 +20,7 @@ export class SimVisibility {
         this.elements = elements;
         this.visibility = visibility;
     }
-    static make(elements) {
+    static make (elements) {
         return new SimVisibility(elements, Visibility.make());
     }
     showSimulationUi () {
@@ -45,6 +45,6 @@ export class SimVisibility {
         this.elements.featureCameraMovementsDeo.classList.add('arrows-grid-move-free');
         this.elements.freeModeControlsClas.forEach(deo => this.visibility.showDeo(deo));
     }
-    showLoading () { this.visibility.showLoading() }
-    hideLoading () { this.visibility.hideLoading() }
+    showLoading () { this.visibility.showLoading(); }
+    hideLoading () { this.visibility.hideLoading(); }
 }

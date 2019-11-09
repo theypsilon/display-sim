@@ -20,7 +20,7 @@ export class LandingVisibility {
         this.elements = elements;
         this.visibility = visibility;
     }
-    static make(elements) {
+    static make (elements) {
         return new LandingVisibility(elements, Visibility.make());
     }
     showUi () { this.visibility.showDeo(this.elements.uiDeo); }
@@ -28,6 +28,6 @@ export class LandingVisibility {
     showScalingCustomResButton () { this.visibility.showDeo(this.elements.scalingCustomResButtonDeo); }
     showScaleCustomInputs () { this.visibility.showDeo(this.elements.scalingCustomInputsDeo); }
     hideScaleCustomInputs () { this.visibility.hideDeo(this.elements.scalingCustomInputsDeo); }
-    showLoading () { this.visibility.showLoading() }
-    hideLoading () { this.visibility.hideLoading() }
+    showLoading () { this.visibility.showLoading(); }
+    hideLoading () { this.visibility.hideLoading(); }
 }
