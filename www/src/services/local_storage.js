@@ -13,26 +13,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-export function calculateAutoScaling (imageWidth, imageHeight) {
-    if (imageHeight > 540) {
-        return {
-            scaleX: 1,
-            message: 'none.'
-        };
-    } else if (imageHeight === 144) {
-        return {
-            scaleX: (11 / 10) / (imageWidth / imageHeight),
-            message: '11:10 (Game Boy) on full image.'
-        };
-    } else if (imageHeight === 160) {
-        return {
-            scaleX: (3 / 2) / (imageWidth / imageHeight),
-            message: '3:2 (Game Boy Advance) on full image.'
-        };
-    } else {
-        return {
-            scaleX: (4 / 3) / (imageWidth / imageHeight),
-            message: '4:3 on full image.'
-        };
+export class LocalStorage {
+    constructor (prefix, root) {
+        this.root = root || window;
+        this.prefix = prefix;
+    }
+    static make(prefix, root) {
+        return new LocalStorage(prefix, root);
+    }
+    getItem (key) {
+        return localStorage.getItem('DISPLAY_SIM.' + this.prefix + '.' + key);
+    }
+    setItem (key, value) {
+        localStorage.setItem('DISPLAY_SIM.' + this.prefix + '.' + key, value);
+    }
+    removeItem (key) {
+        localStorage.removeItem('DISPLAY_SIM.' + this.prefix + '.' + key);
     }
 }

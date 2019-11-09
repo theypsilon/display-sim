@@ -35,9 +35,9 @@ pub fn load_simulation_resources() -> ResourcesWasm {
 }
 
 #[wasm_bindgen]
-pub fn run_program(gl: JsValue, res: &ResourcesWasm, video_input: VideoInputWasm) {
+pub fn run_program(canvas: JsValue, res: &ResourcesWasm, video_input: VideoInputWasm) {
     set_panic_hook();
-    if let Err(e) = web_entrypoint(gl, res.data.clone(), video_input.resources, video_input.materials) {
+    if let Err(e) = web_entrypoint(canvas, res.data.clone(), video_input.resources, video_input.materials) {
         print_error(e);
     }
 }

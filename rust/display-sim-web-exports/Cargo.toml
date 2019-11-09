@@ -30,6 +30,7 @@ features = [
   'Performance',
   'Document',
   'Element',
+  'HtmlCanvasElement',
   'Event',
   'EventTarget',
   'CustomEvent',

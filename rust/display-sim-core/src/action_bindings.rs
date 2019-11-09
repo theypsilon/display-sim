@@ -21,8 +21,6 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) -
         "shift" | "left shift" | "right shift" => input.shift = pressed,
         "control" => input.control = pressed,
         "alt" => input.alt = pressed,
-        " " | "space" | "feature-close-panel" => input.space.input = pressed,
-        "escape" | "esc" | "feature-quit" => input.esc.input = pressed,
         "f4" | "feature-capture-framebuffer" => input.screenshot.input = pressed,
         "reset-camera" => input.reset_position = pressed,
         "reset-filters" => input.reset_filters = pressed,
@@ -45,6 +43,8 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) -
         action = button_action.to_string();
     }
     match action.as_ref() {
+        "escape" | "esc" | "feature-quit" => input.esc.input = pressed,
+        " " | "space" | "feature-close-panel" => input.space.input = pressed,
         "+" => input.rotate_left = pressed,
         "-" => input.rotate_right = pressed,
         "arrowleft" | "left" | "←" | "◀" => input.turn_left = pressed,

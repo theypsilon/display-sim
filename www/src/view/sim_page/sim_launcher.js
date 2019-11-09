@@ -13,14 +13,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import Constants from './constants';
-import Logger from './logger';
+import Logger from '../../services/logger';
 
-const displaySimPromise = import('../wasm/display_sim');
+const displaySimPromise = import('../../wasm/display_sim');
+
+let resizeListenerId = undefined;
+let simulationResources = undefined;
 
 export class SimLauncher {
     SimLauncher (ctx) {
-        this.simulationResources = null;
         this.ctx = ctx;
     }
 
@@ -28,26 +29,19 @@ export class SimLauncher {
         return new SimLauncher(ctx);
     }
 
-    removeOldCanvasIfExists () {
-        const oldCanvas = document.getElementById(Constants.GL_CANVAS_ID);
-        if (oldCanvas) {
-            oldCanvas.remove();
-        }
-    }
-
-    async launch (params) {
-        this.removeOldCanvasIfExists();
-        const canvas = document.createElement('canvas');
-
-        canvas.id = Constants.GL_CANVAS_ID;
+    async launch (ctx, params) {
+        const canvas = ctx.elements.glCanvasDeo;
 
         fixCanvasSize(canvas);
-        window.addEventListener('resize', fixCanvasSize);
+        if (resizeListenerId) {
+            window.removeEventListener(resizeListenerId);
+        }
+        resizeListenerId = window.addEventListener('resize', () => fixCanvasSize(canvas));
 
-        canvas.onfocus = () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'canvas_focused' }));
-        canvas.onblur = () => document.dispatchEvent(new KeyboardEvent('keyup', { key: 'canvas_focused' }));
+        canvas.onfocus = () => ctx.eventBus.dispatchEvent(new KeyboardEvent('keydown', { key: 'canvas_focused' }));
+        canvas.onblur = () => ctx.eventBus.dispatchEvent(new KeyboardEvent('keyup', { key: 'canvas_focused' }));
 
-        document.body.appendChild(canvas);
+        ctx.root.appendChild(canvas);
 
         Logger.log('gl context form', params.ctxOptions);
         const gl = canvas.getContext('webgl2', params.ctxOptions);
@@ -71,7 +65,6 @@ export class SimLauncher {
 
         if (!gl) {
             console.error(new Error('Could not get webgl2 context.'));
-            canvas.remove();
             return { glError: true };
         }
 
@@ -94,9 +87,9 @@ export class SimLauncher {
             videoInput.add_picture_frame(new Uint8Array(rawImg.raw.data.buffer), rawImg.delay);
         }
 
-        if (!this.simulationResources) {
+        if (!simulationResources) {
             Logger.log('calling wasm load_simulation_resources');
-            this.simulationResources = displaySim.load_simulation_resources();
+            simulationResources = displaySim.load_simulation_resources();
             Logger.log('wasm load_simulation_resources done');
         }
 
@@ -109,7 +102,7 @@ export class SimLauncher {
         }
 
         Logger.log('calling wasm run_program');
-        displaySim.run_program(gl, this.simulationResources, videoInput);
+        displaySim.run_program(ctx.elements.glCanvasDeo, simulationResources, videoInput);
         Logger.log('wasm run_program done');
 
         return { success: true };
@@ -117,9 +110,6 @@ export class SimLauncher {
 }
 
 function fixCanvasSize (canvas) {
-    canvas = canvas instanceof HTMLCanvasElement ? canvas : document.getElementById(Constants.GL_CANVAS_ID);
-    if (!canvas) return;
-
     const dpi = window.devicePixelRatio;
     const width = window.screen.width;
     const height = window.screen.height;

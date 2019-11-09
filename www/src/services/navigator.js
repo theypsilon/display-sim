@@ -14,28 +14,32 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 import Constants from './constants';
+import { Visibility } from './visibility';
 
 let instance;
+let visibility = Visibility.make();
 
-const DISPLAY_NONE_CLASS = 'display-none'
-
-export class Visibility {
+export class Navigator {
     static make () { return instance; }
-    showLoading () { showElement(Constants.loadingDeo); }
-    hideLoading () { hideElement(Constants.loadingDeo); }
-    showDeo (deo) { showElement(deo) }
-    hideDeo (deo) { hideElement(deo) }
-    canSee (deo) { return isVisible(deo) }
+    goToLandingPage () {
+        this._goToPageTagged('landing-page');
+    }
+    goToSimPage () {
+        this._goToPageTagged('sim-page');
+    }
+    _goToPageTagged (tag) {
+        visibility.showLoading();
+        setTimeout(() => {
+            Constants.pageDeo.children[0].remove();
+            const page = document.createElement(tag);
+            Constants.pageDeo.appendChild(page);
+        }, 0);
+    }
+    openTopMessage (text) {
+        window.dispatchEvent(new CustomEvent(Constants.APP_EVENT_TOP_MESSAGE, {
+            detail: text
+        }));
+    }
 }
 
-instance = new Visibility();
-
-function showElement (element) {
-    element.classList.remove(DISPLAY_NONE_CLASS);
-}
-function hideElement (element) {
-    element.classList.add(DISPLAY_NONE_CLASS);
-}
-function isVisible (element) {
-    return element.classList.contains(DISPLAY_NONE_CLASS) === false;
-}
+instance = new Navigator();

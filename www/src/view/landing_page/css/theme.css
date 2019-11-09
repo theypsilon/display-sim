@@ -76,6 +76,7 @@ section > footer {
   font-weight: 700;
   padding: 1rem;
   transition: color .2s, background-color .2s;
+  cursor: pointer;
 }
 
 .btn-green {

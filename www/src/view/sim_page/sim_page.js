@@ -13,27 +13,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import Constants from '../../services/constants';
+import { SimVisibility } from './sim_visibility';
 
-import { prepareMainPage } from '../main_page/load';
-
-import { Visibility } from '../../services/visibility';
-
-import presetsSelection from './presets_selection';
-import screenshot from './screenshot';
-import syncValues from './sync_values';
-import collapseMenu from './collapse_menu';
-
-const visibility = Visibility.make();
+import initialize from './sim_initialize';
 
 const template = document.createElement('template');
-template.innerHTML = `
-<style>
-    ${require('!css-loader!../../css/basic.css').toString()}
-    ${require('!css-loader!../../css/sim_page/sim_page.css').toString()}
-</style>
-${require('!html-loader!./sim_page.html')}
-`;
+template.innerHTML = require('html-loader?interpolate!./sim_page.html');
 
 class SimPage extends HTMLElement {
     constructor () {
@@ -85,7 +70,6 @@ class SimPage extends HTMLElement {
             APP_EVENT_SCREENSHOT: 'app-event.screenshot',
             APP_EVENT_PRESET_SELECTED_NAME: 'app-event.preset_selected_name',
             APP_EVENT_CHANGE_CAMERA_MOVEMENT_MODE: 'app-event.change_camera_movement_mode',
-            APP_EVENT_TOP_MESSAGE: Constants.APP_EVENT_TOP_MESSAGE,
         
             EVENT_KIND_FILTER_PRESETS_SELECTED: 'filter_presets_selected',
             EVENT_KIND_PIXEL_BRIGHTNESS: 'pixel_brightness',
@@ -111,7 +95,11 @@ class SimPage extends HTMLElement {
             EVENT_KIND_CAMERA_DIRECTION_X: 'camera_direction_x',
             EVENT_KIND_CAMERA_DIRECTION_Y: 'camera_direction_y',
             EVENT_KIND_CAMERA_DIRECTION_Z: 'camera_direction_z',
-            EVENT_KIND_PREFIX: 'event-kind:',
+            EVENT_KIND_PREFIX: 'event-kind:'
+        };
+
+        const elements = {
+            glCanvasDeo: root.getElementById('gl-canvas-id'), 
 
             freeModeControlsClas: root.querySelectorAll('.free-mode-only-controls'),
         
@@ -165,33 +153,15 @@ class SimPage extends HTMLElement {
             featureCameraTurnsDeo: root.getElementById('feature-camera-turns')
         };
 
-        const ctx = { root, constants };
-        presetsSelection(ctx);
-        screenshot(ctx);
-        syncValues(ctx);
-        collapseMenu(ctx);
+        initialize({ root, constants, elements, eventBus: elements.glCanvasDeo, visibility: SimVisibility.make(elements) });
 
-        window.addEventListener(constants.APP_EVENT_FPS, event => {
-            constants.fpsCounterDeo.innerHTML = Math.round(event.detail);
-        }, false);
-        
-        const getGlCanvasDeo = () => document.getElementById(Constants.GL_CANVAS_ID);
+        document.body.style.setProperty('overflow', 'hidden');
+        document.body.style.setProperty('background-color', 'black');
+    }
 
-        window.addEventListener(constants.APP_EVENT_EXIT_POINTER_LOCK, () => {
-            document.exitPointerLock();
-        }, false);
-        
-        window.addEventListener(constants.APP_EVENT_EXITING_SESSION, () => {
-            prepareMainPage();
-            getGlCanvasDeo().remove();
-            visibility.hideSimulationUi();
-        }, false);
-
-        window.addEventListener(constants.APP_EVENT_TOGGLE_INFO_PANEL, () => {
-            constants.infoPanelToggleDeo.click();
-        }, false);
-
-        visibility.setSimPageConstants(ctx.constants);
+    disconnectedCallback () {
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('background-color');
     }
 }
 

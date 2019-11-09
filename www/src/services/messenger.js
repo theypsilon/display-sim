@@ -13,8 +13,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import Constants from './constants';
+let instance;
 
-export default {
-    previewDeo: document.getElementById(Constants.FIRST_PREVIEW_IMAGE_ID)
-};
+export class Messenger {
+    constructor () {
+        this._dict = {};
+    }
+    static make () { return instance; }
+    sendMessage(address, content) {
+        if (!this._dict[address]) {
+            this._dict[address] = [];
+        }
+        this._dict[address].push(content);
+    }
+    consumeInbox(address) {
+    const inbox = this._dict[address];
+    this._dict[address] = [];
+    return inbox;
+    }
+}
+
+instance = new Messenger();

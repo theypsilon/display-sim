@@ -16,7 +16,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
-use web_sys::{CustomEvent, EventTarget, KeyboardEvent, MouseEvent, WebGl2RenderingContext, WheelEvent, Window};
+use web_sys::{CustomEvent, EventTarget, HtmlCanvasElement, KeyboardEvent, MouseEvent, WebGl2RenderingContext, WheelEvent, Window};
 
 use crate::console;
 use crate::web_events::WebEventDispatcher;
@@ -52,20 +52,30 @@ impl StateOwner {
 }
 
 pub fn web_entrypoint(
-    gl: JsValue,
+    canvas: JsValue,
     res: Rc<RefCell<Resources>>,
     video_input_resources: VideoInputResources,
     video_input_materials: VideoInputMaterials,
 ) -> WebResult<()> {
-    let webgl = gl.dyn_into::<WebGl2RenderingContext>()?;
-    let gl = Rc::new(GlowSafeAdapter::new(glow::Context::from_webgl2_context(webgl.clone())));
+    let canvas = canvas
+        .dyn_into::<HtmlCanvasElement>()
+        .map_err(|_| String::from("Could not convert to Canvas"))?;
+    let webgl = canvas
+        .get_context("webgl2")?
+        .ok_or("Could not get WebGL2 Context")?
+        .dyn_into::<WebGl2RenderingContext>()
+        .map_err(|_| String::from("Something wrong with WebGL2 Context"))?;
+    let event_bus = canvas.dyn_into::<EventTarget>().map_err(|_| "Could not cast gl-canvas-id")?;
+
     res.borrow_mut().initialize(video_input_resources, now()?);
+    let gl = Rc::new(GlowSafeAdapter::new(glow::Context::from_webgl2_context(webgl.clone())));
     let owned_state = StateOwner::new_rc(res, Materials::new(gl, video_input_materials)?, Input::new(now()?));
     let frame_closure: Closure<dyn FnMut(JsValue)> = {
         let owned_state = Rc::clone(&owned_state);
         let window = window()?;
+        let event_bus = event_bus.clone();
         Closure::wrap(Box::new(move |_| {
-            let mut ctx = ConcreteSimulationContext::new(WebEventDispatcher::new(webgl.clone()), WebRnd {});
+            let mut ctx = ConcreteSimulationContext::new(WebEventDispatcher::new(webgl.clone(), event_bus.clone()), WebRnd {});
             if let Err(e) = web_entrypoint_iteration(&owned_state, &window, &mut ctx) {
                 console!(error. "An unexpected error happened during web_entrypoint_iteration.", e.into_js());
                 ctx.dispatcher().dispatch_exiting_session();
@@ -81,7 +91,7 @@ pub fn web_entrypoint(
     let mut closures = owned_state.closures.borrow_mut();
     closures.push(Some(frame_closure));
 
-    let listeners = set_event_listeners(&owned_state)?;
+    let listeners = set_event_listeners(event_bus, &owned_state)?;
     closures.extend(listeners);
 
     Ok(())
@@ -128,7 +138,7 @@ fn tick(ctx: &dyn SimulationContext, input: &mut Input, res: &mut Resources, mat
     Ok(true)
 }
 
-fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WebResult<Vec<OwnedClosure>> {
+fn set_event_listeners(event_bus: EventTarget, state_owner: &Rc<StateOwner>) -> WebResult<Vec<OwnedClosure>> {
     let onblur: Closure<dyn FnMut(JsValue)> = {
         let state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |_: JsValue| {
@@ -142,6 +152,7 @@ fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WebResult<Vec<OwnedClosu
         Closure::wrap(Box::new(move |event: JsValue| {
             if let Ok(e) = event.dyn_into::<KeyboardEvent>() {
                 let mut input = state_owner.input.borrow_mut();
+                // console!(log. format!("Keydown: {} {}", e.key(), state_owner.resources.borrow_mut().timers.frame_count));
                 let used = on_button_action(&mut input, e.key().to_lowercase().as_ref(), true);
                 if !used {
                     console!(log. format!("Ignored keydown: {}", e.key()));
@@ -155,6 +166,7 @@ fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WebResult<Vec<OwnedClosu
         Closure::wrap(Box::new(move |event: JsValue| {
             if let Ok(e) = event.dyn_into::<KeyboardEvent>() {
                 let mut input = state_owner.input.borrow_mut();
+                // console!(log. format!("Keyup: {} {}", e.key(), state_owner.resources.borrow_mut().timers.frame_count));
                 let used = on_button_action(&mut input, e.key().to_lowercase().as_ref(), false);
                 if !used {
                     console!(log. format!("Ignored keyup: {}", e.key()));
@@ -216,22 +228,14 @@ fn set_event_listeners(state_owner: &Rc<StateOwner>) -> WebResult<Vec<OwnedClosu
         }))
     };
 
-    let window = window()?;
-    window.set_onblur(Some(onblur.as_ref().unchecked_ref()));
-
-    let document = window.document().ok_or("cannot access document")?;
-    let canvas = document
-        .get_element_by_id("gl-canvas")
-        .ok_or("Could not get gl-canvas")?
-        .dyn_into::<EventTarget>()
-        .map_err(|_| "Could not cast gl-canvas")?;
-    document.add_event_listener_with_callback("keydown", onkeydown.as_ref().unchecked_ref())?;
-    document.add_event_listener_with_callback("keyup", onkeyup.as_ref().unchecked_ref())?;
-    canvas.add_event_listener_with_callback("mousedown", onmousedown.as_ref().unchecked_ref())?;
-    canvas.add_event_listener_with_callback("mouseup", onmouseup.as_ref().unchecked_ref())?;
-    canvas.add_event_listener_with_callback("mousemove", onmousemove.as_ref().unchecked_ref())?;
-    document.add_event_listener_with_callback("mousewheel", onmousewheel.as_ref().unchecked_ref())?;
-    EventTarget::from(window).add_event_listener_with_callback("app-event.custom_input_event", oncustominputevent.as_ref().unchecked_ref())?;
+    event_bus.add_event_listener_with_callback("blur", onblur.as_ref().unchecked_ref())?;
+    event_bus.add_event_listener_with_callback("keydown", onkeydown.as_ref().unchecked_ref())?;
+    event_bus.add_event_listener_with_callback("keyup", onkeyup.as_ref().unchecked_ref())?;
+    event_bus.add_event_listener_with_callback("mousedown", onmousedown.as_ref().unchecked_ref())?;
+    event_bus.add_event_listener_with_callback("mouseup", onmouseup.as_ref().unchecked_ref())?;
+    event_bus.add_event_listener_with_callback("mousemove", onmousemove.as_ref().unchecked_ref())?;
+    event_bus.add_event_listener_with_callback("mousewheel", onmousewheel.as_ref().unchecked_ref())?;
+    event_bus.add_event_listener_with_callback("app-event.custom_input_event", oncustominputevent.as_ref().unchecked_ref())?;
 
     let mut closures: Vec<OwnedClosure> = vec![];
     closures.push(Some(onblur));

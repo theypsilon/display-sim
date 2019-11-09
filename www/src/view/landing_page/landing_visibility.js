@@ -13,25 +13,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import Constants from '../../services/constants';
-
 import { Visibility } from '../../services/visibility';
-import { Storage } from '../../services/storage';
 
-import { loadInputValuesFromStorage } from './load';
-
-const visibility = Visibility.make();
-const storage = Storage.make();
-
-Constants.optionScalingSelect.onchange = () => {
-    if (Constants.optionScalingSelect.value === Constants.SCALING_CUSTOM_ID) {
-        visibility.showScaleCustomInputs();
-    } else {
-        visibility.hideScaleCustomInputs();
+export class LandingVisibility {
+    constructor (elements, visibility) {
+        this.elements = elements;
+        this.visibility = visibility;
     }
-};
-
-Constants.restoreDefaultOptionsDeo.onclick = () => {
-    storage.removeAllOptions();
-    loadInputValuesFromStorage();
-};
+    static make(elements) {
+        return new LandingVisibility(elements, Visibility.make());
+    }
+    showUi () { this.visibility.showDeo(this.elements.uiDeo); }
+    hideUi () { this.visibility.hideDeo(this.elements.uiDeo); }
+    showScalingCustomResButton () { this.visibility.showDeo(this.elements.scalingCustomResButtonDeo); }
+    showScaleCustomInputs () { this.visibility.showDeo(this.elements.scalingCustomInputsDeo); }
+    hideScaleCustomInputs () { this.visibility.hideDeo(this.elements.scalingCustomInputsDeo); }
+    showLoading () { this.visibility.showLoading() }
+    hideLoading () { this.visibility.hideLoading() }
+}

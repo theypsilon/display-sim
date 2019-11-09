@@ -16,7 +16,7 @@
 use crate::general_types::{OptionCursor, Size2D};
 use std::fmt::{Display, Error, Formatter};
 
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct InternalResolution {
     pub multiplier: f64,
     backup_multiplier: f64,
@@ -24,6 +24,19 @@ pub struct InternalResolution {
     pub viewport: Size2D<u32>,
     minimum_reached: bool,
     maximium_reached: bool,
+}
+
+impl Default for InternalResolution {
+    fn default() -> Self {
+        InternalResolution {
+            multiplier: 1.0,
+            backup_multiplier: 1.0,
+            max_texture_size: std::i32::MAX,
+            viewport: Size2D { width: 1920, height: 1080 },
+            minimum_reached: false,
+            maximium_reached: false,
+        }
+    }
 }
 
 const RESOLUTION_4K: f64 = 2160.0;
@@ -38,6 +51,9 @@ impl InternalResolution {
     }
     pub fn set_resolution(&mut self, resolution: i32) {
         self.multiplier = f64::from(resolution) / f64::from(self.viewport.height);
+        if self.multiplier <= 0.0 {
+            self.multiplier = 1.0;
+        }
         if self.width() > self.max_texture_size || self.height() > self.max_texture_size {
             self.previous_option();
             self.maximium_reached = true;
@@ -67,6 +83,7 @@ impl OptionCursor for InternalResolution {
     fn next_option(&mut self) {
         self.minimum_reached = false;
         let new_height = match self.height() {
+            std::i32::MIN..=0 => 1080,
             720 => (self.backup_multiplier * f64::from(self.viewport.height)) as i32,
             486 => 720,
             480 => 486,
@@ -85,6 +102,7 @@ impl OptionCursor for InternalResolution {
     fn previous_option(&mut self) {
         self.maximium_reached = false;
         let new_height = match self.height() {
+            std::i32::MIN..=0 => 1080,
             721..=1440 => {
                 self.backup_multiplier = self.multiplier;
                 720

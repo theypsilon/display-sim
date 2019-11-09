@@ -88,7 +88,6 @@ impl<'a> SimulationUpdater<'a> {
 
     pub fn update(&mut self) {
         if self.res.resetted {
-            //self.res.filters.internal_resolution.set_resolution(4320);
             self.change_frontend_input_values();
         }
         self.update_timers();

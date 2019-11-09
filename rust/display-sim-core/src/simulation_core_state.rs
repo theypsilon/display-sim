@@ -85,7 +85,7 @@ impl Default for Resources {
                 filter_speed: PIXEL_MANIPULATION_BASE_SPEED,
             },
             filters: Filters::default(),
-            saved_filters: Some(Filters::default()),
+            saved_filters: None,
             custom_is_changed: false,
             screenshot_trigger: ScreenshotTrigger { is_triggered: false, delay: 0 },
             drawable: false,
