@@ -20,28 +20,23 @@ import { Messenger } from '../../services/messenger';
 import { AnimationsGateway } from '../../services/animations_gateway';
 
 const navigator = Navigator.make();
-const messenger = Messenger.make();
+const messenger = Messenger.getInstance();
 const animationsGateway = AnimationsGateway.make({ gifCaching: true });
 
 export async function playHtmlSelection (ctx) {
-    ctx.visibility.showLoading();
-
-    await new Promise(resolve => setTimeout(resolve, 50));
-
     const animations = await getAnimations(ctx);
 
     Logger.log('image readed');
 
     let scaleX = 1;
     let stretch = false;
-    ctx.store.setScalingSelectOption(ctx.elements.optionScalingSelect.value);
 
     const imageWidth = animations[0].raw.width;
     const imageHeight = animations[0].raw.height;
     let backgroundWidth = imageWidth;
     let backgroundHeight = imageHeight;
 
-    switch (ctx.elements.optionScalingSelect.value) {
+    switch (ctx.state.options.scalingSelection) {
     case ctx.constants.SCALING_AUTO_ID:
         const autoScaling = calculateAutoScaling(imageWidth, imageHeight);
         scaleX = autoScaling.scaleX;
@@ -58,31 +53,23 @@ export async function playHtmlSelection (ctx) {
         stretch = true;
         break;
     case ctx.constants.SCALING_CUSTOM_ID:
-        stretch = ctx.elements.scalingCustomStretchNearestDeo.checked;
-        ctx.store.setCustomResWidth(ctx.elements.scalingCustomResWidthDeo.value);
-        ctx.store.setCustomResHeight(ctx.elements.scalingCustomResHeightDeo.value);
-        ctx.store.setCustomArX(ctx.elements.scalingCustomArXDeo.value);
-        ctx.store.setCustomArY(ctx.elements.scalingCustomArYDeo.value);
-        ctx.store.setCustomStretchNearest(stretch);
-        backgroundWidth = +ctx.elements.scalingCustomResWidthDeo.value;
-        backgroundHeight = +ctx.elements.scalingCustomResHeightDeo.value;
-        scaleX = (+ctx.elements.scalingCustomArXDeo.value / +ctx.elements.scalingCustomArYDeo.value) / (backgroundWidth / backgroundHeight);
+        stretch = ctx.state.options.scalingCustom.stretchNearest;
+        backgroundWidth = +ctx.state.options.scalingCustom.resolution.width;
+        backgroundHeight = +ctx.state.options.scalingCustom.resolution.height;
+        scaleX = (+ctx.state.options.scalingCustom.aspectRatio.x / +ctx.state.options.scalingCustom.aspectRatio.y) / (backgroundWidth / backgroundHeight);
         break;
     }
 
     const ctxOptions = {
         alpha: false,
-        antialias: ctx.elements.antialiasDeo.checked,
+        antialias: ctx.state.options.antialias,
         depth: true,
         failIfMajorPerformanceCaveat: false,
-        powerPreference: ctx.elements.optionPowerPreferenceSelect.value,
+        powerPreference: ctx.state.options.performanceSelection,
         premultipliedAlpha: false,
         preserveDrawingBuffer: false,
         stencil: false
     };
-
-    ctx.store.setAntiAliasing(ctxOptions.antialias);
-    ctx.store.setPowerPreferenceSelectOption(ctxOptions.powerPreference);
 
     messenger.sendMessage('sim-page', {
         topic: 'launch',
@@ -94,32 +81,22 @@ export async function playHtmlSelection (ctx) {
             backgroundWidth,
             backgroundHeight,
             stretch,
-            animations,
-            activePreset: ctx.elements.PRESET_KIND_APERTURE_GRILLE_1
+            animations
         }
     });
 
     navigator.goToSimPage();
 }
 
-export async function playQuerystring (ctx, querystring) {
+export async function playQuerystring (querystring) {
     Logger.log('Loading querystring: ' + querystring);
-
-    const presetKinds = Object.keys(ctx.constants)
-        .filter(key => key.startsWith('PRESET_KIND'))
-        .map(key => ctx.constants[key]);
 
     const searchParams = new URLSearchParams(querystring);
 
-    let selectedPreset = searchParams.get('preset');
-    if (!selectedPreset || !presetKinds.includes(selectedPreset)) {
-        selectedPreset = ctx.constants.PRESET_KIND_APERTURE_GRILLE_1;
-    }
-
+    const selectedPreset = searchParams.get('preset');
     const hasGif = searchParams.has('gif');
     const animations = searchParams.has('file') ? await animationsGateway.getFromPath(searchParams.get('file'), hasGif) : await animationsGateway.getFromHardcodedTileset();
-    const hasBackgroundUi = searchParams.has('bg-ui');
-    const hasControllerUi = searchParams.has('ui');
+    const skipControllerUi = searchParams.has('skip-ui');
     const skipDrawing = searchParams.has('skip-drawing');
     const fullscreen = searchParams.has('fullscreen');
 
@@ -149,8 +126,7 @@ export async function playQuerystring (ctx, querystring) {
             animations,
             skipDrawing
         },
-        hasBackgroundUi,
-        hasControllerUi,
+        skipControllerUi,
         fullscreen
     });
 
@@ -158,11 +134,13 @@ export async function playQuerystring (ctx, querystring) {
 }
 
 async function getAnimations (ctx) {
-    if (ctx.elements.previewDeo.id === ctx.constants.FIRST_PREVIEW_IMAGE_ID) {
+    const selectedImage = ctx.state.images[ctx.state.imageSelection];
+    if (selectedImage.id === ctx.constants.FIRST_PREVIEW_IMAGE_ID) {
         return animationsGateway.getFromHardcodedTileset();
+    } else if (selectedImage.img) {
+        return animationsGateway.getFromImage(selectedImage.img);
     } else {
-        const img = ctx.elements.previewDeo.querySelector('img');
-        return animationsGateway.getFromImage(img);
+        return animationsGateway.getFromPath(selectedImage.hq, selectedImage.isGif);
     }
 }
 

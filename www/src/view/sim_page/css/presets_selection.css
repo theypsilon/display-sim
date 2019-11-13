@@ -1,4 +1,4 @@
-#preset-menu div {
+.preset-list {
     display: grid;
     grid-template-columns: 196px 197px;
     grid-template-rows: 50px 50px 50px;

@@ -19,7 +19,7 @@ use crate::general_types::{get_3_f32color_from_int, get_int_from_3_f32color};
 use crate::pixels_shadow::ShadowShape;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::{
-    event_kind, ColorChannels, Filters, FiltersPreset, Input, InputEventValue, PixelsGeometryKind, Resources, ScreenCurvatureKind, TextureInterpolation,
+    frontend_event, ColorChannels, Filters, FiltersPreset, Input, InputEventValue, PixelsGeometryKind, Resources, ScreenCurvatureKind, TextureInterpolation,
     PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
 };
 use derive_new::new;
@@ -68,7 +68,7 @@ struct SimulationUpdater<'a> {
 
 macro_rules! read_event_value {
     ($this:ident, $variant:ident, $kind:ident) => {
-        if let InputEventValue::$variant(value) = $this.input.custom_event.get_value(event_kind::$kind) {
+        if let InputEventValue::$variant(value) = $this.input.custom_event.get_value(frontend_event::$kind) {
             Some(*value)
         } else {
             None
@@ -116,6 +116,8 @@ impl<'a> SimulationUpdater<'a> {
 
         self.res.resetted = false;
         self.res.drawable = self.res.screenshot_trigger.is_triggered || self.res.screenshot_trigger.delay <= 0;
+
+        self.ctx.dispatcher().dispatch_new_frame();
     }
 
     fn update_screenshot(&mut self) {
@@ -212,11 +214,11 @@ impl<'a> SimulationUpdater<'a> {
             self.ctx.dispatcher().dispatch_top_message("All filter options have been reset.");
             return;
         }
-        if let InputEventValue::LightColor(light_color) = self.input.custom_event.get_value(event_kind::LIGHT_COLOR) {
+        if let InputEventValue::LightColor(light_color) = self.input.custom_event.get_value(frontend_event::LIGHT_COLOR) {
             self.res.filters.light_color = *light_color;
             self.ctx.dispatcher().dispatch_top_message("Light Color changed.");
         }
-        if let InputEventValue::BrightnessColor(brightness_color) = self.input.custom_event.get_value(event_kind::LIGHT_COLOR) {
+        if let InputEventValue::BrightnessColor(brightness_color) = self.input.custom_event.get_value(frontend_event::LIGHT_COLOR) {
             self.res.filters.brightness_color = *brightness_color;
             self.ctx.dispatcher().dispatch_top_message("Brightness Color changed.");
         }
@@ -383,7 +385,7 @@ impl<'a> SimulationUpdater<'a> {
     }
 
     fn update_filter_presets_from_event(&mut self) {
-        let preset = if let InputEventValue::FilterPreset(preset) = self.input.custom_event.get_value(event_kind::FILTER_PRESET) {
+        let preset = if let InputEventValue::FilterPreset(preset) = self.input.custom_event.get_value(frontend_event::FILTER_PRESET) {
             preset
         } else {
             return;

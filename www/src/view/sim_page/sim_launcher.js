@@ -20,46 +20,26 @@ const displaySimPromise = import('../../wasm/display_sim');
 let resizeListenerId;
 let simulationResources;
 
-export class SimLauncher {
-    SimLauncher (ctx) {
-        this.ctx = ctx;
+export class Launcher {
+    static make () {
+        return new Launcher();
     }
 
-    static make (ctx) {
-        return new SimLauncher(ctx);
-    }
-
-    async launch (ctx, params) {
-        const canvas = ctx.elements.glCanvasDeo;
-
+    async launch (canvas, params) {
         fixCanvasSize(canvas);
         if (resizeListenerId) {
             window.removeEventListener(resizeListenerId);
         }
         resizeListenerId = window.addEventListener('resize', () => setTimeout(() => fixCanvasSize(canvas), 16));
 
-        canvas.onfocus = () => ctx.eventBus.dispatchEvent(new KeyboardEvent('keydown', { key: 'canvas_focused' }));
-        canvas.onblur = () => ctx.eventBus.dispatchEvent(new KeyboardEvent('keyup', { key: 'canvas_focused' }));
-
-        ctx.root.appendChild(canvas);
-
         Logger.log('gl context form', params.ctxOptions);
         const gl = canvas.getContext('webgl2', params.ctxOptions);
 
-        var documentElement = document.documentElement;
+        const documentElement = document.documentElement;
         documentElement.requestFullscreen = documentElement.requestFullscreen ||
             documentElement.webkitRequestFullScreen ||
             documentElement['mozRequestFullScreen'] ||
             documentElement.msRequestFullscreen;
-
-        canvas.onmousedown = (e) => {
-            if (e.buttons !== 1) return;
-            canvas.requestPointerLock();
-            if (window.screen.width !== window.innerWidth && window.screen.height !== window.innerHeight) {
-                documentElement.requestFullscreen();
-            }
-        };
-
         canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock;
         document.exitPointerLock = document.exitPointerLock || document.mozExitPointerLock;
 
@@ -102,7 +82,7 @@ export class SimLauncher {
         }
 
         Logger.log('calling wasm run_program');
-        displaySim.run_program(ctx.elements.glCanvasDeo, simulationResources, videoInput);
+        displaySim.run_program(canvas, simulationResources, videoInput);
         Logger.log('wasm run_program done');
 
         return { success: true };

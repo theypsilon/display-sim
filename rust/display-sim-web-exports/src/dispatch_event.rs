@@ -17,15 +17,28 @@ use web_sys::{CustomEvent, CustomEventInit, Event, EventTarget};
 
 use wasm_bindgen::{JsCast, JsValue};
 use web_error::{WebError, WebResult};
+use crate::console;
 
 pub fn dispatch_event(event_bus: &EventTarget, kind: &str) -> WebResult<()> {
-    dispatch_event_internal(event_bus, &Event::new(kind)?)
+    dispatch_event_with(event_bus, kind, &"".into())
 }
 
 pub fn dispatch_event_with(event_bus: &EventTarget, kind: &str, value: &JsValue) -> WebResult<()> {
     let mut parameters = CustomEventInit::new();
-    parameters.detail(&value);
-    let event = CustomEvent::new_with_event_init_dict(kind, &parameters)?
+    parameters.detail(
+        &{
+            let obj = js_sys::Object::new();
+            js_sys::Reflect::set(&obj, &"type".into(), &kind.into())?;
+            let has_content = if let Some(string) = value.as_string() { &string != "" } else { true };
+            if has_content {
+                js_sys::Reflect::set(&obj, &"message".into(), value)?;
+            }
+            obj
+        }
+        .into(),
+    );
+
+    let event = CustomEvent::new_with_event_init_dict("display-sim-event:backend-channel", &parameters)?
         .dyn_into::<Event>()
         .map_err(|_| "cannot make a custom event")?;
     dispatch_event_internal(event_bus, &event)

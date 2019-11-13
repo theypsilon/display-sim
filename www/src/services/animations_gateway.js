@@ -53,13 +53,8 @@ export class AnimationsGateway {
     }
 
     async getFromImage (img) {
-        const isOptimizedAsset = !!img.isOptimizedAsset;
         const isGif = img.isGif || img.src.endsWith('.gif');
-        if (isOptimizedAsset) {
-            const imgHqSrc = img.dataset.hq;
-            Logger.reportIfFalsy(imgHqSrc);
-            return this.getFromPath(imgHqSrc);
-        } else if (isGif) {
+        if (isGif) {
             return this.extractDataFromGifUrl(img.src);
         } else {
             return this.extractDataFromImg(img);

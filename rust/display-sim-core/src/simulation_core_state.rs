@@ -548,34 +548,34 @@ impl std::fmt::Display for ColorChannels {
     }
 }
 
-pub mod event_kind {
-    pub const FILTER_PRESET: &str = "event_kind:filter_presets_selected";
-    pub const PIXEL_BRIGHTNESS: &str = "event_kind:pixel_brightness";
-    pub const PIXEL_CONTRAST: &str = "event_kind:pixel_contrast";
-    pub const LIGHT_COLOR: &str = "event_kind:light_color";
-    pub const BRIGHTNESS_COLOR: &str = "event_kind:brightness_color";
-    pub const BLUR_LEVEL: &str = "event_kind:blur_level";
-    pub const VERTICAL_LPP: &str = "event_kind:vertical_lpp";
-    pub const HORIZONTAL_LPP: &str = "event_kind:horizontal_lpp";
-    pub const PIXEL_SHADOW_HEIGHT: &str = "event_kind:pixel_shadow_height";
-    pub const PIXEL_VERTICAL_GAP: &str = "event_kind:pixel_vertical_gap";
-    pub const PIXEL_HORIZONTAL_GAP: &str = "event_kind:pixel_horizontal_gap";
-    pub const PIXEL_WIDTH: &str = "event_kind:pixel_width";
-    pub const PIXEL_SPREAD: &str = "event_kind:pixel_spread";
-    pub const BACKLIGHT_PERCENT: &str = "event_kind:backlight_percent";
-    pub const CAMERA_ZOOM: &str = "event_kind:camera_zoom";
-    pub const CAMERA_POS_X: &str = "event_kind:camera_pos_x";
-    pub const CAMERA_POS_Y: &str = "event_kind:camera_pos_y";
-    pub const CAMERA_POS_Z: &str = "event_kind:camera_pos_z";
-    pub const CAMERA_AXIS_UP_X: &str = "event_kind:camera_axis_up_x";
-    pub const CAMERA_AXIS_UP_Y: &str = "event_kind:camera_axis_up_y";
-    pub const CAMERA_AXIS_UP_Z: &str = "event_kind:camera_axis_up_z";
-    pub const CAMERA_DIRECTION_X: &str = "event_kind:camera_direction_x";
-    pub const CAMERA_DIRECTION_Y: &str = "event_kind:camera_direction_y";
-    pub const CAMERA_DIRECTION_Z: &str = "event_kind:camera_direction_z";
+pub mod frontend_event {
+    pub const FILTER_PRESET: &str = "front2back:filter-presets-selected";
+    pub const PIXEL_BRIGHTNESS: &str = "front2back:pixel-brightness";
+    pub const PIXEL_CONTRAST: &str = "front2back:pixel-contrast";
+    pub const LIGHT_COLOR: &str = "front2back:light-color";
+    pub const BRIGHTNESS_COLOR: &str = "front2back:brightness-color";
+    pub const BLUR_LEVEL: &str = "front2back:blur-level";
+    pub const VERTICAL_LPP: &str = "front2back:vertical-lpp";
+    pub const HORIZONTAL_LPP: &str = "front2back:horizontal-lpp";
+    pub const PIXEL_SHADOW_HEIGHT: &str = "front2back:pixel-shadow-height";
+    pub const PIXEL_VERTICAL_GAP: &str = "front2back:pixel-vertical-gap";
+    pub const PIXEL_HORIZONTAL_GAP: &str = "front2back:pixel-horizontal-gap";
+    pub const PIXEL_WIDTH: &str = "front2back:pixel-width";
+    pub const PIXEL_SPREAD: &str = "front2back:pixel-spread";
+    pub const BACKLIGHT_PERCENT: &str = "front2back:backlight-percent";
+    pub const CAMERA_ZOOM: &str = "front2back:camera_zoom";
+    pub const CAMERA_POS_X: &str = "front2back:camera-pos-x";
+    pub const CAMERA_POS_Y: &str = "front2back:camera-pos-y";
+    pub const CAMERA_POS_Z: &str = "front2back:camera-pos-z";
+    pub const CAMERA_AXIS_UP_X: &str = "front2back:camera-axis-up-x";
+    pub const CAMERA_AXIS_UP_Y: &str = "front2back:camera-axis-up-y";
+    pub const CAMERA_AXIS_UP_Z: &str = "front2back:camera-axis-up-z";
+    pub const CAMERA_DIRECTION_X: &str = "front2back:camera-dir-x";
+    pub const CAMERA_DIRECTION_Y: &str = "front2back:camera-dir-y";
+    pub const CAMERA_DIRECTION_Z: &str = "front2back:camera-dir-z";
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum InputEventValue {
     None,
     FilterPreset(String),

@@ -19,7 +19,7 @@ export class Messenger {
     constructor () {
         this._dict = {};
     }
-    static make () { return instance; }
+    static getInstance () { return instance; }
     sendMessage (address, content) {
         if (!this._dict[address]) {
             this._dict[address] = [];

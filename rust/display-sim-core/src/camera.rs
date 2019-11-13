@@ -24,7 +24,7 @@ pub enum CameraDirection {
     Backward,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum CameraChange {
     Zoom(f32),
     PosX(f32),
@@ -217,9 +217,9 @@ impl<'a> CameraSystem<'a> {
 
     pub fn handle_camera_change(&mut self, change: CameraChange) {
         match change {
-            CameraChange::PosX(x) => self.data.position_destiny.x = x,
-            CameraChange::PosY(y) => self.data.position_destiny.y = y,
-            CameraChange::PosZ(z) => self.data.position_destiny.z = z,
+            CameraChange::PosX(x) => self.data.position_eye.x = x,
+            CameraChange::PosY(y) => self.data.position_eye.y = y,
+            CameraChange::PosZ(z) => self.data.position_eye.z = z,
             CameraChange::Zoom(zoom) => self.data.zoom = zoom,
             CameraChange::AxisUpX(x) => self.data.axis_up.x = x,
             CameraChange::AxisUpY(y) => self.data.axis_up.y = y,
@@ -228,6 +228,8 @@ impl<'a> CameraSystem<'a> {
             CameraChange::DirectionY(y) => self.data.direction.y = y,
             CameraChange::DirectionZ(z) => self.data.direction.z = z,
         }
+        self.data.position_changed = true;
+        self.data.position_destiny = self.data.position_eye;
     }
 
     pub fn change_zoom(&mut self, change: f32, dispatcher: &dyn AppEventDispatcher) {

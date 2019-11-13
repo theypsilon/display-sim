@@ -13,53 +13,49 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import initialize from './landing_initialize';
+import { renderTemplate } from './landing_template';
+import { playQuerystring } from './play_simulation';
 
-import { LandingVisibility } from './landing_visibility';
+import { model, View } from './landing_view_model';
+
 import { LandingStore } from './landing_store';
 
-const template = document.createElement('template');
-template.innerHTML = require('html-loader?interpolate!./landing_page.html');
+const constants = {
+    SCALING_AUTO_ID: 'scaling-auto',
+    SCALING_43_ID: 'scaling-4:3',
+    SCALING_CUSTOM_ID: 'scaling-custom',
+    SCALING_STRETCH_TO_BOTH_EDGES_ID: 'scaling-stretch-both',
+    SCALING_STRETCH_TO_NEAREST_EDGE_ID: 'scaling-stretch-nearest',
+    POWER_PREFERENCE_DEFAULT: 'default',
+
+    FIRST_PREVIEW_IMAGE_ID: 'first-preview-image'
+};
+
+const store = LandingStore.make(constants);
+const state = model(store, constants);
 
 class LandingPage extends HTMLElement {
     constructor () {
         super();
-        const root = this.attachShadow({ mode: 'open' });
-        root.appendChild(template.content.cloneNode(true));
 
-        const constants = {
-            SCALING_AUTO_ID: 'scaling-auto',
-            SCALING_43_ID: 'scaling-4:3',
-            SCALING_CUSTOM_ID: 'scaling-custom',
-            SCALING_STRETCH_TO_BOTH_EDGES_ID: 'scaling-stretch-both',
-            SCALING_STRETCH_TO_NEAREST_EDGE_ID: 'scaling-stretch-nearest',
-            POWER_PREFERENCE_DEFAULT: 'default',
-        
-            FIRST_PREVIEW_IMAGE_ID: 'first-preview-image'
-        };
-        const elements = {
-            uiDeo: root.getElementById('ui'),
-            inputFileUploadDeo: root.getElementById('file'),
-            startAnimationDeo: root.getElementById('start-animation'),
-            antialiasDeo: root.getElementById('antialias'),
-            scalingCustomResWidthDeo: root.getElementById('scaling-custom-resolution-width'),
-            scalingCustomResHeightDeo: root.getElementById('scaling-custom-resolution-height'),
-            scalingCustomResButtonDeo: root.getElementById('scaling-custom-resolution-button'),
-            scalingCustomArXDeo: root.getElementById('scaling-custom-aspect-ratio-x'),
-            scalingCustomArYDeo: root.getElementById('scaling-custom-aspect-ratio-y'),
-            scalingCustomStretchNearestDeo: root.getElementById('scaling-custom-stretch-nearest'),
-            scalingCustomInputsDeo: root.getElementById('scaling-custom-inputs'),
-            dropZoneDeo: root.getElementById('drop-zone'),
-            selectImageList: root.getElementById('select-image-list'),
-            restoreDefaultOptionsDeo: root.getElementById('restore-default-options'),
-        
-            optionPowerPreferenceSelect: root.getElementById('option-powerPreference'),
-            optionScalingSelect: root.getElementById('option-scaling'),
+        if (window.location.hash.length > 1) {
+            playQuerystring(window.location.hash.substr(1));
+            return;
+        }
 
-            previewDeo: root.getElementById(constants.FIRST_PREVIEW_IMAGE_ID)
-        };
+        this._state = state;
+        this._root = this.attachShadow({ mode: 'open' });
+        this._view = View.make(state, this, store, constants); // so it can be readed during the first template generation
 
-        initialize({ root, constants, elements, store: LandingStore.make(constants), visibility: LandingVisibility.make(elements) });
+        this._view.makeItVisible();
+    }
+
+    refresh () {
+        renderTemplate(state, this._view, this._root);
+    }
+
+    getRoot () {
+        return this._root;
     }
 }
 

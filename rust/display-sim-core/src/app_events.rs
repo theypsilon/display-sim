@@ -49,6 +49,7 @@ pub trait AppEventDispatcher {
     fn dispatch_exiting_session(&self);
     fn dispatch_toggle_info_panel(&self);
     fn dispatch_fps(&self, fps: f32);
+    fn dispatch_new_frame(&self);
     fn dispatch_request_pointer_lock(&self);
     fn dispatch_exit_pointer_lock(&self);
     fn fire_screenshot(&self, width: i32, height: i32, pixels: &mut [u8], multiplier: f64);
@@ -94,6 +95,7 @@ impl AppEventDispatcher for FakeEventDispatcher {
     fn dispatch_fps(&self, fps: f32) {
         println!("frames in 20 seconds: {}", fps);
     }
+    fn dispatch_new_frame(&self) {}
     fn fire_screenshot(&self, _: i32, _: i32, _: &mut [u8], _: f64) {}
     fn dispatch_request_pointer_lock(&self) {}
     fn dispatch_exit_pointer_lock(&self) {}

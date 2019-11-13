@@ -16,4 +16,30 @@
 import './css/index.css';
 import './view/landing_page/landing_page';
 import './view/sim_page/sim_page';
-import './view/top_message_popup';
+
+import FontFaceObserver from 'fontfaceobserver';
+import { Navigator } from './services/navigator';
+
+window.ondrop = event => {
+    event.preventDefault();
+};
+
+window.ondragover = event => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'none';
+};
+
+window.onhashchange = () => {
+    if (window.location.hash !== '') {
+        window.location.reload();
+    }
+};
+
+Promise.all([
+    new FontFaceObserver('Archivo Black', { weight: 400 }).load(null, 10000),
+    new FontFaceObserver('Lato', { weight: 400 }).load(null, 10000),
+    new FontFaceObserver('Lato', { weight: 700 }).load(null, 10000)
+]).then(() => {
+    const navigator = Navigator.make();
+    navigator.goToLandingPage();
+});

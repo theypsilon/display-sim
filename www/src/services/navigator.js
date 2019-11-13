@@ -14,11 +14,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 import Constants from './constants';
+import Logger from '../services/logger';
 import { Visibility } from './visibility';
 
 let instance;
 let visibility = Visibility.make();
-
+const getTopMessageDeo = () => document.getElementById(Constants.TOP_MESSAGE_ID);
 export class Navigator {
     static make () { return instance; }
     goToLandingPage () {
@@ -35,10 +36,32 @@ export class Navigator {
             Constants.pageDeo.appendChild(page);
         }, 0);
     }
-    openTopMessage (text) {
-        window.dispatchEvent(new CustomEvent(Constants.APP_EVENT_TOP_MESSAGE, {
-            detail: text
-        }));
+    openTopMessage (msg) {
+        const existingTopMessage = getTopMessageDeo();
+        if (existingTopMessage) {
+            existingTopMessage.remove();
+        }
+        const div = document.createElement('div');
+        div.id = Constants.TOP_MESSAGE_ID;
+        const span = document.createElement('span');
+        span.innerHTML = msg;
+        Logger.log('top_message: ' + msg);
+        div.appendChild(span);
+        document.body.appendChild(div);
+        let opacity = 0.75;
+        div.style.opacity = opacity;
+        setTimeout(() => {
+            function fade () {
+                if (opacity >= 0.01) {
+                    opacity -= 0.01;
+                    div.style.opacity = opacity;
+                    setTimeout(fade, 16);
+                } else {
+                    div.remove();
+                }
+            }
+            fade();
+        }, msg.length * 100);
     }
 }
 

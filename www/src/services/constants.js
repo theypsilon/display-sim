@@ -15,7 +15,6 @@
 
 export default {
     TOP_MESSAGE_ID: 'top-message',
-    APP_EVENT_TOP_MESSAGE: 'app-event.top_message',
     loadingDeo: document.getElementById('loading'),
     pageDeo: document.getElementById('page')
 };

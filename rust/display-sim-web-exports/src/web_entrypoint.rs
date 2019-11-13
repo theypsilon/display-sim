@@ -24,7 +24,7 @@ use crate::web_utils::{now, window};
 use core::action_bindings::on_button_action;
 use core::camera::CameraChange;
 use core::simulation_context::{ConcreteSimulationContext, RandomGenerator, SimulationContext};
-use core::simulation_core_state::{event_kind, Input, InputEventValue, Resources, VideoInputResources};
+use core::simulation_core_state::{frontend_event, Input, InputEventValue, Resources, VideoInputResources};
 use core::simulation_core_ticker::SimulationCoreTicker;
 use glow::GlowSafeAdapter;
 use render::simulation_draw::SimulationDrawer;
@@ -218,11 +218,11 @@ fn set_event_listeners(event_bus: EventTarget, state_owner: &Rc<StateOwner>) -> 
         }))
     };
 
-    let oncustominputevent: Closure<dyn FnMut(JsValue)> = {
+    let onfrontendevent: Closure<dyn FnMut(JsValue)> = {
         let state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |event: JsValue| {
             let mut input = state_owner.input.borrow_mut();
-            if let Err(e) = read_custom_event(&mut input, event) {
+            if let Err(e) = read_frontend_event(&mut input, event) {
                 console!(error. "Could not read custom event.", e.into_js());
             }
         }))
@@ -235,7 +235,7 @@ fn set_event_listeners(event_bus: EventTarget, state_owner: &Rc<StateOwner>) -> 
     event_bus.add_event_listener_with_callback("mouseup", onmouseup.as_ref().unchecked_ref())?;
     event_bus.add_event_listener_with_callback("mousemove", onmousemove.as_ref().unchecked_ref())?;
     event_bus.add_event_listener_with_callback("mousewheel", onmousewheel.as_ref().unchecked_ref())?;
-    event_bus.add_event_listener_with_callback("app-event.custom_input_event", oncustominputevent.as_ref().unchecked_ref())?;
+    event_bus.add_event_listener_with_callback("display-sim-event:frontend-channel", onfrontendevent.as_ref().unchecked_ref())?;
 
     let mut closures: Vec<OwnedClosure> = vec![];
     closures.push(Some(onblur));
@@ -245,45 +245,45 @@ fn set_event_listeners(event_bus: EventTarget, state_owner: &Rc<StateOwner>) -> 
     closures.push(Some(onmouseup));
     closures.push(Some(onmousemove));
     closures.push(Some(onmousewheel));
-    closures.push(Some(oncustominputevent));
+    closures.push(Some(onfrontendevent));
 
     Ok(closures)
 }
 
-pub fn read_custom_event(input: &mut Input, event: JsValue) -> WebResult<()> {
+pub fn read_frontend_event(input: &mut Input, event: JsValue) -> WebResult<()> {
     let event = event.dyn_into::<CustomEvent>()?;
     let object = event.detail();
-    let value = js_sys::Reflect::get(&object, &"value".into())?;
-    let event_kind = js_sys::Reflect::get(&object, &"kind".into())?
+    let value = js_sys::Reflect::get(&object, &"message".into())?;
+    let frontend_event = js_sys::Reflect::get(&object, &"type".into())?
         .as_string()
         .ok_or_else(|| WebError::Str("Could not get kind".into()))?;
-    let event_value = match event_kind.as_ref() as &str {
-        event_kind::FILTER_PRESET => InputEventValue::FilterPreset(value.as_string().ok_or("it should be a string")?),
-        event_kind::PIXEL_BRIGHTNESS => InputEventValue::PixelBrighttness(value.as_f64().ok_or("it should be a number")? as f32),
-        event_kind::PIXEL_CONTRAST => InputEventValue::PixelContrast(value.as_f64().ok_or("it should be a number")? as f32),
-        event_kind::LIGHT_COLOR => InputEventValue::LightColor(value.as_f64().ok_or("it should be a number")? as i32),
-        event_kind::BRIGHTNESS_COLOR => InputEventValue::BrightnessColor(value.as_f64().ok_or("it should be a number")? as i32),
-        event_kind::BLUR_LEVEL => InputEventValue::BlurLevel(value.as_f64().ok_or("it should be a number")? as usize),
-        event_kind::VERTICAL_LPP => InputEventValue::VerticalLpp(value.as_f64().ok_or("it should be a number")? as usize),
-        event_kind::HORIZONTAL_LPP => InputEventValue::HorizontalLpp(value.as_f64().ok_or("it should be a number")? as usize),
-        event_kind::PIXEL_SHADOW_HEIGHT => InputEventValue::PixelShadowHeight(value.as_f64().ok_or("it should be a number")? as f32),
-        event_kind::BACKLIGHT_PERCENT => InputEventValue::BacklightPercent(value.as_f64().ok_or("it should be a number")? as f32),
-        event_kind::PIXEL_VERTICAL_GAP => InputEventValue::PixelVerticalGap(value.as_f64().ok_or("it should be a number")? as f32),
-        event_kind::PIXEL_HORIZONTAL_GAP => InputEventValue::PixelHorizontalGap(value.as_f64().ok_or("it should be a number")? as f32),
-        event_kind::PIXEL_WIDTH => InputEventValue::PixelWidth(value.as_f64().ok_or("it should be a number")? as f32),
-        event_kind::PIXEL_SPREAD => InputEventValue::PixelSpread(value.as_f64().ok_or("it should be a number")? as f32),
-        event_kind::CAMERA_ZOOM => InputEventValue::Camera(CameraChange::Zoom(value.as_f64().ok_or("it should be a number")? as f32)),
-        event_kind::CAMERA_POS_X => InputEventValue::Camera(CameraChange::PosX(value.as_f64().ok_or("it should be a number")? as f32)),
-        event_kind::CAMERA_POS_Y => InputEventValue::Camera(CameraChange::PosY(value.as_f64().ok_or("it should be a number")? as f32)),
-        event_kind::CAMERA_POS_Z => InputEventValue::Camera(CameraChange::PosZ(value.as_f64().ok_or("it should be a number")? as f32)),
-        event_kind::CAMERA_AXIS_UP_X => InputEventValue::Camera(CameraChange::AxisUpX(value.as_f64().ok_or("it should be a number")? as f32)),
-        event_kind::CAMERA_AXIS_UP_Y => InputEventValue::Camera(CameraChange::AxisUpY(value.as_f64().ok_or("it should be a number")? as f32)),
-        event_kind::CAMERA_AXIS_UP_Z => InputEventValue::Camera(CameraChange::AxisUpZ(value.as_f64().ok_or("it should be a number")? as f32)),
-        event_kind::CAMERA_DIRECTION_X => InputEventValue::Camera(CameraChange::DirectionX(value.as_f64().ok_or("it should be a number")? as f32)),
-        event_kind::CAMERA_DIRECTION_Y => InputEventValue::Camera(CameraChange::DirectionY(value.as_f64().ok_or("it should be a number")? as f32)),
-        event_kind::CAMERA_DIRECTION_Z => InputEventValue::Camera(CameraChange::DirectionZ(value.as_f64().ok_or("it should be a number")? as f32)),
+    let event_value = match frontend_event.as_ref() as &str {
+        frontend_event::FILTER_PRESET => InputEventValue::FilterPreset(value.as_string().ok_or("it should be a string")?),
+        frontend_event::PIXEL_BRIGHTNESS => InputEventValue::PixelBrighttness(value.as_f64().ok_or("it should be a number")? as f32),
+        frontend_event::PIXEL_CONTRAST => InputEventValue::PixelContrast(value.as_f64().ok_or("it should be a number")? as f32),
+        frontend_event::LIGHT_COLOR => InputEventValue::LightColor(value.as_f64().ok_or("it should be a number")? as i32),
+        frontend_event::BRIGHTNESS_COLOR => InputEventValue::BrightnessColor(value.as_f64().ok_or("it should be a number")? as i32),
+        frontend_event::BLUR_LEVEL => InputEventValue::BlurLevel(value.as_f64().ok_or("it should be a number")? as usize),
+        frontend_event::VERTICAL_LPP => InputEventValue::VerticalLpp(value.as_f64().ok_or("it should be a number")? as usize),
+        frontend_event::HORIZONTAL_LPP => InputEventValue::HorizontalLpp(value.as_f64().ok_or("it should be a number")? as usize),
+        frontend_event::PIXEL_SHADOW_HEIGHT => InputEventValue::PixelShadowHeight(value.as_f64().ok_or("it should be a number")? as f32),
+        frontend_event::BACKLIGHT_PERCENT => InputEventValue::BacklightPercent(value.as_f64().ok_or("it should be a number")? as f32),
+        frontend_event::PIXEL_VERTICAL_GAP => InputEventValue::PixelVerticalGap(value.as_f64().ok_or("it should be a number")? as f32),
+        frontend_event::PIXEL_HORIZONTAL_GAP => InputEventValue::PixelHorizontalGap(value.as_f64().ok_or("it should be a number")? as f32),
+        frontend_event::PIXEL_WIDTH => InputEventValue::PixelWidth(value.as_f64().ok_or("it should be a number")? as f32),
+        frontend_event::PIXEL_SPREAD => InputEventValue::PixelSpread(value.as_f64().ok_or("it should be a number")? as f32),
+        frontend_event::CAMERA_ZOOM => InputEventValue::Camera(CameraChange::Zoom(value.as_f64().ok_or("it should be a number")? as f32)),
+        frontend_event::CAMERA_POS_X => InputEventValue::Camera(CameraChange::PosX(value.as_f64().ok_or("it should be a number")? as f32)),
+        frontend_event::CAMERA_POS_Y => InputEventValue::Camera(CameraChange::PosY(value.as_f64().ok_or("it should be a number")? as f32)),
+        frontend_event::CAMERA_POS_Z => InputEventValue::Camera(CameraChange::PosZ(value.as_f64().ok_or("it should be a number")? as f32)),
+        frontend_event::CAMERA_AXIS_UP_X => InputEventValue::Camera(CameraChange::AxisUpX(value.as_f64().ok_or("it should be a number")? as f32)),
+        frontend_event::CAMERA_AXIS_UP_Y => InputEventValue::Camera(CameraChange::AxisUpY(value.as_f64().ok_or("it should be a number")? as f32)),
+        frontend_event::CAMERA_AXIS_UP_Z => InputEventValue::Camera(CameraChange::AxisUpZ(value.as_f64().ok_or("it should be a number")? as f32)),
+        frontend_event::CAMERA_DIRECTION_X => InputEventValue::Camera(CameraChange::DirectionX(value.as_f64().ok_or("it should be a number")? as f32)),
+        frontend_event::CAMERA_DIRECTION_Y => InputEventValue::Camera(CameraChange::DirectionY(value.as_f64().ok_or("it should be a number")? as f32)),
+        frontend_event::CAMERA_DIRECTION_Z => InputEventValue::Camera(CameraChange::DirectionZ(value.as_f64().ok_or("it should be a number")? as f32)),
         _ => InputEventValue::None,
     };
-    input.custom_event.add_value(event_kind, event_value);
+    input.custom_event.add_value(frontend_event, event_value);
     Ok(())
 }

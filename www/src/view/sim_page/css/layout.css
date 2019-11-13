@@ -1,5 +1,7 @@
 #simulation-ui {
-    position: relative;
+    position: absolute;
+    left: 0;
+    top: 0;
 }
 
 canvas:hover {
