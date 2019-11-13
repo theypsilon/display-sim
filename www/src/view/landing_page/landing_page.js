@@ -18,9 +18,9 @@ import { playQuerystring } from './play_simulation';
 
 import { model, View } from './landing_view_model';
 
-import { LandingStore } from './landing_store';
+import { Storage } from './landing_store';
 
-const store = LandingStore.make();
+const store = Storage.make();
 const state = model(store);
 
 class LandingPage extends HTMLElement {
