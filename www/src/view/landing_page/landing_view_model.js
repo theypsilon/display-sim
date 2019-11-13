@@ -19,7 +19,7 @@ import { Visibility } from '../../services/visibility';
 
 import { playHtmlSelection } from './play_simulation';
 
-export function model(store, constants) {
+export function model (store, constants) {
     return {
         images: [
             { src: require('../../../assets/pics/opt-frames/wwix.gif'), hq: require('../../../assets/pics/frames/wwix.gif'), width: 256, height: 224, id: constants.FIRST_PREVIEW_IMAGE_ID },
