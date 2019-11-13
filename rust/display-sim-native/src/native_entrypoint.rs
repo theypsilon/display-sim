@@ -314,6 +314,9 @@ impl AppEventDispatcher for NativeEventDispatcher {
     fn dispatch_fps(&self, fps: f32) {
         println!("frames in 20 seconds: {}", fps);
     }
+    fn dispatch_new_frame(&self) {
+        println!("dispatch_new_frame");
+    }
     fn dispatch_request_pointer_lock(&self) {
         println!("request_pointer_lock");
         self.video_ctx.as_ref().unwrap().window().set_cursor_visible(false);
