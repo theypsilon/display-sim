@@ -34,7 +34,7 @@ class LandingPage extends HTMLElement {
 
         this._state = state;
         this._root = this.attachShadow({ mode: 'open' });
-        this._view = View.make(state, this, store); // so it can be readed during the first template generation
+        this._view = View.make(state, this, store);
 
         this._view.makeItVisible();
     }
