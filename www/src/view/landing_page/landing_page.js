@@ -20,19 +20,8 @@ import { model, View } from './landing_view_model';
 
 import { LandingStore } from './landing_store';
 
-const constants = {
-    SCALING_AUTO_ID: 'scaling-auto',
-    SCALING_43_ID: 'scaling-4:3',
-    SCALING_CUSTOM_ID: 'scaling-custom',
-    SCALING_STRETCH_TO_BOTH_EDGES_ID: 'scaling-stretch-both',
-    SCALING_STRETCH_TO_NEAREST_EDGE_ID: 'scaling-stretch-nearest',
-    POWER_PREFERENCE_DEFAULT: 'default',
-
-    FIRST_PREVIEW_IMAGE_ID: 'first-preview-image'
-};
-
-const store = LandingStore.make(constants);
-const state = model(store, constants);
+const store = LandingStore.make();
+const state = model(store);
 
 class LandingPage extends HTMLElement {
     constructor () {
@@ -45,7 +34,7 @@ class LandingPage extends HTMLElement {
 
         this._state = state;
         this._root = this.attachShadow({ mode: 'open' });
-        this._view = View.make(state, this, store, constants); // so it can be readed during the first template generation
+        this._view = View.make(state, this, store); // so it can be readed during the first template generation
 
         this._view.makeItVisible();
     }

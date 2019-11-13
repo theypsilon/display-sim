@@ -13,16 +13,17 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
+import Constants from '../../services/constants';
 import { mobileAndTabletCheck } from '../../services/utils';
 import { Navigator } from '../../services/navigator';
 import { Visibility } from '../../services/visibility';
 
 import { playHtmlSelection } from './play_simulation';
 
-export function model (store, constants) {
+export function model (store) {
     return {
         images: [
-            { src: require('../../../assets/pics/opt-frames/wwix.gif'), hq: require('../../../assets/pics/frames/wwix.gif'), width: 256, height: 224, id: constants.FIRST_PREVIEW_IMAGE_ID },
+            { src: require('../../../assets/pics/opt-frames/wwix.gif'), hq: require('../../../assets/pics/frames/wwix.gif'), width: 256, height: 224, id: Constants.FIRST_PREVIEW_IMAGE_ID },
             { src: require('../../../assets/pics/opt-frames/seiken.png'), hq: require('../../../assets/pics/frames/seiken.png'), width: 256, height: 224 },
             { src: require('../../../assets/pics/opt-frames/sonicscroll.gif'), hq: require('../../../assets/pics/frames/sonicscroll.gif'), width: 320, height: 224 },
             { src: require('../../../assets/pics/opt-frames/metroid.gif'), hq: require('../../../assets/pics/frames/metroid.gif'), width: 256, height: 224 },
@@ -30,28 +31,28 @@ export function model (store, constants) {
             { src: require('../../../assets/pics/opt-frames/dkc2.png'), hq: require('../../../assets/pics/frames/dkc2.png'), width: 256, height: 224 }
         ],
         imageSelection: 0,
-        options: makeOptions(store, constants),
+        options: makeOptions(store),
         visible: false,
         isRunningOnMobileDevice: mobileAndTabletCheck()
     };
 }
 
-function makeOptions (store, constants) {
+function makeOptions (store) {
     return {
         antialias: store.getAntiAliasing(),
         performanceOptions: [
-            { value: constants.POWER_PREFERENCE_DEFAULT, text: 'Default' },
+            { value: Constants.POWER_PREFERENCE_DEFAULT, text: 'Default' },
             { value: 'high-performance', text: 'High Performance' },
             { value: 'low-power', text: 'Low Power' }
         ],
         performanceSelection: store.getPowerPreferenceSelectOption(),
         scalingOptions: [
-            { value: constants.SCALING_AUTO_ID, title: 'Auto detect', text: 'Auto Detect' },
+            { value: Constants.SCALING_AUTO_ID, title: 'Auto detect', text: 'Auto Detect' },
             { value: 'scaling-none', title: 'None', text: 'None' },
-            { value: constants.SCALING_43_ID, title: '4:3 on full image', text: '4:3 on full image' },
-            { value: constants.SCALING_STRETCH_TO_BOTH_EDGES_ID, title: 'Stretch to both edges', text: 'Stretch to both edges' },
-            { value: constants.SCALING_STRETCH_TO_NEAREST_EDGE_ID, title: 'Stretch to nearest edge, keeps proportions', text: 'Stretch to nearest edge' },
-            { value: constants.SCALING_CUSTOM_ID, title: 'Introduce the values yourself', text: 'Custom' }
+            { value: Constants.SCALING_43_ID, title: '4:3 on full image', text: '4:3 on full image' },
+            { value: Constants.SCALING_STRETCH_TO_BOTH_EDGES_ID, title: 'Stretch to both edges', text: 'Stretch to both edges' },
+            { value: Constants.SCALING_STRETCH_TO_NEAREST_EDGE_ID, title: 'Stretch to nearest edge, keeps proportions', text: 'Stretch to nearest edge' },
+            { value: Constants.SCALING_CUSTOM_ID, title: 'Introduce the values yourself', text: 'Custom' }
         ],
         scalingSelection: store.getScalingSelectOption(),
         scalingCustom: {
@@ -63,18 +64,18 @@ function makeOptions (store, constants) {
 }
 
 export class View {
-    constructor (state, page, store, constants, navigator, visibility) {
+    constructor (state, page, store, navigator, visibility) {
         this._state = state;
         this._page = page;
         this._store = store;
-        this._constants = constants;
+        this._Constants = Constants;
         this._navigator = navigator;
         this._visibility = visibility;
         this._isDirty = true;
     }
 
-    static make (state, page, store, constants, navigator, visibility) {
-        return new View(state, page, store, constants, navigator || Navigator.make(), visibility || Visibility.make());
+    static make (state, page, store, navigator, visibility) {
+        return new View(state, page, store, navigator || Navigator.make(), visibility || Visibility.make());
     }
 
     makeItVisible () {
@@ -100,7 +101,7 @@ export class View {
 
     clickRestoreDefaultOptions () {
         this._store.removeAllOptions();
-        this._state.options = makeOptions(this._store, this._constants);
+        this._state.options = makeOptions(this._store, this._Constants);
         this._page.refresh();
     }
 
@@ -138,7 +139,7 @@ export class View {
             this._store.setCustomArY(this._state.options.scalingCustom.aspectRatio.y);
             this._store.setCustomStretchNearest(this._state.options.scalingCustom.stretchNearest);
         }
-        playHtmlSelection({ constants: this._constants, state: this._state });
+        playHtmlSelection(this._state);
     }
 
     _uploadFile (file) {

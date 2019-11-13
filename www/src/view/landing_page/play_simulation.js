@@ -14,6 +14,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 import Logger from '../../services/logger';
+import Constants from '../../services/constants';
 
 import { Navigator } from '../../services/navigator';
 import { Messenger } from '../../services/messenger';
@@ -23,8 +24,8 @@ const navigator = Navigator.make();
 const messenger = Messenger.getInstance();
 const animationsGateway = AnimationsGateway.make({ gifCaching: true });
 
-export async function playHtmlSelection (ctx) {
-    const animations = await getAnimations(ctx);
+export async function playHtmlSelection (state) {
+    const animations = await getAnimations(state);
 
     Logger.log('image readed');
 
@@ -36,36 +37,36 @@ export async function playHtmlSelection (ctx) {
     let backgroundWidth = imageWidth;
     let backgroundHeight = imageHeight;
 
-    switch (ctx.state.options.scalingSelection) {
-    case ctx.constants.SCALING_AUTO_ID:
+    switch (state.options.scalingSelection) {
+    case Constants.SCALING_AUTO_ID:
         const autoScaling = calculateAutoScaling(imageWidth, imageHeight);
         scaleX = autoScaling.scaleX;
         navigator.openTopMessage('Scaling auto detect: ' + autoScaling.message);
         break;
-    case ctx.constants.SCALING_43_ID:
+    case Constants.SCALING_43_ID:
         scaleX = (4 / 3) / (imageWidth / imageHeight);
         break;
-    case ctx.constants.SCALING_STRETCH_TO_BOTH_EDGES_ID:
+    case Constants.SCALING_STRETCH_TO_BOTH_EDGES_ID:
         scaleX = (window.screen.width / window.screen.height) / (imageWidth / imageHeight);
         stretch = true;
         break;
-    case ctx.constants.SCALING_STRETCH_TO_NEAREST_EDGE_ID:
+    case Constants.SCALING_STRETCH_TO_NEAREST_EDGE_ID:
         stretch = true;
         break;
-    case ctx.constants.SCALING_CUSTOM_ID:
-        stretch = ctx.state.options.scalingCustom.stretchNearest;
-        backgroundWidth = +ctx.state.options.scalingCustom.resolution.width;
-        backgroundHeight = +ctx.state.options.scalingCustom.resolution.height;
-        scaleX = (+ctx.state.options.scalingCustom.aspectRatio.x / +ctx.state.options.scalingCustom.aspectRatio.y) / (backgroundWidth / backgroundHeight);
+    case Constants.SCALING_CUSTOM_ID:
+        stretch = state.options.scalingCustom.stretchNearest;
+        backgroundWidth = +state.options.scalingCustom.resolution.width;
+        backgroundHeight = +state.options.scalingCustom.resolution.height;
+        scaleX = (+state.options.scalingCustom.aspectRatio.x / +state.options.scalingCustom.aspectRatio.y) / (backgroundWidth / backgroundHeight);
         break;
     }
 
     const ctxOptions = {
         alpha: false,
-        antialias: ctx.state.options.antialias,
+        antialias: state.options.antialias,
         depth: true,
         failIfMajorPerformanceCaveat: false,
-        powerPreference: ctx.state.options.performanceSelection,
+        powerPreference: state.options.performanceSelection,
         premultipliedAlpha: false,
         preserveDrawingBuffer: false,
         stencil: false
@@ -133,9 +134,9 @@ export async function playQuerystring (querystring) {
     navigator.goToSimPage();
 }
 
-async function getAnimations (ctx) {
-    const selectedImage = ctx.state.images[ctx.state.imageSelection];
-    if (selectedImage.id === ctx.constants.FIRST_PREVIEW_IMAGE_ID) {
+async function getAnimations (state) {
+    const selectedImage = state.images[state.imageSelection];
+    if (selectedImage.id === Constants.FIRST_PREVIEW_IMAGE_ID) {
         return animationsGateway.getFromHardcodedTileset();
     } else if (selectedImage.img) {
         return animationsGateway.getFromImage(selectedImage.img);

@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
+import Constants from '../../services/constants';
 import { LocalStorage } from '../../services/local_storage';
 
 const OPTION_SCALING_SELECT = 'option-scaling';
@@ -25,16 +26,15 @@ const OPTION_SCALING_CUSTOM_STRETCH_NEAREST = 'option-scaling-custom-stretch-nea
 const OPTION_ANTIALIAS = 'option-antialias';
 
 export class LandingStore {
-    constructor (constants, localStorage) {
+    constructor (localStorage) {
         this.localStorage = localStorage;
-        this.constants = constants;
     }
-    static make (constants) {
-        return new LandingStore(constants, new LocalStorage('LandingStore'));
+    static make () {
+        return new LandingStore(new LocalStorage('LandingStore'));
     }
-    getScalingSelectOption () { return this.localStorage.getItem(OPTION_SCALING_SELECT) || this.constants.SCALING_AUTO_ID; }
+    getScalingSelectOption () { return this.localStorage.getItem(OPTION_SCALING_SELECT) || Constants.SCALING_AUTO_ID; }
     setScalingSelectOption (option) { this.localStorage.setItem(OPTION_SCALING_SELECT, option); }
-    getPowerPreferenceSelectOption () { return this.localStorage.getItem(OPTION_POWER_PREFERENCE_SELECT) || this.constants.POWER_PREFERENCE_DEFAULT; }
+    getPowerPreferenceSelectOption () { return this.localStorage.getItem(OPTION_POWER_PREFERENCE_SELECT) || Constants.POWER_PREFERENCE_DEFAULT; }
     setPowerPreferenceSelectOption (option) { this.localStorage.setItem(OPTION_POWER_PREFERENCE_SELECT, option); }
     getCustomResWidth () { return this.localStorage.getItem(OPTION_SCALING_CUSTOM_RES_WIDTH) || 256; }
     setCustomResWidth (width) { this.localStorage.setItem(OPTION_SCALING_CUSTOM_RES_WIDTH, width); }
