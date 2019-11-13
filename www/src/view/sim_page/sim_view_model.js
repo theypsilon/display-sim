@@ -220,8 +220,8 @@ export class View {
     changeSyncedInput (value, kind) {
         const event = new CustomEvent('display-sim-event:frontend-channel', {
             detail: {
-                value,
-                kind: 'front2back:' + kind
+                message: value,
+                type: 'front2back:' + kind
             }
         });
         this.canvas.dispatchEvent(event);
@@ -314,6 +314,7 @@ export class View {
         document.exitPointerLock();
     }
     exitingSession () {
+        window.location.hash = '';
         this._navigator.goToLandingPage();
     }
     changeCameraMovementMode (msg) {

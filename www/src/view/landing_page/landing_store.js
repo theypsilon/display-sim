@@ -14,7 +14,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 import Constants from '../../services/constants';
-import { Storage } from '../../services/local_storage';
+import { LocalStorage } from '../../services/local_storage';
 
 const OPTION_SCALING_SELECT = 'option-scaling';
 const OPTION_POWER_PREFERENCE_SELECT = 'option-powerPreference';
@@ -30,7 +30,7 @@ export class Store {
         this.localStorage = localStorage;
     }
     static make () {
-        return new Store(new Storage('LandingStore'));
+        return new Store(LocalStorage.make('LandingStore'));
     }
     getScalingSelectOption () { return this.localStorage.getItem(OPTION_SCALING_SELECT) || Constants.SCALING_AUTO_ID; }
     setScalingSelectOption (option) { this.localStorage.setItem(OPTION_SCALING_SELECT, option); }
