@@ -71,7 +71,7 @@ impl VideoInputWasm {
                     width: canvas_width,
                     height: canvas_height,
                 },
-                preset: FiltersPreset::CrtApertureGrille1,
+                preset: None,
                 max_texture_size: 8192,
                 steps: Vec::new(),
                 pixel_width: 1.0,
@@ -109,7 +109,7 @@ impl VideoInputWasm {
         match preset.as_string() {
             Some(preset) => {
                 if let Ok(preset) = FiltersPreset::from_str(preset.as_str()) {
-                    self.resources.preset = preset;
+                    self.resources.preset = Some(preset);
                 } else {
                     console!(error. "Input preset is not a valid preset.");
                 }

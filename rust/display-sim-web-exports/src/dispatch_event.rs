@@ -17,7 +17,6 @@ use web_sys::{CustomEvent, CustomEventInit, Event, EventTarget};
 
 use wasm_bindgen::{JsCast, JsValue};
 use web_error::{WebError, WebResult};
-use crate::console;
 
 pub fn dispatch_event(event_bus: &EventTarget, kind: &str) -> WebResult<()> {
     dispatch_event_with(event_bus, kind, &"".into())

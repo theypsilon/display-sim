@@ -67,18 +67,18 @@ export class Launcher {
             videoInput.add_picture_frame(new Uint8Array(rawImg.raw.data.buffer), rawImg.delay);
         }
 
-        if (!simulationResources) {
-            Logger.log('calling wasm load_simulation_resources');
-            simulationResources = displaySim.load_simulation_resources();
-            Logger.log('wasm load_simulation_resources done');
-        }
-
         if (params.activePreset) {
             videoInput.set_preset(params.activePreset);
         }
 
         if (params.skipDrawing) {
             videoInput.set_drawing_activation(false);
+        }
+
+        if (!simulationResources) {
+            Logger.log('calling wasm load_simulation_resources');
+            simulationResources = displaySim.load_simulation_resources();
+            Logger.log('wasm load_simulation_resources done');
         }
 
         Logger.log('calling wasm run_program');

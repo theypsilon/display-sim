@@ -36,7 +36,7 @@ pub struct VideoInputResources {
     pub background_size: Size2D<u32>,
     pub viewport_size: Size2D<u32>,
     pub pixel_width: f32,
-    pub preset: FiltersPreset,
+    pub preset: Option<FiltersPreset>,
     pub stretch: bool,
     pub current_frame: usize,
     pub last_frame_change: f64,
@@ -144,7 +144,9 @@ impl Resources {
         }
         self.quit = false;
         self.resetted = true;
-        self.filters = self.filters.preset_factory(video_input.preset, &None);
+        if let Some(preset) = video_input.preset {
+            self.filters = self.filters.preset_factory(preset, &None);
+        }
         self.filters.cur_pixel_width = cur_pixel_width;
         self.timers = SimulationTimers {
             frame_count: 0,
