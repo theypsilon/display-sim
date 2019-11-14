@@ -147,7 +147,7 @@
 
 .camera-matrix input {
     height: 21px;
-    width: 100px;
+    width: 100px !important;
     margin-top: 3px;
     margin-bottom: 3px;
     text-align: center;

@@ -169,21 +169,22 @@
     margin-right: 5px;
 }
 
-.input-holder input {
-    height: 21px;
-    width: 170px;
-}
-
 .input-holder input[type="number"], input[type="text"], input[type="color"] {
     color: #2FA1D6;
     outline: none;
     border: 0;
     padding: 3px;
     background: #303030;
+    height: 21px;
+}
+
+.input-holder input[type="number"], input[type="text"] {
+    width: 150px;
 }
 
 .input-holder input[type="color"] {
     cursor: pointer;
+    width: 200px;
 }
 
 .input-holder input[type="number"]:hover, input[type="text"].hover, input[type="color"]:hover {
@@ -217,7 +218,7 @@
 }
 
 .button-inc-dec {
-    width: 15px;
+    width: 25px;
     margin-left: 0px;
     margin-right: 0px;
     padding: 3px;
@@ -230,7 +231,7 @@
 }
 
 .button-inc-selector {
-    width: 15px;
+    width: 25px;
     margin-left: 0px;
     margin-right: 0px;
     padding: 3px;
@@ -247,7 +248,7 @@
     height: 21px;
     width: 185px;
     display: grid;
-    grid-template-columns: 170px 15px;
+    grid-template-columns: 150px 25px;
     grid-template-rows: 21px;
     background: #303030;
 }
@@ -297,7 +298,7 @@ input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-i
 }
 
 .feature-readonly-input {
-    width: 170px;
+    width: 150px;
     border: none;
     text-align: center;
     cursor: pointer;
