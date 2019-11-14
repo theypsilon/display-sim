@@ -30,7 +30,7 @@ export class Launcher {
         if (resizeListenerId) {
             window.removeEventListener(resizeListenerId);
         }
-        resizeListenerId = window.addEventListener('resize', () => setTimeout(() => fixCanvasSize(canvas), 16));
+        resizeListenerId = window.addEventListener('resize', () => setTimeout(() => fixCanvasSize(canvas), 160));
 
         Logger.log('gl context form', params.ctxOptions);
         const gl = canvas.getContext('webgl2', params.ctxOptions);
