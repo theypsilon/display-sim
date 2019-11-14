@@ -52,7 +52,7 @@ impl Default for FakeVideoInput {
                 stretch: false,
                 current_frame: 0,
                 last_frame_change: 0.0,
-                preset: FiltersPreset::default(),
+                preset: None,
                 needs_buffer_data_load: true,
                 drawing_activation: true,
             },
