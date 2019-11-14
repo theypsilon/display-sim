@@ -112,7 +112,7 @@ fn program() -> WebResult<()> {
         pixel_width: 1.0,
         stretch: false,
         current_frame: 0,
-        preset: FiltersPreset::default(),
+        preset: None,
         last_frame_change: 0.0,
         needs_buffer_data_load: true,
         drawing_activation: true,
