@@ -216,10 +216,6 @@
     cursor: pointer;
 }
 
-.feature-pack sup {
-    padding: 2px;
-}
-
 .button-inc-dec {
     width: 15px;
     margin-left: 0px;
@@ -251,7 +247,7 @@
     height: 21px;
     width: 185px;
     display: grid;
-    grid-template-columns: 15px 170px;
+    grid-template-columns: 170px 15px;
     grid-template-rows: 21px;
     background: #303030;
 }

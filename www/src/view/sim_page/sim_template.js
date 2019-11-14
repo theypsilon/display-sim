@@ -99,8 +99,8 @@ function generateTemplateFromSelectorsInput (view, selectorInput) {
             <div class="feature-pack">
                 <div class="feature-name">${selectorInput.text}</div>
                 <div class="feature-hotkeys">
-                    <sup class="hotkey hk-inc" title="Press '${selectorInput.hk.inc}' to increse the value of this field">${selectorInput.hk.inc}</sup>
-                    <sup class="hotkey hk-dec" title="Press '${selectorInput.hk.inc}' to decrease the value of this field">${selectorInput.hk.dec}</sup>
+                    <sup class="hotkey hk-inc" title="Press '${selectorInput.hk.inc}' to increse the value of this field">+: ${selectorInput.hk.inc}</sup>
+                    <sup class="hotkey hk-dec" title="Press '${selectorInput.hk.inc}' to decrease the value of this field">-: ${selectorInput.hk.dec}</sup>
                 </div>
             </div>
             <div class="feature-value input-holder">
@@ -108,17 +108,17 @@ function generateTemplateFromSelectorsInput (view, selectorInput) {
                     @mouseup="${e => { e.preventDefault(); view.dispatchKey('keyup', selectorInput.ref.eventKind + '-inc'); }}"
                     @mousedown="${e => { e.preventDefault(); view.dispatchKey('keydown', selectorInput.ref.eventKind + '-inc'); }}"
                     >
-                    <button class="button-inc-selector"
-                        >↑</button>
                     <input class="number-input feature-readonly-input" type="text"
                         title="${ifDefined(selectorInput.ref.title)}"
                         .value="${selectorInput.ref.value}"
                         >
+                    <button class="button-inc-selector"
+                        >+</button>
                 </div>
                 <button class="button-inc-dec"
                     @mouseup="${() => view.dispatchKey('keyup', selectorInput.ref.eventKind + '-dec')}"
                     @mousedown="${() => view.dispatchKey('keydown', selectorInput.ref.eventKind + '-dec')}"
-                    >↓</button>
+                    >-</button>
             </div>
         </div>
     `;
@@ -130,15 +130,11 @@ function generateTemplateFromNumberInput (view, numberInput) {
             <div class="feature-pack">
                 <div class="feature-name">${numberInput.text}</div>
                 <div class="feature-hotkeys">
-                    <sup class="hotkey hk-inc" title="Press '${numberInput.hk.inc}' to increse the value of this field">${numberInput.hk.inc}</sup>
-                    <sup class="hotkey hk-dec" title="Press '${numberInput.hk.inc}' to decrease the value of this field">${numberInput.hk.dec}</sup>
+                    <sup class="hotkey hk-inc" title="Press '${numberInput.hk.inc}' to increse the value of this field">+: ${numberInput.hk.inc}</sup>
+                    <sup class="hotkey hk-dec" title="Press '${numberInput.hk.inc}' to decrease the value of this field">-: ${numberInput.hk.dec}</sup>
                 </div>
             </div>
             <div class="feature-value input-holder">
-                <button class="button-inc-dec"
-                    @mouseup="${() => view.dispatchKey('keyup', numberInput.ref.eventKind + '-inc')}"
-                    @mousedown="${() => view.dispatchKey('keydown', numberInput.ref.eventKind + '-inc')}"
-                    >↑</button>
                 <input class="number-input feature-modificable-input" type="number" 
                     placeholder="${numberInput.placeholder}" step="${numberInput.step}" min="${numberInput.min}" max="${numberInput.max}" .value="${numberInput.ref.value}"
                     @focus="${() => view.dispatchKey('keydown', 'input_focused')}"
@@ -147,9 +143,13 @@ function generateTemplateFromNumberInput (view, numberInput) {
                     @change="${e => view.changeSyncedInput(e.target.value, numberInput.ref.eventKind)}"
                     >
                 <button class="button-inc-dec"
+                    @mouseup="${() => view.dispatchKey('keyup', numberInput.ref.eventKind + '-inc')}"
+                    @mousedown="${() => view.dispatchKey('keydown', numberInput.ref.eventKind + '-inc')}"
+                    >+</button>
+                <button class="button-inc-dec"
                     @mouseup="${() => view.dispatchKey('keyup', numberInput.ref.eventKind + '-dec')}"
                     @mousedown="${() => view.dispatchKey('keydown', numberInput.ref.eventKind + '-dec')}"
-                    >↓</button>
+                    >-</button>
             </div>
         </div>
     `;
