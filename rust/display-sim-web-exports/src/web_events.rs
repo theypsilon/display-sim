@@ -14,6 +14,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 use crate::dispatch_event::{dispatch_event, dispatch_event_with};
+use app_error::{AppError, AppResult};
 use core::app_events::AppEventDispatcher;
 use core::camera::CameraLockMode;
 use core::internal_resolution::InternalResolution;
@@ -22,7 +23,6 @@ use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurva
 use js_sys::{Array, Float32Array};
 use std::cell::RefCell;
 use std::fmt::Display;
-use app_error::{AppError, AppResult};
 use web_sys::{EventTarget, WebGl2RenderingContext};
 
 pub struct WebEventDispatcher {

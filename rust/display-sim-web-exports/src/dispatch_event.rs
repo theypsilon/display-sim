@@ -15,8 +15,8 @@
 
 use web_sys::{CustomEvent, CustomEventInit, Event, EventTarget};
 
+use app_error::AppResult;
 use wasm_bindgen::{JsCast, JsValue};
-use app_error::{AppResult};
 
 pub fn dispatch_event(event_bus: &EventTarget, kind: &str) -> AppResult<()> {
     dispatch_event_with(event_bus, kind, &"".into())
@@ -44,11 +44,8 @@ pub fn dispatch_event_with(event_bus: &EventTarget, kind: &str, value: &JsValue)
 }
 
 fn dispatch_event_internal(event_bus: &EventTarget, event: &Event) -> AppResult<()> {
-    event_bus.dispatch_event(&event).and_then(|success| {
-        if success {
-            Ok(())
-        } else {
-            Err("could not dispatch event".into())
-        }
-    }).map_err(Into::into)
+    event_bus
+        .dispatch_event(&event)
+        .and_then(|success| if success { Ok(()) } else { Err("could not dispatch event".into()) })
+        .map_err(Into::into)
 }

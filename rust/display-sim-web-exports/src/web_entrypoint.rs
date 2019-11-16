@@ -21,6 +21,7 @@ use web_sys::{CustomEvent, EventTarget, HtmlCanvasElement, KeyboardEvent, MouseE
 use crate::console;
 use crate::web_events::WebEventDispatcher;
 use crate::web_utils::{now, window};
+use app_error::{AppError, AppResult};
 use core::action_bindings::on_button_action;
 use core::camera::CameraChange;
 use core::simulation_context::{ConcreteSimulationContext, RandomGenerator, SimulationContext};
@@ -29,7 +30,6 @@ use core::simulation_core_ticker::SimulationCoreTicker;
 use glow::GlowSafeAdapter;
 use render::simulation_draw::SimulationDrawer;
 use render::simulation_render_state::{Materials, VideoInputMaterials};
-use app_error::{AppError, AppResult};
 
 pub type OwnedClosure = Option<Closure<dyn FnMut(JsValue)>>;
 

@@ -19,7 +19,7 @@ pub type AppResult<T> = std::result::Result<T, AppError>;
 
 #[derive(Clone, Debug)]
 pub struct AppError {
-    err: String
+    err: String,
 }
 
 impl AppError {
@@ -46,18 +46,18 @@ impl From<AppError> for wasm_bindgen::JsValue {
 #[cfg(target_arch = "wasm32")]
 impl From<wasm_bindgen::JsValue> for AppError {
     fn from(o: wasm_bindgen::JsValue) -> Self {
-        AppError {err: format!("{:#?}",  o) }
+        AppError { err: format!("{:#?}", o) }
     }
 }
 
 impl From<std::string::String> for AppError {
     fn from(string: std::string::String) -> Self {
-        AppError {err: string }
+        AppError { err: string }
     }
 }
 
 impl<'a> From<&'a str> for AppError {
     fn from(string: &'a str) -> Self {
-        AppError {err: string.into() }
+        AppError { err: string.into() }
     }
 }
