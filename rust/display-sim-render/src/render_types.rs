@@ -103,39 +103,45 @@ impl<GL: HasContext> TextureBufferStack<GL> {
         }
     }
 
-    pub fn set_depthbuffer(&mut self, new_value: bool) {
+    pub fn set_depthbuffer(&mut self, new_value: bool) -> AppResult<()> {
         if self.depthbuffer_active != new_value {
             self.depthbuffer_active = new_value;
-            self.reset_stack();
+            self.reset_stack()?;
         }
+        Ok(())
     }
 
-    pub fn set_resolution(&mut self, width: i32, height: i32) {
+    pub fn set_resolution(&mut self, width: i32, height: i32) -> AppResult<()> {
         if width <= 0 || height <= 0 {
-            return;
+            return Ok(());
         }
         if self.width != width || self.height != height {
             self.width = width;
             self.height = height;
-            self.reset_stack();
+            self.reset_stack()?;
         }
+        Ok(())
     }
 
-    pub fn set_interpolation(&mut self, interpolation: u32) {
+    pub fn set_interpolation(&mut self, interpolation: u32) -> AppResult<()> {
         if self.interpolation != interpolation {
             self.interpolation = interpolation;
-            self.reset_stack();
+            self.reset_stack()?;
         }
+        Ok(())
     }
 
-    fn reset_stack(&mut self) {
+    fn reset_stack(&mut self) -> AppResult<()> {
         self.cursor = 0;
         self.max_cursor = 0;
         for tb in self.stack.iter() {
-            self.gl.delete_framebuffer(tb.framebuffer().unwrap());
-            self.gl.delete_texture(tb.texture().unwrap());
+            self.gl
+                .delete_framebuffer(tb.framebuffer().ok_or_else(|| Into::<String>::into("can't access framebuffer"))?);
+            self.gl
+                .delete_texture(tb.texture().ok_or_else(|| Into::<String>::into("can't access texture"))?);
         }
         self.stack.clear();
+        Ok(())
     }
 
     pub fn push(&mut self) -> AppResult<()> {

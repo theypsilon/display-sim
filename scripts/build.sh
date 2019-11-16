@@ -4,6 +4,8 @@ set -euo pipefail
 
 cd "$(dirname $0)/.."
 
+export RUST_BACKTRACE=1
+
 build() {        
     local optimize_wasm=false
     local npm_build=false

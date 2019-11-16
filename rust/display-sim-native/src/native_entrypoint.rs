@@ -20,7 +20,7 @@ use core::general_types::Size2D;
 use core::internal_resolution::InternalResolution;
 use core::pixels_shadow::ShadowShape;
 use core::simulation_context::{ConcreteSimulationContext, RandomGenerator};
-use core::simulation_core_state::{AnimationStep, FiltersPreset, Input, Resources, VideoInputResources};
+use core::simulation_core_state::{AnimationStep, Input, Resources, VideoInputResources};
 use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, TextureInterpolation};
 use core::simulation_core_ticker::SimulationCoreTicker;
 use render::error::AppResult;
@@ -201,7 +201,10 @@ fn program() -> AppResult<()> {
         if (now - last_time) >= framerate {
             last_time = now;
 
-            SimulationCoreTicker::new(&ctx, &mut res, &mut input).tick(starting_time.elapsed().as_millis() as f64);
+            match SimulationCoreTicker::new(&ctx, &mut res, &mut input).tick(starting_time.elapsed().as_millis() as f64) {
+                Ok(_) => {}
+                Err(e) => println!("Tick error: {:?}", e),
+            };
 
             if res.drawable {
                 if let Err(e) = SimulationDrawer::new(&ctx, &mut materials, &res).draw() {
@@ -313,10 +316,9 @@ impl AppEventDispatcher for NativeEventDispatcher {
     }
     fn dispatch_fps(&self, fps: f32) {
         println!("frames in 20 seconds: {}", fps);
+        panic!("panic time");
     }
-    fn dispatch_new_frame(&self) {
-        println!("dispatch_new_frame");
-    }
+    fn dispatch_new_frame(&self) {}
     fn dispatch_request_pointer_lock(&self) {
         println!("request_pointer_lock");
         self.video_ctx.as_ref().unwrap().window().set_cursor_visible(false);

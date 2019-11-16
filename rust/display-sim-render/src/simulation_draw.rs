@@ -45,18 +45,18 @@ impl<'a> SimulationDrawer<'a> {
             self.materials.pixels_render.load_image(&self.res.video);
         }
 
-        self.materials.main_buffer_stack.set_depthbuffer(self.res.output.pixel_have_depth);
+        self.materials.main_buffer_stack.set_depthbuffer(self.res.output.pixel_have_depth)?;
 
         self.materials
             .main_buffer_stack
-            .set_resolution(self.res.filters.internal_resolution.width(), self.res.filters.internal_resolution.height());
+            .set_resolution(self.res.filters.internal_resolution.width(), self.res.filters.internal_resolution.height())?;
 
         self.materials
             .main_buffer_stack
             .set_interpolation(match self.res.filters.texture_interpolation {
                 TextureInterpolation::Linear => glow::LINEAR,
                 TextureInterpolation::Nearest => glow::NEAREST,
-            });
+            })?;
 
         self.materials.main_buffer_stack.push()?;
         self.materials.main_buffer_stack.push()?;
@@ -137,9 +137,9 @@ impl<'a> SimulationDrawer<'a> {
         gl.clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
 
         if self.res.output.showing_background {
-            self.materials.bg_buffer_stack.set_resolution(1920 / 2, 1080 / 2);
-            self.materials.bg_buffer_stack.set_depthbuffer(false);
-            self.materials.bg_buffer_stack.set_interpolation(glow::LINEAR);
+            self.materials.bg_buffer_stack.set_resolution(1920 / 2, 1080 / 2)?;
+            self.materials.bg_buffer_stack.set_depthbuffer(false)?;
+            self.materials.bg_buffer_stack.set_interpolation(glow::LINEAR)?;
             self.materials.bg_buffer_stack.push()?;
             self.materials.bg_buffer_stack.bind_current()?;
             gl.clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);

@@ -127,7 +127,7 @@ impl RandomGenerator for WebRnd {
 }
 
 fn tick(ctx: &dyn SimulationContext, input: &mut Input, res: &mut Resources, materials: &mut Materials) -> AppResult<bool> {
-    SimulationCoreTicker::new(ctx, res, input).tick(now()?);
+    SimulationCoreTicker::new(ctx, res, input).tick(now()?)?;
     if res.quit {
         console!(log. "User closed the simulation.");
         return Ok(false);

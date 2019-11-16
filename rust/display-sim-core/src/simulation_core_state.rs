@@ -290,9 +290,10 @@ impl FiltersPreset {
 #[cfg(test)]
 mod filter_presets_tests {
     use super::FiltersPreset;
+    use app_error::AppResult;
     use std::str::FromStr;
     #[test]
-    fn test_from_str_to_str() {
+    fn test_from_str_to_str() -> AppResult<()> {
         // @TODO ensure a way to have this array correctly updated automatically
         let presets: [FiltersPreset; 6] = [
             FiltersPreset::Sharp1,
@@ -303,8 +304,9 @@ mod filter_presets_tests {
             FiltersPreset::Custom,
         ];
         for preset in presets.iter() {
-            assert_eq!(FiltersPreset::from_str(preset.to_string().as_ref()).unwrap(), *preset);
+            assert_eq!(FiltersPreset::from_str(preset.to_string().as_ref())?, *preset);
         }
+        Ok(())
     }
 }
 

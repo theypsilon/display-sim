@@ -392,7 +392,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "display-sim"
 version = "0.1.0"
 dependencies = [
- "display-sim-testing 0.1.0",
+ "display-sim-native 0.1.0",
  "display-sim-web-exports 0.1.0",
 ]
 
@@ -408,6 +408,7 @@ name = "display-sim-core"
 version = "0.1.0"
 dependencies = [
  "derive-new 0.5.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "display-sim-app-error 0.1.0",
  "enum-len-derive 0.1.0",
  "enum-len-trait 0.1.0",
  "getters-by-type 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",

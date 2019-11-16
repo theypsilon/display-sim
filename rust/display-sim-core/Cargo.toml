@@ -12,3 +12,4 @@ getters-by-type = "0.2"
 enum-len-derive = { path = "../enum-len-derive" }
 enum-len-trait = { path = "../enum-len-trait" }
 derive-new = "0.5.6"
+app-error = { path = "../display-sim-app-error", package = "display-sim-app-error" }

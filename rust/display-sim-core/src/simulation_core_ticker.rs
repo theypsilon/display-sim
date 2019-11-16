@@ -22,6 +22,7 @@ use crate::simulation_core_state::{
     frontend_event, ColorChannels, Filters, FiltersPreset, Input, InputEventValue, PixelsGeometryKind, Resources, ScreenCurvatureKind, TextureInterpolation,
     PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
 };
+use app_error::AppResult;
 use derive_new::new;
 use std::str::FromStr;
 
@@ -33,10 +34,11 @@ pub struct SimulationCoreTicker<'a> {
 }
 
 impl<'a> SimulationCoreTicker<'a> {
-    pub fn tick(&mut self, now: f64) {
+    pub fn tick(&mut self, now: f64) -> AppResult<()> {
         self.pre_process_input(now);
-        SimulationUpdater::new(self.ctx, self.res, self.input).update();
+        SimulationUpdater::new(self.ctx, self.res, self.input).update()?;
         self.post_process_input();
+        Ok(())
     }
 
     fn pre_process_input(&mut self, now: f64) {
@@ -86,7 +88,7 @@ impl<'a> SimulationUpdater<'a> {
         }
     }
 
-    pub fn update(&mut self) {
+    pub fn update(&mut self) -> AppResult<()> {
         if self.res.resetted {
             self.change_frontend_input_values();
         }
@@ -97,7 +99,7 @@ impl<'a> SimulationUpdater<'a> {
         if self.input.esc.is_just_pressed() {
             self.ctx.dispatcher().dispatch_exiting_session();
             self.res.quit = true;
-            return;
+            return Ok(());
         }
 
         if self.input.space.is_just_pressed() {
@@ -105,7 +107,7 @@ impl<'a> SimulationUpdater<'a> {
         }
 
         self.update_speeds();
-        self.update_filters();
+        self.update_filters()?;
         self.update_camera();
         self.update_screenshot();
         if self.res.filters.preset_kind == FiltersPreset::DemoFlight1 {
@@ -118,6 +120,7 @@ impl<'a> SimulationUpdater<'a> {
         self.res.drawable = self.res.screenshot_trigger.is_triggered || self.res.screenshot_trigger.delay <= 0;
 
         self.ctx.dispatcher().dispatch_new_frame();
+        Ok(())
     }
 
     fn update_screenshot(&mut self) {
@@ -201,8 +204,8 @@ impl<'a> SimulationUpdater<'a> {
             .process_with_multiplications();
     }
 
-    fn update_filters(&mut self) {
-        self.update_filter_presets_from_event();
+    fn update_filters(&mut self) -> AppResult<()> {
+        self.update_filter_presets_from_event()?;
         if self.input.reset_filters {
             self.res.filters = Filters::default();
             self.res.filters.cur_pixel_width = self.res.initial_parameters.initial_pixel_width;
@@ -212,7 +215,7 @@ impl<'a> SimulationUpdater<'a> {
                 .initialize(self.res.video.viewport_size, self.res.video.max_texture_size);
             self.change_frontend_input_values();
             self.ctx.dispatcher().dispatch_top_message("All filter options have been reset.");
-            return;
+            return Ok(());
         }
         if let InputEventValue::LightColor(light_color) = self.input.custom_event.get_value(frontend_event::LIGHT_COLOR) {
             self.res.filters.light_color = *light_color;
@@ -382,17 +385,19 @@ impl<'a> SimulationUpdater<'a> {
                 self.res.custom_is_changed = true;
             }
         }
+
+        Ok(())
     }
 
-    fn update_filter_presets_from_event(&mut self) {
+    fn update_filter_presets_from_event(&mut self) -> AppResult<()> {
         let preset = if let InputEventValue::FilterPreset(preset) = self.input.custom_event.get_value(frontend_event::FILTER_PRESET) {
             preset
         } else {
-            return;
+            return Ok(());
         };
-        let preset = FromStr::from_str(preset).unwrap();
+        let preset = FromStr::from_str(preset)?;
         if self.res.filters.preset_kind == preset {
-            return;
+            return Ok(());
         }
         if self.res.filters.preset_kind == FiltersPreset::Custom && self.res.custom_is_changed {
             self.res.saved_filters = Some(self.res.filters.clone());
@@ -408,6 +413,7 @@ impl<'a> SimulationUpdater<'a> {
             self.res.custom_is_changed = false;
         }
         self.change_frontend_input_values();
+        Ok(())
     }
 
     fn update_camera(&mut self) {
