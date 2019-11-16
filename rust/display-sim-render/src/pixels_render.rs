@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-use crate::error::WebResult;
+use crate::error::AppResult;
 use crate::shaders::make_shader;
 use crate::simulation_render_state::VideoInputMaterials;
 use core::general_types::f32_to_u8;
@@ -57,7 +57,7 @@ pub struct PixelsUniform<'a> {
 }
 
 impl<GL: HasContext> PixelsRender<GL> {
-    pub fn new(gl: Rc<GlowSafeAdapter<GL>>, video_materials: VideoInputMaterials) -> WebResult<PixelsRender<GL>> {
+    pub fn new(gl: Rc<GlowSafeAdapter<GL>>, video_materials: VideoInputMaterials) -> AppResult<PixelsRender<GL>> {
         let shader = make_shader(&*gl, PIXEL_VERTEX_SHADER, PIXEL_FRAGMENT_SHADER)?;
 
         let vao = Some(gl.create_vertex_array()?);
@@ -101,7 +101,7 @@ impl<GL: HasContext> PixelsRender<GL> {
         let shadows = get_shadows()
             .iter()
             .map(|closure| Self::create_shadow_texture(&*gl, &**closure))
-            .collect::<WebResult<Vec<Option<GL::Texture>>>>()?;
+            .collect::<AppResult<Vec<Option<GL::Texture>>>>()?;
 
         Ok(PixelsRender {
             video_buffers: video_materials.buffers,
@@ -117,7 +117,7 @@ impl<GL: HasContext> PixelsRender<GL> {
         })
     }
 
-    fn create_shadow_texture(gl: &GlowSafeAdapter<GL>, weight: &dyn Fn(usize, usize) -> f64) -> WebResult<Option<GL::Texture>> {
+    fn create_shadow_texture(gl: &GlowSafeAdapter<GL>, weight: &dyn Fn(usize, usize) -> f64) -> AppResult<Option<GL::Texture>> {
         let mut texture: Vec<u8> = vec![0; TEXTURE_SIZE * TEXTURE_SIZE * 4];
         {
             for i in TEXTURE_SIZE / 2..TEXTURE_SIZE {

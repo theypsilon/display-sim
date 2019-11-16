@@ -16,13 +16,13 @@
 use web_sys::{CustomEvent, CustomEventInit, Event, EventTarget};
 
 use wasm_bindgen::{JsCast, JsValue};
-use web_error::{WebError, WebResult};
+use app_error::{AppResult};
 
-pub fn dispatch_event(event_bus: &EventTarget, kind: &str) -> WebResult<()> {
+pub fn dispatch_event(event_bus: &EventTarget, kind: &str) -> AppResult<()> {
     dispatch_event_with(event_bus, kind, &"".into())
 }
 
-pub fn dispatch_event_with(event_bus: &EventTarget, kind: &str, value: &JsValue) -> WebResult<()> {
+pub fn dispatch_event_with(event_bus: &EventTarget, kind: &str, value: &JsValue) -> AppResult<()> {
     let mut parameters = CustomEventInit::new();
     parameters.detail(
         &{
@@ -43,12 +43,12 @@ pub fn dispatch_event_with(event_bus: &EventTarget, kind: &str, value: &JsValue)
     dispatch_event_internal(event_bus, &event)
 }
 
-fn dispatch_event_internal(event_bus: &EventTarget, event: &Event) -> WebResult<()> {
-    event_bus.dispatch_event(&event).map_err(WebError::Js).and_then(|success| {
+fn dispatch_event_internal(event_bus: &EventTarget, event: &Event) -> AppResult<()> {
+    event_bus.dispatch_event(&event).and_then(|success| {
         if success {
             Ok(())
         } else {
-            Err(WebError::Str("could not dispatch event".to_string()))
+            Err("could not dispatch event".into())
         }
-    })
+    }).map_err(Into::into)
 }

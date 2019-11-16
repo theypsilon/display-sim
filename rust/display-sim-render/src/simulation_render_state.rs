@@ -15,7 +15,7 @@
 
 use crate::background_render::BackgroundRender;
 use crate::blur_render::BlurRender;
-use crate::error::WebResult;
+use crate::error::AppResult;
 use crate::internal_resolution_render::InternalResolutionRender;
 use crate::pixels_render::PixelsRender;
 use crate::render_types::TextureBufferStack;
@@ -44,7 +44,7 @@ pub struct Materials {
 }
 
 impl Materials {
-    pub fn new(gl: Rc<GlowSafeAdapter<Context>>, video: VideoInputMaterials) -> WebResult<Materials> {
+    pub fn new(gl: Rc<GlowSafeAdapter<Context>>, video: VideoInputMaterials) -> AppResult<Materials> {
         Ok(Materials {
             main_buffer_stack: TextureBufferStack::new(gl.clone()),
             bg_buffer_stack: TextureBufferStack::new(gl.clone()),

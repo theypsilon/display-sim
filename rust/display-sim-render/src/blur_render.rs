@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-use crate::error::WebResult;
+use crate::error::AppResult;
 use crate::render_types::{TextureBuffer, TextureBufferStack};
 use crate::shaders::{make_quad_vao, make_shader, TEXTURE_VERTEX_SHADER};
 
@@ -28,13 +28,13 @@ pub struct BlurRender<GL: HasContext> {
 }
 
 impl<GL: HasContext> BlurRender<GL> {
-    pub fn new(gl: Rc<GlowSafeAdapter<GL>>) -> WebResult<BlurRender<GL>> {
+    pub fn new(gl: Rc<GlowSafeAdapter<GL>>) -> AppResult<BlurRender<GL>> {
         let shader = make_shader(&*gl, TEXTURE_VERTEX_SHADER, BLUR_FRAGMENT_SHADER)?;
         let vao = make_quad_vao(&*gl, &shader)?;
         Ok(BlurRender { shader, vao, gl })
     }
 
-    pub fn render(&self, stack: &mut TextureBufferStack<GL>, source: &TextureBuffer<GL>, target: &TextureBuffer<GL>, passes: usize) -> WebResult<()> {
+    pub fn render(&self, stack: &mut TextureBufferStack<GL>, source: &TextureBuffer<GL>, target: &TextureBuffer<GL>, passes: usize) -> AppResult<()> {
         if passes < 1 {
             panic!("Should not be called when passes < 1!");
         }

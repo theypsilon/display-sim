@@ -20,7 +20,7 @@ use core::simulation_core_state::{AnimationStep, FiltersPreset, Input, Resources
 use core::simulation_core_ticker::SimulationCoreTicker;
 use render::background_render::BackgroundRender;
 use render::blur_render::BlurRender;
-use render::error::WebResult;
+use render::error::AppResult;
 use render::internal_resolution_render::InternalResolutionRender;
 use render::pixels_render::PixelsRender;
 use render::render_types::TextureBufferStack;
@@ -64,7 +64,7 @@ impl Default for FakeVideoInput {
 }
 
 impl FakeVideoInput {
-    pub fn iterate_times(self, times: u128) -> WebResult<()> {
+    pub fn iterate_times(self, times: u128) -> AppResult<()> {
         let mut res = Resources::default();
         res.initialize(self.0, 0.0);
         let gl = Rc::new(new_glow_stub());

@@ -8,5 +8,5 @@ edition = "2018"
 derive-new = "0.5.6"
 glm = { version = "0.5", package = "nalgebra-glm" }
 core = { path = "../display-sim-core", package = "display-sim-core" }
-web-error = { path = "../display-sim-web-error", package = "display-sim-web-error" }
+app-error = { path = "../display-sim-app-error", package = "display-sim-app-error" }
 glow = { path = "../glow-safe-adapter", package = "glow-safe-adapter" }

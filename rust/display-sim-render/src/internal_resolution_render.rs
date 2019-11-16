@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-use crate::error::WebResult;
+use crate::error::AppResult;
 use crate::shaders::{make_quad_vao, make_shader, TEXTURE_FRAGMENT_SHADER, TEXTURE_VERTEX_SHADER};
 
 use glow::GlowSafeAdapter;
@@ -27,7 +27,7 @@ pub struct InternalResolutionRender<GL: HasContext> {
 }
 
 impl<GL: HasContext> InternalResolutionRender<GL> {
-    pub fn new(gl: Rc<GlowSafeAdapter<GL>>) -> WebResult<InternalResolutionRender<GL>> {
+    pub fn new(gl: Rc<GlowSafeAdapter<GL>>) -> AppResult<InternalResolutionRender<GL>> {
         let shader = make_shader(&*gl, TEXTURE_VERTEX_SHADER, TEXTURE_FRAGMENT_SHADER)?;
         let vao = make_quad_vao(&*gl, &shader)?;
         Ok(InternalResolutionRender { vao, shader, gl })

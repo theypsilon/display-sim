@@ -22,11 +22,11 @@ use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurva
 use js_sys::{Array, Float32Array};
 use std::cell::RefCell;
 use std::fmt::Display;
-use web_error::{WebError, WebResult};
+use app_error::{AppError, AppResult};
 use web_sys::{EventTarget, WebGl2RenderingContext};
 
 pub struct WebEventDispatcher {
-    error: RefCell<Option<WebError>>,
+    error: RefCell<Option<AppError>>,
     extra_messages_enabled: RefCell<bool>,
     gl: WebGl2RenderingContext,
     event_bus: EventTarget,
@@ -322,14 +322,14 @@ impl WebEventDispatcher {
         self.catch_error(dispatch_event_with(&self.event_bus, id, &format!("#{:X}", color).into()));
     }
 
-    pub fn check_error(&self) -> WebResult<()> {
+    pub fn check_error(&self) -> AppResult<()> {
         if let Some(e) = self.error.borrow_mut().take() {
             return Err(e);
         }
         Ok(())
     }
 
-    fn catch_error(&self, result: WebResult<()>) {
+    fn catch_error(&self, result: AppResult<()>) {
         if self.error.borrow().is_some() {
             return;
         }

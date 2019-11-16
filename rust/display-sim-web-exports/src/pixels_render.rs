@@ -17,7 +17,7 @@ use web_sys::{WebGl2RenderingContext, WebGlBuffer, WebGlProgram, WebGlTexture, W
 
 use crate::shaders::make_shader;
 use crate::simulation_render_state::VideoInputMaterials;
-use web_error::WebResult;
+use app_error::AppResult;
 use crate::web_utils::{f32_to_u8, transform_u32_to_array_of_u8};
 use core::pixels_shadow::{get_shadows, TEXTURE_SIZE};
 use core::simulation_core_state::{PixelsGeometryKind, VideoInputResources};
@@ -55,7 +55,7 @@ pub struct PixelsUniform<'a> {
 }
 
 impl PixelsRender {
-    pub fn new(gl: &glow::Context, video_materials: VideoInputMaterials) -> WebResult<PixelsRender> {
+    pub fn new(gl: &glow::Context, video_materials: VideoInputMaterials) -> AppResult<PixelsRender> {
         let shader = make_shader(&gl, PIXEL_VERTEX_SHADER, PIXEL_FRAGMENT_SHADER)?;
 
         let vao = gl.create_vertex_array();
@@ -103,7 +103,7 @@ impl PixelsRender {
         let shadows = get_shadows()
             .iter()
             .map(|closure| Self::create_shadow_texture(gl, &**closure))
-            .collect::<WebResult<Vec<Option<WebGlTexture>>>>()?;
+            .collect::<AppResult<Vec<Option<WebGlTexture>>>>()?;
 
         Ok(PixelsRender {
             video_buffers: video_materials.buffers,
@@ -118,7 +118,7 @@ impl PixelsRender {
         })
     }
 
-    fn create_shadow_texture(gl: &glow::Context, weight: &dyn Fn(usize, usize) -> f64) -> WebResult<Option<WebGlTexture>> {
+    fn create_shadow_texture(gl: &glow::Context, weight: &dyn Fn(usize, usize) -> f64) -> AppResult<Option<WebGlTexture>> {
         let mut texture: [u8; 4 * TEXTURE_SIZE * TEXTURE_SIZE] = [0; TEXTURE_SIZE * TEXTURE_SIZE * 4];
         {
             for i in TEXTURE_SIZE / 2..TEXTURE_SIZE {

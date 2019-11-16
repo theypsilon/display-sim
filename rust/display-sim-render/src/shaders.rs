@@ -13,19 +13,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-use crate::error::WebResult;
+use crate::error::AppResult;
 use core::general_types::{f32_to_u8, i32_to_u8};
 use glow::GlowSafeAdapter;
 use glow::HasContext;
 use std::mem::size_of;
 
-pub fn make_shader<GL: HasContext>(gl: &GlowSafeAdapter<GL>, vertex_shader: &str, fragment_shader: &str) -> WebResult<GL::Program> {
+pub fn make_shader<GL: HasContext>(gl: &GlowSafeAdapter<GL>, vertex_shader: &str, fragment_shader: &str) -> AppResult<GL::Program> {
     let vert_shader = compile_shader(gl, glow::VERTEX_SHADER, vertex_shader)?;
     let frag_shader = compile_shader(gl, glow::FRAGMENT_SHADER, fragment_shader)?;
     link_shader(gl, [vert_shader, frag_shader].iter())
 }
 
-fn compile_shader<GL: HasContext>(gl: &GlowSafeAdapter<GL>, shader_type: u32, source: &str) -> WebResult<GL::Shader> {
+fn compile_shader<GL: HasContext>(gl: &GlowSafeAdapter<GL>, shader_type: u32, source: &str) -> AppResult<GL::Shader> {
     let shader = gl.create_shader(shader_type)?;
     gl.shader_source(shader, source);
     gl.compile_shader(shader);
@@ -37,7 +37,7 @@ fn compile_shader<GL: HasContext>(gl: &GlowSafeAdapter<GL>, shader_type: u32, so
     }
 }
 
-fn link_shader<'a, GL: HasContext + 'a, T: IntoIterator<Item = &'a GL::Shader>>(gl: &GlowSafeAdapter<GL>, shaders: T) -> WebResult<GL::Program> {
+fn link_shader<'a, GL: HasContext + 'a, T: IntoIterator<Item = &'a GL::Shader>>(gl: &GlowSafeAdapter<GL>, shaders: T) -> AppResult<GL::Program> {
     let program = gl.create_program()?;
     for shader in shaders {
         gl.attach_shader(program, *shader)
@@ -51,7 +51,7 @@ fn link_shader<'a, GL: HasContext + 'a, T: IntoIterator<Item = &'a GL::Shader>>(
     }
 }
 
-pub fn make_quad_vao<GL: HasContext>(gl: &GlowSafeAdapter<GL>, shader: &GL::Program) -> WebResult<Option<GL::VertexArray>> {
+pub fn make_quad_vao<GL: HasContext>(gl: &GlowSafeAdapter<GL>, shader: &GL::Program) -> AppResult<Option<GL::VertexArray>> {
     let vao = gl.create_vertex_array()?;
     gl.bind_vertex_array(Some(vao));
 

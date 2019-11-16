@@ -13,13 +13,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-use web_error::WebResult;
+use app_error::AppResult;
 use web_sys::Window;
 
-pub fn window() -> WebResult<Window> {
+pub fn window() -> AppResult<Window> {
     Ok(web_sys::window().ok_or("cannot access window")?)
 }
 
-pub fn now() -> WebResult<f64> {
+pub fn now() -> AppResult<f64> {
     Ok(window()?.performance().ok_or("cannot access performance")?.now())
 }

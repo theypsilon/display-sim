@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-use crate::error::WebResult;
+use crate::error::AppResult;
 use crate::shaders::{make_quad_vao, make_shader, TEXTURE_VERTEX_SHADER};
 
 use glow::GlowSafeAdapter;
@@ -27,7 +27,7 @@ pub struct RgbRender<GL: HasContext> {
 }
 
 impl<GL: HasContext> RgbRender<GL> {
-    pub fn new(gl: Rc<GlowSafeAdapter<GL>>) -> WebResult<RgbRender<GL>> {
+    pub fn new(gl: Rc<GlowSafeAdapter<GL>>) -> AppResult<RgbRender<GL>> {
         let shader = make_shader(&*gl, TEXTURE_VERTEX_SHADER, RGB_FRAGMENT_SHADER)?;
         let vao = make_quad_vao(&*gl, &shader)?;
         Ok(RgbRender { vao, shader, gl })

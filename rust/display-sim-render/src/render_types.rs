@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-use crate::error::WebResult;
+use crate::error::AppResult;
 use glow::GlowSafeAdapter;
 use glow::HasContext;
 use std::rc::Rc;
@@ -38,7 +38,7 @@ impl<GL: HasContext> std::clone::Clone for TextureBuffer<GL> {
 }
 
 impl<GL: HasContext> TextureBuffer<GL> {
-    pub fn new(gl: &GlowSafeAdapter<GL>, width: i32, height: i32, interpolation: u32) -> WebResult<TextureBuffer<GL>> {
+    pub fn new(gl: &GlowSafeAdapter<GL>, width: i32, height: i32, interpolation: u32) -> AppResult<TextureBuffer<GL>> {
         let framebuffer = Some(gl.create_framebuffer()?);
         gl.bind_framebuffer(glow::FRAMEBUFFER, framebuffer);
 
@@ -60,7 +60,7 @@ impl<GL: HasContext> TextureBuffer<GL> {
         })
     }
 
-    pub fn new_with_depthbuffer(gl: &GlowSafeAdapter<GL>, width: i32, height: i32, interpolation: u32) -> WebResult<TextureBuffer<GL>> {
+    pub fn new_with_depthbuffer(gl: &GlowSafeAdapter<GL>, width: i32, height: i32, interpolation: u32) -> AppResult<TextureBuffer<GL>> {
         let depthbuffer = Some(gl.create_renderbuffer()?);
         let texture_buffer = Self::new(gl, width, height, interpolation)?;
         gl.bind_renderbuffer(glow::RENDERBUFFER, depthbuffer);
@@ -138,7 +138,7 @@ impl<GL: HasContext> TextureBufferStack<GL> {
         self.stack.clear();
     }
 
-    pub fn push(&mut self) -> WebResult<()> {
+    pub fn push(&mut self) -> AppResult<()> {
         if self.stack.len() == self.cursor {
             let tb = if self.depthbuffer_active {
                 TextureBuffer::new_with_depthbuffer(&*self.gl, self.width, self.height, self.interpolation)?
@@ -154,27 +154,27 @@ impl<GL: HasContext> TextureBufferStack<GL> {
         Ok(())
     }
 
-    pub fn pop(&mut self) -> WebResult<()> {
+    pub fn pop(&mut self) -> AppResult<()> {
         self.get_current()?;
         self.cursor -= 1;
         Ok(())
     }
 
-    pub fn bind_current(&self) -> WebResult<()> {
+    pub fn bind_current(&self) -> AppResult<()> {
         let current = self.get_current()?;
         self.gl.bind_framebuffer(glow::FRAMEBUFFER, current.framebuffer());
         self.gl.viewport(0, 0, self.width, self.height);
         Ok(())
     }
 
-    pub fn get_current(&self) -> WebResult<&TextureBuffer<GL>> {
+    pub fn get_current(&self) -> AppResult<&TextureBuffer<GL>> {
         if self.cursor == 0 {
             return Err("Bad texture buffer stack access on cursor == 0.".into());
         }
         Ok(&self.stack[self.cursor - 1])
     }
 
-    pub fn get_nth(&self, n: i32) -> WebResult<&TextureBuffer<GL>> {
+    pub fn get_nth(&self, n: i32) -> AppResult<&TextureBuffer<GL>> {
         let index = self.cursor as i32 + n - 1;
         if index < 0 || index >= self.stack.len() as i32 {
             return Err(format!("Bad texture buffer sttack access on index == {}", index).into());
@@ -182,7 +182,7 @@ impl<GL: HasContext> TextureBufferStack<GL> {
         Ok(&self.stack[index as usize])
     }
 
-    pub fn assert_no_stack(&self) -> WebResult<()> {
+    pub fn assert_no_stack(&self) -> AppResult<()> {
         if self.cursor != 0 {
             return Err(format!("Texture buffer stack cursor not zero, '{}' instead.", self.cursor).into());
         }

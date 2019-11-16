@@ -23,7 +23,7 @@ use core::simulation_context::{ConcreteSimulationContext, RandomGenerator};
 use core::simulation_core_state::{AnimationStep, FiltersPreset, Input, Resources, VideoInputResources};
 use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, TextureInterpolation};
 use core::simulation_core_ticker::SimulationCoreTicker;
-use render::error::WebResult;
+use render::error::AppResult;
 use render::simulation_draw::SimulationDrawer;
 use render::simulation_render_state::{Materials, VideoInputMaterials};
 
@@ -55,7 +55,7 @@ impl RandomGenerator for NativeRnd {
     }
 }
 
-fn program() -> WebResult<()> {
+fn program() -> AppResult<()> {
     println!("Initializing Window.");
     let el = EventLoop::new();
     let monitor = el.primary_monitor();

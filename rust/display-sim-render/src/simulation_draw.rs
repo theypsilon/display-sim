@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-use crate::error::WebResult;
+use crate::error::AppResult;
 use crate::pixels_render::PixelsUniform;
 use crate::simulation_render_state::Materials;
 use core::simulation_context::SimulationContext;
@@ -34,7 +34,7 @@ impl<'a> SimulationDrawer<'a> {
         SimulationDrawer { ctx, materials, res }
     }
 
-    pub fn draw(&mut self) -> WebResult<()> {
+    pub fn draw(&mut self) -> AppResult<()> {
         if !self.res.video.drawing_activation {
             return Ok(());
         }
@@ -220,7 +220,7 @@ impl<'a> SimulationDrawer<'a> {
     }
 }
 
-fn check_error(gl: &GlowSafeAdapter<glow::Context>, line: u32) -> WebResult<()> {
+fn check_error(gl: &GlowSafeAdapter<glow::Context>, line: u32) -> AppResult<()> {
     let error = gl.get_error();
     if error != glow::NO_ERROR {
         return Err(format!("{} on line: {}", error, line).into());

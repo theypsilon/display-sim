@@ -29,7 +29,7 @@ use core::simulation_core_ticker::SimulationCoreTicker;
 use glow::GlowSafeAdapter;
 use render::simulation_draw::SimulationDrawer;
 use render::simulation_render_state::{Materials, VideoInputMaterials};
-use web_error::{WebError, WebResult};
+use app_error::{AppError, AppResult};
 
 pub type OwnedClosure = Option<Closure<dyn FnMut(JsValue)>>;
 
@@ -56,7 +56,7 @@ pub fn web_entrypoint(
     res: Rc<RefCell<Resources>>,
     video_input_resources: VideoInputResources,
     video_input_materials: VideoInputMaterials,
-) -> WebResult<()> {
+) -> AppResult<()> {
     let canvas = canvas
         .dyn_into::<HtmlCanvasElement>()
         .map_err(|_| String::from("Could not convert to Canvas"))?;
@@ -77,13 +77,13 @@ pub fn web_entrypoint(
         Closure::wrap(Box::new(move |_| {
             let mut ctx = ConcreteSimulationContext::new(WebEventDispatcher::new(webgl.clone(), event_bus.clone()), WebRnd {});
             if let Err(e) = web_entrypoint_iteration(&owned_state, &window, &mut ctx) {
-                console!(error. "An unexpected error happened during web_entrypoint_iteration.", e.into_js());
+                console!(error. "An unexpected error happened during web_entrypoint_iteration.", e);
                 ctx.dispatcher().dispatch_exiting_session();
                 ctx.dispatcher()
                     .dispatch_top_message("Error! Try restarting your browser. Contact me if this problem persists!");
             }
             if let Err(e) = ctx.dispatcher_instance.check_error() {
-                console!(error. "Error dispatching some events: ", e.into_js());
+                console!(error. "Error dispatching some events: ", e);
             }
         }))
     };
@@ -97,11 +97,11 @@ pub fn web_entrypoint(
     Ok(())
 }
 
-pub fn print_error(e: WebError) {
-    console!(error. "An unexpected error ocurred.", e.into_js());
+pub fn print_error(e: AppError) {
+    console!(error. "An unexpected error ocurred.", e);
 }
 
-fn web_entrypoint_iteration(owned_state: &StateOwner, window: &Window, ctx: &mut dyn SimulationContext) -> WebResult<()> {
+fn web_entrypoint_iteration(owned_state: &StateOwner, window: &Window, ctx: &mut dyn SimulationContext) -> AppResult<()> {
     let mut input = owned_state.input.borrow_mut();
     let mut resources = owned_state.resources.borrow_mut();
     let mut materials = owned_state.materials.borrow_mut();
@@ -126,7 +126,7 @@ impl RandomGenerator for WebRnd {
     }
 }
 
-fn tick(ctx: &dyn SimulationContext, input: &mut Input, res: &mut Resources, materials: &mut Materials) -> WebResult<bool> {
+fn tick(ctx: &dyn SimulationContext, input: &mut Input, res: &mut Resources, materials: &mut Materials) -> AppResult<bool> {
     SimulationCoreTicker::new(ctx, res, input).tick(now()?);
     if res.quit {
         console!(log. "User closed the simulation.");
@@ -138,7 +138,7 @@ fn tick(ctx: &dyn SimulationContext, input: &mut Input, res: &mut Resources, mat
     Ok(true)
 }
 
-fn set_event_listeners(event_bus: EventTarget, state_owner: &Rc<StateOwner>) -> WebResult<Vec<OwnedClosure>> {
+fn set_event_listeners(event_bus: EventTarget, state_owner: &Rc<StateOwner>) -> AppResult<Vec<OwnedClosure>> {
     let onblur: Closure<dyn FnMut(JsValue)> = {
         let state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |_: JsValue| {
@@ -223,7 +223,7 @@ fn set_event_listeners(event_bus: EventTarget, state_owner: &Rc<StateOwner>) -> 
         Closure::wrap(Box::new(move |event: JsValue| {
             let mut input = state_owner.input.borrow_mut();
             if let Err(e) = read_frontend_event(&mut input, event) {
-                console!(error. "Could not read custom event.", e.into_js());
+                console!(error. "Could not read custom event.", e);
             }
         }))
     };
@@ -250,13 +250,12 @@ fn set_event_listeners(event_bus: EventTarget, state_owner: &Rc<StateOwner>) -> 
     Ok(closures)
 }
 
-pub fn read_frontend_event(input: &mut Input, event: JsValue) -> WebResult<()> {
+pub fn read_frontend_event(input: &mut Input, event: JsValue) -> AppResult<()> {
     let event = event.dyn_into::<CustomEvent>()?;
     let object = event.detail();
     let value = js_sys::Reflect::get(&object, &"message".into())?;
-    let frontend_event = js_sys::Reflect::get(&object, &"type".into())?
-        .as_string()
-        .ok_or_else(|| WebError::Str("Could not get kind".into()))?;
+    let frontend_event: AppResult<String> = js_sys::Reflect::get(&object, &"type".into())?.as_string().ok_or("Could not get kind".into());
+    let frontend_event = frontend_event?;
     let event_value = match frontend_event.as_ref() as &str {
         frontend_event::FILTER_PRESET => InputEventValue::FilterPreset(value.as_string().ok_or("it should be a string")?),
         frontend_event::PIXEL_BRIGHTNESS => InputEventValue::PixelBrighttness(value.as_f64().ok_or("it should be a number")? as f32),

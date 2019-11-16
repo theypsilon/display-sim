@@ -26,5 +26,5 @@ pub mod simulation_draw;
 pub mod simulation_render_state;
 
 pub mod error {
-    pub use web_error::*;
+    pub use app_error::*;
 }
