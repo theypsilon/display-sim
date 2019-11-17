@@ -33,8 +33,9 @@ use std::time::{Duration, Instant};
 
 use glutin::event::{ElementState, Event, MouseButton, MouseScrollDelta, VirtualKeyCode, WindowEvent};
 use glutin::event_loop::{ControlFlow, EventLoop};
+use glutin::monitor::MonitorHandle;
 use glutin::window::{Fullscreen, WindowBuilder};
-use glutin::{ContextBuilder, GlProfile, GlRequest, PossiblyCurrent, Robustness, WindowedContext};
+use glutin::{ContextBuilder, ContextError, GlProfile, GlRequest, PossiblyCurrent, Robustness, WindowedContext};
 
 use glow::GlowSafeAdapter;
 
@@ -71,7 +72,7 @@ fn program() -> AppResult<()> {
         .with_resizable(true)
         .with_title("Display Sim");
 
-    let windowed_context = ContextBuilder::new()
+    let windowed_ctx = ContextBuilder::new()
         .with_gl(GlRequest::Latest)
         .with_gl_profile(GlProfile::Core)
         .with_gl_robustness(Robustness::NotRobust)
@@ -83,10 +84,10 @@ fn program() -> AppResult<()> {
         .build_windowed(wb, &winit_loop)
         .map_err(|e| format!("{}", e))?;
 
-    let windowed_context = unsafe { windowed_context.make_current().map_err(|e| format!("Context Error: {:?}", e))? };
-    let windowed_context = Rc::new(windowed_context);
-    let gl_ctx = glow::Context::from_loader_function(|ptr| windowed_context.context().get_proc_address(ptr) as *const _);
-    println!("Pixel format of the window's GL context: {:?}", windowed_context.get_pixel_format());
+    let windowed_ctx = unsafe { windowed_ctx.make_current().map_err(|e| format!("Context Error: {:?}", e))? };
+    let windowed_ctx = Rc::new(windowed_ctx);
+    let gl_ctx = glow::Context::from_loader_function(|ptr| windowed_ctx.context().get_proc_address(ptr) as *const _);
+    println!("Pixel format of the window's GL context: {:?}", windowed_ctx.get_pixel_format());
 
     let img_path = "www/assets/pics/frames/seiken.png";
     println!("Loading image: {}", img_path);
@@ -123,39 +124,85 @@ fn program() -> AppResult<()> {
     let mut res = Resources::default();
     res.initialize(res_input, 0.0);
     println!("Preparing materials.");
-    let mut materials = Materials::new(Rc::new(GlowSafeAdapter::new(gl_ctx)), materials_input)?;
+    let materials = Materials::new(Rc::new(GlowSafeAdapter::new(gl_ctx)), materials_input)?;
 
     println!("Preparing input.");
-    let mut input = Input::new(0.0);
+    let input = Input::new(0.0);
     println!("Preparing simulation context.");
-    let ctx = ConcreteSimulationContext::new(NativeEventDispatcher::new(windowed_context.clone()), NativeRnd {});
+    let sim_ctx = ConcreteSimulationContext::new(NativeEventDispatcher::new(windowed_ctx.clone()), NativeRnd {});
 
     let starting_time = Instant::now();
     let framerate = Duration::from_secs_f64(1.0 / 60.0);
-    let mut last_time = starting_time - framerate;
 
-    winit_loop.run(move |event, _, control_flow| {
+    let mut state = NativeSimulationState::new(sim_ctx, windowed_ctx, monitor, res, input, materials, starting_time, framerate);
+
+    winit_loop.run(move |event, _, control_flow| match state.iteration(event, control_flow) {
+        Ok(()) => {}
+        Err(e) => {
+            println!("Main iteration error: {}", e);
+            *control_flow = ControlFlow::Exit;
+        }
+    });
+}
+
+struct NativeSimulationState {
+    sim_ctx: ConcreteSimulationContext<NativeEventDispatcher, NativeRnd>,
+    windowed_ctx: Rc<WindowedContext<PossiblyCurrent>>,
+    monitor: MonitorHandle,
+    res: Resources,
+    input: Input,
+    materials: Materials,
+    starting_time: Instant,
+    framerate: Duration,
+    last_time: Instant,
+}
+
+impl NativeSimulationState {
+    pub fn new(
+        sim_ctx: ConcreteSimulationContext<NativeEventDispatcher, NativeRnd>,
+        windowed_ctx: Rc<WindowedContext<PossiblyCurrent>>,
+        monitor: MonitorHandle,
+        res: Resources,
+        input: Input,
+        materials: Materials,
+        starting_time: Instant,
+        framerate: Duration,
+    ) -> Self {
+        NativeSimulationState {
+            sim_ctx,
+            windowed_ctx,
+            monitor,
+            res,
+            input,
+            materials,
+            starting_time,
+            framerate,
+            last_time: starting_time - framerate,
+        }
+    }
+
+    pub fn iteration(&mut self, event: Event<()>, control_flow: &mut ControlFlow) -> Result<(), ContextError> {
         *control_flow = ControlFlow::Poll;
 
         match event {
-            Event::LoopDestroyed => return,
+            Event::LoopDestroyed => return Ok(()),
             Event::WindowEvent { ref event, .. } => match event {
                 WindowEvent::Resized(size) => {
-                    let dpi_factor = windowed_context.window().hidpi_factor();
-                    windowed_context.resize(size.to_physical(dpi_factor));
+                    let dpi_factor = self.windowed_ctx.window().hidpi_factor();
+                    self.windowed_ctx.resize(size.to_physical(dpi_factor));
 
                     println!("Size changed: ({}, {})", size.width, size.height);
-                    res.video.viewport_size.width = (size.width * dpi_factor) as u32;
-                    res.video.viewport_size.height = (size.height * dpi_factor) as u32;
+                    self.res.video.viewport_size.width = (size.width * dpi_factor) as u32;
+                    self.res.video.viewport_size.height = (size.height * dpi_factor) as u32;
                 }
                 WindowEvent::RedrawRequested => {
                     println!("Redraw Requested!!");
-                    windowed_context.swap_buffers().unwrap();
+                    self.windowed_ctx.swap_buffers()?;
                 }
                 WindowEvent::KeyboardInput { input: keyevent, .. } => {
                     if let Some(key) = keyevent.virtual_keycode {
                         read_key(
-                            &mut input,
+                            &mut self.input,
                             key,
                             match keyevent.state {
                                 ElementState::Pressed => true,
@@ -166,29 +213,29 @@ fn program() -> AppResult<()> {
                 }
                 WindowEvent::MouseInput { button, state, .. } => {
                     if *button == MouseButton::Left {
-                        input.mouse_click.input = match state {
+                        self.input.mouse_click.input = match state {
                             ElementState::Pressed => true,
                             ElementState::Released => false,
                         };
-                        if input.mouse_click.input
-                            && match windowed_context.window().fullscreen() {
+                        if self.input.mouse_click.input
+                            && match self.windowed_ctx.window().fullscreen() {
                                 None => true,
                                 _ => false,
                             }
                         {
-                            windowed_context.window().set_fullscreen(Some(Fullscreen::Borderless(monitor.clone())));
+                            self.windowed_ctx.window().set_fullscreen(Some(Fullscreen::Borderless(self.monitor.clone())));
                         }
                     }
                 }
                 WindowEvent::MouseWheel { delta, .. } => {
-                    input.mouse_scroll_y = match delta {
+                    self.input.mouse_scroll_y = match delta {
                         MouseScrollDelta::LineDelta(y, ..) => *y,
                         MouseScrollDelta::PixelDelta(position) => position.y as f32,
                     };
                 }
                 WindowEvent::CursorMoved { position, .. } => {
-                    input.mouse_position_x = position.x as i32;
-                    input.mouse_position_y = position.y as i32;
+                    self.input.mouse_position_x = position.x as i32;
+                    self.input.mouse_position_y = position.y as i32;
                 }
                 WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                 _ => (),
@@ -197,28 +244,29 @@ fn program() -> AppResult<()> {
         }
 
         let now = Instant::now();
-        if (now - last_time) >= framerate {
-            last_time = now;
+        if (now - self.last_time) >= self.framerate {
+            self.last_time = now;
 
-            match SimulationCoreTicker::new(&ctx, &mut res, &mut input).tick(starting_time.elapsed().as_millis() as f64) {
+            match SimulationCoreTicker::new(&self.sim_ctx, &mut self.res, &mut self.input).tick(self.starting_time.elapsed().as_millis() as f64) {
                 Ok(_) => {}
                 Err(e) => println!("Tick error: {:?}", e),
             };
 
-            if res.drawable {
-                if let Err(e) = SimulationDrawer::new(&ctx, &mut materials, &res).draw() {
+            if self.res.drawable {
+                if let Err(e) = SimulationDrawer::new(&self.sim_ctx, &mut self.materials, &self.res).draw() {
                     println!("Draw error: {:?}", e);
                 }
             }
 
-            if res.quit {
+            if self.res.quit {
                 println!("User closed the simulation.");
                 *control_flow = ControlFlow::Exit;
             }
 
-            windowed_context.swap_buffers().unwrap();
+            self.windowed_ctx.swap_buffers()?;
         }
-    });
+        Ok(())
+    }
 }
 
 pub fn read_key(input: &mut Input, key: VirtualKeyCode, pressed: bool) {
@@ -234,9 +282,7 @@ struct NativeEventDispatcher {
 
 impl NativeEventDispatcher {
     pub fn new(video_ctx: Rc<WindowedContext<PossiblyCurrent>>) -> Self {
-        NativeEventDispatcher {
-            video_ctx
-        }
+        NativeEventDispatcher { video_ctx }
     }
 }
 
