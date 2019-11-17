@@ -128,8 +128,7 @@ fn program() -> AppResult<()> {
     println!("Preparing input.");
     let mut input = Input::new(0.0);
     println!("Preparing simulation context.");
-    let mut ctx = ConcreteSimulationContext::new(NativeEventDispatcher::default(), NativeRnd {});
-    ctx.dispatcher_instance.video_ctx = Some(windowed_context.clone());
+    let ctx = ConcreteSimulationContext::new(NativeEventDispatcher::new(windowed_context.clone()), NativeRnd {});
 
     let starting_time = Instant::now();
     let framerate = Duration::from_secs_f64(1.0 / 60.0);
@@ -229,9 +228,16 @@ pub fn read_key(input: &mut Input, key: VirtualKeyCode, pressed: bool) {
     }
 }
 
-#[derive(Default)]
 struct NativeEventDispatcher {
-    video_ctx: Option<Rc<WindowedContext<PossiblyCurrent>>>,
+    video_ctx: Rc<WindowedContext<PossiblyCurrent>>,
+}
+
+impl NativeEventDispatcher {
+    pub fn new(video_ctx: Rc<WindowedContext<PossiblyCurrent>>) -> Self {
+        NativeEventDispatcher {
+            video_ctx
+        }
+    }
 }
 
 impl AppEventDispatcher for NativeEventDispatcher {
@@ -316,16 +322,15 @@ impl AppEventDispatcher for NativeEventDispatcher {
     }
     fn dispatch_fps(&self, fps: f32) {
         println!("frames in 20 seconds: {}", fps);
-        panic!("panic time");
     }
     fn dispatch_new_frame(&self) {}
     fn dispatch_request_pointer_lock(&self) {
         println!("request_pointer_lock");
-        self.video_ctx.as_ref().unwrap().window().set_cursor_visible(false);
+        self.video_ctx.window().set_cursor_visible(false);
     }
     fn dispatch_exit_pointer_lock(&self) {
         println!("exit_pointer_lock");
-        self.video_ctx.as_ref().unwrap().window().set_cursor_visible(true);
+        self.video_ctx.window().set_cursor_visible(true);
     }
     fn dispatch_change_preset_selected(&self, preset_name: &str) {
         println!("dispatch_change_preset_selected: {}", preset_name);
