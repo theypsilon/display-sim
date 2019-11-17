@@ -57,8 +57,8 @@ impl RandomGenerator for NativeRnd {
 
 fn program() -> AppResult<()> {
     println!("Initializing Window.");
-    let el = EventLoop::new();
-    let monitor = el.primary_monitor();
+    let winit_loop = EventLoop::new();
+    let monitor = winit_loop.primary_monitor();
     let hidpi = monitor.hidpi_factor();
     let mut window_size = monitor.size().to_logical(hidpi);
     window_size.width *= 0.8;
@@ -80,7 +80,7 @@ fn program() -> AppResult<()> {
         .with_vsync(false)
         .with_multisampling(4)
         .with_depth_buffer(24)
-        .build_windowed(wb, &el)
+        .build_windowed(wb, &winit_loop)
         .map_err(|e| format!("{}", e))?;
 
     let windowed_context = unsafe { windowed_context.make_current().map_err(|e| format!("Context Error: {:?}", e))? };
@@ -134,7 +134,7 @@ fn program() -> AppResult<()> {
     let framerate = Duration::from_secs_f64(1.0 / 60.0);
     let mut last_time = starting_time - framerate;
 
-    el.run(move |event, _, control_flow| {
+    winit_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
 
         match event {
