@@ -101,18 +101,20 @@
 }
 
 .menu-1 {
-    padding-left: 2em;
     width: 397px;
     font-family:"Lucida Grande", sans-serif;
     font-size:16.5px;
     font-weight: 400;
     height: 27px;
     color:rgb(140, 140, 140);
+}
+
+.favicon {
+    padding-left: 2em;
     background-image: url('../../../../assets/favicon2.ico');
     background-size: 20px 20px;
     background-repeat: no-repeat;
     background-position: 2%;
-    filter: grayscale(100%);
 }
 
 .menu-2 {

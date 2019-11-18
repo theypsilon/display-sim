@@ -153,7 +153,7 @@ export function model (store) {
                         { type: 'button-input', class: 'menu-2 menu-blc-yellow', text: 'Take Screenshot', ref: options.capture_framebuffer }
                     ]
                 },
-                { type: 'button-input', class: 'menu-1 menu-blc-grey', text: 'Back to Landing Page', ref: options.quit_simulation }
+                { type: 'button-input', class: 'menu-1 menu-blc-grey favicon', text: 'Back to Landing Page', ref: options.quit_simulation }
             ]
         }
     };        
