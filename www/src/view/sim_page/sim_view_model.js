@@ -136,13 +136,13 @@ export function model (store) {
                 },
                 {
                     type: 'menu',
-                    text: 'Velocity',
+                    text: 'Command Modifiers',
                     open: false,
                     entries: [
                         { type: 'selectors-input', class: 'menu-2 menu-blc-red', text: 'Camera speed', hk: { inc: 'F', dec: 'R' }, ref: options.move_speed },
                         { type: 'selectors-input', class: 'menu-2 menu-blc-blue', text: 'Filter speed', hk: { inc: 'Shift + F', dec: 'Shift + R' }, ref: options.pixel_speed },
                         { type: 'selectors-input', class: 'display-none', text: 'Turn speed', hk: { inc: 'Alt + F', dec: 'Alt + R' }, ref: options.turn_speed },
-                        { type: 'button-input', class: 'menu-2 menu-blc-grey', text: 'Reset Speeds', ref: options.reset_speeds }
+                        { type: 'button-input', class: 'menu-2 menu-blc-grey', text: 'Reset Modifiers', ref: options.reset_speeds }
                     ]
                 },
                 {
@@ -385,7 +385,7 @@ export class View {
         this._isDirty = true;
     }
     changePixelSpeed (msg) {
-        this._state.options.pixel_spread.value = msg;
+        this._state.options.pixel_speed.value = msg;
         this._isDirty = true;
     }
     changeTurningSpeed (msg) {
