@@ -234,42 +234,6 @@ export class View {
         this._state.options.presets.selected = msg;
         this._isDirty = true;
     }
-    fireScreenshot (msg) {
-        (async () => {
-            const arrayBuffer = msg[0];
-            const multiplier = msg[1];
-        
-            const width = 1920 * 2 * multiplier;
-            const height = 1080 * 2 * multiplier;
-            var canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-            var ctx = canvas.getContext('2d');
-        
-            var imageData = ctx.createImageData(width, height);
-            imageData.data.set(arrayBuffer);
-            ctx.putImageData(imageData, 0, 0);
-            ctx.globalCompositeOperation = 'copy';
-            ctx.scale(1, -1); // Y flip
-            ctx.translate(0, -imageData.height);
-            ctx.drawImage(canvas, 0, 0);
-            ctx.setTransform(1, 0, 0, 1, 0, 0);
-            ctx.globalCompositeOperation = 'source-over';
-        
-            const a = document.createElement('a');
-            document.body.appendChild(a);
-            a.classList.add('no-display');
-            const blob = await new Promise(resolve => canvas.toBlob(resolve));
-            const url = URL.createObjectURL(blob);
-            a.href = url;
-            a.download = 'Display-Sim_' + new Date().toISOString() + '.png';
-            a.click();
-            setTimeout(() => {
-                URL.revokeObjectURL(url);
-                a.remove();
-            }, 3000);
-        })();
-    }
     updateCameraMatrix (msg) {
         this._state.options.camera_matrix.pos.x.value = Math.round(msg[0] * 100) / 100;
         this._state.options.camera_matrix.pos.y.value = Math.round(msg[1] * 100) / 100;

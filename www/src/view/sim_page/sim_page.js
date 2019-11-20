@@ -115,21 +115,13 @@ function setupEventHandling (canvas, observers, view, store) {
         switch (e.type) {
         case 'front2front:toggleControls': return view.toggleControls();
         case 'front2front:toggleMenu': return view.toggleMenu(msg);
-        case 'front2front:clickPreset': {
-            view.clickPreset(msg);
-            if (msg !== Constants.PRESET_KIND_CUSTOM) {
-                store.setItem(Constants.FILTERS_PRESET_STORE_KEY, msg);
-            }
-            fireBackendEvent(Constants.FILTER_PRESETS_SELECTED_EVENT_KIND, msg);
-            break;
-        }
         case 'front2front:dispatchKey': return fireBackendEvent('keyboard', { pressed: msg.action === 'keydown', key: msg.key });
         case 'front2front:changeSyncedInput': return fireBackendEvent(msg.value, msg.kind);
         case 'back2front:new_frame': return view.newFrame(msg);
         case 'back2front:top_message': return view.openTopMessage(msg);
         case 'back2front:request_pointer_lock': return view.requestPointerLock(msg);
         case 'back2front:preset_selected_name': return view.presetSelectedName(msg);
-        case 'back2front:screenshot': return view.fireScreenshot(msg);
+        case 'back2front:screenshot': return fireScreenshot();
         case 'back2front:camera_update': return view.updateCameraMatrix(msg);
         case 'back2front:toggle_info_panel': return view.toggleInfoPanel(msg);
         case 'back2front:fps': return view.changeFps(msg);
@@ -159,6 +151,14 @@ function setupEventHandling (canvas, observers, view, store) {
         case 'back2front:internal_resolution': return view.changeInternalResolution(msg);
         case 'back2front:texture_interpolation': return view.changeTextureInterpolation(msg);
         case 'back2front:screen_curvature': return view.changeScreenCurvature(msg);
+        case 'front2front:clickPreset': {
+            view.clickPreset(msg);
+            if (msg !== Constants.PRESET_KIND_CUSTOM) {
+                store.setItem(Constants.FILTERS_PRESET_STORE_KEY, msg);
+            }
+            fireBackendEvent(Constants.FILTER_PRESETS_SELECTED_EVENT_KIND, msg);
+            break;
+        }
         default: throw new Error('Not covered following event: ', e.type, e);
         }
     });
@@ -200,4 +200,39 @@ function fixCanvasSize (canvas) {
     canvas.style.height = window.innerHeight + 0.5;
 
     Logger.log('resolution:', canvas.width, canvas.height, width, height);
+}
+
+async function fireScreenshot () {
+    const arrayBuffer = msg[0];
+    const multiplier = msg[1];
+
+    const width = 1920 * 2 * multiplier;
+    const height = 1080 * 2 * multiplier;
+    var canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    var ctx = canvas.getContext('2d');
+
+    var imageData = ctx.createImageData(width, height);
+    imageData.data.set(arrayBuffer);
+    ctx.putImageData(imageData, 0, 0);
+    ctx.globalCompositeOperation = 'copy';
+    ctx.scale(1, -1); // Y flip
+    ctx.translate(0, -imageData.height);
+    ctx.drawImage(canvas, 0, 0);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalCompositeOperation = 'source-over';
+
+    const a = document.createElement('a');
+    document.body.appendChild(a);
+    a.classList.add('no-display');
+    const blob = await new Promise(resolve => canvas.toBlob(resolve));
+    const url = URL.createObjectURL(blob);
+    a.href = url;
+    a.download = 'Display-Sim_' + new Date().toISOString() + '.png';
+    a.click();
+
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    URL.revokeObjectURL(url);
+    a.remove();
 }
