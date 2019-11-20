@@ -112,7 +112,7 @@ function setupEventHandling (canvas, observers, view, store) {
         const msg = e.message;
         switch (e.type) {
         case 'front2front:dispatchKey': {
-            let pressed = undefined;
+            let pressed;
             switch (msg.action) {
             case 'keydown': pressed = true; break;
             case 'keyup': pressed = false; break;
@@ -124,7 +124,7 @@ function setupEventHandling (canvas, observers, view, store) {
                 setTimeout(() => fireBackendEvent('keyboard', { pressed: false, key: msg.key }), 200);
             }
             break;
-        };
+        }
         case 'front2front:changeSyncedInput': return fireBackendEvent(msg.value, msg.kind);
         case 'front2front:toggleControls': return view.toggleControls();
         case 'front2front:toggleMenu': return view.toggleMenu(msg);
