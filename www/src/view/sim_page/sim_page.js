@@ -51,8 +51,14 @@ window.customElements.define('sim-page', SimPage);
 
 function setupPage (root, state, store, launcher, messenger, observers) {
     const [view, canvas] = setupView(state, root, observers.front);
-    setupSimulation(canvas, messenger, launcher, view, observers);
-    return setupEventHandling(canvas, observers, view, store);
+    setupSimulation(canvas, messenger, launcher, view, {
+        subscribe: cb => observers.back.subscribe(cb),
+        fire: msg => observers.front.fire(msg)
+    });
+    return setupEventHandling(canvas, view, store, {
+        subscribe: cb => observers.front.subscribe(cb),
+        fire: msg => observers.back.fire(msg)
+    });
 }
 
 function setupView (state, root, frontendObserver) {
@@ -64,12 +70,12 @@ function setupView (state, root, frontendObserver) {
     return [view, root.getElementById('gl-canvas-id')];
 }
 
-function setupSimulation (canvas, messenger, launcher, view, observers) {
+function setupSimulation (canvas, messenger, launcher, view, eventBus) {
     fixCanvasSize(canvas);
     messenger.consumeInbox('sim-page').forEach(async msg => {
         switch (msg.topic) {
         case 'launch': {
-            const result = await launcher.launch(canvas, observers, msg.launcherParams);
+            const result = await launcher.launch(canvas, eventBus, msg.launcherParams);
             if (result.glError) {
                 view.showFatalError('WebGL2 is not working on your browser, try restarting it! And remember, this works only on a PC with updated browser and graphics drivers.');
                 return;
@@ -98,17 +104,17 @@ function fireEventOn (observer) {
     };
 }
 
-function setupEventHandling (canvas, observers, view, store) {
+function setupEventHandling (canvas, view, store, eventBus) {
     function fireBackendEvent (kind, msg) {
         const event = {
             message: msg,
             type: 'front2back:' + kind
         };
-        observers.back.fire(event);
+        eventBus.fire(event);
     }
 
     // Listening backend events
-    observers.front.subscribe(e => {
+    eventBus.subscribe(e => {
         const msg = e.message;
         switch (e.type) {
         case 'front2front:dispatchKey': {

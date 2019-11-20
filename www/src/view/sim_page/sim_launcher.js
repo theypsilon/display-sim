@@ -24,7 +24,7 @@ export class Launcher {
         return new Launcher();
     }
 
-    async launch (canvas, observers, params) {
+    async launch (canvas, eventBus, params) {
         Logger.log('gl context form', params.ctxOptions);
         const gl = canvas.getContext('webgl2', params.ctxOptions);
 
@@ -67,10 +67,6 @@ export class Launcher {
         }
 
         Logger.log('calling wasm run_program');
-        const eventBus = {
-            subscribe: cb => observers.back.subscribe(cb),
-            fire: msg => observers.front.fire(msg)
-        };
         displaySim.run_program(gl, eventBus, simulationResources, videoInput);
         Logger.log('wasm run_program done');
 
