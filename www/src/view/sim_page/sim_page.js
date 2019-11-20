@@ -169,8 +169,8 @@ function setupEventHandling (canvas, observers, view, store) {
     }
 
     // Forwarding keyboard events so it can be readed by the backend
-    addDomListener(canvas, 'keydown', e => fireBackendEvent('keyboard', { pressed: true, key: e.key }));
-    addDomListener(canvas, 'keyup', e => fireBackendEvent('keyboard', { pressed: false, key: e.key }));
+    addDomListener(window, 'keydown', e => fireBackendEvent('keyboard', { pressed: true, key: e.key }));
+    addDomListener(window, 'keyup', e => fireBackendEvent('keyboard', { pressed: false, key: e.key }));
     addDomListener(canvas, 'mousedown', e => e.buttons === 1 && fireBackendEvent('mouse_click', true));
     addDomListener(window, 'mouseup', () => fireBackendEvent('mouse_click', false)); // note this one goes to 'window'. It doesn't work with 'canvas' because of some obscure bug I didn't figure out yet.
     addDomListener(canvas, 'mousemove', e => fireBackendEvent('mouse_move', { x: e.movementX, y: e.movementY }));

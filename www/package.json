@@ -17,22 +17,18 @@
     "eslint-plugin-node": "^8.0.1",
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.1",
-    "esm": "^3.2.25",
     "file-loader": "^3.0.1",
     "fontfaceobserver": "^2.1.0",
+    "fastgif": "^0.1.1",
     "html-webpack-plugin": "^3.2.0",
     "lit-html": "^1.1.2",
     "mini-css-extract-plugin": "^0.5.0",
     "mocha": "^6.2.2",
     "sinon": "^7.5.0",
-    "style-loader": "^0.23.1",
     "url-loader": "^2.1.0",
     "webpack": "^4.41.0",
     "webpack-cli": "^3.3.9",
     "webpack-dev-server": "^3.8.1",
     "webpack-merge": "^4.2.2"
-  },
-  "dependencies": {
-    "fastgif": "^0.1.1"
   }
 }
