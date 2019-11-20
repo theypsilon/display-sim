@@ -116,13 +116,14 @@ function setupEventHandling (canvas, observers, view, store) {
             switch (msg.action) {
             case 'keydown': pressed = true; break;
             case 'keyup': pressed = false; break;
-            case 'keyboth': pressed = true; break;
+            case 'keyboth': {
+                pressed = true;
+                setTimeout(() => fireBackendEvent('keyboard', { pressed: false, key: msg.key }), 250);
+                break;
+            }
             default: throw new Error('Incorrect action for dispatchKey', msg.action);
             }
             fireBackendEvent('keyboard', { pressed, key: msg.key });
-            if (msg.action === 'keyboth') {
-                setTimeout(() => fireBackendEvent('keyboard', { pressed: false, key: msg.key }), 200);
-            }
             break;
         }
         case 'front2front:changeSyncedInput': return fireBackendEvent(msg.value, msg.kind);
