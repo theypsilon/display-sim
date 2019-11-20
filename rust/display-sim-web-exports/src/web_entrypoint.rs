@@ -16,13 +16,12 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
-use web_sys::{CustomEvent, EventTarget, HtmlCanvasElement, KeyboardEvent, MouseEvent, WebGl2RenderingContext, WheelEvent, Window};
+use web_sys::{WebGl2RenderingContext, Window};
 
 use crate::console;
 use crate::web_events::WebEventDispatcher;
 use crate::web_utils::{now, window};
 use app_error::{AppError, AppResult};
-use core::action_bindings::on_button_action;
 use core::camera::CameraChange;
 use core::simulation_context::{ConcreteSimulationContext, RandomGenerator, SimulationContext};
 use core::simulation_core_state::{frontend_event, Input, InputEventValue, Resources, VideoInputResources};
@@ -52,20 +51,14 @@ impl StateOwner {
 }
 
 pub fn web_entrypoint(
-    canvas: JsValue,
+    webgl: JsValue,
+    frontend_observer: JsValue,
+    backend_observer: JsValue,
     res: Rc<RefCell<Resources>>,
     video_input_resources: VideoInputResources,
     video_input_materials: VideoInputMaterials,
 ) -> AppResult<()> {
-    let canvas = canvas
-        .dyn_into::<HtmlCanvasElement>()
-        .map_err(|_| String::from("Could not convert to Canvas"))?;
-    let webgl = canvas
-        .get_context("webgl2")?
-        .ok_or("Could not get WebGL2 Context")?
-        .dyn_into::<WebGl2RenderingContext>()
-        .map_err(|_| String::from("Something wrong with WebGL2 Context"))?;
-    let event_bus = canvas.dyn_into::<EventTarget>().map_err(|_| "Could not cast gl-canvas-id")?;
+    let webgl = webgl.dyn_into::<WebGl2RenderingContext>()?;
 
     res.borrow_mut().initialize(video_input_resources, now()?);
     let gl = Rc::new(GlowSafeAdapter::new(glow::Context::from_webgl2_context(webgl.clone())));
@@ -73,9 +66,9 @@ pub fn web_entrypoint(
     let frame_closure: Closure<dyn FnMut(JsValue)> = {
         let owned_state = Rc::clone(&owned_state);
         let window = window()?;
-        let event_bus = event_bus.clone();
+        let frontend_observer = frontend_observer.clone();
         Closure::wrap(Box::new(move |_| {
-            let mut ctx = ConcreteSimulationContext::new(WebEventDispatcher::new(webgl.clone(), event_bus.clone()), WebRnd {});
+            let mut ctx = ConcreteSimulationContext::new(WebEventDispatcher::new(webgl.clone(), frontend_observer.clone()), WebRnd {});
             if let Err(e) = web_entrypoint_iteration(&owned_state, &window, &mut ctx) {
                 console!(error. "An unexpected error happened during web_entrypoint_iteration.", e);
                 ctx.dispatcher().dispatch_exiting_session();
@@ -91,7 +84,7 @@ pub fn web_entrypoint(
     let mut closures = owned_state.closures.borrow_mut();
     closures.push(Some(frame_closure));
 
-    let listeners = set_event_listeners(event_bus, &owned_state)?;
+    let listeners = set_event_listeners(backend_observer, &owned_state)?;
     closures.extend(listeners);
 
     Ok(())
@@ -138,86 +131,7 @@ fn tick(ctx: &dyn SimulationContext, input: &mut Input, res: &mut Resources, mat
     Ok(true)
 }
 
-fn set_event_listeners(event_bus: EventTarget, state_owner: &Rc<StateOwner>) -> AppResult<Vec<OwnedClosure>> {
-    let onblur: Closure<dyn FnMut(JsValue)> = {
-        let state_owner = Rc::clone(&state_owner);
-        Closure::wrap(Box::new(move |_: JsValue| {
-            let mut input = state_owner.input.borrow_mut();
-            *input = Input::new(now().unwrap_or(0.0));
-        }))
-    };
-
-    let onkeydown: Closure<dyn FnMut(JsValue)> = {
-        let state_owner = Rc::clone(&state_owner);
-        Closure::wrap(Box::new(move |event: JsValue| {
-            if let Ok(e) = event.dyn_into::<KeyboardEvent>() {
-                let mut input = state_owner.input.borrow_mut();
-                // console!(log. format!("Keydown: {} {}", e.key(), state_owner.resources.borrow_mut().timers.frame_count));
-                let used = on_button_action(&mut input, e.key().to_lowercase().as_ref(), true);
-                if !used {
-                    console!(log. format!("Ignored keydown: {}", e.key()));
-                }
-            }
-        }))
-    };
-
-    let onkeyup: Closure<dyn FnMut(JsValue)> = {
-        let state_owner = Rc::clone(&state_owner);
-        Closure::wrap(Box::new(move |event: JsValue| {
-            if let Ok(e) = event.dyn_into::<KeyboardEvent>() {
-                let mut input = state_owner.input.borrow_mut();
-                // console!(log. format!("Keyup: {} {}", e.key(), state_owner.resources.borrow_mut().timers.frame_count));
-                let used = on_button_action(&mut input, e.key().to_lowercase().as_ref(), false);
-                if !used {
-                    console!(log. format!("Ignored keyup: {}", e.key()));
-                }
-            }
-        }))
-    };
-
-    let onmousedown: Closure<dyn FnMut(JsValue)> = {
-        let state_owner = Rc::clone(&state_owner);
-        Closure::wrap(Box::new(move |event: JsValue| {
-            if let Ok(e) = event.dyn_into::<MouseEvent>() {
-                let mut input = state_owner.input.borrow_mut();
-                input.mouse_click.input = e.buttons() == 1;
-            }
-        }))
-    };
-
-    let onmouseup: Closure<dyn FnMut(JsValue)> = {
-        let state_owner = Rc::clone(&state_owner);
-        Closure::wrap(Box::new(move |event: JsValue| {
-            if event.dyn_into::<MouseEvent>().is_ok() {
-                let mut input = state_owner.input.borrow_mut();
-                input.mouse_click.input = false;
-            }
-        }))
-    };
-
-    let onmousemove: Closure<dyn FnMut(JsValue)> = {
-        let state_owner = Rc::clone(&state_owner);
-        Closure::wrap(Box::new(move |event: JsValue| {
-            if let Ok(e) = event.dyn_into::<MouseEvent>() {
-                let mut input = state_owner.input.borrow_mut();
-                input.mouse_position_x = e.movement_x();
-                input.mouse_position_y = e.movement_y();
-            }
-        }))
-    };
-
-    let onmousewheel: Closure<dyn FnMut(JsValue)> = {
-        let state_owner = Rc::clone(&state_owner);
-        Closure::wrap(Box::new(move |event: JsValue| {
-            if let Ok(e) = event.dyn_into::<WheelEvent>() {
-                let mut input = state_owner.input.borrow_mut();
-                if input.canvas_focused {
-                    input.mouse_scroll_y = e.delta_y() as f32;
-                }
-            }
-        }))
-    };
-
+fn set_event_listeners(backend_observer: JsValue, state_owner: &Rc<StateOwner>) -> AppResult<Vec<OwnedClosure>> {
     let onfrontendevent: Closure<dyn FnMut(JsValue)> = {
         let state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |event: JsValue| {
@@ -227,36 +141,33 @@ fn set_event_listeners(event_bus: EventTarget, state_owner: &Rc<StateOwner>) -> 
             }
         }))
     };
-
-    event_bus.add_event_listener_with_callback("blur", onblur.as_ref().unchecked_ref())?;
-    event_bus.add_event_listener_with_callback("keydown", onkeydown.as_ref().unchecked_ref())?;
-    event_bus.add_event_listener_with_callback("keyup", onkeyup.as_ref().unchecked_ref())?;
-    event_bus.add_event_listener_with_callback("mousedown", onmousedown.as_ref().unchecked_ref())?;
-    event_bus.add_event_listener_with_callback("mouseup", onmouseup.as_ref().unchecked_ref())?;
-    event_bus.add_event_listener_with_callback("mousemove", onmousemove.as_ref().unchecked_ref())?;
-    event_bus.add_event_listener_with_callback("mousewheel", onmousewheel.as_ref().unchecked_ref())?;
-    event_bus.add_event_listener_with_callback("display-sim-event:frontend-channel", onfrontendevent.as_ref().unchecked_ref())?;
-
-    let mut closures: Vec<OwnedClosure> = vec![];
-    closures.push(Some(onblur));
-    closures.push(Some(onkeydown));
-    closures.push(Some(onkeyup));
-    closures.push(Some(onmousedown));
-    closures.push(Some(onmouseup));
-    closures.push(Some(onmousemove));
-    closures.push(Some(onmousewheel));
-    closures.push(Some(onfrontendevent));
-
-    Ok(closures)
+    let subscribe = js_sys::Reflect::get(&backend_observer, &"subscribe".into())?.dyn_into::<js_sys::Function>()?;
+    let args = js_sys::Array::new();
+    args.push(onfrontendevent.as_ref().unchecked_ref());
+    subscribe.apply(&backend_observer, &args)?;
+    Ok(vec![Some(onfrontendevent)])
 }
 
-pub fn read_frontend_event(input: &mut Input, event: JsValue) -> AppResult<()> {
-    let event = event.dyn_into::<CustomEvent>()?;
-    let object = event.detail();
+pub fn read_frontend_event(input: &mut Input, object: JsValue) -> AppResult<()> {
     let value = js_sys::Reflect::get(&object, &"message".into())?;
     let frontend_event: AppResult<String> = js_sys::Reflect::get(&object, &"type".into())?.as_string().ok_or("Could not get kind".into());
     let frontend_event = frontend_event?;
     let event_value = match frontend_event.as_ref() as &str {
+        frontend_event::KEYBOARD => {
+            let pressed = js_sys::Reflect::get(&value, &"pressed".into())?.as_bool().ok_or("it should be a bool")?;
+            let key = js_sys::Reflect::get(&value, &"key".into())?
+                .as_string()
+                .ok_or_else(|| format!("it should be a string, but was {:?}", value))?;
+            InputEventValue::Keyboard { pressed, key }
+        }
+        frontend_event::MOUSE_CLICK => InputEventValue::MouseClick(value.as_bool().ok_or("it should be a bool")?),
+        frontend_event::MOUSE_MOVE => {
+            let x = js_sys::Reflect::get(&value, &"x".into())?.as_f64().ok_or("it should be a number")? as i32;
+            let y = js_sys::Reflect::get(&value, &"y".into())?.as_f64().ok_or("it should be a number")? as i32;
+            InputEventValue::MouseMove { x, y }
+        }
+        frontend_event::MOUSE_WHEEL => InputEventValue::MouseWheel(value.as_f64().ok_or("it should be a number")? as f32),
+        frontend_event::BLURRED_WINDOW => InputEventValue::BlurredWindow,
         frontend_event::FILTER_PRESET => InputEventValue::FilterPreset(value.as_string().ok_or("it should be a string")?),
         frontend_event::PIXEL_BRIGHTNESS => InputEventValue::PixelBrighttness(value.as_f64().ok_or("it should be a number")? as f32),
         frontend_event::PIXEL_CONTRAST => InputEventValue::PixelContrast(value.as_f64().ok_or("it should be a number")? as f32),
@@ -283,6 +194,6 @@ pub fn read_frontend_event(input: &mut Input, event: JsValue) -> AppResult<()> {
         frontend_event::CAMERA_DIRECTION_Z => InputEventValue::Camera(CameraChange::DirectionZ(value.as_f64().ok_or("it should be a number")? as f32)),
         _ => InputEventValue::None,
     };
-    input.custom_event.add_value(frontend_event, event_value);
+    input.custom_event.add_value(event_value);
     Ok(())
 }

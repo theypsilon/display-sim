@@ -18,8 +18,6 @@ import { mobileAndTabletCheck } from '../../services/utils';
 import { Navigator } from '../../services/navigator';
 import { Visibility } from '../../services/visibility';
 
-import { playHtmlSelection } from './play_simulation';
-
 export function model (store) {
     return {
         images: [
@@ -64,119 +62,56 @@ function makeOptions (store) {
 }
 
 export class View {
-    constructor (state, page, store, navigator, visibility) {
+    constructor (state, refresh, store, navigator, visibility) {
         this._state = state;
-        this._page = page;
+        this._refresh = refresh;
         this._store = store;
-        this._Constants = Constants;
         this._navigator = navigator;
         this._visibility = visibility;
-        this._isDirty = true;
     }
 
-    static make (state, page, store, navigator, visibility) {
-        return new View(state, page, store, navigator || Navigator.make(), visibility || Visibility.make());
+    static make (state, refresh, store, navigator, visibility) {
+        return new View(state, refresh, store, navigator || Navigator.make(), visibility || Visibility.make());
     }
 
-    makeItVisible () {
+    turnVisibilityOn () {
         this._state.visible = true;
-        this._page.refresh();
+        this._refresh();
         this._visibility.hideLoading();
+    }
+
+    turnVisibilityOff () {
+        this._visibility.showLoading();
+        this._state.visible = false;
+        this._refresh();
+    }
+
+    showError (message) {
+        this._navigator.openTopMessage(message);
     }
 
     selectImage (idx) {
         this._state.imageSelection = idx;
-        this._page.refresh();
+        this._refresh();
     }
 
-    selectPerformance (e) {
-        this._state.options.performanceSelection = e.target.value;
-        this._page.refresh();
+    addImage (image) {
+        this._state.images.push(image);
+        this.selectImage(this._state.images.length - 1);
     }
 
-    selectScaling (e) {
-        this._state.options.scalingSelection = e.target.value;
-        this._page.refresh();
+    selectPerformance (value) {
+        this._state.options.performanceSelection = value;
+        this._refresh();
     }
 
-    clickRestoreDefaultOptions () {
-        this._store.removeAllOptions();
-        this._state.options = makeOptions(this._store, this._Constants);
-        this._page.refresh();
+    selectScaling (value) {
+        this._state.options.scalingSelection = value;
+        this._refresh();
     }
 
-    clickDropZone () {
-        this._page.getRoot().getElementById('file').click();
-    }
-
-    dropOnDropZone (e) {
-        e.stopPropagation();
-        e.preventDefault();
-        this._uploadFile(e.dataTransfer.files[0]);
-    }
-
-    dragOverDropZone (e) {
-        e.stopPropagation();
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'copy';
-    }
-
-    changedFileInput (e) {
-        this._uploadFile(e.target.files[0]);
-    }
-
-    clickPlaySimulation () {
-        this._visibility.showLoading();
-        this._state.visible = false;
-        this._page.refresh();
-        this._store.setAntiAliasing(this._state.options.antialias);
-        this._store.setPowerPreferenceSelectOption(this._state.options.performanceSelection);
-        this._store.setScalingSelectOption(this._state.options.scalingSelection);
-        if (this._state.options.scalingSelection === 'scaling-custom') {
-            this._store.setCustomResWidth(this._state.options.scalingCustom.resolution.width);
-            this._store.setCustomResHeight(this._state.options.scalingCustom.resolution.height);
-            this._store.setCustomArX(this._state.options.scalingCustom.aspectRatio.x);
-            this._store.setCustomArY(this._state.options.scalingCustom.aspectRatio.y);
-            this._store.setCustomStretchNearest(this._state.options.scalingCustom.stretchNearest);
-        }
-        playHtmlSelection(this._state);
-    }
-
-    _uploadFile (file) {
-        const url = (window.URL || window.webkitURL).createObjectURL(file);
-        this._handleFileToUpload(url).then(() => this.selectImage(this._state.images.length - 1));
-    }
-
-    async _handleFileToUpload (url) {
-        try {
-            await this._processFileToUpload(url);
-        } catch (e) {
-            console.error(e);
-            this._navigator.openTopMessage('That file could not be loaded, try again with a picture.');
-        }
-    }
-
-    async _processFileToUpload (url) {
-        var xhr = new XMLHttpRequest();
-        await new Promise((resolve, reject) => {
-            xhr.onload = resolve;
-            xhr.onerror = reject;
-            xhr.open('GET', url, true);
-            xhr.responseType = 'blob';
-            xhr.send(null);
-        });
-
-        const previewUrl = URL.createObjectURL(xhr.response);
-        const img = new Image();
-        await new Promise((resolve, reject) => {
-            img.onload = resolve;
-            img.onerror = reject;
-            img.setAttribute('crossOrigin', '');
-            img.src = previewUrl;
-        });
-
-        img.isGif = xhr.response.type === 'image/gif';
-
-        this._state.images.push({ width: img.width, height: img.height, src: previewUrl, hq: previewUrl, img });
+    clickRestoreDefaultOptions (store) {
+        this._state.options = makeOptions(store);
+        this._refresh();
     }
 }

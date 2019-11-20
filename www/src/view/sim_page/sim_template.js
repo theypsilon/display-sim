@@ -18,11 +18,11 @@ import { ifDefined } from 'lit-html/directives/if-defined';
 
 const css = require('!css-loader!./css/sim_page.css').toString();
 
-export function renderTemplate (state, view, root) {
-    render(generateSimTemplate(state, view), root);
+export function renderTemplate (state, fire, root) {
+    render(generateSimTemplate(state, fire), root);
 }
 
-function generateSimTemplate (state, view) {
+function generateSimTemplate (state, fire) {
     return html`
         <style>
             ${css}
@@ -30,61 +30,55 @@ function generateSimTemplate (state, view) {
         <canvas id="gl-canvas-id" tabindex=0></canvas>
         <div id="simulation-ui">
             <div id="fps-counter">${state.fps}</div>
-            ${state.menu.visible ? html`
-                <div id="info-panel">
-                    ${state.menu.open ? html`
-                        <div id="info-panel-content">
-                            ${state.menu.entries.map(entry => generateTemplateFromGenericEntry(view, entry))}
-                        </div>
-                        ` : ''}
-                    <div id="info-panel-toggle" 
-                        class="collapse-button collapse-controller" 
-                        @click="${() => view.toggleControls()}">${state.menu.controlsText}</div>
+            <div id="info-panel" class="${state.menu.visible ? '' : 'display-none'}">
+                <div id="info-panel-content" class="${state.menu.open ? '' : 'display-none'}">
+                    ${state.menu.entries.map(entry => generateTemplateFromGenericEntry(fire, entry))}
                 </div>
-            ` : ''}
+                <div id="info-panel-toggle" 
+                    class="collapse-button collapse-controller" 
+                    @click="${() => fire('toggleControls')}">${state.menu.controlsText}</div>
+            </div>
         </div>
     `;
 }
 
-function generateTemplateFromGenericEntry (view, entry) {
+function generateTemplateFromGenericEntry (fire, entry) {
     switch (entry.type) {
-    case 'menu': return generateTemplateFromMenu(view, entry);
-    case 'preset-buttons': return generateTemplateFromPresetButtons(view, entry);
-    case 'button-input': return generateTemplateFromButtonInput(view, entry);
-    case 'selectors-input': return generateTemplateFromSelectorsInput(view, entry);
-    case 'number-input': return generateTemplateFromNumberInput(view, entry);
-    case 'color-input': return generateTemplateFromColorInput(view, entry);
-    case 'camera-input': return generateTemplateFromCameraInput(view, entry);
+    case 'menu': return generateTemplateFromMenu(fire, entry);
+    case 'preset-buttons': return generateTemplateFromPresetButtons(fire, entry);
+    case 'button-input': return generateTemplateFromButtonInput(fire, entry);
+    case 'selectors-input': return generateTemplateFromSelectorsInput(fire, entry);
+    case 'number-input': return generateTemplateFromNumberInput(fire, entry);
+    case 'color-input': return generateTemplateFromColorInput(fire, entry);
+    case 'camera-input': return generateTemplateFromCameraInput(fire, entry);
     default: throw new Error('Entry type ' + entry.type + ' not handled.');
     }
 }
 
-function generateTemplateFromMenu (view, menu) {
+function generateTemplateFromMenu (fire, menu) {
     return html`
-        <div class="collapse-button collapse-top-menu ${menu.open ? 'not-collapsed' : 'collapsed'}" @click="${() => view.toggleMenu(menu)}">${menu.text}</div>
-        ${menu.open ? html`
-            <div class="info-category">
-                ${menu.entries.map(entry => generateTemplateFromGenericEntry(view, entry))}
-            </div>
-        ` : ''}
+        <div class="collapse-button collapse-top-menu ${menu.open ? 'not-collapsed' : 'collapsed'}" @click="${() => fire('toggleMenu', menu)}">${menu.text}</div>
+        <div class="info-category ${menu.open ? '' : 'display-none'}">
+            ${menu.entries.map(entry => generateTemplateFromGenericEntry(fire, entry))}
+        </div>
     `;
 }
 
-function generateTemplateFromPresetButtons (view, presetButtons) {
+function generateTemplateFromPresetButtons (fire, presetButtons) {
     return html`
         <div class="preset-list ${presetButtons.class}">
             ${presetButtons.ref.choices.map(choices => html`
                 <a class="btn preset-btn ${presetButtons.ref.selected === choices.preset ? 'active-preset' : ''}" data-preset="${choices.preset}" href="#"
-                    @click="${() => view.clickPreset(choices.preset)}"
+                    @click="${() => fire('clickPreset', choices.preset)}"
                     >${choices.text}</a>
             `)}
         </div>
     `;
 }
 
-function generateTemplateFromButtonInput (view, buttonInput) {
+function generateTemplateFromButtonInput (fire, buttonInput) {
     return html`
-        <div class="menu-entry menu-button ${buttonInput.class}" @click="${() => view.dispatchKey('keydown', buttonInput.ref.eventKind)}">
+        <div class="menu-entry menu-button ${buttonInput.class}" @click="${() => fire('dispatchKey', { action: 'keydown', key: buttonInput.ref.eventKind })}">
             <div class="feature-pack">
                 <div class="feature-name">${buttonInput.text}</div>
             </div>
@@ -93,7 +87,7 @@ function generateTemplateFromButtonInput (view, buttonInput) {
     `;
 }
 
-function generateTemplateFromSelectorsInput (view, selectorInput) {
+function generateTemplateFromSelectorsInput (fire, selectorInput) {
     return html`
         <div class="menu-entry ${selectorInput.class}">
             <div class="feature-pack">
@@ -105,8 +99,8 @@ function generateTemplateFromSelectorsInput (view, selectorInput) {
             </div>
             <div class="feature-value input-holder">
                 <div class="selector-inc"
-                    @mouseup="${e => { e.preventDefault(); view.dispatchKey('keyup', selectorInput.ref.eventKind + '-inc'); }}"
-                    @mousedown="${e => { e.preventDefault(); view.dispatchKey('keydown', selectorInput.ref.eventKind + '-inc'); }}"
+                    @mouseup="${e => { e.preventDefault(); fire('dispatchKey', { action: 'keyup', key: selectorInput.ref.eventKind + '-inc' }); }}"
+                    @mousedown="${e => { e.preventDefault(); fire('dispatchKey', { action: 'keydown', key: selectorInput.ref.eventKind + '-inc' }); }}"
                     >
                     <input class="number-input feature-readonly-input" type="text"
                         title="${ifDefined(selectorInput.ref.title)}"
@@ -116,15 +110,15 @@ function generateTemplateFromSelectorsInput (view, selectorInput) {
                         >+</button>
                 </div>
                 <button class="button-inc-dec"
-                    @mouseup="${() => view.dispatchKey('keyup', selectorInput.ref.eventKind + '-dec')}"
-                    @mousedown="${() => view.dispatchKey('keydown', selectorInput.ref.eventKind + '-dec')}"
+                    @mouseup="${() => fire('dispatchKey', { action: 'keyup', key: selectorInput.ref.eventKind + '-dec' })}"
+                    @mousedown="${() => fire('dispatchKey', { action: 'keydown', key: selectorInput.ref.eventKind + '-dec' })}"
                     >-</button>
             </div>
         </div>
     `;
 }
 
-function generateTemplateFromNumberInput (view, numberInput) {
+function generateTemplateFromNumberInput (fire, numberInput) {
     return html`
         <div class="menu-entry ${numberInput.class}">
             <div class="feature-pack">
@@ -137,25 +131,25 @@ function generateTemplateFromNumberInput (view, numberInput) {
             <div class="feature-value input-holder">
                 <input class="number-input feature-modificable-input" type="number" 
                     placeholder="${numberInput.placeholder}" step="${numberInput.step}" min="${numberInput.min}" max="${numberInput.max}" .value="${numberInput.ref.value}"
-                    @focus="${() => view.dispatchKey('keydown', 'input_focused')}"
-                    @blur="${() => view.dispatchKey('keyup', 'input_focused')}"
+                    @focus="${() => fire('dispatchKey', { action: 'keydown', key: 'input_focused' })}"
+                    @blur="${() => fire('dispatchKey', { action: 'keyup', key: 'input_focused' })}"
                     @keypress="${e => e.charCode === 13 /* ENTER */ && e.target.blur()}"
-                    @change="${e => view.changeSyncedInput(e.target.value, numberInput.ref.eventKind)}"
+                    @change="${e => fire('changeSyncedInput', { value: e.target.value, kind: numberInput.ref.eventKind })}"
                     >
                 <button class="button-inc-dec"
-                    @mouseup="${() => view.dispatchKey('keyup', numberInput.ref.eventKind + '-inc')}"
-                    @mousedown="${() => view.dispatchKey('keydown', numberInput.ref.eventKind + '-inc')}"
+                    @mouseup="${() => fire('dispatchKey', { action: 'keyup', key: numberInput.ref.eventKind + '-inc' })}"
+                    @mousedown="${() => fire('dispatchKey', { action: 'keydown', key: numberInput.ref.eventKind + '-inc' })}"
                     >+</button>
                 <button class="button-inc-dec"
-                    @mouseup="${() => view.dispatchKey('keyup', numberInput.ref.eventKind + '-dec')}"
-                    @mousedown="${() => view.dispatchKey('keydown', numberInput.ref.eventKind + '-dec')}"
+                    @mouseup="${() => fire('dispatchKey', { action: 'keyup', key: numberInput.ref.eventKind + '-dec' })}"
+                    @mousedown="${() => fire('dispatchKey', { action: 'keydown', key: numberInput.ref.eventKind + '-dec' })}"
                     >-</button>
             </div>
         </div>
     `;
 }
 
-function generateTemplateFromColorInput (view, colorInput) {
+function generateTemplateFromColorInput (fire, colorInput) {
     return html`
         <div class="menu-entry ${colorInput.class}">
             <div class="feature-pack">
@@ -163,59 +157,59 @@ function generateTemplateFromColorInput (view, colorInput) {
             </div>
             <div class="feature-value input-holder">
                 <input class="feature-button" type="color" .value="${colorInput.ref.value}"
-                    @change="${e => view.changeSyncedInput(parseInt('0x' + e.target.value.substring(1)), colorInput.ref.eventKind)}"
+                    @change="${e => fire('changeSyncedInput', { value: parseInt('0x' + e.target.value.substring(1)), kind: colorInput.ref.eventKind })}"
                     >
             </div>
         </div>
     `;
 }
 
-function generateTemplateFromCameraInput (view, cameraInput) {
+function generateTemplateFromCameraInput (fire, cameraInput) {
     return html`
         <div class="menu-dual-entry-container">
             <div class="menu-dual-entry-item menu-dual-entry-1 ${cameraInput.class}">
                 <div class="feature-name">Translation</div>
                 <div id="feature-camera-movements" class="arrows-grid ${cameraInput.ref.free ? 'arrows-grid-move-free' : 'arrows-grid-move-lock'}">
-                    <div></div><div class="input-cell">${generateTemplateArrowKey(view, 'W')}</div><div></div><div></div><div class="input-cell">${cameraInput.ref.free ? generateTemplateArrowKey(view, 'Q') : ''}</div>
-                    <div class="input-cell">${generateTemplateArrowKey(view, 'A')}</div><div class="input-cell">${generateTemplateArrowKey(view, 'S')}</div><div class="input-cell">${generateTemplateArrowKey(view, 'D')}</div><div></div><div>${cameraInput.ref.free ? generateTemplateArrowKey(view, 'E') : ''}</div>
+                    <div></div><div class="input-cell">${generateTemplateArrowKey(fire, 'W')}</div><div></div><div></div><div class="input-cell">${cameraInput.ref.free ? generateTemplateArrowKey(fire, 'Q') : ''}</div>
+                    <div class="input-cell">${generateTemplateArrowKey(fire, 'A')}</div><div class="input-cell">${generateTemplateArrowKey(fire, 'S')}</div><div class="input-cell">${generateTemplateArrowKey(fire, 'D')}</div><div></div><div>${cameraInput.ref.free ? generateTemplateArrowKey(fire, 'E') : ''}</div>
                 </div>
             </div>
             <div class="menu-dual-entry-item menu-dual-entry-2">
                 <div class="feature-name">Rotation</div>
                 <div id="feature-camera-turns" class="arrows-grid arrows-grid-turn">
-                        <div></div><div>${generateTemplateArrowKey(view, '↑')}</div><div></div><div></div><div>${generateTemplateArrowKey(view, '+')}</div><div class="rotator">⟳</div>
-                        <div>${generateTemplateArrowKey(view, '←')}</div><div>${generateTemplateArrowKey(view, '↓')}</div><div>${generateTemplateArrowKey(view, '→')}</div><div></div><div>${generateTemplateArrowKey(view, '-')}</div><div class="rotator">⟲</div>
+                        <div></div><div>${generateTemplateArrowKey(fire, '↑')}</div><div></div><div></div><div>${generateTemplateArrowKey(fire, '+')}</div><div class="rotator">⟳</div>
+                        <div>${generateTemplateArrowKey(fire, '←')}</div><div>${generateTemplateArrowKey(fire, '↓')}</div><div>${generateTemplateArrowKey(fire, '→')}</div><div></div><div>${generateTemplateArrowKey(fire, '-')}</div><div class="rotator">⟲</div>
                 </div>
             </div>
         </div>
         <div class="camera-matrix input-holder">
             <div class="matrix-row ${cameraInput.class}"></div><div class="matrix-top-row"><label class="text-center">X</label></div><div class="matrix-top-row"><label class="text-center">Y</label></div><div class="matrix-top-row"><label class="text-center">Z</label></div>
             <div class="matrix-row ${cameraInput.class}"><div class="matrix-row-head">positon</div></div>
-                ${[cameraInput.ref.pos.x, cameraInput.ref.pos.y, cameraInput.ref.pos.z].map(ref => generateTemplateForCameraMatrixInput(view, ref))}
+                ${[cameraInput.ref.pos.x, cameraInput.ref.pos.y, cameraInput.ref.pos.z].map(ref => generateTemplateForCameraMatrixInput(fire, ref))}
             <div class="matrix-row ${cameraInput.class}"><div class="matrix-row-head">direction</div></div>
-                ${[cameraInput.ref.dir.x, cameraInput.ref.dir.y, cameraInput.ref.dir.z].map(ref => generateTemplateForCameraMatrixInput(view, ref))}
+                ${[cameraInput.ref.dir.x, cameraInput.ref.dir.y, cameraInput.ref.dir.z].map(ref => generateTemplateForCameraMatrixInput(fire, ref))}
             <div class="matrix-row ${cameraInput.class}"><div class="matrix-row-head">axis up</div></div>
-                ${[cameraInput.ref.axis_up.x, cameraInput.ref.axis_up.y, cameraInput.ref.axis_up.z].map(ref => generateTemplateForCameraMatrixInput(view, ref))}
+                ${[cameraInput.ref.axis_up.x, cameraInput.ref.axis_up.y, cameraInput.ref.axis_up.z].map(ref => generateTemplateForCameraMatrixInput(fire, ref))}
         </div>
     `;
 }
 
-function generateTemplateArrowKey (view, key) {
+function generateTemplateArrowKey (fire, key) {
     return html`
         <input type="button" class="activate-button feature-modificable-input" value="${key}"
-            @mousedown="${() => view.dispatchKey('keydown', key.toLowerCase())}"
-            @mouseup="${() => view.dispatchKey('keyup', key.toLowerCase())}"
+            @mousedown="${() => fire('dispatchKey', { action: 'keydown', key: key.toLowerCase() })}"
+            @mouseup="${() => fire('dispatchKey', { action: 'keyup', key: key.toLowerCase() })}"
         >
     `;
 }
 
-function generateTemplateForCameraMatrixInput (view, ref) {
+function generateTemplateForCameraMatrixInput (fire, ref) {
     return html`
         <div class="input-cell">
             <input class="feature-modificable-input" type="number" step="0.01" .value="${ref.value}"
-                @change="${e => view.changeSyncedInput(+e.target.value, ref.eventKind)}"
-                @focus="${() => view.dispatchKey('keydown', 'input_focused')}"
-                @blur="${() => view.dispatchKey('keyup', 'input_focused')}"
+                @change="${e => fire('changeSyncedInput', { value: +e.target.value, kind: ref.eventKind })}"
+                @focus="${() => fire('dispatchKey', { action: 'keydown', key: 'input_focused' })}"
+                @blur="${() => fire('dispatchKey', { action: 'keyup', key: 'input_focused' })}"
                 @keypress="${e => e.charCode === 13 /* ENTER */ && e.target.blur()}"
                 >
         </div>

@@ -15,25 +15,22 @@
 
 import { Navigator } from '../../services/navigator';
 import { Visibility } from '../../services/visibility';
-import { Launcher } from './sim_launcher';
+import Constants from '../../services/constants';
 
 const PRESET_KIND_APERTURE_GRILLE_1 = 'crt-aperture-grille-1';
-const PRESET_KIND_CUSTOM = 'custom';
-const FILTERS_PRESET_STORE_KEY = 'FiltersPreset';
-const FILTER_PRESETS_SELECTED_EVENT_KIND = 'filter-presets-selected';
 
 export function model (store) {
     const options = {
         presets: {
-            selected: store.getItem(FILTERS_PRESET_STORE_KEY) || PRESET_KIND_APERTURE_GRILLE_1,
-            eventKind: FILTER_PRESETS_SELECTED_EVENT_KIND,
+            selected: store.getItem(Constants.FILTERS_PRESET_STORE_KEY) || PRESET_KIND_APERTURE_GRILLE_1,
+            eventKind: Constants.FILTER_PRESETS_SELECTED_EVENT_KIND,
             choices: [
                 { preset: PRESET_KIND_APERTURE_GRILLE_1, text: 'CRT Aperture Grille 1' },
                 { preset: 'crt-shadow-mask-1', text: 'CRT Shadow Mask 1' },
                 { preset: 'crt-shadow-mask-2', text: 'CRT Shadow Mask 2' },
                 { preset: 'sharp-1', text: 'CRT Sharp Pixels' },
                 { preset: 'demo-1', text: 'Flight Demo' },
-                { preset: PRESET_KIND_CUSTOM, text: 'Custom' }
+                { preset: Constants.PRESET_KIND_CUSTOM, text: 'Custom' }
             ]
         },
         internal_resolution: { value: null, eventKind: 'internal-resolution' },
@@ -160,46 +157,40 @@ export function model (store) {
 }
 
 export class View {
-    constructor (state, page, store, navigator, launcher, visibility) {
+    constructor (state, refresh, navigator, visibility) {
         this._state = state;
-        this._page = page;
-        this._store = store;
+        this._refresh = refresh;
         this._navigator = navigator;
-        this._launcher = launcher;
         this._visibility = visibility;
         this._isDirty = true;
     }
 
-    static make (state, page, store, navigator, launcher, visibility) {
-        return new View(state, page, store, navigator || Navigator.make(), launcher || Launcher.make(), visibility || Visibility.make());
+    static make (state, refresh, navigator, visibility) {
+        return new View(state, refresh, navigator || Navigator.make(), visibility || Visibility.make());
     }
 
-    async launchSimulation (msg) {
-        const result = await this._launcher.launch(this.canvas, msg.launcherParams);
-
-        if (result.glError) {
-            this._visibility.showLoading();
-
-            this._navigator.openTopMessage('WebGL2 is not working on your browser, try restarting it! And remember, this works only on a PC with updated browser and graphics drivers.');
-            this._navigator.goToLandingPage();
-            return;
-        }
-        
+    showScreen () {
         this._visibility.hideLoading();
-        
-        if (msg.skipControllerUi) {
-            this._state.menu.visible = false;
-        }
-        
-        if (msg.fullscreen) {
-            document.body.requestFullscreen();
-        }
     }
+
+    showFatalError (msg) {
+        this._visibility.showLoading();
+        this._navigator.openTopMessage(msg);
+        this._navigator.goToLandingPage();
+    }
+
+    setUiNotVisible () {
+        this._state.menu.visible = false;
+        this._isDirty = true;
+    }
+
+    isDirty () { return this._isDirty; }
+    clean () { this._isDirty = false; }
 
     newFrame () {
         if (!this._isDirty) return;
         this._isDirty = false;
-        this._page.refresh();
+        this._refresh();
     }
 
     toggleControls () {
@@ -212,43 +203,32 @@ export class View {
         menu.open = !menu.open;
         this._isDirty = true;
     }
-
-    dispatchKey (eventName, key) {
-        const event = new KeyboardEvent(eventName, { key });
-        this.canvas.dispatchEvent(event);
-    }
-    changeSyncedInput (value, kind) {
-        const event = new CustomEvent('display-sim-event:frontend-channel', {
-            detail: {
-                message: value,
-                type: 'front2back:' + kind
-            }
-        });
-        this.canvas.dispatchEvent(event);
-    }
-
     clickPreset (preset) {
         this._state.options.presets.selected = preset;
-        if (preset !== PRESET_KIND_CUSTOM) {
-            this._store.setItem(FILTERS_PRESET_STORE_KEY, preset);
-        }
-        this.changeSyncedInput(preset, FILTER_PRESETS_SELECTED_EVENT_KIND);
         this._isDirty = true;
     }
 
     openTopMessage (msg) {
         this._navigator.openTopMessage(msg);
     }
-
+    setFullscreen () {
+        const element = document.documentElement;
+        (element.requestFullscreen || element.webkitRequestFullScreen || element.mozRequestFullScreen || element.msRequestFullscreen).bind(element)();
+    }
     requestPointerLock () {
-        this.canvas.requestPointerLock();
+        const element = document.documentElement;
+        (element.requestPointerLock || element.mozRequestPointerLock).bind(element)();
         if (window.screen.width !== window.innerWidth && window.screen.height !== window.innerHeight) {
-            document.documentElement.requestFullscreen();
+            this.setFullscreen();
         }
+    }
+    exitPointerLock () {
+        (document.exitPointerLock || document.mozExitPointerLock).bind(document)();
+        document.exitPointerLock();
     }
 
     presetSelectedName (msg) {
-        if (msg === PRESET_KIND_CUSTOM) {
+        if (msg === Constants.PRESET_KIND_CUSTOM) {
             this._navigator.openTopMessage('Now you are in the Custom mode, you may change any filter value you want.');
         }
         this._state.options.presets.selected = msg;
@@ -309,9 +289,6 @@ export class View {
     changeFps (msg) {
         this._state.fps = Math.round(msg);
         this._isDirty = true;
-    }
-    exitPointerLock () {
-        document.exitPointerLock();
     }
     exitingSession () {
         window.location.hash = '';

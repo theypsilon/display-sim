@@ -30,14 +30,6 @@ features = [
   'Performance',
   'Document',
   'Element',
-  'HtmlCanvasElement',
-  'Event',
-  'EventTarget',
-  'CustomEvent',
-  'CustomEventInit',
-  'KeyboardEvent',
-  'MouseEvent',
-  'WheelEvent',
 ]
 
 [dependencies.rand]

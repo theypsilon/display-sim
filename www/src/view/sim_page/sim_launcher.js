@@ -25,12 +25,12 @@ export class Launcher {
         return new Launcher();
     }
 
-    async launch (canvas, params) {
+    async launch (canvas, observers, params) {
         fixCanvasSize(canvas);
         if (resizeListenerId) {
             window.removeEventListener(resizeListenerId);
         }
-        resizeListenerId = window.addEventListener('resize', () => setTimeout(() => fixCanvasSize(canvas), 160));
+        resizeListenerId = window.addEventListener('resize', () => setTimeout(() => fixCanvasSize(canvas), 500));
 
         Logger.log('gl context form', params.ctxOptions);
         const gl = canvas.getContext('webgl2', params.ctxOptions);
@@ -82,7 +82,7 @@ export class Launcher {
         }
 
         Logger.log('calling wasm run_program');
-        displaySim.run_program(canvas, simulationResources, videoInput);
+        displaySim.run_program(gl, observers.front, observers.back, simulationResources, videoInput);
         Logger.log('wasm run_program done');
 
         return { success: true };

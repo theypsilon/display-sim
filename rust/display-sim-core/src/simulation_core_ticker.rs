@@ -13,13 +13,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
+use crate::action_bindings::on_button_action;
 use crate::camera::{CameraData, CameraDirection, CameraLockMode, CameraSystem};
 use crate::filter_params::FilterParams;
 use crate::general_types::{get_3_f32color_from_int, get_int_from_3_f32color};
 use crate::pixels_shadow::ShadowShape;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::{
-    frontend_event, ColorChannels, Filters, FiltersPreset, Input, InputEventValue, PixelsGeometryKind, Resources, ScreenCurvatureKind, TextureInterpolation,
+    ColorChannels, Filters, FiltersPreset, Input, InputEventValue, PixelsGeometryKind, Resources, ScreenCurvatureKind, TextureInterpolation,
     PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
 };
 use app_error::AppResult;
@@ -43,6 +44,47 @@ impl<'a> SimulationCoreTicker<'a> {
 
     fn pre_process_input(&mut self, now: f64) {
         self.input.now = now;
+
+        for value in self.input.custom_event.consume_values() {
+            match value {
+                InputEventValue::Keyboard { pressed, key } => {
+                    let used = on_button_action(&mut self.input, key.to_lowercase().as_ref(), pressed);
+                    if !used {
+                        self.ctx.dispatcher().dispatch_log(format!("Ignored key: {} {}", key, pressed));
+                    }
+                }
+                InputEventValue::MouseClick(pressed) => self.input.mouse_click.input = pressed,
+                InputEventValue::MouseMove { x, y } => {
+                    self.input.mouse_position_x = x;
+                    self.input.mouse_position_y = y;
+                }
+                InputEventValue::MouseWheel(wheel) => {
+                    if self.input.canvas_focused {
+                        self.input.mouse_scroll_y = wheel
+                    }
+                }
+                InputEventValue::BlurredWindow => *self.input = Input::new(now),
+
+                InputEventValue::FilterPreset(preset) => self.input.event_filter_preset = Some(preset),
+                InputEventValue::PixelBrighttness(pixel_brighttness) => self.input.event_pixel_brighttness = Some(pixel_brighttness),
+                InputEventValue::PixelContrast(pixel_contrast) => self.input.event_pixel_contrast = Some(pixel_contrast),
+                InputEventValue::LightColor(light_color) => self.input.event_light_color = Some(light_color),
+                InputEventValue::BrightnessColor(brightness_color) => self.input.event_brightness_color = Some(brightness_color),
+                InputEventValue::BlurLevel(blur_level) => self.input.event_blur_level = Some(blur_level),
+                InputEventValue::VerticalLpp(vertical_lpp) => self.input.event_vertical_lpp = Some(vertical_lpp),
+                InputEventValue::HorizontalLpp(horizontal_lpp) => self.input.event_horizontal_lpp = Some(horizontal_lpp),
+                InputEventValue::BacklightPercent(backlight_percent) => self.input.event_backlight_percent = Some(backlight_percent),
+                InputEventValue::PixelShadowHeight(pixel_shadow_height) => self.input.event_pixel_shadow_height = Some(pixel_shadow_height),
+                InputEventValue::PixelVerticalGap(pixel_vertical_gap) => self.input.event_pixel_vertical_gap = Some(pixel_vertical_gap),
+                InputEventValue::PixelHorizontalGap(pixel_horizontal_gap) => self.input.event_pixel_horizontal_gap = Some(pixel_horizontal_gap),
+                InputEventValue::PixelWidth(pixel_width) => self.input.event_pixel_width = Some(pixel_width),
+                InputEventValue::PixelSpread(pixel_spread) => self.input.event_pixel_spread = Some(pixel_spread),
+                InputEventValue::Camera(camera) => self.input.event_camera = Some(camera),
+
+                InputEventValue::None => {}
+            };
+        }
+
         self.input.get_mut_fields_booleanbutton().iter_mut().for_each(|button| button.track_input());
         self.input
             .get_mut_fields_incdec_booleanbutton_()
@@ -58,6 +100,12 @@ impl<'a> SimulationCoreTicker<'a> {
         self.input.reset_filters = false;
         self.input.reset_position = false;
         self.input.reset_speeds = false;
+
+        self.input.get_mut_fields_option_f32_().iter_mut().for_each(|opt| **opt = None);
+        self.input.get_mut_fields_option_usize_().iter_mut().for_each(|opt| **opt = None);
+        self.input.get_mut_fields_option_i32_().iter_mut().for_each(|opt| **opt = None);
+        self.input.get_mut_fields_option_string_().iter_mut().for_each(|opt| **opt = None);
+        self.input.get_mut_fields_option_camerachange_().iter_mut().for_each(|opt| **opt = None);
     }
 }
 
@@ -66,16 +114,6 @@ struct SimulationUpdater<'a> {
     res: &'a mut Resources,
     input: &'a Input,
     dt: f32,
-}
-
-macro_rules! read_event_value {
-    ($this:ident, $variant:ident, $kind:ident) => {
-        if let InputEventValue::$variant(value) = $this.input.custom_event.get_value(frontend_event::$kind) {
-            Some(*value)
-        } else {
-            None
-        }
-    };
 }
 
 impl<'a> SimulationUpdater<'a> {
@@ -217,12 +255,12 @@ impl<'a> SimulationUpdater<'a> {
             self.ctx.dispatcher().dispatch_top_message("All filter options have been reset.");
             return Ok(());
         }
-        if let InputEventValue::LightColor(light_color) = self.input.custom_event.get_value(frontend_event::LIGHT_COLOR) {
-            self.res.filters.light_color = *light_color;
+        if let Some(light_color) = self.input.event_light_color {
+            self.res.filters.light_color = light_color;
             self.ctx.dispatcher().dispatch_top_message("Light Color changed.");
         }
-        if let InputEventValue::BrightnessColor(brightness_color) = self.input.custom_event.get_value(frontend_event::LIGHT_COLOR) {
-            self.res.filters.brightness_color = *brightness_color;
+        if let Some(brightness_color) = self.input.event_light_color {
+            self.res.filters.brightness_color = brightness_color;
             self.ctx.dispatcher().dispatch_top_message("Brightness Color changed.");
         }
 
@@ -234,7 +272,7 @@ impl<'a> SimulationUpdater<'a> {
 
         FilterParams::new(*ctx, &mut filters.extra_bright, input.bright)
             .set_progression(0.01 * self.dt * self.res.speed.filter_speed)
-            .set_event_value(read_event_value!(self, PixelBrighttness, PIXEL_BRIGHTNESS))
+            .set_event_value(input.event_pixel_brighttness)
             .set_min(-1.0)
             .set_max(1.0)
             .set_trigger_handler(|x| {
@@ -244,7 +282,7 @@ impl<'a> SimulationUpdater<'a> {
             .process_with_sums();
         FilterParams::new(*ctx, &mut filters.extra_contrast, input.contrast)
             .set_progression(0.01 * self.dt * self.res.speed.filter_speed)
-            .set_event_value(read_event_value!(self, PixelContrast, PIXEL_CONTRAST))
+            .set_event_value(input.event_pixel_contrast)
             .set_min(0.0)
             .set_max(20.0)
             .set_trigger_handler(|x| {
@@ -254,7 +292,7 @@ impl<'a> SimulationUpdater<'a> {
             .process_with_sums();
         FilterParams::new(*ctx, &mut filters.blur_passes, input.blur.to_just_pressed())
             .set_progression(1)
-            .set_event_value(read_event_value!(self, BlurLevel, BLUR_LEVEL))
+            .set_event_value(input.event_blur_level)
             .set_min(0)
             .set_max(100)
             .set_trigger_handler(|x| {
@@ -276,7 +314,7 @@ impl<'a> SimulationUpdater<'a> {
             .process_options();
         FilterParams::new(*ctx, &mut filters.backlight_presence, input.backlight_percent)
             .set_progression(0.01 * self.dt * self.res.speed.filter_speed)
-            .set_event_value(read_event_value!(self, BacklightPercent, BACKLIGHT_PERCENT))
+            .set_event_value(input.event_backlight_percent)
             .set_min(0.0)
             .set_max(1.0)
             .set_trigger_handler(|x| {
@@ -298,7 +336,7 @@ impl<'a> SimulationUpdater<'a> {
             .process_options();
         FilterParams::new(*ctx, &mut filters.vertical_lpp, input.vertical_lpp.to_just_pressed())
             .set_progression(1)
-            .set_event_value(read_event_value!(self, VerticalLpp, VERTICAL_LPP))
+            .set_event_value(input.event_vertical_lpp)
             .set_min(1)
             .set_max(20)
             .set_trigger_handler(|x| {
@@ -308,7 +346,7 @@ impl<'a> SimulationUpdater<'a> {
             .process_with_sums();
         FilterParams::new(*ctx, &mut filters.horizontal_lpp, input.horizontal_lpp.to_just_pressed())
             .set_progression(1)
-            .set_event_value(read_event_value!(self, HorizontalLpp, HORIZONTAL_LPP))
+            .set_event_value(input.event_horizontal_lpp)
             .set_min(1)
             .set_max(20)
             .set_trigger_handler(|x| {
@@ -332,7 +370,7 @@ impl<'a> SimulationUpdater<'a> {
             .process_options();
         FilterParams::new(*ctx, &mut filters.pixel_shadow_height, input.next_pixels_shadow_height)
             .set_progression(self.dt * 0.3)
-            .set_event_value(read_event_value!(self, PixelShadowHeight, PIXEL_SHADOW_HEIGHT))
+            .set_event_value(input.event_pixel_shadow_height)
             .set_min(0.0)
             .set_max(1.0)
             .set_trigger_handler(|x| {
@@ -342,7 +380,7 @@ impl<'a> SimulationUpdater<'a> {
             .process_with_sums();
         FilterParams::new(*ctx, &mut filters.cur_pixel_vertical_gap, input.pixel_vertical_gap)
             .set_progression(pixel_velocity * 0.00125)
-            .set_event_value(read_event_value!(self, PixelVerticalGap, PIXEL_VERTICAL_GAP))
+            .set_event_value(input.event_pixel_vertical_gap)
             .set_min(0.0)
             .set_trigger_handler(|x| {
                 changed = true;
@@ -351,7 +389,7 @@ impl<'a> SimulationUpdater<'a> {
             .process_with_sums();
         FilterParams::new(*ctx, &mut filters.cur_pixel_horizontal_gap, input.pixel_horizontal_gap)
             .set_progression(pixel_velocity * 0.00125)
-            .set_event_value(read_event_value!(self, PixelHorizontalGap, PIXEL_HORIZONTAL_GAP))
+            .set_event_value(input.event_pixel_horizontal_gap)
             .set_min(0.0)
             .set_trigger_handler(|x| {
                 changed = true;
@@ -360,7 +398,7 @@ impl<'a> SimulationUpdater<'a> {
             .process_with_sums();
         FilterParams::new(*ctx, &mut filters.cur_pixel_width, input.pixel_width)
             .set_progression(pixel_velocity * 0.005)
-            .set_event_value(read_event_value!(self, PixelWidth, PIXEL_WIDTH))
+            .set_event_value(input.event_pixel_width)
             .set_min(0.0)
             .set_trigger_handler(|x| {
                 changed = true;
@@ -369,7 +407,7 @@ impl<'a> SimulationUpdater<'a> {
             .process_with_sums();
         FilterParams::new(*ctx, &mut filters.cur_pixel_spread, input.pixel_spread)
             .set_progression(pixel_velocity * 0.005)
-            .set_event_value(read_event_value!(self, PixelSpread, PIXEL_SPREAD))
+            .set_event_value(input.event_pixel_spread)
             .set_min(0.0)
             .set_trigger_handler(|x| {
                 changed = true;
@@ -390,7 +428,7 @@ impl<'a> SimulationUpdater<'a> {
     }
 
     fn update_filter_presets_from_event(&mut self) -> AppResult<()> {
-        let preset = if let InputEventValue::FilterPreset(preset) = self.input.custom_event.get_value(frontend_event::FILTER_PRESET) {
+        let preset = if let Some(preset) = &self.input.event_filter_preset {
             preset
         } else {
             return Ok(());
@@ -476,9 +514,9 @@ impl<'a> SimulationUpdater<'a> {
             camera.rotate(CameraDirection::Right, self.dt);
         }
 
-        if self.input.mouse_click.is_just_pressed() {
+        if self.input.mouse_click.is_just_pressed() && self.input.canvas_focused {
             self.ctx.dispatcher().dispatch_request_pointer_lock();
-        } else if self.input.mouse_click.is_activated() {
+        } else if self.input.mouse_click.is_activated() && self.input.canvas_focused {
             camera.drag(self.input.mouse_position_x, self.input.mouse_position_y);
         } else if self.input.mouse_click.is_just_released() {
             self.ctx.dispatcher().dispatch_exit_pointer_lock();
@@ -492,10 +530,8 @@ impl<'a> SimulationUpdater<'a> {
             camera.change_zoom(self.input.mouse_scroll_y, self.ctx.dispatcher());
         }
 
-        for event_value in self.input.custom_event.get_values() {
-            if let InputEventValue::Camera(change) = *event_value {
-                camera.handle_camera_change(change);
-            }
+        if let Some(change) = self.input.event_camera {
+            camera.handle_camera_change(change);
         }
 
         camera.update_view(self.dt)

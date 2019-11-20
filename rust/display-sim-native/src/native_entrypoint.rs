@@ -288,6 +288,9 @@ impl NativeEventDispatcher {
 
 impl AppEventDispatcher for NativeEventDispatcher {
     fn enable_extra_messages(&self, _: bool) {}
+    fn dispatch_log(&self, msg: String) {
+        println!("log: {}", msg);
+    }
     fn dispatch_camera_update(&self, a: &glm::Vec3, b: &glm::Vec3, c: &glm::Vec3) {
         println!("camera_update {}, {}, {}", a, b, c);
     }

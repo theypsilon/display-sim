@@ -13,24 +13,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-export default {
-    // general
-    TOP_MESSAGE_ID: 'top-message',
-    loadingDeo: document.getElementById('loading'),
-    pageDeo: document.getElementById('page'),
+export class Observer {
+    constructor () {
+        this._callbacks = [];
+    }
 
-    // landing page
-    SCALING_AUTO_ID: 'scaling-auto',
-    SCALING_43_ID: 'scaling-4:3',
-    SCALING_CUSTOM_ID: 'scaling-custom',
-    SCALING_STRETCH_TO_BOTH_EDGES_ID: 'scaling-stretch-both',
-    SCALING_STRETCH_TO_NEAREST_EDGE_ID: 'scaling-stretch-nearest',
-    POWER_PREFERENCE_DEFAULT: 'default',
+    static make () {
+        return new Observer();
+    }
 
-    // sim page
-    FILTERS_PRESET_STORE_KEY: 'FiltersPreset',
-    FILTER_PRESETS_SELECTED_EVENT_KIND: 'filter-presets-selected',
-    PRESET_KIND_CUSTOM: 'custom',
+    subscribe (cb) {
+        this._callbacks.push(cb);
+    }
 
-    FIRST_PREVIEW_IMAGE_ID: 'first-preview-image'
-};
+    fire (event) {
+        this._callbacks.forEach(cb => cb(event));
+    }
+}

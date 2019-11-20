@@ -15,28 +15,24 @@
 
 import { LocalStorage } from '../../services/local_storage';
 import { Messenger } from '../../services/messenger';
+import { Observer } from '../../services/observer';
+import { Launcher } from './sim_launcher';
+import Constants from '../../services/constants';
 
 import { renderTemplate } from './sim_template';
 import { model, View } from './sim_view_model';
 
 const store = LocalStorage.make('sim_page/presets_selection');
 const state = model(store);
-const messenger = Messenger.getInstance();
 
 class SimPage extends HTMLElement {
     constructor () {
         super();
 
-        this._state = state;
-        this._root = this.attachShadow({ mode: 'open' });
-        this._view = View.make(state, this, store); // so it can be readed during the first template generation
-
-        this.refresh();
-
-        // This element works as canvas and also as an event bus
-        this._view.canvas = this._root.getElementById('gl-canvas-id');
-
-        setupEvents(this._view.canvas, this._view);
+        this.mess = setupPage(this.attachShadow({ mode: 'open' }), state, store, Launcher.make(), Messenger.getInstance(), {
+            front: Observer.make(),
+            back: Observer.make()
+        });
 
         document.body.style.setProperty('overflow', 'hidden');
         document.body.style.setProperty('background-color', 'black');
@@ -45,32 +41,88 @@ class SimPage extends HTMLElement {
     disconnectedCallback () {
         document.body.style.removeProperty('overflow');
         document.body.style.removeProperty('background-color');
-    }
 
-    refresh () {
-        renderTemplate(this._state, this._view, this._root);
+        this.mess.clean();
     }
 }
 
 window.customElements.define('sim-page', SimPage);
 
-function setupEvents (canvas, view) {
+function setupPage (root, state, store, launcher, messenger, observers) {
+    const [view, canvas] = setupView(state, root, observers.front);
+    setupSimulation(canvas, messenger, launcher, view, observers);
+    return setupEventHandling(canvas, observers, view, store);
+}
+
+function setupView (state, root, frontendObserver) {
+    const view = View.make(state, () => renderTemplate(state, fireEventOn(frontendObserver), root));
+
+    // first frame, so there can be a canvas element rendered. We will need it in the following line.
+    view.newFrame();
+
+    return [view, root.getElementById('gl-canvas-id')];
+}
+
+function setupSimulation (canvas, messenger, launcher, view, observers) {
     messenger.consumeInbox('sim-page').forEach(async msg => {
         switch (msg.topic) {
-        case 'launch': return view.launchSimulation(msg);
+        case 'launch': {
+            const result = await launcher.launch(canvas, observers, msg.launcherParams);
+            if (result.glError) {
+                view.showFatalError('WebGL2 is not working on your browser, try restarting it! And remember, this works only on a PC with updated browser and graphics drivers.');
+                return;
+            }
+            view.showScreen();
+            if (msg.skipControllerUi) {
+                view.setUiNotVisible();
+            }
+            if (msg.fullscreen) {
+                view.setFullscreen();
+            }
+            break;
+        }
         default: throw new Error('Wrong topic: ' + msg.topic);
         }
     });
-    // Forwarding keyboard events so it can be readed by the backend
-    window.addEventListener('keydown', e => canvas.dispatchEvent(new KeyboardEvent('keydown', { key: e.key })), false);
-    window.addEventListener('keyup', e => canvas.dispatchEvent(new KeyboardEvent('keyup', { key: e.key })), false);
+}
 
-    canvas.onfocus = () => canvas.dispatchEvent(new KeyboardEvent('keydown', { key: 'canvas_focused' }));
-    canvas.onblur = () => canvas.dispatchEvent(new KeyboardEvent('keyup', { key: 'canvas_focused' }));    
+function fireEventOn (observer) {
+    return (topic, message) => {
+        const event = {
+            message,
+            type: 'front2front:' + topic
+        };
+        observer.fire(event);
+    };
+}
+
+function setupEventHandling (canvas, observers, view, store) {
+    function fireBackendEvent (kind, msg) {
+        //console.log('observers.back.fire', kind, msg);
+        const event = {
+            message: msg,
+            type: 'front2back:' + kind
+        };
+        observers.back.fire(event);
+    }
+
     // Listening backend events
-    canvas.addEventListener('display-sim-event:backend-channel', e => {
-        const msg = e.detail.message;
-        switch (e.detail.type) {
+    observers.front.subscribe(e => {
+        const msg = e.message;
+        //console.log('observers.front.subscribe', e.type, msg);
+        switch (e.type) {
+        case 'front2front:toggleControls': return view.toggleControls();
+        case 'front2front:toggleMenu': return view.toggleMenu(msg);
+        case 'front2front:clickPreset': {
+            view.clickPreset(msg);
+            if (msg !== Constants.PRESET_KIND_CUSTOM) {
+                store.setItem(Constants.FILTERS_PRESET_STORE_KEY, msg);
+            }
+            fireBackendEvent(Constants.FILTER_PRESETS_SELECTED_EVENT_KIND, msg);
+            break;
+        }
+        case 'front2front:dispatchKey': return fireBackendEvent('keyboard', { pressed: msg.action === 'keydown', key: msg.key });
+        case 'front2front:changeSyncedInput': return fireBackendEvent(msg.value, msg.kind);
         case 'back2front:new_frame': return view.newFrame(msg);
         case 'back2front:top_message': return view.openTopMessage(msg);
         case 'back2front:request_pointer_lock': return view.requestPointerLock(msg);
@@ -105,8 +157,29 @@ function setupEvents (canvas, view) {
         case 'back2front:internal_resolution': return view.changeInternalResolution(msg);
         case 'back2front:texture_interpolation': return view.changeTextureInterpolation(msg);
         case 'back2front:screen_curvature': return view.changeScreenCurvature(msg);
-        default:
-            throw new Error('Not covered following backend event: ' + e.detail.type, msg);
+        default: throw new Error('Not covered following event: ', e.type, e);
         }
-    }, false);
+    });
+
+    const listeners = [];
+    function addDomListener (eventBus, type, callback, options) {
+        options = options || false;
+        eventBus.addEventListener(type, callback, options);
+        listeners.push({ eventBus, type, callback, options });
+    }
+
+    // Forwarding keyboard events so it can be readed by the backend
+    addDomListener(canvas, 'keydown', e => fireBackendEvent('keyboard', { pressed: true, key: e.key }));
+    addDomListener(canvas, 'keyup', e => fireBackendEvent('keyboard', { pressed: false, key: e.key }));
+    addDomListener(canvas, 'mousedown', e => e.buttons === 1 && fireBackendEvent('mouse_click', true));
+    addDomListener(window, 'mouseup', () => fireBackendEvent('mouse_click', false)); // note this one goes to 'window'. It doesn't work with 'canvas' because of some obscure bug I didn't figure out yet.
+    addDomListener(canvas, 'mousemove', e => fireBackendEvent('mouse_move', { x: e.movementX, y: e.movementY }));
+    addDomListener(canvas, 'mousewheel', e => fireBackendEvent('mouse_wheel', e.deltaY));
+    addDomListener(canvas, 'blur', () => fireBackendEvent('blurred_window'));
+    addDomListener(canvas, 'mouseover', () => fireBackendEvent('keyboard', { pressed: true, key: 'canvas_focused' }));
+    addDomListener(canvas, 'mouseout', () => fireBackendEvent('keyboard', { pressed: false, key: 'canvas_focused' }));
+
+    return {
+        clean: () => listeners.forEach(({ eventBus, type, callback, options }) => eventBus.removeEventListener(type, callback, options))
+    };
 }

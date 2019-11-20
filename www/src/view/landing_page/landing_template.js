@@ -17,11 +17,11 @@ import { html, render } from 'lit-html';
 
 const css = require('!css-loader!./css/landing_page.css').toString();
 
-export function renderTemplate (state, view, root) {
-    render(generateLandingTemplate(state, view), root);
+export function renderTemplate (state, fire, root) {
+    render(generateLandingTemplate(state, fire), root);
 }
 
-function generateLandingTemplate (state, self) {
+function generateLandingTemplate (state, fire) {
     return html`
     <style>
         ${css}
@@ -60,19 +60,19 @@ function generateLandingTemplate (state, self) {
                 <div class="col-sm-8 render-tests row">
                     <div class="margin-sm-bottom">
                         <h3>Select Image</h3>
-                        <input type="file" id="file" class="display-none" accept="image/*" @change="${e => self.changedFileInput(e)}">
+                        <input type="file" id="file" class="display-none" accept="image/*" @change="${e => fire('changed-file-input', e)}">
                         <ul id="select-image-list" class="well select-image col-sm-12">
                             ${state.images.map((image, idx) => html`
-                                <li id="${image.id}" @click="${() => self.selectImage(idx)}" class="selectable-image ${idx === state.imageSelection ? 'selected-image' : ''}">
+                                <li id="${image.id}" @click="${() => fire('select-image', idx)}" class="selectable-image ${idx === state.imageSelection ? 'selected-image' : ''}">
                                     <div><img src=${image.src} data-hq=${image.hq}><span>${image.width} ✕
                                             ${image.height}</span>
                                     </div>
                                 </li>                                    
                             `)}
                             <li id="drop-zone" 
-                                @click="${e => self.clickDropZone(e)}" 
-                                @drop="${e => self.dropOnDropZone(e)}" 
-                                @dragover="${e => self.dragOverDropZone(e)}"
+                                @click="${e => fire('click-drop-zone', e)}" 
+                                @drop="${e => fire('drop-on-drop-zone', e)}" 
+                                @dragover="${e => fire('drag-over-drop-zone', e)}"
                                 ><span>Add your image here</span>
                             </li>
                         </ul>
@@ -82,7 +82,7 @@ function generateLandingTemplate (state, self) {
                     <div id="option-header-container">
                         <h3 id="option-header">Options</h3>
                         <div id="option-header-restore"><input class="btn btn-crt btn-white" type="button"
-                                id="restore-default-options" value="Restore defaults" @click="${() => self.clickRestoreDefaultOptions()}"></div>
+                                id="restore-default-options" value="Restore defaults" @click="${() => fire('click-restore-default-options')}"></div>
                     </div>
                     <ul class="options">
                         <li class="option-inputs">
@@ -92,7 +92,7 @@ function generateLandingTemplate (state, self) {
 
                         <li class="option-inputs">
                             <label for="option-powerPreference">WebGL Performance:</label>
-                            <select id="option-powerPreference" name="option-powerPreference" @change="${e => self.selectPerformance(e)}">
+                            <select id="option-powerPreference" name="option-powerPreference" @change="${e => fire('select-performance', e)}">
                                 ${state.options.performanceOptions.map(perf => html`
                                     <option value="${perf.value}" ?selected=${state.options.performanceSelection === perf.value}>${perf.text}</option>
                                 `)}
@@ -100,7 +100,7 @@ function generateLandingTemplate (state, self) {
                         </li>
                         <li class="option-inputs">
                             <label for="option-scaling">Scaling:</label>
-                            <select id="option-scaling" name="option-scaling" .value="${state.options.scalingSelection}" @change="${e => self.selectScaling(e)}">
+                            <select id="option-scaling" name="option-scaling" .value="${state.options.scalingSelection}" @change="${e => fire('select-scaling', e)}">
                                 ${state.options.scalingOptions.map(scaling => html`
                                     <option value="${scaling.value}" title="${scaling.title}" ?selected=${state.options.scalingSelection === scaling.value}>${scaling.text}</option>
                                 `)}
@@ -143,7 +143,7 @@ function generateLandingTemplate (state, self) {
                         class="start btn-crt btn-white" 
                         type="button" 
                         value="Play Simulation" 
-                        @click="${e => self.clickPlaySimulation(e)}" 
+                        @click="${e => fire('click-play-simulation', e)}" 
                         ?disabled="${state.isRunningOnMobileDevice}"
                         title="${state.isRunningOnMobileDevice ? 'You need a PC with NVIDIA or ATI graphics card with updated drivers and a WebGL2 compatible browser (Firefox, Opera or Chrome) in order to run this without problems.' : ''}"
                     >

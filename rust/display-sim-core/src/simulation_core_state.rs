@@ -553,6 +553,12 @@ impl std::fmt::Display for ColorChannels {
 }
 
 pub mod frontend_event {
+    pub const KEYBOARD: &str = "front2back:keyboard";
+    pub const MOUSE_CLICK: &str = "front2back:mouse_click";
+    pub const MOUSE_MOVE: &str = "front2back:mouse_move";
+    pub const MOUSE_WHEEL: &str = "front2back:mouse_wheel";
+    pub const BLURRED_WINDOW: &str = "front2back:blurred_window";
+
     pub const FILTER_PRESET: &str = "front2back:filter-presets-selected";
     pub const PIXEL_BRIGHTNESS: &str = "front2back:pixel-brightness";
     pub const PIXEL_CONTRAST: &str = "front2back:pixel-contrast";
@@ -582,6 +588,13 @@ pub mod frontend_event {
 #[derive(Clone, Debug)]
 pub enum InputEventValue {
     None,
+
+    Keyboard { pressed: bool, key: String },
+    MouseClick(bool),
+    MouseMove { x: i32, y: i32 },
+    MouseWheel(f32),
+    BlurredWindow,
+
     FilterPreset(String),
     PixelBrighttness(f32),
     PixelContrast(f32),
@@ -601,34 +614,25 @@ pub enum InputEventValue {
 
 pub struct CustomInputEvent {
     values: Vec<InputEventValue>,
-    kinds: Vec<String>,
 }
 
 impl CustomInputEvent {
-    pub fn add_value(&mut self, kind: String, value: InputEventValue) {
+    pub fn add_value(&mut self, value: InputEventValue) {
         self.values.push(value);
-        self.kinds.push(kind);
     }
-    pub fn get_value<'a>(&'a self, kind: &str) -> &'a InputEventValue {
-        for (i, k) in self.kinds.iter().enumerate() {
-            if k == kind {
-                return &self.values[i];
-            }
-        }
-        &InputEventValue::None
-    }
-    pub fn get_values(&self) -> &[InputEventValue] {
-        self.values.as_slice()
-    }
+
     pub fn reset(&mut self) {
         self.values.resize(0, InputEventValue::None);
-        self.kinds.resize_with(0, Default::default);
+    }
+
+    pub fn consume_values(&mut self) -> Vec<InputEventValue> {
+        std::mem::replace(&mut self.values, vec![])
     }
 }
 
 impl Default for CustomInputEvent {
     fn default() -> Self {
-        CustomInputEvent { values: vec![], kinds: vec![] }
+        CustomInputEvent { values: vec![] }
     }
 }
 
@@ -685,6 +689,22 @@ pub struct Input {
     pub esc: BooleanButton,
     pub space: BooleanButton,
     pub screenshot: BooleanButton,
+
+    pub event_filter_preset: Option<String>,
+    pub event_pixel_brighttness: Option<f32>,
+    pub event_pixel_contrast: Option<f32>,
+    pub event_light_color: Option<i32>,
+    pub event_brightness_color: Option<i32>,
+    pub event_blur_level: Option<usize>,
+    pub event_vertical_lpp: Option<usize>,
+    pub event_horizontal_lpp: Option<usize>,
+    pub event_backlight_percent: Option<f32>,
+    pub event_pixel_shadow_height: Option<f32>,
+    pub event_pixel_vertical_gap: Option<f32>,
+    pub event_pixel_horizontal_gap: Option<f32>,
+    pub event_pixel_width: Option<f32>,
+    pub event_pixel_spread: Option<f32>,
+    pub event_camera: Option<CameraChange>,
 }
 
 impl Input {

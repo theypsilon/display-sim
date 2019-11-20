@@ -21,6 +21,7 @@ use std::fmt::Display;
 
 pub trait AppEventDispatcher {
     fn enable_extra_messages(&self, extra_messages_enabled: bool);
+    fn dispatch_log(&self, msg: String);
     fn dispatch_camera_update(&self, position: &glm::Vec3, direction: &glm::Vec3, axis_up: &glm::Vec3);
     fn dispatch_change_pixel_horizontal_gap(&self, size: f32);
     fn dispatch_change_pixel_vertical_gap(&self, size: f32);
@@ -65,6 +66,7 @@ pub struct FakeEventDispatcher {}
 
 impl AppEventDispatcher for FakeEventDispatcher {
     fn enable_extra_messages(&self, _: bool) {}
+    fn dispatch_log(&self, _: String) {}
     fn dispatch_camera_update(&self, _: &glm::Vec3, _: &glm::Vec3, _: &glm::Vec3) {}
     fn dispatch_change_pixel_horizontal_gap(&self, _: f32) {}
     fn dispatch_change_pixel_vertical_gap(&self, _: f32) {}
