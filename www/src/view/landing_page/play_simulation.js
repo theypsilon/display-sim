@@ -17,11 +17,11 @@ import Logger from '../../services/logger';
 import Constants from '../../services/constants';
 
 import { Navigator } from '../../services/navigator';
-import { Messenger } from '../../services/messenger';
+import { Mailbox } from '../../services/mailbox';
 import { AnimationsGateway } from '../../services/animations_gateway';
 
 const navigator = Navigator.make();
-const messenger = Messenger.getInstance();
+const mailbox = Mailbox.getInstance();
 const animationsGateway = AnimationsGateway.make({ gifCaching: true });
 
 export async function playHtmlSelection (state) {
@@ -72,7 +72,7 @@ export async function playHtmlSelection (state) {
         stencil: false
     };
 
-    messenger.sendMessage('sim-page', {
+    mailbox.placeMessage('sim-page', {
         topic: 'launch',
         launcherParams: {
             ctxOptions,
@@ -104,7 +104,7 @@ export async function playQuerystring (querystring) {
     const imageWidth = animations[0].raw.width;
     const imageHeight = animations[0].raw.height;
 
-    messenger.sendMessage('sim-page', {
+    mailbox.placeMessage('sim-page', {
         topic: 'launch',
         launcherParams: {
             ctxOptions: {

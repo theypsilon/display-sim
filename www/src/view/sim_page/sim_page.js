@@ -16,7 +16,7 @@
 import Constants from '../../services/constants';
 import Logger from '../../services/logger';
 import { LocalStorage } from '../../services/local_storage';
-import { Messenger } from '../../services/messenger';
+import { Mailbox } from '../../services/mailbox';
 import { Observer } from '../../services/observer';
 import { Launcher } from './sim_launcher';
 
@@ -30,7 +30,7 @@ class SimPage extends HTMLElement {
     constructor () {
         super();
 
-        this.mess = setupPage(this.attachShadow({ mode: 'open' }), state, store, Launcher.make(), Messenger.getInstance(), {
+        this.mess = setupPage(this.attachShadow({ mode: 'open' }), state, store, Launcher.make(), Mailbox.getInstance(), {
             front: Observer.make(),
             back: Observer.make()
         });
@@ -49,9 +49,9 @@ class SimPage extends HTMLElement {
 
 window.customElements.define('sim-page', SimPage);
 
-function setupPage (root, state, store, launcher, messenger, observers) {
+function setupPage (root, state, store, launcher, mailbox, observers) {
     const [view, canvas] = setupView(state, root, observers.front);
-    setupSimulation(canvas, messenger, launcher, view, {
+    setupSimulation(canvas, mailbox, launcher, view, {
         subscribe: cb => observers.back.subscribe(cb),
         fire: msg => observers.front.fire(msg)
     });
@@ -70,9 +70,9 @@ function setupView (state, root, frontendObserver) {
     return [view, root.getElementById('gl-canvas-id')];
 }
 
-function setupSimulation (canvas, messenger, launcher, view, eventBus) {
+function setupSimulation (canvas, mailbox, launcher, view, eventBus) {
     fixCanvasSize(canvas);
-    messenger.consumeInbox('sim-page').forEach(async msg => {
+    mailbox.consumeMessages('sim-page').forEach(async msg => {
         switch (msg.topic) {
         case 'launch': {
             const result = await launcher.launch(canvas, eventBus, msg.launcherParams);

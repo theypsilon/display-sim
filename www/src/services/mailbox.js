@@ -15,22 +15,22 @@
 
 let instance;
 
-export class Messenger {
+export class Mailbox {
     constructor () {
         this._dict = {};
     }
     static getInstance () { return instance; }
-    sendMessage (address, content) {
+    placeMessage (address, content) {
         if (!this._dict[address]) {
             this._dict[address] = [];
         }
         this._dict[address].push(content);
     }
-    consumeInbox (address) {
+    consumeMessages (address) {
         const inbox = this._dict[address];
         this._dict[address] = [];
         return inbox;
     }
 }
 
-instance = new Messenger();
+instance = new Mailbox();
