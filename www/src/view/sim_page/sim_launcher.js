@@ -17,7 +17,6 @@ import Logger from '../../services/logger';
 
 const displaySimPromise = import('../../wasm/display_sim');
 
-let resizeListenerId;
 let simulationResources;
 
 export class Launcher {
@@ -26,22 +25,8 @@ export class Launcher {
     }
 
     async launch (canvas, observers, params) {
-        fixCanvasSize(canvas);
-        if (resizeListenerId) {
-            window.removeEventListener(resizeListenerId);
-        }
-        resizeListenerId = window.addEventListener('resize', () => setTimeout(() => fixCanvasSize(canvas), 1500));
-
         Logger.log('gl context form', params.ctxOptions);
         const gl = canvas.getContext('webgl2', params.ctxOptions);
-
-        const documentElement = document.documentElement;
-        documentElement.requestFullscreen = documentElement.requestFullscreen ||
-            documentElement.webkitRequestFullScreen ||
-            documentElement['mozRequestFullScreen'] ||
-            documentElement.msRequestFullscreen;
-        canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock;
-        document.exitPointerLock = document.exitPointerLock || document.mozExitPointerLock;
 
         if (!gl) {
             console.error(new Error('Could not get webgl2 context.'));
@@ -91,19 +76,4 @@ export class Launcher {
 
         return { success: true };
     }
-}
-
-function fixCanvasSize (canvas) {
-    const dpi = window.devicePixelRatio;
-    const width = window.screen.width;
-    const height = window.screen.height;
-    const zoom = window.outerWidth / window.innerWidth;
-
-    canvas.width = Math.round(width * dpi / zoom / 80) * 80;
-    canvas.height = Math.round(height * dpi / zoom / 60) * 60;
-
-    canvas.style.width = window.innerWidth;
-    canvas.style.height = window.innerHeight + 0.5;
-
-    Logger.log('resolution:', canvas.width, canvas.height, width, height);
 }

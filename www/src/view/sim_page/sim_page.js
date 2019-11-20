@@ -13,11 +13,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
+import Constants from '../../services/constants';
+import Logger from '../../services/logger';
 import { LocalStorage } from '../../services/local_storage';
 import { Messenger } from '../../services/messenger';
 import { Observer } from '../../services/observer';
 import { Launcher } from './sim_launcher';
-import Constants from '../../services/constants';
 
 import { renderTemplate } from './sim_template';
 import { model, View } from './sim_view_model';
@@ -64,6 +65,7 @@ function setupView (state, root, frontendObserver) {
 }
 
 function setupSimulation (canvas, messenger, launcher, view, observers) {
+    fixCanvasSize(canvas);
     messenger.consumeInbox('sim-page').forEach(async msg => {
         switch (msg.topic) {
         case 'launch': {
@@ -178,8 +180,24 @@ function setupEventHandling (canvas, observers, view, store) {
     addDomListener(canvas, 'blur', () => fireBackendEvent('blurred_window'));
     addDomListener(canvas, 'mouseover', () => fireBackendEvent('keyboard', { pressed: true, key: 'canvas_focused' }));
     addDomListener(canvas, 'mouseout', () => fireBackendEvent('keyboard', { pressed: false, key: 'canvas_focused' }));
+    addDomListener(window, 'resize', () => setTimeout(() => fixCanvasSize(canvas), 500));
 
     return {
         clean: () => listeners.forEach(({ eventBus, type, callback, options }) => eventBus.removeEventListener(type, callback, options))
     };
+}
+
+function fixCanvasSize (canvas) {
+    const dpi = window.devicePixelRatio;
+    const width = window.screen.width;
+    const height = window.screen.height;
+    const zoom = window.outerWidth / window.innerWidth;
+
+    canvas.width = Math.round(width * dpi / zoom / 80) * 80;
+    canvas.height = Math.round(height * dpi / zoom / 60) * 60;
+
+    canvas.style.width = window.innerWidth;
+    canvas.style.height = window.innerHeight + 0.5;
+
+    Logger.log('resolution:', canvas.width, canvas.height, width, height);
 }
