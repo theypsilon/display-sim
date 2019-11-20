@@ -184,9 +184,6 @@ export class View {
         this._isDirty = true;
     }
 
-    isDirty () { return this._isDirty; }
-    clean () { this._isDirty = false; }
-
     newFrame () {
         if (!this._isDirty) return;
         this._isDirty = false;
