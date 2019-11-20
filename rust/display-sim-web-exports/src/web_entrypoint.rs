@@ -52,8 +52,7 @@ impl StateOwner {
 
 pub fn web_entrypoint(
     webgl: JsValue,
-    frontend_observer: JsValue,
-    backend_observer: JsValue,
+    event_bus: JsValue,
     res: Rc<RefCell<Resources>>,
     video_input_resources: VideoInputResources,
     video_input_materials: VideoInputMaterials,
@@ -66,9 +65,9 @@ pub fn web_entrypoint(
     let frame_closure: Closure<dyn FnMut(JsValue)> = {
         let owned_state = Rc::clone(&owned_state);
         let window = window()?;
-        let frontend_observer = frontend_observer.clone();
+        let event_bus = event_bus.clone();
         Closure::wrap(Box::new(move |_| {
-            let mut ctx = ConcreteSimulationContext::new(WebEventDispatcher::new(webgl.clone(), frontend_observer.clone()), WebRnd {});
+            let mut ctx = ConcreteSimulationContext::new(WebEventDispatcher::new(webgl.clone(), event_bus.clone()), WebRnd {});
             if let Err(e) = web_entrypoint_iteration(&owned_state, &window, &mut ctx) {
                 console!(error. "An unexpected error happened during web_entrypoint_iteration.", e);
                 ctx.dispatcher().dispatch_exiting_session();
@@ -84,7 +83,7 @@ pub fn web_entrypoint(
     let mut closures = owned_state.closures.borrow_mut();
     closures.push(Some(frame_closure));
 
-    let listeners = set_event_listeners(backend_observer, &owned_state)?;
+    let listeners = set_event_listeners(event_bus, &owned_state)?;
     closures.extend(listeners);
 
     Ok(())
@@ -131,7 +130,7 @@ fn tick(ctx: &dyn SimulationContext, input: &mut Input, res: &mut Resources, mat
     Ok(true)
 }
 
-fn set_event_listeners(backend_observer: JsValue, state_owner: &Rc<StateOwner>) -> AppResult<Vec<OwnedClosure>> {
+fn set_event_listeners(event_bus: JsValue, state_owner: &Rc<StateOwner>) -> AppResult<Vec<OwnedClosure>> {
     let onfrontendevent: Closure<dyn FnMut(JsValue)> = {
         let state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |event: JsValue| {
@@ -141,10 +140,10 @@ fn set_event_listeners(backend_observer: JsValue, state_owner: &Rc<StateOwner>) 
             }
         }))
     };
-    let subscribe = js_sys::Reflect::get(&backend_observer, &"subscribe".into())?.dyn_into::<js_sys::Function>()?;
+    let subscribe = js_sys::Reflect::get(&event_bus, &"subscribe".into())?.dyn_into::<js_sys::Function>()?;
     let args = js_sys::Array::new();
     args.push(onfrontendevent.as_ref().unchecked_ref());
-    subscribe.apply(&backend_observer, &args)?;
+    subscribe.apply(&event_bus, &args)?;
     Ok(vec![Some(onfrontendevent)])
 }
 
@@ -192,7 +191,7 @@ pub fn read_frontend_event(input: &mut Input, object: JsValue) -> AppResult<()> 
         frontend_event::CAMERA_DIRECTION_X => InputEventValue::Camera(CameraChange::DirectionX(value.as_f64().ok_or("it should be a number")? as f32)),
         frontend_event::CAMERA_DIRECTION_Y => InputEventValue::Camera(CameraChange::DirectionY(value.as_f64().ok_or("it should be a number")? as f32)),
         frontend_event::CAMERA_DIRECTION_Z => InputEventValue::Camera(CameraChange::DirectionZ(value.as_f64().ok_or("it should be a number")? as f32)),
-        _ => InputEventValue::None,
+        _ => return Err(format!("Can't read frontend_event: {}", frontend_event).into()),
     };
     input.custom_event.add_value(event_value);
     Ok(())

@@ -31,16 +31,16 @@ pub struct WebEventDispatcher {
     error: RefCell<Option<AppError>>,
     extra_messages_enabled: RefCell<bool>,
     gl: WebGl2RenderingContext,
-    frontend_observer: JsValue,
+    event_bus: JsValue,
 }
 
 impl WebEventDispatcher {
-    pub fn new(gl: WebGl2RenderingContext, frontend_observer: JsValue) -> Self {
+    pub fn new(gl: WebGl2RenderingContext, event_bus: JsValue) -> Self {
         WebEventDispatcher {
             error: Default::default(),
             extra_messages_enabled: RefCell::new(true),
             gl,
-            frontend_observer,
+            event_bus,
         }
     }
     fn are_extra_messages_enabled(&self) -> bool {
@@ -68,12 +68,12 @@ impl AppEventDispatcher for WebEventDispatcher {
         values_array.fill(axis_up.x, 6, 7);
         values_array.fill(axis_up.y, 7, 8);
         values_array.fill(axis_up.z, 8, 9);
-        self.catch_error(dispatch_event_with(&self.frontend_observer, "back2front:camera_update", &values_array.into()));
+        self.catch_error(dispatch_event_with(&self.event_bus, "back2front:camera_update", &values_array.into()));
     }
 
     fn dispatch_change_pixel_horizontal_gap(&self, size: f32) {
         self.catch_error(dispatch_event_with(
-            &self.frontend_observer,
+            &self.event_bus,
             "back2front:change_pixel_horizontal_gap",
             &format!("{:.03}", size).into(),
         ));
@@ -81,7 +81,7 @@ impl AppEventDispatcher for WebEventDispatcher {
 
     fn dispatch_change_pixel_vertical_gap(&self, size: f32) {
         self.catch_error(dispatch_event_with(
-            &self.frontend_observer,
+            &self.event_bus,
             "back2front:change_pixel_vertical_gap",
             &format!("{:.03}", size).into(),
         ));
@@ -89,7 +89,7 @@ impl AppEventDispatcher for WebEventDispatcher {
 
     fn dispatch_change_pixel_width(&self, size: f32) {
         self.catch_error(dispatch_event_with(
-            &self.frontend_observer,
+            &self.event_bus,
             "back2front:change_pixel_width",
             &format!("{:.03}", size).into(),
         ));
@@ -97,7 +97,7 @@ impl AppEventDispatcher for WebEventDispatcher {
 
     fn dispatch_change_pixel_spread(&self, size: f32) {
         self.catch_error(dispatch_event_with(
-            &self.frontend_observer,
+            &self.event_bus,
             "back2front:change_pixel_spread",
             &format!("{:.03}", size).into(),
         ));
@@ -105,7 +105,7 @@ impl AppEventDispatcher for WebEventDispatcher {
 
     fn dispatch_change_pixel_brightness(&self, extra_bright: f32) {
         self.catch_error(dispatch_event_with(
-            &self.frontend_observer,
+            &self.event_bus,
             "back2front:change_pixel_brightness",
             &format!("{:.02}", extra_bright).into(),
         ));
@@ -113,7 +113,7 @@ impl AppEventDispatcher for WebEventDispatcher {
 
     fn dispatch_change_pixel_contrast(&self, extra_contrast: f32) {
         self.catch_error(dispatch_event_with(
-            &self.frontend_observer,
+            &self.event_bus,
             "back2front:change_pixel_contrast",
             &format!("{:.02}", extra_contrast).into(),
         ));
@@ -129,7 +129,7 @@ impl AppEventDispatcher for WebEventDispatcher {
 
     fn dispatch_change_camera_zoom(&self, zoom: f32) {
         self.catch_error(dispatch_event_with(
-            &self.frontend_observer,
+            &self.event_bus,
             "back2front:change_camera_zoom",
             &format!("{:.02}", zoom).into(),
         ));
@@ -140,7 +140,7 @@ impl AppEventDispatcher for WebEventDispatcher {
             self.dispatch_top_message(&format!("Blur level: {}", blur_passes));
         }
         self.catch_error(dispatch_event_with(
-            &self.frontend_observer,
+            &self.event_bus,
             "back2front:change_blur_level",
             &(blur_passes as i32).into(),
         ));
@@ -150,22 +150,14 @@ impl AppEventDispatcher for WebEventDispatcher {
         if self.are_extra_messages_enabled() {
             self.dispatch_top_message(&format!("Vertical lines per pixel: {}", lpp));
         }
-        self.catch_error(dispatch_event_with(
-            &self.frontend_observer,
-            "back2front:change_vertical_lpp",
-            &(lpp as i32).into(),
-        ));
+        self.catch_error(dispatch_event_with(&self.event_bus, "back2front:change_vertical_lpp", &(lpp as i32).into()));
     }
 
     fn dispatch_change_horizontal_lpp(&self, lpp: usize) {
         if self.are_extra_messages_enabled() {
             self.dispatch_top_message(&format!("Horizontal lines per pixel: {}", lpp));
         }
-        self.catch_error(dispatch_event_with(
-            &self.frontend_observer,
-            "back2front:change_horizontal_lpp",
-            &(lpp as i32).into(),
-        ));
+        self.catch_error(dispatch_event_with(&self.event_bus, "back2front:change_horizontal_lpp", &(lpp as i32).into()));
     }
 
     fn dispatch_color_representation(&self, color_channels: ColorChannels) {
@@ -173,7 +165,7 @@ impl AppEventDispatcher for WebEventDispatcher {
             self.dispatch_top_message(&format!("Pixel color representation: {}.", color_channels));
         }
         self.catch_error(dispatch_event_with(
-            &self.frontend_observer,
+            &self.event_bus,
             "back2front:color_representation",
             &(color_channels.to_string()).into(),
         ));
@@ -184,7 +176,7 @@ impl AppEventDispatcher for WebEventDispatcher {
             self.dispatch_top_message(&format!("Pixel geometry: {}.", pixels_geometry_kind));
         }
         self.catch_error(dispatch_event_with(
-            &self.frontend_observer,
+            &self.event_bus,
             "back2front:pixel_geometry",
             &(pixels_geometry_kind.to_string()).into(),
         ));
@@ -195,7 +187,7 @@ impl AppEventDispatcher for WebEventDispatcher {
             self.dispatch_top_message(&format!("Showing next pixel shadow: {}.", pixel_shadow_shape_kind));
         }
         self.catch_error(dispatch_event_with(
-            &self.frontend_observer,
+            &self.event_bus,
             "back2front:pixel_shadow_shape",
             &(pixel_shadow_shape_kind.to_string()).into(),
         ));
@@ -203,7 +195,7 @@ impl AppEventDispatcher for WebEventDispatcher {
 
     fn dispatch_pixel_shadow_height(&self, pixel_shadow_height: f32) {
         self.catch_error(dispatch_event_with(
-            &self.frontend_observer,
+            &self.event_bus,
             "back2front:pixel_shadow_height",
             &format!("{:.02}", pixel_shadow_height).into(),
         ));
@@ -211,7 +203,7 @@ impl AppEventDispatcher for WebEventDispatcher {
 
     fn dispatch_backlight_presence(&self, backlight: f32) {
         self.catch_error(dispatch_event_with(
-            &self.frontend_observer,
+            &self.event_bus,
             "back2front:backlight_percent",
             &format!("{:.03}", backlight).into(),
         ));
@@ -222,7 +214,7 @@ impl AppEventDispatcher for WebEventDispatcher {
             self.dispatch_top_message(&format!("Screen curvature: {}.", screen_curvature_kind));
         }
         self.catch_error(dispatch_event_with(
-            &self.frontend_observer,
+            &self.event_bus,
             "back2front:screen_curvature",
             &(screen_curvature_kind.to_string()).into(),
         ));
@@ -230,7 +222,7 @@ impl AppEventDispatcher for WebEventDispatcher {
 
     fn dispatch_internal_resolution(&self, internal_resolution: &InternalResolution) {
         self.catch_error(dispatch_event_with(
-            &self.frontend_observer,
+            &self.event_bus,
             "back2front:internal_resolution",
             &(internal_resolution.to_string()).into(),
         ));
@@ -238,7 +230,7 @@ impl AppEventDispatcher for WebEventDispatcher {
 
     fn dispatch_texture_interpolation(&self, texture_interpolation: TextureInterpolation) {
         self.catch_error(dispatch_event_with(
-            &self.frontend_observer,
+            &self.event_bus,
             "back2front:texture_interpolation",
             &(texture_interpolation.to_string()).into(),
         ));
@@ -249,7 +241,7 @@ impl AppEventDispatcher for WebEventDispatcher {
         if self.are_extra_messages_enabled() {
             self.dispatch_top_message(&format!("Pixel manipulation speed: {}", speed));
         }
-        self.catch_error(dispatch_event_with(&self.frontend_observer, "back2front:change_pixel_speed", &speed.into()));
+        self.catch_error(dispatch_event_with(&self.event_bus, "back2front:change_pixel_speed", &speed.into()));
     }
 
     fn dispatch_change_turning_speed(&self, speed: f32) {
@@ -257,7 +249,7 @@ impl AppEventDispatcher for WebEventDispatcher {
         if self.are_extra_messages_enabled() {
             self.dispatch_top_message(&format!("Turning camera speed: {}", speed));
         }
-        self.catch_error(dispatch_event_with(&self.frontend_observer, "back2front:change_turning_speed", &speed.into()));
+        self.catch_error(dispatch_event_with(&self.event_bus, "back2front:change_turning_speed", &speed.into()));
     }
 
     fn dispatch_change_movement_speed(&self, speed: f32) {
@@ -265,27 +257,27 @@ impl AppEventDispatcher for WebEventDispatcher {
         if self.are_extra_messages_enabled() {
             self.dispatch_top_message(&format!("Translation camera speed: {}", speed));
         }
-        self.catch_error(dispatch_event_with(&self.frontend_observer, "back2front:change_movement_speed", &speed.into()));
+        self.catch_error(dispatch_event_with(&self.event_bus, "back2front:change_movement_speed", &speed.into()));
     }
     fn dispatch_new_frame(&self) {
-        self.catch_error(dispatch_event(&self.frontend_observer, "back2front:new_frame"));
+        self.catch_error(dispatch_event(&self.event_bus, "back2front:new_frame"));
     }
     fn dispatch_exiting_session(&self) {
-        self.catch_error(dispatch_event(&self.frontend_observer, "back2front:exiting_session"));
+        self.catch_error(dispatch_event(&self.event_bus, "back2front:exiting_session"));
     }
     fn dispatch_toggle_info_panel(&self) {
-        self.catch_error(dispatch_event(&self.frontend_observer, "back2front:toggle_info_panel"));
+        self.catch_error(dispatch_event(&self.event_bus, "back2front:toggle_info_panel"));
     }
     fn dispatch_fps(&self, fps: f32) {
-        self.catch_error(dispatch_event_with(&self.frontend_observer, "back2front:fps", &fps.into()));
+        self.catch_error(dispatch_event_with(&self.event_bus, "back2front:fps", &fps.into()));
     }
 
     fn dispatch_request_pointer_lock(&self) {
-        self.catch_error(dispatch_event(&self.frontend_observer, "back2front:request_pointer_lock"));
+        self.catch_error(dispatch_event(&self.event_bus, "back2front:request_pointer_lock"));
     }
 
     fn dispatch_exit_pointer_lock(&self) {
-        self.catch_error(dispatch_event(&self.frontend_observer, "back2front:exit_pointer_lock"));
+        self.catch_error(dispatch_event(&self.event_bus, "back2front:exit_pointer_lock"));
     }
 
     // @TODO no other way to handle this by now, find better way later
@@ -301,23 +293,23 @@ impl AppEventDispatcher for WebEventDispatcher {
         let array = Array::new();
         array.push(&js_pixels);
         array.push(&multiplier.into());
-        self.catch_error(dispatch_event_with(&self.frontend_observer, "back2front:screenshot", &array));
+        self.catch_error(dispatch_event_with(&self.event_bus, "back2front:screenshot", &array));
     }
 
     fn dispatch_change_preset_selected(&self, name: &str) {
-        self.catch_error(dispatch_event_with(&self.frontend_observer, "back2front:preset_selected_name", &name.into()));
+        self.catch_error(dispatch_event_with(&self.event_bus, "back2front:preset_selected_name", &name.into()));
     }
 
     fn dispatch_change_camera_movement_mode(&self, locked_mode: CameraLockMode) {
         self.catch_error(dispatch_event_with(
-            &self.frontend_observer,
+            &self.event_bus,
             "back2front:change_camera_movement_mode",
             &locked_mode.to_string().into(),
         ));
     }
 
     fn dispatch_top_message(&self, message: &str) {
-        self.catch_error(dispatch_event_with(&self.frontend_observer, "back2front:top_message", &message.into()));
+        self.catch_error(dispatch_event_with(&self.event_bus, "back2front:top_message", &message.into()));
     }
 
     fn dispatch_minimum_value(&self, value: &dyn Display) {
@@ -334,7 +326,7 @@ impl WebEventDispatcher {
         format!("x{}", (speed * 1000.0).round() / 1000.0)
     }
     fn dispatch_change_color(&self, id: &str, color: i32) {
-        self.catch_error(dispatch_event_with(&self.frontend_observer, id, &format!("#{:X}", color).into()));
+        self.catch_error(dispatch_event_with(&self.event_bus, id, &format!("#{:X}", color).into()));
     }
 
     pub fn check_error(&self) -> AppResult<()> {

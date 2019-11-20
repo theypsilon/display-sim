@@ -82,7 +82,11 @@ export class Launcher {
         }
 
         Logger.log('calling wasm run_program');
-        displaySim.run_program(gl, observers.front, observers.back, simulationResources, videoInput);
+        const eventBus = {
+            subscribe: cb => observers.back.subscribe(cb),
+            fire: msg => observers.front.fire(msg)
+        };
+        displaySim.run_program(gl, eventBus, simulationResources, videoInput);
         Logger.log('wasm run_program done');
 
         return { success: true };
