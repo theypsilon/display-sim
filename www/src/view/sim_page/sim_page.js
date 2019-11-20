@@ -100,7 +100,6 @@ function fireEventOn (observer) {
 
 function setupEventHandling (canvas, observers, view, store) {
     function fireBackendEvent (kind, msg) {
-        //console.log('observers.back.fire', kind, msg);
         const event = {
             message: msg,
             type: 'front2back:' + kind
@@ -111,17 +110,29 @@ function setupEventHandling (canvas, observers, view, store) {
     // Listening backend events
     observers.front.subscribe(e => {
         const msg = e.message;
-        //console.log('observers.front.subscribe', e.type, msg);
         switch (e.type) {
+        case 'front2front:dispatchKey': {
+            let pressed = undefined;
+            switch (msg.action) {
+            case 'keydown': pressed = true; break;
+            case 'keyup': pressed = false; break;
+            case 'keyboth': pressed = true; break;
+            default: throw new Error('Incorrect action for dispatchKey', msg.action);
+            }
+            fireBackendEvent('keyboard', { pressed, key: msg.key });
+            if (msg.action === 'keyboth') {
+                setTimeout(() => fireBackendEvent('keyboard', { pressed: false, key: msg.key }), 200);
+            }
+            break;
+        };
+        case 'front2front:changeSyncedInput': return fireBackendEvent(msg.value, msg.kind);
         case 'front2front:toggleControls': return view.toggleControls();
         case 'front2front:toggleMenu': return view.toggleMenu(msg);
-        case 'front2front:dispatchKey': return fireBackendEvent('keyboard', { pressed: msg.action === 'keydown', key: msg.key });
-        case 'front2front:changeSyncedInput': return fireBackendEvent(msg.value, msg.kind);
         case 'back2front:new_frame': return view.newFrame(msg);
         case 'back2front:top_message': return view.openTopMessage(msg);
         case 'back2front:request_pointer_lock': return view.requestPointerLock(msg);
         case 'back2front:preset_selected_name': return view.presetSelectedName(msg);
-        case 'back2front:screenshot': return fireScreenshot();
+        case 'back2front:screenshot': return fireScreenshot(msg);
         case 'back2front:camera_update': return view.updateCameraMatrix(msg);
         case 'back2front:toggle_info_panel': return view.toggleInfoPanel(msg);
         case 'back2front:fps': return view.changeFps(msg);
@@ -202,9 +213,11 @@ function fixCanvasSize (canvas) {
     Logger.log('resolution:', canvas.width, canvas.height, width, height);
 }
 
-async function fireScreenshot () {
-    const arrayBuffer = msg[0];
-    const multiplier = msg[1];
+async function fireScreenshot (args) {
+    Logger.log('starting screenshot');
+
+    const arrayBuffer = args[0];
+    const multiplier = args[1];
 
     const width = 1920 * 2 * multiplier;
     const height = 1080 * 2 * multiplier;

@@ -78,7 +78,7 @@ function generateTemplateFromPresetButtons (fire, presetButtons) {
 
 function generateTemplateFromButtonInput (fire, buttonInput) {
     return html`
-        <div class="menu-entry menu-button ${buttonInput.class}" @click="${() => fire('dispatchKey', { action: 'keydown', key: buttonInput.ref.eventKind })}">
+        <div class="menu-entry menu-button ${buttonInput.class}" @click="${() => fire('dispatchKey', { action: 'keyboth', key: buttonInput.ref.eventKind })}">
             <div class="feature-pack">
                 <div class="feature-name">${buttonInput.text}</div>
             </div>
