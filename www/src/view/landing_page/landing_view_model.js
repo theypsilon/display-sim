@@ -18,7 +18,7 @@ import { mobileAndTabletCheck } from '../../services/utils';
 import { Navigator } from '../../services/navigator';
 import { Visibility } from '../../services/visibility';
 
-export function model (store) {
+export function data (store) {
     return {
         images: [
             { src: require('../../../assets/pics/opt-frames/wwix.gif'), hq: require('../../../assets/pics/frames/wwix.gif'), width: 256, height: 224, id: Constants.FIRST_PREVIEW_IMAGE_ID },

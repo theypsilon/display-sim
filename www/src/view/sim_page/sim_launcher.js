@@ -33,9 +33,9 @@ export class Launcher {
             return { glError: true };
         }
 
-        const displaySim = await displaySimPromise;
+        this.displaySim = await displaySimPromise;
 
-        const videoInput = new displaySim.VideoInputWasm(
+        const videoInput = new this.displaySim.VideoInputWasm(
             params.imageWidth, params.imageHeight, // to read the image pixels
             canvas.width, canvas.height // gl.viewport
         );
@@ -62,14 +62,19 @@ export class Launcher {
 
         if (!simulationResources) {
             Logger.log('calling wasm load_simulation_resources');
-            simulationResources = displaySim.load_simulation_resources();
+            simulationResources = this.displaySim.load_simulation_resources();
             Logger.log('wasm load_simulation_resources done');
         }
 
         Logger.log('calling wasm run_program');
-        displaySim.run_program(gl, eventBus, simulationResources, videoInput);
+        const owner = this.displaySim.run_program(gl, eventBus, simulationResources, videoInput);
         Logger.log('wasm run_program done');
 
-        return { success: true };
+        return { success: true, owner };
+    }
+
+    stop (owner) {
+        if (!owner) { return new Error('owner must not be null!'); }
+        this.displaySim.stop_program(owner);
     }
 }

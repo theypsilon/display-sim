@@ -19,7 +19,7 @@ use js_sys::Uint8Array;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 use crate::console;
-use crate::web_entrypoint::{print_error, web_entrypoint};
+use crate::web_entrypoint::{print_error, stop_frame_loop, web_entrypoint, StateOwner};
 use core::general_types::Size2D;
 use core::simulation_core_state::{AnimationStep, FiltersPreset, Resources, VideoInputResources};
 use render::simulation_render_state::VideoInputMaterials;
@@ -35,11 +35,31 @@ pub fn load_simulation_resources() -> ResourcesWasm {
 }
 
 #[wasm_bindgen]
-pub fn run_program(webgl: JsValue, event_bus: JsValue, res: &ResourcesWasm, video_input: VideoInputWasm) {
+pub fn run_program(webgl: JsValue, event_bus: JsValue, res: &ResourcesWasm, video_input: VideoInputWasm) -> OwnerWasm {
     set_panic_hook();
-    if let Err(e) = web_entrypoint(webgl, event_bus, res.data.clone(), video_input.resources, video_input.materials) {
-        print_error(e);
+    match web_entrypoint(webgl, event_bus, res.data.clone(), video_input.resources, video_input.materials) {
+        Ok(owner) => return OwnerWasm { data: owner },
+        Err(e) => {
+            print_error(e);
+            panic!("Can not recover from run_program.");
+        }
+    };
+}
+
+#[wasm_bindgen]
+pub fn stop_program(owner: OwnerWasm) {
+    match stop_frame_loop(owner.data) {
+        Ok(_) => {}
+        Err(e) => {
+            print_error(e);
+            panic!("Can not recover from stop_frame_loop.");
+        }
     }
+}
+
+#[wasm_bindgen]
+pub struct OwnerWasm {
+    data: Rc<StateOwner>,
 }
 
 #[wasm_bindgen]

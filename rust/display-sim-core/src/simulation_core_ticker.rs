@@ -157,7 +157,6 @@ impl<'a> SimulationUpdater<'a> {
         self.res.resetted = false;
         self.res.drawable = self.res.screenshot_trigger.is_triggered || self.res.screenshot_trigger.delay <= 0;
 
-        self.ctx.dispatcher().dispatch_new_frame();
         Ok(())
     }
 

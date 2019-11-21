@@ -131,10 +131,9 @@ fn program() -> AppResult<()> {
     println!("Preparing simulation context.");
     let sim_ctx = ConcreteSimulationContext::new(NativeEventDispatcher::new(windowed_ctx.clone()), NativeRnd {});
 
-    let starting_time = Instant::now();
-    let framerate = Duration::from_secs_f64(1.0 / 60.0);
+    let timings = Timings::new(Instant::now(), Duration::from_secs_f64(1.0 / 60.0));
 
-    let mut state = NativeSimulationState::new(sim_ctx, windowed_ctx, monitor, res, input, materials, starting_time, framerate);
+    let mut state = NativeSimulationState::new(sim_ctx, windowed_ctx, monitor, res, input, materials, timings);
 
     winit_loop.run(move |event, _, control_flow| match state.iteration(event, control_flow) {
         Ok(()) => {}
@@ -152,9 +151,23 @@ struct NativeSimulationState {
     res: Resources,
     input: Input,
     materials: Materials,
+    timings: Timings,
+}
+
+struct Timings {
     starting_time: Instant,
     framerate: Duration,
     last_time: Instant,
+}
+
+impl Timings {
+    pub fn new(starting_time: Instant, framerate: Duration) -> Self {
+        Timings {
+            starting_time,
+            framerate,
+            last_time: starting_time - framerate,
+        }
+    }
 }
 
 impl NativeSimulationState {
@@ -165,8 +178,7 @@ impl NativeSimulationState {
         res: Resources,
         input: Input,
         materials: Materials,
-        starting_time: Instant,
-        framerate: Duration,
+        timings: Timings,
     ) -> Self {
         NativeSimulationState {
             sim_ctx,
@@ -175,9 +187,7 @@ impl NativeSimulationState {
             res,
             input,
             materials,
-            starting_time,
-            framerate,
-            last_time: starting_time - framerate,
+            timings,
         }
     }
 
@@ -244,10 +254,10 @@ impl NativeSimulationState {
         }
 
         let now = Instant::now();
-        if (now - self.last_time) >= self.framerate {
-            self.last_time = now;
+        if (now - self.timings.last_time) >= self.timings.framerate {
+            self.timings.last_time = now;
 
-            match SimulationCoreTicker::new(&self.sim_ctx, &mut self.res, &mut self.input).tick(self.starting_time.elapsed().as_millis() as f64) {
+            match SimulationCoreTicker::new(&self.sim_ctx, &mut self.res, &mut self.input).tick(self.timings.starting_time.elapsed().as_millis() as f64) {
                 Ok(_) => {}
                 Err(e) => println!("Tick error: {:?}", e),
             };
@@ -372,7 +382,6 @@ impl AppEventDispatcher for NativeEventDispatcher {
     fn dispatch_fps(&self, fps: f32) {
         println!("frames in 20 seconds: {}", fps);
     }
-    fn dispatch_new_frame(&self) {}
     fn dispatch_request_pointer_lock(&self) {
         println!("request_pointer_lock");
         self.video_ctx.window().set_cursor_visible(false);

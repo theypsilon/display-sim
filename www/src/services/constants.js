@@ -31,6 +31,7 @@ export default {
     FILTERS_PRESET_STORE_KEY: 'FiltersPreset',
     FILTER_PRESETS_SELECTED_EVENT_KIND: 'filter-presets-selected',
     PRESET_KIND_CUSTOM: 'custom',
+    PRESET_KIND_APERTURE_GRILLE_1: 'crt-aperture-grille-1',
 
     FIRST_PREVIEW_IMAGE_ID: 'first-preview-image'
 };

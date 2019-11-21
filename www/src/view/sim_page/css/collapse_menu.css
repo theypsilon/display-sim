@@ -195,8 +195,11 @@
     width: 150px;
 }
 
-.input-holder input[type="color"] {
+.input-holder input[type="color"], input[type="checkbox"] {
     cursor: pointer;
+}
+
+.input-holder input[type="color"] {
     width: 200px;
 }
 

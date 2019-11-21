@@ -13,19 +13,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
+import Constants from '../../services/constants';
+import Logger from '../../services/logger';
 import { Navigator } from '../../services/navigator';
 import { Visibility } from '../../services/visibility';
-import Constants from '../../services/constants';
 
-const PRESET_KIND_APERTURE_GRILLE_1 = 'crt-aperture-grille-1';
-
-export function model (store) {
+export function data () {
     const options = {
         presets: {
-            selected: store.getItem(Constants.FILTERS_PRESET_STORE_KEY) || PRESET_KIND_APERTURE_GRILLE_1,
+            selected: null,
             eventKind: Constants.FILTER_PRESETS_SELECTED_EVENT_KIND,
             choices: [
-                { preset: PRESET_KIND_APERTURE_GRILLE_1, text: 'CRT Aperture Grille 1' },
+                { preset: Constants.PRESET_KIND_APERTURE_GRILLE_1, text: 'CRT Aperture Grille 1' },
                 { preset: 'crt-shadow-mask-1', text: 'CRT Shadow Mask 1' },
                 { preset: 'crt-shadow-mask-2', text: 'CRT Shadow Mask 2' },
                 { preset: 'sharp-1', text: 'CRT Sharp Pixels' },
@@ -67,10 +66,13 @@ export function model (store) {
         reset_camera: { eventKind: 'reset-camera' },
         reset_speeds: { eventKind: 'reset-speeds' },
         capture_framebuffer: { eventKind: 'capture-framebuffer' },
+        webgl_performance: { value: null, eventKind: 'webgl:performance' },
+        webgl_antialias: { value: null, eventKind: 'webgl:antialias' },
         quit_simulation: { eventKind: 'quit-simulation' }
     };
     
     return {
+        initStoredValues: false,
         fps: 60,
         options,
         menu: {
@@ -144,6 +146,15 @@ export function model (store) {
                 },
                 {
                     type: 'menu',
+                    text: 'WebGL Settings',
+                    open: false,
+                    entries: [
+                        { type: 'selectors-input', class: 'menu-2 menu-blc-red', text: 'Performance', ref: options.webgl_performance },
+                        { type: 'checkbox-input', class: 'menu-2 menu-blc-red', text: 'Antialias', ref: options.webgl_antialias }
+                    ]
+                },
+                {
+                    type: 'menu',
                     text: 'Extra',
                     open: false,
                     entries: [
@@ -169,8 +180,28 @@ export class View {
         return new View(state, refresh, navigator || Navigator.make(), visibility || Visibility.make());
     }
 
-    showScreen () {
+    init (dto) {
+        if (dto.glError) {
+            return this.showFatalError('WebGL2 is not working on your browser, try restarting it! And remember, this works only on a PC with updated browser and graphics drivers.');
+        }
         this._visibility.hideLoading();
+        if (dto.skipControllerUi) {
+            this.setUiNotVisible();
+        }
+        if (dto.fullscreen) {
+            this.setFullscreen();
+        }
+        if (!this._state.initStoredValues) {
+            this._state.initStoredValues = true;
+            this._state.options.presets.selected = dto.storedValues.selectedPreset;
+            this._state.options.webgl_performance.value = dto.storedValues.powerPreference;
+            this._state.options.webgl_antialias.value = dto.storedValues.antialias;
+        }
+        this._isDirty = true;
+    }
+
+    showLoading () {
+        this._visibility.showLoading();
     }
 
     showFatalError (msg) {
@@ -252,6 +283,7 @@ export class View {
         this._isDirty = true;
     }
     exitingSession () {
+        Logger.log('User closed the simulation.');
         window.location.hash = '';
         this._navigator.goToLandingPage();
     }
@@ -361,5 +393,15 @@ export class View {
     changeScreenCurvature (msg) {
         this._state.options.screen_curvature.value = msg;
         this._isDirty = true;
+    }
+    changePerformance (performance) {
+        this._state.options.webgl_performance.value = performance;
+        this._isDirty = true;
+        this._visibility.hideLoading();
+    }
+    toggleAntialias () {
+        this._state.options.webgl_antialias.value = !this._state.options.webgl_antialias.value;
+        this._isDirty = true;
+        this._visibility.hideLoading();
     }
 }

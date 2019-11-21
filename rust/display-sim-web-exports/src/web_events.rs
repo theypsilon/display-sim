@@ -259,9 +259,6 @@ impl AppEventDispatcher for WebEventDispatcher {
         }
         self.catch_error(dispatch_event_with(&self.event_bus, "back2front:change_movement_speed", &speed.into()));
     }
-    fn dispatch_new_frame(&self) {
-        self.catch_error(dispatch_event(&self.event_bus, "back2front:new_frame"));
-    }
     fn dispatch_exiting_session(&self) {
         self.catch_error(dispatch_event(&self.event_bus, "back2front:exiting_session"));
     }

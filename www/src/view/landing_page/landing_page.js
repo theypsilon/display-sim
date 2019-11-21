@@ -18,12 +18,12 @@ import { Observer } from '../../services/observer';
 import { renderTemplate } from './landing_template';
 import { playHtmlSelection, playQuerystring } from './play_simulation';
 
-import { model, View } from './landing_view_model';
+import { data, View } from './landing_view_model';
 
 import { Store } from './landing_store';
 
 const store = Store.make();
-const state = model(store);
+const state = data(store);
 
 class LandingPage extends HTMLElement {
     constructor () {

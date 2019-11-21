@@ -27,7 +27,7 @@ function generateSimTemplate (state, fire) {
         <style>
             ${css}
         </style>
-        <canvas id="gl-canvas-id" tabindex=0></canvas>
+        <div tabindex=0><canvas id="gl-canvas-id"></canvas></div>
         <div id="simulation-ui">
             <div id="fps-counter">${state.fps}</div>
             <div id="info-panel" class="${state.menu.visible ? '' : 'display-none'}">
@@ -46,6 +46,7 @@ function generateTemplateFromGenericEntry (fire, entry) {
     switch (entry.type) {
     case 'menu': return generateTemplateFromMenu(fire, entry);
     case 'preset-buttons': return generateTemplateFromPresetButtons(fire, entry);
+    case 'checkbox-input': return generateTemplateFromCheckboxInput(fire, entry);
     case 'button-input': return generateTemplateFromButtonInput(fire, entry);
     case 'selectors-input': return generateTemplateFromSelectorsInput(fire, entry);
     case 'number-input': return generateTemplateFromNumberInput(fire, entry);
@@ -76,6 +77,17 @@ function generateTemplateFromPresetButtons (fire, presetButtons) {
     `;
 }
 
+function generateTemplateFromCheckboxInput (fire, checkboxInput) {
+    return html`
+        <div class="menu-entry menu-button ${checkboxInput.class}" @click="${() => fire('toggleCheckbox', checkboxInput.ref)}">
+            <div class="feature-pack">
+                <div class="feature-name">${checkboxInput.text}</div>
+            </div>
+            <div class="feature-value input-holder"><input type="checkbox" ?checked=${checkboxInput.ref.value}></div>
+        </div>
+    `;    
+}
+
 function generateTemplateFromButtonInput (fire, buttonInput) {
     return html`
         <div class="menu-entry menu-button ${buttonInput.class}" @click="${() => fire('dispatchKey', { action: 'keyboth', key: buttonInput.ref.eventKind })}">
@@ -92,15 +104,15 @@ function generateTemplateFromSelectorsInput (fire, selectorInput) {
         <div class="menu-entry ${selectorInput.class}">
             <div class="feature-pack">
                 <div class="feature-name">${selectorInput.text}</div>
-                <div class="feature-hotkeys">
+                ${selectorInput.hk ? html`<div class="feature-hotkeys">
                     <sup class="hotkey hk-inc" title="Press '${selectorInput.hk.inc}' to increse the value of this field">+: ${selectorInput.hk.inc}</sup>
                     <sup class="hotkey hk-dec" title="Press '${selectorInput.hk.inc}' to decrease the value of this field">-: ${selectorInput.hk.dec}</sup>
-                </div>
+                </div>` : ''}
             </div>
             <div class="feature-value input-holder">
                 <div class="selector-inc"
-                    @mouseup="${e => { e.preventDefault(); fire('dispatchKey', { action: 'keyup', key: selectorInput.ref.eventKind + '-inc' }); }}"
-                    @mousedown="${e => { e.preventDefault(); fire('dispatchKey', { action: 'keydown', key: selectorInput.ref.eventKind + '-inc' }); }}"
+                    @mouseup="${e => { e.preventDefault(); fire('dispatchKey', { action: 'keyup', key: selectorInput.ref.eventKind + '-inc', current: selectorInput.ref.value }); }}"
+                    @mousedown="${e => { e.preventDefault(); fire('dispatchKey', { action: 'keydown', key: selectorInput.ref.eventKind + '-inc', current: selectorInput.ref.value }); }}"
                     >
                     <input class="number-input feature-readonly-input" type="text"
                         title="${ifDefined(selectorInput.ref.title)}"
@@ -110,8 +122,8 @@ function generateTemplateFromSelectorsInput (fire, selectorInput) {
                         >+</button>
                 </div>
                 <button class="button-inc-dec"
-                    @mouseup="${() => fire('dispatchKey', { action: 'keyup', key: selectorInput.ref.eventKind + '-dec' })}"
-                    @mousedown="${() => fire('dispatchKey', { action: 'keydown', key: selectorInput.ref.eventKind + '-dec' })}"
+                    @mouseup="${() => fire('dispatchKey', { action: 'keyup', key: selectorInput.ref.eventKind + '-dec', current: selectorInput.ref.value })}"
+                    @mousedown="${() => fire('dispatchKey', { action: 'keydown', key: selectorInput.ref.eventKind + '-dec', current: selectorInput.ref.value })}"
                     >-</button>
             </div>
         </div>

@@ -37,6 +37,13 @@ pub struct StateOwner {
     pub resources: Rc<RefCell<Resources>>,
     pub input: RefCell<Input>,
     pub materials: RefCell<Materials>,
+    pub cancel_id: RefCell<i32>,
+}
+
+impl Drop for StateOwner {
+    fn drop(&mut self) {
+        console!(log. "Am I being leaked?");
+    }
 }
 
 impl StateOwner {
@@ -46,6 +53,7 @@ impl StateOwner {
             resources,
             materials: RefCell::new(materials),
             input: RefCell::new(input),
+            cancel_id: RefCell::new(0),
         })
     }
 }
@@ -56,7 +64,7 @@ pub fn web_entrypoint(
     res: Rc<RefCell<Resources>>,
     video_input_resources: VideoInputResources,
     video_input_materials: VideoInputMaterials,
-) -> AppResult<()> {
+) -> AppResult<Rc<StateOwner>> {
     let webgl = webgl.dyn_into::<WebGl2RenderingContext>()?;
 
     res.borrow_mut().initialize(video_input_resources, now()?);
@@ -79,13 +87,25 @@ pub fn web_entrypoint(
             }
         }))
     };
-    window()?.request_animation_frame(frame_closure.as_ref().unchecked_ref())?;
-    let mut closures = owned_state.closures.borrow_mut();
-    closures.push(Some(frame_closure));
+    *owned_state.cancel_id.borrow_mut() = window()?.request_animation_frame(frame_closure.as_ref().unchecked_ref())?;
+    {
+        let mut closures = owned_state.closures.borrow_mut();
+        closures.push(Some(frame_closure));
 
-    let listeners = set_event_listeners(event_bus, &owned_state)?;
-    closures.extend(listeners);
+        let listeners = set_event_listeners(event_bus, &owned_state)?;
+        closures.extend(listeners);
+    }
 
+    Ok(owned_state)
+}
+
+pub fn stop_frame_loop(owner: Rc<StateOwner>) -> AppResult<()> {
+    {
+        let mut cancel_id = owner.cancel_id.borrow_mut();
+        window()?.cancel_animation_frame(*cancel_id)?;
+        *cancel_id = 0;
+    }
+    drop(owner);
     Ok(())
 }
 
@@ -100,7 +120,10 @@ fn web_entrypoint_iteration(owned_state: &StateOwner, window: &Window, ctx: &mut
     let closures = owned_state.closures.borrow();
     match tick(ctx, &mut input, &mut resources, &mut materials) {
         Ok(true) => {
-            window.request_animation_frame(closures[0].as_ref().ok_or("Wrong closure.")?.as_ref().unchecked_ref())?;
+            let mut cancel_id = owned_state.cancel_id.borrow_mut();
+            if *cancel_id != 0 {
+                *cancel_id = window.request_animation_frame(closures[0].as_ref().ok_or("Wrong closure.")?.as_ref().unchecked_ref())?;
+            }
         }
         Ok(false) => {}
         Err(e) => return Err(e),
@@ -121,7 +144,6 @@ impl RandomGenerator for WebRnd {
 fn tick(ctx: &dyn SimulationContext, input: &mut Input, res: &mut Resources, materials: &mut Materials) -> AppResult<bool> {
     SimulationCoreTicker::new(ctx, res, input).tick(now()?)?;
     if res.quit {
-        console!(log. "User closed the simulation.");
         return Ok(false);
     }
     if res.drawable {
@@ -147,9 +169,9 @@ fn set_event_listeners(event_bus: JsValue, state_owner: &Rc<StateOwner>) -> AppR
     Ok(vec![Some(onfrontendevent)])
 }
 
-pub fn read_frontend_event(input: &mut Input, object: JsValue) -> AppResult<()> {
-    let value = js_sys::Reflect::get(&object, &"message".into())?;
-    let frontend_event: AppResult<String> = js_sys::Reflect::get(&object, &"type".into())?.as_string().ok_or("Could not get kind".into());
+pub fn read_frontend_event(input: &mut Input, event: JsValue) -> AppResult<()> {
+    let value = js_sys::Reflect::get(&event, &"message".into())?;
+    let frontend_event: AppResult<String> = js_sys::Reflect::get(&event, &"type".into())?.as_string().ok_or("Could not get kind".into());
     let frontend_event = frontend_event?;
     let event_value = match frontend_event.as_ref() as &str {
         frontend_event::KEYBOARD => {
