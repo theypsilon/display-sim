@@ -55,7 +55,7 @@ impl<'a, T, U, TriggerHandler: FnOnce(U)> FilterParams<'a, T, U, TriggerHandler>
     }
 }
 
-impl<'a, T: PartialOrd + PartialEq, TriggerHandler: FnOnce(T)> FilterParams<'a, T, T, TriggerHandler> {
+impl<'a, T: PartialOrd + PartialEq + AddAssign + SubAssign, TriggerHandler: FnOnce(T)> FilterParams<'a, T, T, TriggerHandler> {
     pub fn set_progression(mut self, velocity: T) -> Self {
         self.velocity = Some(velocity);
         self

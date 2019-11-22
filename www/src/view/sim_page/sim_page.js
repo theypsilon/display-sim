@@ -85,6 +85,7 @@ function fireEventOn (observer) {
 
 function setupEventHandling (canvasParent, view, model, frontendBus) {
     function fireBackendEvent (kind, msg) {
+        console.log('fireBackendEvent', kind, msg);
         const event = {
             message: msg,
             type: 'front2back:' + kind
@@ -95,6 +96,7 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
     // Listening backend events
     frontendBus.subscribe(e => {
         const msg = e.message;
+        console.log('frontendBus', e.type, msg);
         switch (e.type) {
         case 'front2front:dispatchKey': {
             if (msg.key.startsWith('webgl:')) {    
@@ -115,12 +117,12 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
             break;
         }
         case 'front2front:toggleCheckbox': {
-            if (msg.eventKind !== 'webgl:antialias') {
-                throw new Error('Not implemented other checkboxes!');
+            if (msg.kind === 'webgl:antialias') {
+                view.showLoading();
+                return model.changeAntialiasing(msg.value).then(() => view.changeAntialias(msg.value));
+            } else {
+                return fireBackendEvent(msg.kind, msg.value);
             }
-            view.showLoading();
-            model.changeAntialiasing(msg.value).then(() => view.toggleAntialias());
-            break;
         }
         case 'front2front:changeSyncedInput': return fireBackendEvent(msg.kind, msg.value);
         case 'front2front:toggleControls': return view.toggleControls();
@@ -152,6 +154,11 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
         case 'back2front:change_turning_speed': return view.changeTurningSpeed(msg);
         case 'back2front:color_representation': return view.changeColorRepresentation(msg);
         case 'back2front:scaling_method': return view.changeScalingMethod(msg);
+        case 'back2front:custom_scaling_resolution_width': return view.changeCustomScalingResWidth(msg);
+        case 'back2front:custom_scaling_resolution_height': return view.changeCustomScalingResHeight(msg);
+        case 'back2front:custom_scaling_aspect_ratio_x': return view.changeCustomScalingArX(msg);
+        case 'back2front:custom_scaling_aspect_ratio_y': return view.changeCustomScalingArY(msg);
+        case 'back2front:custom_scaling_stretch_nearest': return view.changeCustomScalingStretchNearest(msg);
         case 'back2front:pixel_geometry': return view.changePixelGeometry(msg);
         case 'back2front:pixel_shadow_shape': return view.changePixelShadowShape(msg);
         case 'back2front:pixel_shadow_height': return view.changePixelShadowHeight(msg);

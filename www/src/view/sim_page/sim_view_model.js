@@ -69,11 +69,10 @@ export function data () {
         webgl_performance: { value: null, eventKind: 'webgl:performance' },
         webgl_antialias: { value: null, eventKind: 'webgl:antialias' },
         scaling_method: { value: null, eventKind: 'scaling-method' },
-        custom_scaling: {
-            resolution: { width: 256, height: 240 },
-            aspect_ratio: { x: 4, y: 3 },
-            eventKind: 'custom-scaling'
-        },
+        custom_scaling_resolution_width: { value: null, eventKind: 'custom-scaling-resolution-width' },
+        custom_scaling_resolution_height: { value: null, eventKind: 'custom-scaling-resolution-height' },
+        custom_scaling_aspect_ratio_x: { value: null, eventKind: 'custom-scaling-aspect-ratio-x' },
+        custom_scaling_aspect_ratio_y: { value: null, eventKind: 'custom-scaling-aspect-ratio-y' },
         custom_scaling_stretch_nearest: { value: null, eventKind: 'custom-scaling-stretch-nearest' },
         quit_simulation: { eventKind: 'quit-simulation' }
     };
@@ -101,8 +100,18 @@ export function data () {
                     open: false,
                     entries: [
                         { type: 'selectors-input', class: 'menu-2 menu-blc-blue', text: 'Scaling Method', ref: options.scaling_method },
-                        { type: 'scaling-input', class: 'menu-blc-lila', ref: options.custom_scaling },
-                        { type: 'number-input', class: 'menu-2 menu-blc-yellow', text: 'Pixel width', hk: { inc: 'O', dec: 'Shift + O' }, step: 0.001, min: 0, max: 10, value: 0, placeholder: 0, ref: options.pixel_width }
+                        { type: 'scaling-input', ref: options.scaling_method, entries: [
+                            { type: 'numeric-pair', text: 'Image resolution', separator: '✕', class: 'menu-blc-lila', pair: [
+                                { min: 1, max: 10000, step: 1, placeholder: 256, ref: options.custom_scaling_resolution_width },
+                                { min: 1, max: 10000, step: 1, placeholder: 240, ref: options.custom_scaling_resolution_height }
+                            ]},
+                            { type: 'numeric-pair', text: 'Aspect Ratio', separator: ':', class: 'menu-blc-lila', pair: [
+                                { min: 1, max: 100, step: 1, placeholder: 4, ref: options.custom_scaling_aspect_ratio_x },
+                                { min: 1, max: 100, step: 1, placeholder: 3, ref: options.custom_scaling_aspect_ratio_y }
+                            ]},
+                            { type: 'checkbox-input', class: 'menu-2 menu-blc-lila', text: 'Stretch to nearest border', ref: options.custom_scaling_stretch_nearest },
+                            { type: 'number-input', class: 'menu-2 menu-blc-yellow', text: 'Pixel width', hk: { inc: 'O', dec: 'Shift + O' }, step: 0.001, min: 0, max: 10, value: 0, placeholder: 0, ref: options.pixel_width }
+                        ]}
                     ]
                 },
                 {
@@ -414,13 +423,33 @@ export class View {
         this._state.options.scaling_method.value = msg;
         this._isDirty = true;
     }
+    changeCustomScalingResWidth(width) {
+        this._state.options.custom_scaling_resolution_width.value = width;
+        this._isDirty = true;
+    }
+    changeCustomScalingResHeight(height) {
+        this._state.options.custom_scaling_resolution_height.value = height;
+        this._isDirty = true;
+    }
+    changeCustomScalingArX(x) {
+        this._state.options.custom_scaling_aspect_ratio_x.value = x;
+        this._isDirty = true;
+    }
+    changeCustomScalingArY(y) {
+        this._state.options.custom_scaling_aspect_ratio_y.value = y;
+        this._isDirty = true;
+    }
+    changeCustomScalingStretchNearest(stretch) {
+        this._state.options.custom_scaling_stretch_nearest.value = stretch;
+        this._isDirty = true;
+    }
     changePerformance (performance) {
         this._state.options.webgl_performance.value = performance;
         this._isDirty = true;
         this._visibility.hideLoading();
     }
-    toggleAntialias () {
-        this._state.options.webgl_antialias.value = !this._state.options.webgl_antialias.value;
+    changeAntialias (antialias) {
+        this._state.options.webgl_antialias.value = antialias;
         this._isDirty = true;
         this._visibility.hideLoading();
     }

@@ -624,6 +624,12 @@ pub mod frontend_event {
     pub const CAMERA_DIRECTION_X: &str = "front2back:camera-dir-x";
     pub const CAMERA_DIRECTION_Y: &str = "front2back:camera-dir-y";
     pub const CAMERA_DIRECTION_Z: &str = "front2back:camera-dir-z";
+
+    pub const CUSTOM_SCALING_RESOLUTION_WIDTH: &str = "front2back:custom-scaling-resolution-width";
+    pub const CUSTOM_SCALING_RESOLUTION_HEIGHT: &str = "front2back:custom-scaling-resolution-height";
+    pub const CUSTOM_SCALING_ASPECT_RATIO_X: &str = "front2back:custom-scaling-aspect-ratio-x";
+    pub const CUSTOM_SCALING_ASPECT_RATIO_Y: &str = "front2back:custom-scaling-aspect-ratio-y";
+    pub const CUSTOM_SCALING_STRETCH_NEAREST: &str = "front2back:custom-scaling-stretch-nearest";
 }
 
 #[derive(Clone, Debug)]
@@ -651,6 +657,11 @@ pub enum InputEventValue {
     PixelWidth(f32),
     PixelSpread(f32),
     Camera(CameraChange),
+    CustomScalingResolutionWidth(f32),
+    CustomScalingResolutionHeight(f32),
+    CustomScalingAspectRatioX(f32),
+    CustomScalingAspectRatioY(f32),
+    CustomScalingStretchNearest(bool),
 }
 
 pub struct CustomInputEvent {
@@ -728,6 +739,10 @@ pub struct Input {
     pub next_internal_resolution: IncDec<BooleanButton>,
     pub next_texture_interpolation: IncDec<BooleanButton>,
     pub scaling_method: IncDec<BooleanButton>,
+    pub custom_scaling_resolution_width: IncDec<BooleanButton>,
+    pub custom_scaling_resolution_height: IncDec<BooleanButton>,
+    pub custom_scaling_aspect_ratio_x: IncDec<BooleanButton>,
+    pub custom_scaling_aspect_ratio_y: IncDec<BooleanButton>,
     pub esc: BooleanButton,
     pub space: BooleanButton,
     pub screenshot: BooleanButton,
@@ -740,6 +755,11 @@ pub struct Input {
     pub event_blur_level: Option<usize>,
     pub event_vertical_lpp: Option<usize>,
     pub event_horizontal_lpp: Option<usize>,
+    pub event_custom_scaling_resolution_width: Option<f32>,
+    pub event_custom_scaling_resolution_height: Option<f32>,
+    pub event_custom_scaling_aspect_ratio_x: Option<f32>,
+    pub event_custom_scaling_aspect_ratio_y: Option<f32>,
+    pub event_custom_scaling_stretch_nearest: Option<bool>,
     pub event_backlight_percent: Option<f32>,
     pub event_pixel_shadow_height: Option<f32>,
     pub event_pixel_vertical_gap: Option<f32>,

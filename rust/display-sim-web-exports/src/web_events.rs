@@ -216,6 +216,38 @@ impl AppEventDispatcher for WebEventDispatcher {
         self.catch_error(dispatch_event_with(&self.event_bus, "back2front:scaling_method", &(method.to_string()).into()));
     }
 
+    fn dispatch_custom_scaling_resolution_width(&self, width: u32) {
+        self.catch_error(dispatch_event_with(
+            &self.event_bus,
+            "back2front:custom_scaling_resolution_width",
+            &(width).into(),
+        ));
+    }
+
+    fn dispatch_custom_scaling_resolution_height(&self, height: u32) {
+        self.catch_error(dispatch_event_with(
+            &self.event_bus,
+            "back2front:custom_scaling_resolution_height",
+            &(height).into(),
+        ));
+    }
+
+    fn dispatch_custom_scaling_aspect_ratio_x(&self, x: u32) {
+        self.catch_error(dispatch_event_with(&self.event_bus, "back2front:custom_scaling_aspect_ratio_x", &(x).into()));
+    }
+
+    fn dispatch_custom_scaling_aspect_ratio_y(&self, y: u32) {
+        self.catch_error(dispatch_event_with(&self.event_bus, "back2front:custom_scaling_aspect_ratio_y", &(y).into()));
+    }
+
+    fn dispatch_custom_scaling_stretch_nearest(&self, stretch: bool) {
+        self.catch_error(dispatch_event_with(
+            &self.event_bus,
+            "back2front:custom_scaling_stretch_nearest",
+            &(stretch).into(),
+        ));
+    }
+
     fn dispatch_screen_curvature(&self, screen_curvature_kind: ScreenCurvatureKind) {
         if self.are_extra_messages_enabled() {
             self.dispatch_top_message(&format!("Screen curvature: {}.", screen_curvature_kind));

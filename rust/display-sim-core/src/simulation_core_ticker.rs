@@ -80,7 +80,11 @@ impl<'a> SimulationCoreTicker<'a> {
                 InputEventValue::PixelWidth(pixel_width) => self.input.event_pixel_width = Some(pixel_width),
                 InputEventValue::PixelSpread(pixel_spread) => self.input.event_pixel_spread = Some(pixel_spread),
                 InputEventValue::Camera(camera) => self.input.event_camera = Some(camera),
-
+                InputEventValue::CustomScalingResolutionWidth(width) => self.input.event_custom_scaling_resolution_width = Some(width),
+                InputEventValue::CustomScalingResolutionHeight(width) => self.input.event_custom_scaling_resolution_height = Some(width),
+                InputEventValue::CustomScalingAspectRatioX(width) => self.input.event_custom_scaling_aspect_ratio_x = Some(width),
+                InputEventValue::CustomScalingAspectRatioY(width) => self.input.event_custom_scaling_aspect_ratio_y = Some(width),
+                InputEventValue::CustomScalingStretchNearest(flag) => self.input.event_custom_scaling_stretch_nearest = Some(flag),
                 InputEventValue::None => {}
             };
         }
@@ -106,6 +110,7 @@ impl<'a> SimulationCoreTicker<'a> {
         self.input.get_mut_fields_option_i32_().iter_mut().for_each(|opt| **opt = None);
         self.input.get_mut_fields_option_string_().iter_mut().for_each(|opt| **opt = None);
         self.input.get_mut_fields_option_camerachange_().iter_mut().for_each(|opt| **opt = None);
+        self.input.get_mut_fields_option_bool_().iter_mut().for_each(|opt| **opt = None);
     }
 }
 
@@ -185,17 +190,75 @@ impl<'a> SimulationUpdater<'a> {
                 ctx.dispatcher().dispatch_scaling_method(*x)
             })
             .process_options();
+
+        changed = changed || match self.res.scaling.scaling_method {
+            ScalingMethod::Custom => self.update_custom_scaling(),
+            _ => false
+        };
+        
+        self.res.scaling.scaling_changed = changed;
+    }
+
+    fn update_custom_scaling(&mut self) -> bool {
+        let ctx = &self.ctx;
+        let input = &self.input;
         let pixel_velocity = self.dt * self.res.speed.filter_speed;
+        let mut changed = false;
         FilterParams::new(*ctx, &mut self.res.scaling.pixel_width, input.pixel_width)
             .set_progression(pixel_velocity * 0.005)
             .set_event_value(input.event_pixel_width)
-            .set_min(0.0)
+            .set_min(0.001)
+            .set_trigger_handler(|x| ctx.dispatcher().dispatch_change_pixel_width(x))
+            .process_with_sums();
+        FilterParams::new(*ctx, &mut self.res.scaling.custom_scaling_resolution.width, input.custom_scaling_resolution_width.to_just_pressed())
+            .set_progression(1.0)
+            .set_event_value(input.event_custom_scaling_resolution_width)
+            .set_min(1.0)
+            .set_max(100000.0)
             .set_trigger_handler(|x| {
                 changed = true;
-                ctx.dispatcher().dispatch_change_pixel_width(x);
+                ctx.dispatcher().dispatch_custom_scaling_resolution_width(x as u32);
             })
             .process_with_sums();
-        self.res.scaling.scaling_changed = changed;
+        FilterParams::new(*ctx, &mut self.res.scaling.custom_scaling_resolution.height, input.custom_scaling_resolution_height.to_just_pressed())
+            .set_progression(1.0)
+            .set_event_value(input.event_custom_scaling_resolution_height)
+            .set_min(1.0)
+            .set_max(100000.0)
+            .set_trigger_handler(|x| {
+                changed = true;
+                ctx.dispatcher().dispatch_custom_scaling_resolution_height(x as u32);
+            })
+            .process_with_sums();
+        FilterParams::new(*ctx, &mut self.res.scaling.custom_scaling_aspect_ratio.width, input.custom_scaling_aspect_ratio_x.to_just_pressed())
+            .set_progression(1.0)
+            .set_event_value(input.event_custom_scaling_aspect_ratio_x)
+            .set_min(1.0)
+            .set_max(100.0)
+            .set_trigger_handler(|x| {
+                changed = true;
+                ctx.dispatcher().dispatch_custom_scaling_aspect_ratio_x(x as u32);
+            })
+            .process_with_sums();
+        FilterParams::new(*ctx, &mut self.res.scaling.custom_scaling_aspect_ratio.height, input.custom_scaling_aspect_ratio_y.to_just_pressed())
+            .set_progression(1.0)
+            .set_event_value(input.event_custom_scaling_aspect_ratio_y)
+            .set_min(1.0)
+            .set_max(100.0)
+            .set_trigger_handler(|x| {
+                changed = true;
+                ctx.dispatcher().dispatch_custom_scaling_aspect_ratio_y(x as u32);
+            })
+            .process_with_sums();
+        if let Some(stretch_nearest) = input.event_custom_scaling_stretch_nearest {
+            if self.res.scaling.custom_scaling_stretch != stretch_nearest {
+                changed = true;
+                self.res.scaling.custom_scaling_stretch = stretch_nearest;
+                ctx.dispatcher().dispatch_custom_scaling_stretch_nearest(self.res.scaling.custom_scaling_stretch);
+            }
+        }
+
+        return changed;
     }
 
     fn update_timers(&mut self) {
@@ -577,6 +640,11 @@ impl<'a> SimulationUpdater<'a> {
         dispatcher.dispatch_change_turning_speed(self.res.camera.turning_speed / TURNING_BASE_SPEED);
         dispatcher.dispatch_change_movement_speed(self.res.camera.movement_speed / self.res.initial_parameters.initial_movement_speed);
         dispatcher.dispatch_scaling_method(self.res.scaling.scaling_method);
+        dispatcher.dispatch_custom_scaling_resolution_width(self.res.scaling.custom_scaling_resolution.width as u32);
+        dispatcher.dispatch_custom_scaling_resolution_height(self.res.scaling.custom_scaling_resolution.height as u32);
+        dispatcher.dispatch_custom_scaling_aspect_ratio_x(self.res.scaling.custom_scaling_aspect_ratio.width as u32);
+        dispatcher.dispatch_custom_scaling_aspect_ratio_y(self.res.scaling.custom_scaling_aspect_ratio.height as u32);
+        dispatcher.dispatch_custom_scaling_stretch_nearest(self.res.scaling.custom_scaling_stretch);
         dispatcher.dispatch_change_pixel_width(self.res.scaling.pixel_width);
         // This one shouldn't be needed because it's always coming from frontend to backend.
         //dispatcher.dispatch_change_preset_selected(&self.res.filters.preset_kind.to_string());

@@ -50,6 +50,7 @@ function generateTemplateFromGenericEntry (fire, entry) {
     case 'checkbox-input': return generateTemplateFromCheckboxInput(fire, entry);
     case 'button-input': return generateTemplateFromButtonInput(fire, entry);
     case 'selectors-input': return generateTemplateFromSelectorsInput(fire, entry);
+    case 'numeric-pair': return generateTemplateFromNumericPair(fire, entry);
     case 'number-input': return generateTemplateFromNumberInput(fire, entry);
     case 'color-input': return generateTemplateFromColorInput(fire, entry);
     case 'camera-input': return generateTemplateFromCameraInput(fire, entry);
@@ -68,6 +69,47 @@ function generateTemplateFromMenu (fire, menu) {
 
 function generateTemplateFromScalingInput (fire, scalingInput) {
     return html`
+        <div class="scaling-input-opaque ${scalingInput.ref.value !== 'Custom' ? '' : 'display-none'}"
+            title="For manually changing these values, select Custom as scaling method."
+            ></div>
+        <div>
+            ${scalingInput.entries.map(entry => generateTemplateFromGenericEntry(fire, entry))}
+        </div>
+    `;
+}
+
+function generateTemplateFromNumericPair (fire, numericPair) {
+    return html`
+        <div class="menu-entry ${numericPair.class}">
+            <div class="feature-pack"><div class="feature-name">${numericPair.text}</div></div>
+            <div class="feature-value input-holder">
+                ${generateTemplateFromHalfPair(fire, numericPair.pair[0])}
+                ${numericPair.separator}
+                ${generateTemplateFromHalfPair(fire, numericPair.pair[1])}
+            </div>
+        </div>
+    `;
+}
+
+function generateTemplateFromHalfPair (fire, halfPair) {
+    return html`
+        <div class="half-numeric-container">
+            <input class="number-input feature-modificable-input half-numeric-input" type="number" 
+                placeholder="${halfPair.placeholder}" step="${halfPair.step}" min="${halfPair.min}" max="${halfPair.max}" .value="${halfPair.ref.value}"
+                @focus="${() => fire('dispatchKey', { action: 'keydown', key: 'input_focused' })}"
+                @blur="${() => fire('dispatchKey', { action: 'keyup', key: 'input_focused' })}"
+                @keypress="${e => e.charCode === 13 /* ENTER */ && e.target.blur()}"
+                @change="${e => fire('changeSyncedInput', { value: +e.target.value, kind: halfPair.ref.eventKind })}"
+                >
+            <button class="button-inc-dec"
+                @mouseup="${() => fire('dispatchKey', { action: 'keyup', key: halfPair.ref.eventKind + '-inc' })}"
+                @mousedown="${() => fire('dispatchKey', { action: 'keydown', key: halfPair.ref.eventKind + '-inc' })}"
+                >+</button>
+            <button class="button-inc-dec"
+                @mouseup="${() => fire('dispatchKey', { action: 'keyup', key: halfPair.ref.eventKind + '-dec' })}"
+                @mousedown="${() => fire('dispatchKey', { action: 'keydown', key: halfPair.ref.eventKind + '-dec' })}"
+                >-</button>
+        </div>
     `;
 }
 
@@ -85,7 +127,8 @@ function generateTemplateFromPresetButtons (fire, presetButtons) {
 
 function generateTemplateFromCheckboxInput (fire, checkboxInput) {
     return html`
-        <div class="menu-entry menu-button ${checkboxInput.class}" @click="${() => fire('toggleCheckbox', checkboxInput.ref)}">
+        <div class="menu-entry menu-button ${checkboxInput.class}"
+            @click="${() => fire('toggleCheckbox', { value: !checkboxInput.ref.value, kind: checkboxInput.ref.eventKind } )}">
             <div class="feature-pack">
                 <div class="feature-name">${checkboxInput.text}</div>
             </div>
@@ -152,7 +195,7 @@ function generateTemplateFromNumberInput (fire, numberInput) {
                     @focus="${() => fire('dispatchKey', { action: 'keydown', key: 'input_focused' })}"
                     @blur="${() => fire('dispatchKey', { action: 'keyup', key: 'input_focused' })}"
                     @keypress="${e => e.charCode === 13 /* ENTER */ && e.target.blur()}"
-                    @change="${e => fire('changeSyncedInput', { value: e.target.value, kind: numberInput.ref.eventKind })}"
+                    @change="${e => fire('changeSyncedInput', { value: +e.target.value, kind: numberInput.ref.eventKind })}"
                     >
                 <button class="button-inc-dec"
                     @mouseup="${() => fire('dispatchKey', { action: 'keyup', key: numberInput.ref.eventKind + '-inc' })}"

@@ -180,6 +180,7 @@
     display: flex;
     align-items: center;
     margin-right: 5px;
+    justify-content: space-between;
 }
 
 .input-holder input[type="number"], input[type="text"], input[type="color"] {
@@ -189,6 +190,27 @@
     padding: 3px;
     background: #303030;
     height: 21px;
+}
+
+.scaling-input-opaque {
+    margin-top: 28px;
+    margin-left: -2px;
+    width: 396px;
+    height: 112px;
+    background-color: black;
+    color: black;
+    opacity: 50%;
+    position: fixed;
+}
+
+.half-numeric-container {
+    display: grid;
+    grid-template-columns: 42px 25px 25px;
+    grid-template-rows: 21px;
+}
+
+.half-numeric-input {
+    width: 42px !important;
 }
 
 .input-holder input[type="number"], input[type="text"] {
