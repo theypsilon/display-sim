@@ -72,6 +72,7 @@ export function data () {
         custom_scaling: {
             resolution: { width: 256, height: 240 },
             aspect_ratio: { x: 4, y: 3},
+            eventKind: 'custom-scaling'
         },
         custom_scaling_stretch_nearest: { value: null, eventKind: 'custom-scaling-stretch-nearest'},
         quit_simulation: { eventKind: 'quit-simulation' }

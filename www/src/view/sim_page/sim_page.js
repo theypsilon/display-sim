@@ -49,6 +49,7 @@ function setupPage (root, state, observers) {
     const [view, canvas] = setupView(state, root, observers.front);
     const model = setupModel(canvas, view, {
         subscribe: cb => observers.back.subscribe(cb),
+        unsubscribe: cb => observers.back.unsubscribe(cb),
         fire: msg => observers.front.fire(msg)
     });
     return setupEventHandling(canvas.parentNode, view, model, {

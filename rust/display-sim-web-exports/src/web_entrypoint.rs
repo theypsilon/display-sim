@@ -30,31 +30,26 @@ use glow::GlowSafeAdapter;
 use render::simulation_draw::SimulationDrawer;
 use render::simulation_render_state::{Materials, VideoInputMaterials};
 
-pub type OwnedClosure = Option<Closure<dyn FnMut(JsValue)>>;
+type OwnedClosure = Closure<dyn FnMut(JsValue)>;
+pub type StateOwnerPtr = Rc<RefCell<Option<Box<StateOwner>>>>;
 
 pub struct StateOwner {
-    pub closures: RefCell<Vec<OwnedClosure>>,
-    pub resources: Rc<RefCell<Resources>>,
-    pub input: RefCell<Input>,
-    pub materials: RefCell<Materials>,
-    pub cancel_id: RefCell<i32>,
-}
-
-impl Drop for StateOwner {
-    fn drop(&mut self) {
-        console!(log. "Am I being leaked?");
-    }
+    pub closures: Vec<OwnedClosure>,
+    pub input: Input,
+    pub materials: Materials,
+    pub event_bus: JsValue,
+    pub cancel_id: i32,
 }
 
 impl StateOwner {
-    pub fn new_rc(resources: Rc<RefCell<Resources>>, materials: Materials, input: Input) -> Rc<StateOwner> {
-        Rc::new(StateOwner {
-            closures: RefCell::new(Vec::new()),
-            resources,
-            materials: RefCell::new(materials),
-            input: RefCell::new(input),
-            cancel_id: RefCell::new(0),
-        })
+    pub fn new_ptr(materials: Materials, input: Input, event_bus: JsValue) -> StateOwnerPtr {
+        Rc::new(RefCell::new(Some(Box::new(StateOwner {
+            closures: Vec::new(),
+            materials,
+            input,
+            cancel_id: 0,
+            event_bus,
+        }))))
     }
 }
 
@@ -64,48 +59,56 @@ pub fn web_entrypoint(
     res: Rc<RefCell<Resources>>,
     video_input_resources: VideoInputResources,
     video_input_materials: VideoInputMaterials,
-) -> AppResult<Rc<StateOwner>> {
+) -> AppResult<StateOwnerPtr> {
     let webgl = webgl.dyn_into::<WebGl2RenderingContext>()?;
 
     res.borrow_mut().initialize(video_input_resources, now()?);
     let gl = Rc::new(GlowSafeAdapter::new(glow::Context::from_webgl2_context(webgl.clone())));
-    let owned_state = StateOwner::new_rc(res, Materials::new(gl, video_input_materials)?, Input::new(now()?));
+    let owned_state = StateOwner::new_ptr(Materials::new(gl, video_input_materials)?, Input::new(now()?), event_bus.clone());
     let frame_closure: Closure<dyn FnMut(JsValue)> = {
         let owned_state = Rc::clone(&owned_state);
         let window = window()?;
         let event_bus = event_bus.clone();
         Closure::wrap(Box::new(move |_| {
-            let mut ctx = ConcreteSimulationContext::new(WebEventDispatcher::new(webgl.clone(), event_bus.clone()), WebRnd {});
-            if let Err(e) = web_entrypoint_iteration(&owned_state, &window, &mut ctx) {
-                console!(error. "An unexpected error happened during web_entrypoint_iteration.", e);
-                ctx.dispatcher().dispatch_exiting_session();
-                ctx.dispatcher()
-                    .dispatch_top_message("Error! Try restarting your browser. Contact me if this problem persists!");
-            }
-            if let Err(e) = ctx.dispatcher_instance.check_error() {
-                console!(error. "Error dispatching some events: ", e);
+            if let Some(owned_state) = &mut *owned_state.borrow_mut() {
+                let mut ctx = ConcreteSimulationContext::new(WebEventDispatcher::new(webgl.clone(), event_bus.clone()), WebRnd {});
+                if let Err(e) = web_entrypoint_iteration(owned_state, &mut *res.borrow_mut(), &window, &mut ctx) {
+                    console!(error. "An unexpected error happened during web_entrypoint_iteration.", e);
+                    ctx.dispatcher().dispatch_exiting_session();
+                    ctx.dispatcher()
+                        .dispatch_top_message("Error! Try restarting your browser. Contact me if this problem persists!");
+                }
+                if let Err(e) = ctx.dispatcher_instance.check_error() {
+                    console!(error. "Error dispatching some events: ", e);
+                }
             }
         }))
     };
-    *owned_state.cancel_id.borrow_mut() = window()?.request_animation_frame(frame_closure.as_ref().unchecked_ref())?;
-    {
-        let mut closures = owned_state.closures.borrow_mut();
-        closures.push(Some(frame_closure));
+    let owned_state_clone = owned_state.clone();
+    if let Some(owned_state) = &mut *owned_state.borrow_mut() {
+        owned_state.cancel_id = window()?.request_animation_frame(frame_closure.as_ref().unchecked_ref())?;
+        owned_state.closures.push(frame_closure);
 
-        let listeners = set_event_listeners(event_bus, &owned_state)?;
-        closures.extend(listeners);
+        let listeners = set_event_listeners(event_bus, owned_state_clone)?;
+        owned_state.closures.extend(listeners);
     }
 
     Ok(owned_state)
 }
 
-pub fn stop_frame_loop(owner: Rc<StateOwner>) -> AppResult<()> {
-    {
-        let mut cancel_id = owner.cancel_id.borrow_mut();
-        window()?.cancel_animation_frame(*cancel_id)?;
-        *cancel_id = 0;
+pub fn stop_frame_loop(owner: StateOwnerPtr) -> AppResult<()> {
+    if let Some(owner) = &mut *owner.borrow_mut() {
+        window()?.cancel_animation_frame(owner.cancel_id)?;
+        owner.cancel_id = 0;
+
+        if let Some(onfrontendevent) = owner.closures.last() {
+            let unsubscribe = js_sys::Reflect::get(&owner.event_bus, &"unsubscribe".into())?.dyn_into::<js_sys::Function>()?;
+            let args = js_sys::Array::new();
+            args.push(onfrontendevent.as_ref().unchecked_ref());
+            unsubscribe.apply(&owner.event_bus, &args)?;
+        }
     }
-    drop(owner);
+    let _ = owner.borrow_mut().take();
     Ok(())
 }
 
@@ -113,16 +116,11 @@ pub fn print_error(e: AppError) {
     console!(error. "An unexpected error ocurred.", e);
 }
 
-fn web_entrypoint_iteration(owned_state: &StateOwner, window: &Window, ctx: &mut dyn SimulationContext) -> AppResult<()> {
-    let mut input = owned_state.input.borrow_mut();
-    let mut resources = owned_state.resources.borrow_mut();
-    let mut materials = owned_state.materials.borrow_mut();
-    let closures = owned_state.closures.borrow();
-    match tick(ctx, &mut input, &mut resources, &mut materials) {
+fn web_entrypoint_iteration(owned_state: &mut StateOwner, resources: &mut Resources, window: &Window, ctx: &mut dyn SimulationContext) -> AppResult<()> {
+    match tick(ctx, &mut owned_state.input, resources, &mut owned_state.materials) {
         Ok(true) => {
-            let mut cancel_id = owned_state.cancel_id.borrow_mut();
-            if *cancel_id != 0 {
-                *cancel_id = window.request_animation_frame(closures[0].as_ref().ok_or("Wrong closure.")?.as_ref().unchecked_ref())?;
+            if owned_state.cancel_id != 0 {
+                owned_state.cancel_id = window.request_animation_frame(owned_state.closures[0].as_ref().as_ref().unchecked_ref())?;
             }
         }
         Ok(false) => {}
@@ -152,13 +150,14 @@ fn tick(ctx: &dyn SimulationContext, input: &mut Input, res: &mut Resources, mat
     Ok(true)
 }
 
-fn set_event_listeners(event_bus: JsValue, state_owner: &Rc<StateOwner>) -> AppResult<Vec<OwnedClosure>> {
+fn set_event_listeners(event_bus: JsValue, state_owner: StateOwnerPtr) -> AppResult<Vec<OwnedClosure>> {
     let onfrontendevent: Closure<dyn FnMut(JsValue)> = {
-        let state_owner = Rc::clone(&state_owner);
         Closure::wrap(Box::new(move |event: JsValue| {
-            let mut input = state_owner.input.borrow_mut();
-            if let Err(e) = read_frontend_event(&mut input, event) {
-                console!(error. "Could not read custom event.", e);
+            if let Some(state_owner) = &mut *state_owner.borrow_mut() {
+                let mut input = &mut state_owner.input;
+                if let Err(e) = read_frontend_event(&mut input, event) {
+                    console!(error. "Could not read custom event.", e);
+                }
             }
         }))
     };
@@ -166,7 +165,7 @@ fn set_event_listeners(event_bus: JsValue, state_owner: &Rc<StateOwner>) -> AppR
     let args = js_sys::Array::new();
     args.push(onfrontendevent.as_ref().unchecked_ref());
     subscribe.apply(&event_bus, &args)?;
-    Ok(vec![Some(onfrontendevent)])
+    Ok(vec![onfrontendevent])
 }
 
 pub fn read_frontend_event(input: &mut Input, event: JsValue) -> AppResult<()> {

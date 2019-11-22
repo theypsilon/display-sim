@@ -21,7 +21,7 @@ use core::internal_resolution::InternalResolution;
 use core::pixels_shadow::ShadowShape;
 use core::simulation_context::{ConcreteSimulationContext, RandomGenerator};
 use core::simulation_core_state::{AnimationStep, Input, Resources, VideoInputResources};
-use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, TextureInterpolation, ScalingMethod};
+use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScalingMethod, ScreenCurvatureKind, TextureInterpolation};
 use core::simulation_core_ticker::SimulationCoreTicker;
 use render::error::AppResult;
 use render::simulation_draw::SimulationDrawer;

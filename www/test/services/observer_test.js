@@ -15,6 +15,13 @@ describe('Observer', () => {
         assert.isTrue(spy.calledOnce);
     });
 
+    it('should not call the subscribed callback after being unsubscribed', () => {
+        sut.subscribe(spy);
+        sut.unsubscribe(spy);
+        sut.fire();
+        assert.isTrue(spy.notCalled);
+    });
+
     it('should call thrice the subscribed callback after calling the method fire 3 times', () => {
         sut.subscribe(spy);
         sut.fire();

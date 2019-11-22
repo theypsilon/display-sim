@@ -707,7 +707,9 @@ impl<'a> SimulationUpdater<'a> {
                     self.ctx.dispatcher().dispatch_top_message("Automatic scaling: 11:10 (Game Boy) on full image.");
                 } else if self.res.video.image_size.height == 160 {
                     self.res.scaling.pixel_width = (3.0 / 2.0) / (self.res.video.image_size.width as f32 / self.res.video.image_size.height as f32);
-                    self.ctx.dispatcher().dispatch_top_message("Automatic scaling: 3:2 (Game Boy Advance) on full image.");
+                    self.ctx
+                        .dispatcher()
+                        .dispatch_top_message("Automatic scaling: 3:2 (Game Boy Advance) on full image.");
                 } else {
                     self.res.scaling.pixel_width = (4.0 / 3.0) / (self.res.video.image_size.width as f32 / self.res.video.image_size.height as f32);
                     self.ctx.dispatcher().dispatch_top_message("Automatic scaling: 4:3 on full image.");

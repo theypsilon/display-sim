@@ -19,7 +19,7 @@ use js_sys::Uint8Array;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 use crate::console;
-use crate::web_entrypoint::{print_error, stop_frame_loop, web_entrypoint, StateOwner};
+use crate::web_entrypoint::{print_error, stop_frame_loop, web_entrypoint, StateOwnerPtr};
 use core::general_types::Size2D;
 use core::simulation_core_state::{AnimationStep, FiltersPreset, Resources, VideoInputResources};
 use render::simulation_render_state::VideoInputMaterials;
@@ -59,7 +59,7 @@ pub fn stop_program(owner: OwnerWasm) {
 
 #[wasm_bindgen]
 pub struct OwnerWasm {
-    data: Rc<StateOwner>,
+    data: StateOwnerPtr,
 }
 
 #[wasm_bindgen]

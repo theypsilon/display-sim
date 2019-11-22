@@ -26,6 +26,10 @@ export class Observer {
         this._callbacks.push(cb);
     }
 
+    unsubscribe (unsubscribedCb) {
+        this._callbacks = this._callbacks.filter(cb => cb !== unsubscribedCb);
+    }
+
     fire (event) {
         this._callbacks.forEach(cb => cb(event));
     }
