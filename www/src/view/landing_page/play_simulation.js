@@ -125,19 +125,19 @@ async function getAnimations (state) {
 function calculateAutoScaling (imageWidth, imageHeight) {
     if (imageHeight > 540) {
         return {
-            scaleX: 1,
+            scaleX: 1
         };
     } else if (imageHeight === 144) {
         return {
-            scaleX: (11 / 10) / (imageWidth / imageHeight),
+            scaleX: (11 / 10) / (imageWidth / imageHeight)
         };
     } else if (imageHeight === 160) {
         return {
-            scaleX: (3 / 2) / (imageWidth / imageHeight),
+            scaleX: (3 / 2) / (imageWidth / imageHeight)
         };
     } else {
         return {
-            scaleX: (4 / 3) / (imageWidth / imageHeight),
+            scaleX: (4 / 3) / (imageWidth / imageHeight)
         };
     }
 }

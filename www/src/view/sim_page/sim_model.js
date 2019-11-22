@@ -29,7 +29,9 @@ export class Model {
         this.launcher = launcher;
         this.store = store;
         this.state = {
-            canvas, msg: null, simOwner: null,
+            canvas,
+            msg: null,
+            simOwner: null,
             storedValues: {
                 selectedPreset: this.store.getItem(Constants.FILTERS_PRESET_STORE_KEY) || Constants.PRESET_KIND_APERTURE_GRILLE_1,
                 powerPreference: this.store.getItem(STORE_KEY_WEBGL_POWER_PREFERENCE) || Constants.POWER_PREFERENCE_DEFAULT,
@@ -64,7 +66,7 @@ export class Model {
                 premultipliedAlpha: false,
                 preserveDrawingBuffer: false,
                 stencil: false
-            },
+            }
         }, this.state.msg.launcherParams));
         this.state.simOwner = result.owner;
         return Object.assign({ storedValues: this.state.storedValues }, this.state.msg, result);
@@ -77,7 +79,7 @@ export class Model {
         }
     }
 
-    _saveStoredValues() {
+    _saveStoredValues () {
         this.store.setItem(Constants.FILTERS_PRESET_STORE_KEY, this.state.storedValues.selectedPreset);
         this.store.setItem(STORE_KEY_WEBGL_POWER_PREFERENCE, this.state.storedValues.powerPreference);
         this.store.setItem(STORE_KEY_WEBGL_ANTIALIAS, this.state.storedValues.antialias ? 'true' : 'false');

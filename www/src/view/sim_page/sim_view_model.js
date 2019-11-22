@@ -71,10 +71,10 @@ export function data () {
         scaling_method: { value: null, eventKind: 'scaling-method' },
         custom_scaling: {
             resolution: { width: 256, height: 240 },
-            aspect_ratio: { x: 4, y: 3},
+            aspect_ratio: { x: 4, y: 3 },
             eventKind: 'custom-scaling'
         },
-        custom_scaling_stretch_nearest: { value: null, eventKind: 'custom-scaling-stretch-nearest'},
+        custom_scaling_stretch_nearest: { value: null, eventKind: 'custom-scaling-stretch-nearest' },
         quit_simulation: { eventKind: 'quit-simulation' }
     };
     
@@ -102,7 +102,7 @@ export function data () {
                     entries: [
                         { type: 'selectors-input', class: 'menu-2 menu-blc-blue', text: 'Scaling Method', ref: options.scaling_method },
                         { type: 'scaling-input', class: 'menu-blc-lila', ref: options.custom_scaling },
-                        { type: 'number-input', class: 'menu-2 menu-blc-yellow', text: 'Pixel width', hk: { inc: 'O', dec: 'Shift + O' }, step: 0.001, min: 0, max: 10, value: 0, placeholder: 0, ref: options.pixel_width },
+                        { type: 'number-input', class: 'menu-2 menu-blc-yellow', text: 'Pixel width', hk: { inc: 'O', dec: 'Shift + O' }, step: 0.001, min: 0, max: 10, value: 0, placeholder: 0, ref: options.pixel_width }
                     ]
                 },
                 {
