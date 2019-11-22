@@ -112,7 +112,7 @@ impl<GL: HasContext> GlowSafeAdapter<GL> {
     pub fn get_uniform_location(&self, _: GL::Program, _: &str) -> Option<GL::UniformLocation> {
         Some(Default::default())
     }
-    pub fn get_attrib_location(&self, _: GL::Program, _: &str) -> i32 {
+    pub fn get_attrib_location(&self, _: GL::Program, _: &str) -> u32 {
         0
     }
     pub fn get_active_attributes(&self, _: GL::Program) -> u32 {
