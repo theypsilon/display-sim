@@ -57,6 +57,8 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) -
         "s" => input.walk_backward = pressed,
         "q" => input.walk_up = pressed,
         "e" => input.walk_down = pressed,
+        "scaling-method-inc" => input.scaling_method.increase.input = pressed,
+        "scaling-method-dec" => input.scaling_method.decrease.input = pressed,
         "f" | "move-speed-inc" => input.translation_speed.increase.input = pressed,
         "shift+f" | "move-speed-dec" => input.translation_speed.decrease.input = pressed,
         "r" | "pixel-speed-inc" => input.filter_speed.increase.input = pressed,

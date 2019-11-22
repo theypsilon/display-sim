@@ -17,13 +17,11 @@ import Constants from '../../services/constants';
 import { LocalStorage } from '../../services/local_storage';
 
 const OPTION_SCALING_SELECT = 'option-scaling';
-const OPTION_POWER_PREFERENCE_SELECT = 'option-powerPreference';
 const OPTION_SCALING_CUSTOM_RES_WIDTH = 'option-scaling-custom-resolution-width';
 const OPTION_SCALING_CUSTOM_RES_HEIGHT = 'option-scaling-custom-resolution-height';
 const OPTION_SCALING_CUSTOM_AR_X = 'option-scaling-custom-aspect-ratio-x';
 const OPTION_SCALING_CUSTOM_AR_Y = 'option-scaling-custom-aspect-ratio-y';
 const OPTION_SCALING_CUSTOM_STRETCH_NEAREST = 'option-scaling-custom-stretch-nearest';
-const OPTION_ANTIALIAS = 'option-antialias';
 
 export class Store {
     constructor (localStorage) {
@@ -34,8 +32,6 @@ export class Store {
     }
     getScalingSelectOption () { return this.localStorage.getItem(OPTION_SCALING_SELECT) || Constants.SCALING_AUTO_ID; }
     setScalingSelectOption (option) { this.localStorage.setItem(OPTION_SCALING_SELECT, option); }
-    getPowerPreferenceSelectOption () { return this.localStorage.getItem(OPTION_POWER_PREFERENCE_SELECT) || Constants.POWER_PREFERENCE_DEFAULT; }
-    setPowerPreferenceSelectOption (option) { this.localStorage.setItem(OPTION_POWER_PREFERENCE_SELECT, option); }
     getCustomResWidth () { return this.localStorage.getItem(OPTION_SCALING_CUSTOM_RES_WIDTH) || 256; }
     setCustomResWidth (width) { this.localStorage.setItem(OPTION_SCALING_CUSTOM_RES_WIDTH, width); }
     getCustomResHeight () { return this.localStorage.getItem(OPTION_SCALING_CUSTOM_RES_HEIGHT) || 224; }
@@ -46,16 +42,12 @@ export class Store {
     setCustomArY (y) { this.localStorage.setItem(OPTION_SCALING_CUSTOM_AR_Y, y); }
     getCustomStretchNearest () { return this.localStorage.getItem(OPTION_SCALING_CUSTOM_STRETCH_NEAREST) === 'true'; }
     setCustomStretchNearest (stretch) { this.localStorage.setItem(OPTION_SCALING_CUSTOM_STRETCH_NEAREST, stretch ? 'true' : 'false'); }
-    getAntiAliasing () { return this.localStorage.getItem(OPTION_ANTIALIAS) !== 'false'; }
-    setAntiAliasing (antiAliasing) { this.localStorage.setItem(OPTION_ANTIALIAS, antiAliasing ? 'true' : 'false'); }
     removeAllOptions () {
         this.localStorage.removeItem(OPTION_SCALING_SELECT);
-        this.localStorage.removeItem(OPTION_POWER_PREFERENCE_SELECT);
         this.localStorage.removeItem(OPTION_SCALING_CUSTOM_RES_WIDTH);
         this.localStorage.removeItem(OPTION_SCALING_CUSTOM_RES_HEIGHT);
         this.localStorage.removeItem(OPTION_SCALING_CUSTOM_AR_X);
         this.localStorage.removeItem(OPTION_SCALING_CUSTOM_AR_Y);
         this.localStorage.removeItem(OPTION_SCALING_CUSTOM_STRETCH_NEAREST);
-        this.localStorage.removeItem(OPTION_ANTIALIAS);
     }
 }

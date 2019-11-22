@@ -20,8 +20,8 @@ use crate::general_types::{get_3_f32color_from_int, get_int_from_3_f32color};
 use crate::pixels_shadow::ShadowShape;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::{
-    ColorChannels, Filters, FiltersPreset, Input, InputEventValue, PixelsGeometryKind, Resources, ScreenCurvatureKind, TextureInterpolation,
-    PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
+    calculate_far_away_position, ColorChannels, Filters, FiltersPreset, Input, InputEventValue, PixelsGeometryKind, Resources, ScalingMethod,
+    ScreenCurvatureKind, TextureInterpolation, PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
 };
 use app_error::AppResult;
 use derive_new::new;
@@ -145,6 +145,7 @@ impl<'a> SimulationUpdater<'a> {
         }
 
         self.update_speeds();
+        self.update_scaling();
         self.update_filters()?;
         self.update_camera();
         self.update_screenshot();
@@ -172,6 +173,29 @@ impl<'a> SimulationUpdater<'a> {
                 self.ctx.dispatcher().dispatch_top_message("Screenshot about to be downloaded, please wait.");
             }
         }
+    }
+
+    fn update_scaling(&mut self) {
+        let ctx = &self.ctx;
+        let input = &self.input;
+        let mut changed = false;
+        FilterParams::new(*ctx, &mut self.res.scaling.scaling_method, input.scaling_method.to_just_pressed())
+            .set_trigger_handler(|x: &ScalingMethod| {
+                changed = true;
+                ctx.dispatcher().dispatch_scaling_method(*x)
+            })
+            .process_options();
+        let pixel_velocity = self.dt * self.res.speed.filter_speed;
+        FilterParams::new(*ctx, &mut self.res.scaling.pixel_width, input.pixel_width)
+            .set_progression(pixel_velocity * 0.005)
+            .set_event_value(input.event_pixel_width)
+            .set_min(0.0)
+            .set_trigger_handler(|x| {
+                changed = true;
+                ctx.dispatcher().dispatch_change_pixel_width(x);
+            })
+            .process_with_sums();
+        self.res.scaling.scaling_changed = changed;
     }
 
     fn update_timers(&mut self) {
@@ -245,7 +269,6 @@ impl<'a> SimulationUpdater<'a> {
         self.update_filter_presets_from_event()?;
         if self.input.reset_filters {
             self.res.filters = Filters::default();
-            self.res.filters.cur_pixel_width = self.res.initial_parameters.initial_pixel_width;
             self.res
                 .filters
                 .internal_resolution
@@ -395,15 +418,6 @@ impl<'a> SimulationUpdater<'a> {
                 ctx.dispatcher().dispatch_change_pixel_horizontal_gap(x);
             })
             .process_with_sums();
-        FilterParams::new(*ctx, &mut filters.cur_pixel_width, input.pixel_width)
-            .set_progression(pixel_velocity * 0.005)
-            .set_event_value(input.event_pixel_width)
-            .set_min(0.0)
-            .set_trigger_handler(|x| {
-                changed = true;
-                ctx.dispatcher().dispatch_change_pixel_width(x);
-            })
-            .process_with_sums();
         FilterParams::new(*ctx, &mut filters.cur_pixel_spread, input.pixel_spread)
             .set_progression(pixel_velocity * 0.005)
             .set_event_value(input.event_pixel_spread)
@@ -541,7 +555,6 @@ impl<'a> SimulationUpdater<'a> {
         dispatcher.enable_extra_messages(false);
         dispatcher.dispatch_change_pixel_horizontal_gap(self.res.filters.cur_pixel_horizontal_gap);
         dispatcher.dispatch_change_pixel_vertical_gap(self.res.filters.cur_pixel_vertical_gap);
-        dispatcher.dispatch_change_pixel_width(self.res.filters.cur_pixel_width);
         dispatcher.dispatch_change_pixel_spread(self.res.filters.cur_pixel_spread);
         dispatcher.dispatch_change_pixel_brightness(self.res.filters.extra_bright);
         dispatcher.dispatch_change_pixel_contrast(self.res.filters.extra_contrast);
@@ -563,6 +576,8 @@ impl<'a> SimulationUpdater<'a> {
         dispatcher.dispatch_change_pixel_speed(self.res.speed.filter_speed / PIXEL_MANIPULATION_BASE_SPEED);
         dispatcher.dispatch_change_turning_speed(self.res.camera.turning_speed / TURNING_BASE_SPEED);
         dispatcher.dispatch_change_movement_speed(self.res.camera.movement_speed / self.res.initial_parameters.initial_movement_speed);
+        dispatcher.dispatch_scaling_method(self.res.scaling.scaling_method);
+        dispatcher.dispatch_change_pixel_width(self.res.scaling.pixel_width);
         // This one shouldn't be needed because it's always coming from frontend to backend.
         //dispatcher.dispatch_change_preset_selected(&self.res.filters.preset_kind.to_string());
         dispatcher.enable_extra_messages(true);
@@ -655,6 +670,7 @@ impl<'a> SimulationUpdater<'a> {
     }
 
     fn update_outputs(&mut self) {
+        self.update_output_scaling();
         self.update_output_filter_source_colors();
         self.update_output_filter_curvature();
         self.update_output_filter_backlight();
@@ -671,6 +687,61 @@ impl<'a> SimulationUpdater<'a> {
         output.height_modifier_factor = 1.0 - filters.pixel_shadow_height;
 
         self.update_output_pixel_scale_gap_offset();
+    }
+
+    fn update_output_scaling(&mut self) {
+        if !self.res.scaling.scaling_changed {
+            return;
+        }
+        self.res.scaling.scaling_changed = false;
+
+        let mut video_copy = self.res.video.clone();
+        let last_pixel_width = self.res.scaling.pixel_width;
+        match self.res.scaling.scaling_method {
+            ScalingMethod::AutoDetect => {
+                if self.res.video.image_size.height > 540 {
+                    self.res.scaling.pixel_width = 1.0;
+                    self.ctx.dispatcher().dispatch_top_message("Automatic scaling: Squared pixels.");
+                } else if self.res.video.image_size.height == 144 {
+                    self.res.scaling.pixel_width = (11.0 / 10.0) / (self.res.video.image_size.width as f32 / self.res.video.image_size.height as f32);
+                    self.ctx.dispatcher().dispatch_top_message("Automatic scaling: 11:10 (Game Boy) on full image.");
+                } else if self.res.video.image_size.height == 160 {
+                    self.res.scaling.pixel_width = (3.0 / 2.0) / (self.res.video.image_size.width as f32 / self.res.video.image_size.height as f32);
+                    self.ctx.dispatcher().dispatch_top_message("Automatic scaling: 3:2 (Game Boy Advance) on full image.");
+                } else {
+                    self.res.scaling.pixel_width = (4.0 / 3.0) / (self.res.video.image_size.width as f32 / self.res.video.image_size.height as f32);
+                    self.ctx.dispatcher().dispatch_top_message("Automatic scaling: 4:3 on full image.");
+                }
+            }
+            ScalingMethod::SquaredPixels => {
+                self.res.scaling.pixel_width = 1.0;
+            }
+            ScalingMethod::FullImage4By3 => {
+                self.res.scaling.pixel_width = (4.0 / 3.0) / (self.res.video.image_size.width as f32 / self.res.video.image_size.height as f32)
+            }
+            ScalingMethod::StretchToBothEdges => {
+                self.res.scaling.pixel_width = (self.res.video.viewport_size.width as f32 / self.res.video.viewport_size.height as f32)
+                    / (self.res.video.image_size.width as f32 / self.res.video.image_size.height as f32);
+                video_copy.stretch = true;
+            }
+            ScalingMethod::StretchToNearestEdge => {
+                self.res.scaling.pixel_width = 1.0;
+                video_copy.stretch = true;
+            }
+            ScalingMethod::Custom => {
+                self.res.scaling.pixel_width = (self.res.scaling.custom_scaling_aspect_ratio.width / self.res.scaling.custom_scaling_aspect_ratio.height)
+                    / (self.res.scaling.custom_scaling_resolution.width / self.res.scaling.custom_scaling_resolution.height);
+                video_copy.stretch = self.res.scaling.custom_scaling_stretch;
+            }
+        }
+        if self.res.scaling.pixel_width != last_pixel_width {
+            self.ctx.dispatcher().dispatch_change_pixel_width(self.res.scaling.pixel_width);
+        }
+
+        video_copy.pixel_width = self.res.scaling.pixel_width;
+        self.res.camera.set_position(glm::vec3(0.0, 0.0, calculate_far_away_position(&video_copy)));
+        self.res.camera.direction = glm::vec3(0.0, 0.0, -1.0);
+        self.res.camera.axis_up = glm::vec3(0.0, 1.0, 0.0);
     }
 
     fn update_output_filter_source_colors(&mut self) {
@@ -733,10 +804,11 @@ impl<'a> SimulationUpdater<'a> {
     fn update_output_pixel_scale_gap_offset(&mut self) {
         let output = &mut self.res.output;
         let filters = &self.res.filters;
+        let scaling = &self.res.scaling;
 
-        output.pixel_spread = [(1.0 + filters.cur_pixel_spread) * filters.cur_pixel_width, 1.0 + filters.cur_pixel_spread];
+        output.pixel_spread = [(1.0 + filters.cur_pixel_spread) * scaling.pixel_width, 1.0 + filters.cur_pixel_spread];
         output.pixel_scale_base = [
-            (filters.cur_pixel_vertical_gap + 1.0) / filters.cur_pixel_width,
+            (filters.cur_pixel_vertical_gap + 1.0) / scaling.pixel_width,
             filters.cur_pixel_horizontal_gap + 1.0,
             (filters.cur_pixel_vertical_gap + filters.cur_pixel_vertical_gap) * 0.5 + 1.0,
         ];
@@ -755,10 +827,10 @@ impl<'a> SimulationUpdater<'a> {
                 let pixel_scale = &mut output.pixel_scale_background[vl_idx * filters.horizontal_lpp + hl_idx];
 
                 *pixel_offset = [0.0, 0.0, 0.0];
-                *pixel_scale = [(0.0 + 1.0) / filters.cur_pixel_width, 0.0 + 1.0, (0.0 + 0.0) * 0.5 + 1.0];
+                *pixel_scale = [(0.0 + 1.0) / scaling.pixel_width, 0.0 + 1.0, (0.0 + 0.0) * 0.5 + 1.0];
                 if filters.vertical_lpp > 1 {
                     let vl_cur_offset = vl_offset_beginning + vl_idx as f32;
-                    pixel_offset[0] = (pixel_offset[0] + vl_cur_offset * filters.cur_pixel_width) * by_vertical_lpp;
+                    pixel_offset[0] = (pixel_offset[0] + vl_cur_offset * scaling.pixel_width) * by_vertical_lpp;
                     pixel_scale[0] *= filters.vertical_lpp as f32;
                 }
                 if filters.horizontal_lpp > 1 {
@@ -778,13 +850,13 @@ impl<'a> SimulationUpdater<'a> {
                     let pixel_scale = &mut output.pixel_scale_foreground[vl_idx * filters.horizontal_lpp + hl_idx][color_idx];
                     *pixel_offset = [0.0, 0.0, 0.0];
                     *pixel_scale = [
-                        (filters.cur_pixel_vertical_gap + 1.0) / filters.cur_pixel_width,
+                        (filters.cur_pixel_vertical_gap + 1.0) / scaling.pixel_width,
                         filters.cur_pixel_horizontal_gap + 1.0,
                         (filters.cur_pixel_vertical_gap + filters.cur_pixel_vertical_gap) * 0.5 + 1.0,
                     ];
                     if filters.vertical_lpp > 1 {
                         let vl_cur_offset = vl_offset_beginning + vl_idx as f32;
-                        pixel_offset[0] = (pixel_offset[0] + vl_cur_offset * filters.cur_pixel_width) * by_vertical_lpp;
+                        pixel_offset[0] = (pixel_offset[0] + vl_cur_offset * scaling.pixel_width) * by_vertical_lpp;
                         pixel_scale[0] *= filters.vertical_lpp as f32;
                     }
                     if filters.horizontal_lpp > 1 {
@@ -792,7 +864,7 @@ impl<'a> SimulationUpdater<'a> {
                         pixel_offset[1] = (pixel_offset[1] + hl_cur_offset) * by_horizontal_lpp;
                         pixel_scale[1] *= filters.horizontal_lpp as f32;
                         if filters.horizontal_lpp % 2 == 0 && hl_idx % 2 == 1 {
-                            pixel_offset[0] += 0.5 * filters.cur_pixel_width * by_vertical_lpp;
+                            pixel_offset[0] += 0.5 * scaling.pixel_width * by_vertical_lpp;
                         }
                     }
                     match filters.color_channels {
@@ -800,12 +872,12 @@ impl<'a> SimulationUpdater<'a> {
                         _ => match filters.color_channels {
                             ColorChannels::SplitHorizontal => {
                                 pixel_offset[0] +=
-                                    by_vertical_lpp * (color_idx as f32 - 1.0) * (1.0 / 3.0) * filters.cur_pixel_width / (filters.cur_pixel_vertical_gap + 1.0);
+                                    by_vertical_lpp * (color_idx as f32 - 1.0) * (1.0 / 3.0) * scaling.pixel_width / (filters.cur_pixel_vertical_gap + 1.0);
                                 pixel_scale[0] *= output.color_splits as f32;
                             }
                             ColorChannels::Overlapping => {
                                 pixel_offset[0] +=
-                                    by_vertical_lpp * (color_idx as f32 - 1.0) * (1.0 / 3.0) * filters.cur_pixel_width / (filters.cur_pixel_vertical_gap + 1.0);
+                                    by_vertical_lpp * (color_idx as f32 - 1.0) * (1.0 / 3.0) * scaling.pixel_width / (filters.cur_pixel_vertical_gap + 1.0);
                                 pixel_scale[0] *= 1.5;
                             }
                             ColorChannels::SplitVertical => {

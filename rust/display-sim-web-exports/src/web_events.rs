@@ -20,7 +20,7 @@ use core::app_events::AppEventDispatcher;
 use core::camera::CameraLockMode;
 use core::internal_resolution::InternalResolution;
 use core::pixels_shadow::ShadowShape;
-use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, TextureInterpolation};
+use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScalingMethod, ScreenCurvatureKind, TextureInterpolation};
 use js_sys::{Array, Float32Array};
 use std::cell::RefCell;
 use std::fmt::Display;
@@ -207,6 +207,13 @@ impl AppEventDispatcher for WebEventDispatcher {
             "back2front:backlight_percent",
             &format!("{:.03}", backlight).into(),
         ));
+    }
+
+    fn dispatch_scaling_method(&self, method: ScalingMethod) {
+        if self.are_extra_messages_enabled() {
+            self.dispatch_top_message(&format!("Scaling method: {}.", method));
+        }
+        self.catch_error(dispatch_event_with(&self.event_bus, "back2front:scaling_method", &(method.to_string()).into()));
     }
 
     fn dispatch_screen_curvature(&self, screen_curvature_kind: ScreenCurvatureKind) {

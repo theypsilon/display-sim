@@ -37,13 +37,6 @@ export function data (store) {
 
 function makeOptions (store) {
     return {
-        antialias: store.getAntiAliasing(),
-        performanceOptions: [
-            { value: Constants.POWER_PREFERENCE_DEFAULT, text: 'Default' },
-            { value: 'high-performance', text: 'High Performance' },
-            { value: 'low-power', text: 'Low Power' }
-        ],
-        performanceSelection: store.getPowerPreferenceSelectOption(),
         scalingOptions: [
             { value: Constants.SCALING_AUTO_ID, title: 'Auto detect', text: 'Auto Detect' },
             { value: 'scaling-none', title: 'None', text: 'None' },
@@ -100,18 +93,8 @@ export class View {
         this.selectImage(this._state.images.length - 1);
     }
 
-    selectPerformance (value) {
-        this._state.options.performanceSelection = value;
-        this._refresh();
-    }
-
     selectScaling (value) {
         this._state.options.scalingSelection = value;
-        this._refresh();
-    }
-
-    clickRestoreDefaultOptions (store) {
-        this._state.options = makeOptions(store);
         this._refresh();
     }
 }

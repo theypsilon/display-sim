@@ -75,16 +75,9 @@ function setupPage (root, state, store, observer) {
             msg.dataTransfer.dropEffect = 'copy';
             break;
         }
-        case 'click-restore-default-options': {
-            store.removeAllOptions();
-            return view.clickRestoreDefaultOptions(store);
-        }
-        case 'select-performance': return view.selectPerformance(msg.target.value);
         case 'select-scaling': return view.selectScaling(msg.target.value);
         case 'click-play-simulation': {
             view.turnVisibilityOff();
-            store.setAntiAliasing(state.options.antialias);
-            store.setPowerPreferenceSelectOption(state.options.performanceSelection);
             store.setScalingSelectOption(state.options.scalingSelection);
             if (state.options.scalingSelection === 'scaling-custom') {
                 store.setCustomResWidth(state.options.scalingCustom.resolution.width);

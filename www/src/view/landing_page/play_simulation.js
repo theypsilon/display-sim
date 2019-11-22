@@ -41,7 +41,6 @@ export async function playHtmlSelection (state) {
     case Constants.SCALING_AUTO_ID:
         const autoScaling = calculateAutoScaling(imageWidth, imageHeight);
         scaleX = autoScaling.scaleX;
-        navigator.openTopMessage('Scaling auto detect: ' + autoScaling.message);
         break;
     case Constants.SCALING_43_ID:
         scaleX = (4 / 3) / (imageWidth / imageHeight);
@@ -61,21 +60,9 @@ export async function playHtmlSelection (state) {
         break;
     }
 
-    const ctxOptions = {
-        alpha: false,
-        antialias: state.options.antialias,
-        depth: true,
-        failIfMajorPerformanceCaveat: false,
-        powerPreference: state.options.performanceSelection,
-        premultipliedAlpha: false,
-        preserveDrawingBuffer: false,
-        stencil: false
-    };
-
     mailbox.placeMessage('sim-page', {
         topic: 'launch',
         launcherParams: {
-            ctxOptions,
             scaleX,
             imageWidth,
             imageHeight,
@@ -107,16 +94,6 @@ export async function playQuerystring (querystring) {
     mailbox.placeMessage('sim-page', {
         topic: 'launch',
         launcherParams: {
-            ctxOptions: {
-                alpha: false,
-                antialias: false,
-                depth: true,
-                failIfMajorPerformanceCaveat: false,
-                powerPreference: 'high-performance',
-                premultipliedAlpha: false,
-                preserveDrawingBuffer: false,
-                stencil: false
-            },
             scaleX: calculateAutoScaling(imageWidth, imageHeight).scaleX,
             imageWidth: imageWidth,
             imageHeight: imageHeight,
@@ -149,22 +126,18 @@ function calculateAutoScaling (imageWidth, imageHeight) {
     if (imageHeight > 540) {
         return {
             scaleX: 1,
-            message: 'none.'
         };
     } else if (imageHeight === 144) {
         return {
             scaleX: (11 / 10) / (imageWidth / imageHeight),
-            message: '11:10 (Game Boy) on full image.'
         };
     } else if (imageHeight === 160) {
         return {
             scaleX: (3 / 2) / (imageWidth / imageHeight),
-            message: '3:2 (Game Boy Advance) on full image.'
         };
     } else {
         return {
             scaleX: (4 / 3) / (imageWidth / imageHeight),
-            message: '4:3 on full image.'
         };
     }
 }

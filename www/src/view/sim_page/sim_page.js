@@ -150,6 +150,7 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
         case 'back2front:change_pixel_speed': return view.changePixelSpeed(msg);
         case 'back2front:change_turning_speed': return view.changeTurningSpeed(msg);
         case 'back2front:color_representation': return view.changeColorRepresentation(msg);
+        case 'back2front:scaling_method': return view.changeScalingMethod(msg);
         case 'back2front:pixel_geometry': return view.changePixelGeometry(msg);
         case 'back2front:pixel_shadow_shape': return view.changePixelShadowShape(msg);
         case 'back2front:pixel_shadow_height': return view.changePixelShadowHeight(msg);

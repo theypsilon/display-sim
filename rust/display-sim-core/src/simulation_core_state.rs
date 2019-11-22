@@ -55,6 +55,7 @@ pub struct Resources {
     pub camera: CameraData,
     pub demo_1: FlightDemoData,
     pub filters: Filters,
+    pub scaling: Scaling,
     pub speed: Speeds,
     pub saved_filters: Option<Filters>,
     pub custom_is_changed: bool,
@@ -65,6 +66,29 @@ pub struct Resources {
     pub drawable: bool,
     pub resetted: bool,
     pub quit: bool,
+}
+
+#[derive(Clone)]
+pub struct Scaling {
+    pub scaling_changed: bool,
+    pub scaling_method: ScalingMethod,
+    pub custom_scaling_resolution: Size2D<f32>,
+    pub custom_scaling_aspect_ratio: Size2D<f32>,
+    pub custom_scaling_stretch: bool,
+    pub pixel_width: f32,
+}
+
+impl Default for Scaling {
+    fn default() -> Self {
+        Scaling {
+            scaling_changed: true,
+            scaling_method: ScalingMethod::AutoDetect,
+            custom_scaling_resolution: Size2D { width: 256.0, height: 240.0 },
+            custom_scaling_aspect_ratio: Size2D { width: 4.0, height: 3.0 },
+            custom_scaling_stretch: false,
+            pixel_width: 1.0,
+        }
+    }
 }
 
 pub struct ScreenshotTrigger {
@@ -85,6 +109,7 @@ impl Default for Resources {
                 filter_speed: PIXEL_MANIPULATION_BASE_SPEED,
             },
             filters: Filters::default(),
+            scaling: Scaling::default(),
             saved_filters: None,
             custom_is_changed: false,
             screenshot_trigger: ScreenshotTrigger { is_triggered: false, delay: 0 },
@@ -125,11 +150,11 @@ impl Resources {
     pub fn initialize(&mut self, video_input: VideoInputResources, now: f64) {
         let initial_position_z = calculate_far_away_position(&video_input);
         let mut camera = CameraData::new(MOVEMENT_BASE_SPEED * initial_position_z / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED);
-        let mut cur_pixel_width = video_input.pixel_width;
+        let mut pixel_width = video_input.pixel_width;
         {
             let res: &Resources = self; // let's avoid using '&mut res' when just reading values
             if res.resetted {
-                cur_pixel_width = video_input.pixel_width;
+                pixel_width = video_input.pixel_width;
                 camera.set_position(glm::vec3(0.0, 0.0, initial_position_z));
             } else {
                 let mut camera_position = res.camera.get_position();
@@ -137,8 +162,8 @@ impl Resources {
                     camera_position.z = initial_position_z;
                 }
                 camera.set_position(camera_position);
-                if res.filters.cur_pixel_width != res.video.pixel_width {
-                    cur_pixel_width = res.filters.cur_pixel_width;
+                if res.scaling.pixel_width != res.video.pixel_width {
+                    pixel_width = res.scaling.pixel_width;
                 }
             }
         }
@@ -147,7 +172,7 @@ impl Resources {
         if let Some(preset) = video_input.preset {
             self.filters = self.filters.preset_factory(preset, &None);
         }
-        self.filters.cur_pixel_width = cur_pixel_width;
+        self.scaling.pixel_width = pixel_width;
         self.timers = SimulationTimers {
             frame_count: 0,
             last_time: now,
@@ -195,7 +220,6 @@ pub struct Filters {
     pub brightness_color: i32,
     pub extra_bright: f32,
     pub extra_contrast: f32,
-    pub cur_pixel_width: f32,
     pub cur_pixel_vertical_gap: f32,
     pub cur_pixel_horizontal_gap: f32,
     pub cur_pixel_spread: f32,
@@ -220,7 +244,6 @@ impl Default for Filters {
             brightness_color: 0x00FF_FFFF,
             extra_bright: 0.0,
             extra_contrast: 1.0,
-            cur_pixel_width: 1.0,
             cur_pixel_vertical_gap: 0.0,
             cur_pixel_horizontal_gap: 0.0,
             cur_pixel_spread: 0.0,
@@ -341,7 +364,6 @@ impl Filters {
             brightness_color: 0x00FF_FFFF,
             extra_bright: 0.0,
             extra_contrast: 1.0,
-            cur_pixel_width: self.cur_pixel_width,
             cur_pixel_vertical_gap: 0.0,
             cur_pixel_horizontal_gap: 0.0,
             cur_pixel_spread: 0.0,
@@ -366,7 +388,6 @@ impl Filters {
             brightness_color: 0x00FF_FFFF,
             extra_bright: 0.0,
             extra_contrast: 1.0,
-            cur_pixel_width: self.cur_pixel_width,
             cur_pixel_vertical_gap: 0.0,
             cur_pixel_horizontal_gap: 0.0,
             cur_pixel_spread: 0.0,
@@ -391,7 +412,6 @@ impl Filters {
             brightness_color: 0x00FF_FFFF,
             extra_bright: 0.05,
             extra_contrast: 1.2,
-            cur_pixel_width: self.cur_pixel_width,
             cur_pixel_vertical_gap: 0.5,
             cur_pixel_horizontal_gap: 0.5,
             cur_pixel_spread: 0.0,
@@ -416,7 +436,6 @@ impl Filters {
             brightness_color: 0x00FF_FFFF,
             extra_bright: 0.05,
             extra_contrast: 1.2,
-            cur_pixel_width: self.cur_pixel_width,
             cur_pixel_vertical_gap: 1.0,
             cur_pixel_horizontal_gap: 0.5,
             cur_pixel_spread: 0.0,
@@ -441,7 +460,6 @@ impl Filters {
             brightness_color: 0x00FF_FFFF,
             extra_bright: 0.0,
             extra_contrast: 1.0,
-            cur_pixel_width: self.cur_pixel_width,
             cur_pixel_vertical_gap: 0.0,
             cur_pixel_horizontal_gap: 0.0,
             cur_pixel_spread: 1.0,
@@ -548,6 +566,29 @@ impl std::fmt::Display for ColorChannels {
             ColorChannels::Overlapping => write!(f, "Horizontal overlapping"),
             ColorChannels::SplitHorizontal => write!(f, "Horizontal split"),
             ColorChannels::SplitVertical => write!(f, "Vertical split"),
+        }
+    }
+}
+
+#[derive(FromPrimitive, ToPrimitive, EnumLen, Copy, Clone)]
+pub enum ScalingMethod {
+    AutoDetect,
+    SquaredPixels,
+    FullImage4By3,
+    StretchToBothEdges,
+    StretchToNearestEdge,
+    Custom,
+}
+
+impl std::fmt::Display for ScalingMethod {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match *self {
+            ScalingMethod::AutoDetect => write!(f, "Automatic"),
+            ScalingMethod::SquaredPixels => write!(f, "Squared pixels"),
+            ScalingMethod::FullImage4By3 => write!(f, "4:3 on full image"),
+            ScalingMethod::StretchToBothEdges => write!(f, "Stretch to both edges"),
+            ScalingMethod::StretchToNearestEdge => write!(f, "Stretch to nearest edge"),
+            ScalingMethod::Custom => write!(f, "Custom"),
         }
     }
 }
@@ -686,6 +727,7 @@ pub struct Input {
     pub next_screen_curvature_type: IncDec<BooleanButton>,
     pub next_internal_resolution: IncDec<BooleanButton>,
     pub next_texture_interpolation: IncDec<BooleanButton>,
+    pub scaling_method: IncDec<BooleanButton>,
     pub esc: BooleanButton,
     pub space: BooleanButton,
     pub screenshot: BooleanButton,
@@ -715,7 +757,7 @@ impl Input {
     }
 }
 
-fn calculate_far_away_position(video_input: &VideoInputResources) -> f32 {
+pub(crate) fn calculate_far_away_position(video_input: &VideoInputResources) -> f32 {
     let width = video_input.background_size.width as f32;
     let height = video_input.background_size.height as f32;
     let viewport_width_scaled = (video_input.viewport_size.width as f32 / video_input.pixel_width) as u32;

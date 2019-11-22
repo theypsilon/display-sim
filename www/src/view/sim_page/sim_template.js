@@ -46,6 +46,7 @@ function generateTemplateFromGenericEntry (fire, entry) {
     switch (entry.type) {
     case 'menu': return generateTemplateFromMenu(fire, entry);
     case 'preset-buttons': return generateTemplateFromPresetButtons(fire, entry);
+    case 'scaling-input': return generateTemplateFromScalingInput(fire, entry);
     case 'checkbox-input': return generateTemplateFromCheckboxInput(fire, entry);
     case 'button-input': return generateTemplateFromButtonInput(fire, entry);
     case 'selectors-input': return generateTemplateFromSelectorsInput(fire, entry);
@@ -62,6 +63,11 @@ function generateTemplateFromMenu (fire, menu) {
         <div class="info-category ${menu.open ? '' : 'display-none'}">
             ${menu.entries.map(entry => generateTemplateFromGenericEntry(fire, entry))}
         </div>
+    `;
+}
+
+function generateTemplateFromScalingInput (fire, scalingInput) {
+    return html`
     `;
 }
 

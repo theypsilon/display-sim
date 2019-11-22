@@ -81,23 +81,8 @@ function generateLandingTemplate (state, fire) {
                 <div class="col-sm-4">
                     <div id="option-header-container">
                         <h3 id="option-header">Options</h3>
-                        <div id="option-header-restore"><input class="btn btn-crt btn-white" type="button"
-                                id="restore-default-options" value="Restore defaults" @click="${() => fire('click-restore-default-options')}"></div>
                     </div>
                     <ul class="options">
-                        <li class="option-inputs">
-                            <label for="antialias">WebGL Antialiasing:</label>
-                            <input type="checkbox" id="antialias" value="antialias" ?checked=${state.options.antialias}>
-                        </li>
-
-                        <li class="option-inputs">
-                            <label for="option-powerPreference">WebGL Performance:</label>
-                            <select id="option-powerPreference" name="option-powerPreference" @change="${e => fire('select-performance', e)}">
-                                ${state.options.performanceOptions.map(perf => html`
-                                    <option value="${perf.value}" ?selected=${state.options.performanceSelection === perf.value}>${perf.text}</option>
-                                `)}
-                            </select>
-                        </li>
                         <li class="option-inputs">
                             <label for="option-scaling">Scaling:</label>
                             <select id="option-scaling" name="option-scaling" .value="${state.options.scalingSelection}" @change="${e => fire('select-scaling', e)}">

@@ -68,6 +68,12 @@ export function data () {
         capture_framebuffer: { eventKind: 'capture-framebuffer' },
         webgl_performance: { value: null, eventKind: 'webgl:performance' },
         webgl_antialias: { value: null, eventKind: 'webgl:antialias' },
+        scaling_method: { value: null, eventKind: 'scaling-method' },
+        custom_scaling: {
+            resolution: { width: 256, height: 240 },
+            aspect_ratio: { x: 4, y: 3},
+        },
+        custom_scaling_stretch_nearest: { value: null, eventKind: 'custom-scaling-stretch-nearest'},
         quit_simulation: { eventKind: 'quit-simulation' }
     };
     
@@ -90,6 +96,16 @@ export function data () {
                 },
                 {
                     type: 'menu',
+                    text: 'Image Scaling',
+                    open: false,
+                    entries: [
+                        { type: 'selectors-input', class: 'menu-2 menu-blc-blue', text: 'Scaling Method', ref: options.scaling_method },
+                        { type: 'scaling-input', class: 'menu-blc-lila', ref: options.custom_scaling },
+                        { type: 'number-input', class: 'menu-2 menu-blc-yellow', text: 'Pixel width', hk: { inc: 'O', dec: 'Shift + O' }, step: 0.001, min: 0, max: 10, value: 0, placeholder: 0, ref: options.pixel_width },
+                    ]
+                },
+                {
+                    type: 'menu',
                     text: 'Basic Filter Settings',
                     open: true,
                     entries: [
@@ -105,7 +121,6 @@ export function data () {
                     entries: [
                         { type: 'number-input', class: 'menu-2 menu-blc-red', text: 'Horizontal gap', hk: { inc: 'U', dec: 'Shift + U' }, step: 0.001, min: 0, max: 10, value: 0, placeholder: 0, ref: options.horizontal_gap },
                         { type: 'number-input', class: 'menu-2 menu-blc-red', text: 'Vertical gap', hk: { inc: 'I', dec: 'Shift + I' }, step: 0.001, min: 0, max: 10, value: 0, placeholder: 0, ref: options.vertical_gap },
-                        { type: 'number-input', class: 'menu-2 menu-blc-yellow', text: 'Pixel width', hk: { inc: 'O', dec: 'Shift + O' }, step: 0.001, min: 0, max: 10, value: 0, placeholder: 0, ref: options.pixel_width },
                         { type: 'number-input', class: 'menu-2 menu-blc-lila', text: 'Vertical lines per pixel', hk: { inc: 'K', dec: 'Shift + K' }, step: 1, min: 0, max: 100, value: 0, placeholder: 0, ref: options.vertical_lpp },
                         { type: 'number-input', class: 'menu-2 menu-blc-lila', text: 'Horizontal lines per pixel', hk: { inc: 'L', dec: 'Shift + L' }, step: 1, min: 0, max: 100, value: 0, placeholder: 0, ref: options.horizontal_lpp },
                         { type: 'color-input', class: 'menu-2 menu-blc-blue', text: 'Source light color', value: '#ffffff', ref: options.light_color },
@@ -392,6 +407,10 @@ export class View {
     }
     changeScreenCurvature (msg) {
         this._state.options.screen_curvature.value = msg;
+        this._isDirty = true;
+    }
+    changeScalingMethod (msg) {
+        this._state.options.scaling_method.value = msg;
         this._isDirty = true;
     }
     changePerformance (performance) {

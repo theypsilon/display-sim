@@ -24,13 +24,18 @@ const STORE_KEY_WEBGL_ANTIALIAS = 'option-antialias';
 
 export class Model {
     constructor (canvas, eventBus, mailbox, launcher, store) {
-        this.state = {
-            canvas, msg: null, simOwner: null
-        };
         this.eventBus = eventBus;
         this.mailbox = mailbox;
         this.launcher = launcher;
         this.store = store;
+        this.state = {
+            canvas, msg: null, simOwner: null,
+            storedValues: {
+                selectedPreset: this.store.getItem(Constants.FILTERS_PRESET_STORE_KEY) || Constants.PRESET_KIND_APERTURE_GRILLE_1,
+                powerPreference: this.store.getItem(STORE_KEY_WEBGL_POWER_PREFERENCE) || Constants.POWER_PREFERENCE_DEFAULT,
+                antialias: this.store.getItem(STORE_KEY_WEBGL_ANTIALIAS) !== 'false'
+            }
+        };
     }
 
     static make (canvas, eventBus, mailbox, launcher, store) {
@@ -49,21 +54,33 @@ export class Model {
 
     async _launchSimulation () {
         this.resizeCanvas();
-        const result = await this.launcher.launch(this.state.canvas, this.eventBus, this.state.msg.launcherParams);
+        const result = await this.launcher.launch(this.state.canvas, this.eventBus, Object.assign({
+            ctxOptions: {
+                alpha: false,
+                antialias: this.state.storedValues.antialias,
+                depth: true,
+                failIfMajorPerformanceCaveat: false,
+                powerPreference: this.state.storedValues.powerPreference,
+                premultipliedAlpha: false,
+                preserveDrawingBuffer: false,
+                stencil: false
+            },
+        }, this.state.msg.launcherParams));
         this.state.simOwner = result.owner;
-        return Object.assign({
-            storedValues: {
-                selectedPreset: this.store.getItem(Constants.FILTERS_PRESET_STORE_KEY) || Constants.PRESET_KIND_APERTURE_GRILLE_1,
-                powerPreference: this.store.getItem(STORE_KEY_WEBGL_POWER_PREFERENCE) || Constants.POWER_PREFERENCE_DEFAULT,
-                antialias: this.store.getItem(STORE_KEY_WEBGL_ANTIALIAS) !== 'false'
-            }
-        }, this.state.msg, result);
+        return Object.assign({ storedValues: this.state.storedValues }, this.state.msg, result);
     }
 
     setPreset (preset) {
         if (preset !== Constants.PRESET_KIND_CUSTOM) {
-            this.store.setItem(Constants.FILTERS_PRESET_STORE_KEY, preset);
+            this.state.storedValues.selectedPreset = preset;
+            this._saveStoredValues();
         }
+    }
+
+    _saveStoredValues() {
+        this.store.setItem(Constants.FILTERS_PRESET_STORE_KEY, this.state.storedValues.selectedPreset);
+        this.store.setItem(STORE_KEY_WEBGL_POWER_PREFERENCE, this.state.storedValues.powerPreference);
+        this.store.setItem(STORE_KEY_WEBGL_ANTIALIAS, this.state.storedValues.antialias ? 'true' : 'false');
     }
 
     async changePerformance (performance, direction) {
@@ -75,16 +92,16 @@ export class Model {
         default: throw new Error('Unreachable!');
         }
         const newPerformance = options[index % options.length];
-        this.store.setItem(STORE_KEY_WEBGL_POWER_PREFERENCE, newPerformance);
-        this.state.msg.launcherParams.ctxOptions.powerPreference = newPerformance;
+        this.state.storedValues.performance = newPerformance;
+        this._saveStoredValues();
         await this._reloadSimulation();
         return newPerformance;
     }
 
     async changeAntialiasing (currentAntialias) {
         const newAntialias = !currentAntialias;
-        this.store.setItem(STORE_KEY_WEBGL_ANTIALIAS, newAntialias ? 'true' : 'false');
-        this.state.msg.launcherParams.ctxOptions.antialias = newAntialias;
+        this.state.storedValues.antialias = newAntialias;
+        this._saveStoredValues();
         await this._reloadSimulation();
     }
 

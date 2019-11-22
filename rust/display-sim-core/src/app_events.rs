@@ -16,7 +16,7 @@
 use crate::camera::CameraLockMode;
 use crate::internal_resolution::InternalResolution;
 use crate::pixels_shadow::ShadowShape;
-use crate::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScreenCurvatureKind, TextureInterpolation};
+use crate::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScalingMethod, ScreenCurvatureKind, TextureInterpolation};
 use std::fmt::Display;
 
 pub trait AppEventDispatcher {
@@ -47,6 +47,7 @@ pub trait AppEventDispatcher {
     fn dispatch_change_turning_speed(&self, speed: f32);
     fn dispatch_change_movement_speed(&self, speed: f32);
     fn dispatch_change_preset_selected(&self, name: &str);
+    fn dispatch_scaling_method(&self, method: ScalingMethod);
     fn dispatch_exiting_session(&self);
     fn dispatch_toggle_info_panel(&self);
     fn dispatch_fps(&self, fps: f32);
@@ -91,6 +92,7 @@ impl AppEventDispatcher for FakeEventDispatcher {
     fn dispatch_change_turning_speed(&self, _: f32) {}
     fn dispatch_change_movement_speed(&self, _: f32) {}
     fn dispatch_change_preset_selected(&self, _: &str) {}
+    fn dispatch_scaling_method(&self, _: ScalingMethod) {}
     fn dispatch_exiting_session(&self) {}
     fn dispatch_toggle_info_panel(&self) {}
     fn dispatch_fps(&self, fps: f32) {
