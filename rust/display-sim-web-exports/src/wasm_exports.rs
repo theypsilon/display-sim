@@ -94,8 +94,6 @@ impl VideoInputWasm {
                 preset: None,
                 max_texture_size: 8192,
                 steps: Vec::new(),
-                pixel_width: 1.0,
-                stretch: false,
                 current_frame: 0,
                 last_frame_change: -1000.0,
                 needs_buffer_data_load: true,
@@ -120,11 +118,6 @@ impl VideoInputWasm {
     }
 
     #[wasm_bindgen]
-    pub fn set_pixel_width(&mut self, pixel_width: f32) {
-        self.resources.pixel_width = pixel_width;
-    }
-
-    #[wasm_bindgen]
     pub fn set_preset(&mut self, preset: JsValue) {
         match preset.as_string() {
             Some(preset) => {
@@ -136,11 +129,6 @@ impl VideoInputWasm {
             }
             None => console!(error. "Input preset is not a valid string."),
         };
-    }
-
-    #[wasm_bindgen]
-    pub fn stretch(&mut self) {
-        self.resources.stretch = true;
     }
 
     #[wasm_bindgen]

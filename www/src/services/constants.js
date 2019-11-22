@@ -20,18 +20,10 @@ export default {
     pageDeo: document.getElementById('page'),
 
     // landing page
-    SCALING_AUTO_ID: 'scaling-auto',
-    SCALING_43_ID: 'scaling-4:3',
-    SCALING_CUSTOM_ID: 'scaling-custom',
-    SCALING_STRETCH_TO_BOTH_EDGES_ID: 'scaling-stretch-both',
-    SCALING_STRETCH_TO_NEAREST_EDGE_ID: 'scaling-stretch-nearest',
-    POWER_PREFERENCE_DEFAULT: 'default',
+    FIRST_PREVIEW_IMAGE_ID: 'first-preview-image',
 
     // sim page
-    FILTERS_PRESET_STORE_KEY: 'FiltersPreset',
     FILTER_PRESETS_SELECTED_EVENT_KIND: 'filter-presets-selected',
     PRESET_KIND_CUSTOM: 'custom',
-    PRESET_KIND_APERTURE_GRILLE_1: 'crt-aperture-grille-1',
-
-    FIRST_PREVIEW_IMAGE_ID: 'first-preview-image'
+    PRESET_KIND_APERTURE_GRILLE_1: 'crt-aperture-grille-1'
 };

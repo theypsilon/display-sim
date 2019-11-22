@@ -35,9 +35,7 @@ pub struct VideoInputResources {
     pub image_size: Size2D<u32>,
     pub background_size: Size2D<u32>,
     pub viewport_size: Size2D<u32>,
-    pub pixel_width: f32,
     pub preset: Option<FiltersPreset>,
-    pub stretch: bool,
     pub current_frame: usize,
     pub last_frame_change: f64,
     pub needs_buffer_data_load: bool,
@@ -70,18 +68,20 @@ pub struct Resources {
 
 #[derive(Clone)]
 pub struct Scaling {
-    pub scaling_changed: bool,
-    pub scaling_method: ScalingMethod,
+    pub pixel_width: f32,
     pub custom_scaling_resolution: Size2D<f32>,
     pub custom_scaling_aspect_ratio: Size2D<f32>,
     pub custom_scaling_stretch: bool,
-    pub pixel_width: f32,
+    pub scaling_changed: bool,
+    pub scaling_init: bool,
+    pub scaling_method: ScalingMethod,
 }
 
 impl Default for Scaling {
     fn default() -> Self {
         Scaling {
-            scaling_changed: true,
+            scaling_changed: false,
+            scaling_init: false,
             scaling_method: ScalingMethod::AutoDetect,
             custom_scaling_resolution: Size2D { width: 256.0, height: 240.0 },
             custom_scaling_aspect_ratio: Size2D { width: 4.0, height: 3.0 },
@@ -148,31 +148,14 @@ impl Default for FlightDemoData {
 
 impl Resources {
     pub fn initialize(&mut self, video_input: VideoInputResources, now: f64) {
-        let initial_position_z = calculate_far_away_position(&video_input);
-        let mut camera = CameraData::new(MOVEMENT_BASE_SPEED * initial_position_z / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED);
-        let mut pixel_width = video_input.pixel_width;
-        {
-            let res: &Resources = self; // let's avoid using '&mut res' when just reading values
-            if res.resetted {
-                pixel_width = video_input.pixel_width;
-                camera.set_position(glm::vec3(0.0, 0.0, initial_position_z));
-            } else {
-                let mut camera_position = res.camera.get_position();
-                if res.initial_parameters.initial_position_z != camera_position.z {
-                    camera_position.z = initial_position_z;
-                }
-                camera.set_position(camera_position);
-                if res.scaling.pixel_width != res.video.pixel_width {
-                    pixel_width = res.scaling.pixel_width;
-                }
-            }
-        }
+        let initial_position_z = calculate_far_away_position(&video_input, calculate_pixel_width_from_image_size(video_input.image_size).0, false);
+        let camera = CameraData::new(MOVEMENT_BASE_SPEED * initial_position_z / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED);
         self.quit = false;
         self.resetted = true;
+        self.scaling.scaling_init = false;
         if let Some(preset) = video_input.preset {
             self.filters = self.filters.preset_factory(preset, &None);
         }
-        self.scaling.pixel_width = pixel_width;
         self.timers = SimulationTimers {
             frame_count: 0,
             last_time: now,
@@ -180,7 +163,6 @@ impl Resources {
         };
         self.initial_parameters = InitialParameters {
             initial_position_z,
-            initial_pixel_width: video_input.pixel_width,
             initial_movement_speed: camera.movement_speed,
         };
         self.filters
@@ -202,7 +184,6 @@ pub struct SimulationTimers {
 pub struct InitialParameters {
     pub initial_movement_speed: f32,
     pub initial_position_z: f32,
-    pub initial_pixel_width: f32,
 }
 
 pub struct Speeds {
@@ -777,10 +758,10 @@ impl Input {
     }
 }
 
-pub(crate) fn calculate_far_away_position(video_input: &VideoInputResources) -> f32 {
+pub(crate) fn calculate_far_away_position(video_input: &VideoInputResources, pixel_width: f32, stretch: bool) -> f32 {
     let width = video_input.background_size.width as f32;
     let height = video_input.background_size.height as f32;
-    let viewport_width_scaled = (video_input.viewport_size.width as f32 / video_input.pixel_width) as u32;
+    let viewport_width_scaled = (video_input.viewport_size.width as f32 / pixel_width) as u32;
     let width_ratio = viewport_width_scaled as f32 / width;
     let height_ratio = video_input.viewport_size.height as f32 / height;
     let is_height_bounded = width_ratio > height_ratio;
@@ -794,7 +775,7 @@ pub(crate) fn calculate_far_away_position(video_input: &VideoInputResources) -> 
         bound_ratio *= 2.0;
         resolution *= 2;
     }
-    if !video_input.stretch {
+    if !stretch {
         let mut divisor = bound_ratio as i32;
         while divisor > 1 {
             if resolution % divisor == 0 {
@@ -804,5 +785,26 @@ pub(crate) fn calculate_far_away_position(video_input: &VideoInputResources) -> 
         }
         bound_ratio = divisor as f32;
     }
-    0.5 + (resolution as f32 / bound_ratio) * if is_height_bounded { 1.2076 } else { 0.68 * video_input.pixel_width }
+    0.5 + (resolution as f32 / bound_ratio) * if is_height_bounded { 1.2076 } else { 0.68 * pixel_width }
+}
+
+pub(crate) fn calculate_pixel_width_from_image_size(image_size: Size2D<u32>) -> (f32, &'static str) {
+    if image_size.height > 540 {
+        (1.0, "Automatic scaling: Squared pixels.")
+    } else if image_size.height == 144 {
+        (
+            (11.0 / 10.0) / (image_size.width as f32 / image_size.height as f32),
+            "Automatic scaling: 11:10 (Game Boy) on full image.",
+        )
+    } else if image_size.height == 160 {
+        (
+            (3.0 / 2.0) / (image_size.width as f32 / image_size.height as f32),
+            "Automatic scaling: 3:2 (Game Boy Advance) on full image.",
+        )
+    } else {
+        (
+            (4.0 / 3.0) / (image_size.width as f32 / image_size.height as f32),
+            "Automatic scaling: 4:3 on full image.",
+        )
+    }
 }

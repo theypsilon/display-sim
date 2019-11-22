@@ -57,7 +57,7 @@ function generateLandingTemplate (state, fire) {
 
         <section class="bg-green text-white form">
             <form class="container" id="form" name="form">
-                <div class="col-sm-8 render-tests row">
+                <div class="col-sm-12 render-tests row">
                     <div class="margin-sm-bottom">
                         <h3>Select Image</h3>
                         <input type="file" id="file" class="display-none" accept="image/*" @change="${e => fire('changed-file-input', e)}">
@@ -77,52 +77,6 @@ function generateLandingTemplate (state, fire) {
                             </li>
                         </ul>
                     </div>
-                </div>
-                <div class="col-sm-4">
-                    <div id="option-header-container">
-                        <h3 id="option-header">Options</h3>
-                    </div>
-                    <ul class="options">
-                        <li class="option-inputs">
-                            <label for="option-scaling">Scaling:</label>
-                            <select id="option-scaling" name="option-scaling" .value="${state.options.scalingSelection}" @change="${e => fire('select-scaling', e)}">
-                                ${state.options.scalingOptions.map(scaling => html`
-                                    <option value="${scaling.value}" title="${scaling.title}" ?selected=${state.options.scalingSelection === scaling.value}>${scaling.text}</option>
-                                `)}
-                            </select>
-                        </li>
-                        <li class="option-inputs">
-                            ${state.options.scalingSelection === 'scaling-custom' ? html`
-                                <ul id="scaling-custom-inputs" class="option-inputs">
-                                    <label>Custom Scaling:</label>
-                                    <li class="option-inputs option-custom-scaling">
-                                        <label>Resolution</label>
-                                        <div>
-                                            <input class="custom-resolution" type="number" id="scaling-custom-resolution-width"
-                                                value=${state.options.scalingCustom.resolution.width} min="1" max="99999">
-                                            <span>✕</span>
-                                            <input class="custom-resolution" type="number" id="scaling-custom-resolution-height"
-                                                value=${state.options.scalingCustom.resolution.height} min="1" max="99999">
-                                        </div>
-                                    </li>
-                                    <li class="option-inputs option-custom-scaling">
-                                        <label>Aspect ratio</label>
-                                        <div>
-                                            <input class="custom-aspect-ratio" type="number" id="scaling-custom-aspect-ratio-x"
-                                                value=${state.options.scalingCustom.aspectRatio.x} min="1" max="99">
-                                            <span>:</span>
-                                            <input class="custom-aspect-ratio" type="number" id="scaling-custom-aspect-ratio-y"
-                                                value=${state.options.scalingCustom.aspectRatio.y} min="1" max="99">
-                                        </div>
-                                    </li>
-                                    <li class="option-inputs option-custom-scaling">
-                                        <label>Stretch to nearest edge</label>
-                                        <input class="custom-checkbox" type="checkbox" id="scaling-custom-stretch-nearest" ?checked=${state.options.scalingCustom.stretchNearest}>
-                                    </li>
-                                </ul>
-                            ` : ''}
-                        </li>
-                    </ul>
                 </div>
                 <input id="start-animation" 
                         class="start btn-crt btn-white" 

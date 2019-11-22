@@ -128,7 +128,7 @@ function generateTemplateFromPresetButtons (fire, presetButtons) {
 function generateTemplateFromCheckboxInput (fire, checkboxInput) {
     return html`
         <div class="menu-entry menu-button ${checkboxInput.class}"
-            @click="${() => fire('toggleCheckbox', { value: !checkboxInput.ref.value, kind: checkboxInput.ref.eventKind } )}">
+            @click="${() => fire('toggleCheckbox', { value: !checkboxInput.ref.value, kind: checkboxInput.ref.eventKind })}">
             <div class="feature-pack">
                 <div class="feature-name">${checkboxInput.text}</div>
             </div>

@@ -20,8 +20,8 @@ use crate::general_types::{get_3_f32color_from_int, get_int_from_3_f32color};
 use crate::pixels_shadow::ShadowShape;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::{
-    calculate_far_away_position, ColorChannels, Filters, FiltersPreset, Input, InputEventValue, PixelsGeometryKind, Resources, ScalingMethod,
-    ScreenCurvatureKind, TextureInterpolation, PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
+    calculate_far_away_position, calculate_pixel_width_from_image_size, ColorChannels, Filters, FiltersPreset, Input, InputEventValue, PixelsGeometryKind,
+    Resources, ScalingMethod, ScreenCurvatureKind, TextureInterpolation, PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
 };
 use app_error::AppResult;
 use derive_new::new;
@@ -191,11 +191,12 @@ impl<'a> SimulationUpdater<'a> {
             })
             .process_options();
 
-        changed = changed || match self.res.scaling.scaling_method {
-            ScalingMethod::Custom => self.update_custom_scaling(),
-            _ => false
-        };
-        
+        changed = changed
+            || match self.res.scaling.scaling_method {
+                ScalingMethod::Custom => self.update_custom_scaling(),
+                _ => false,
+            };
+
         self.res.scaling.scaling_changed = changed;
     }
 
@@ -210,55 +211,72 @@ impl<'a> SimulationUpdater<'a> {
             .set_min(0.001)
             .set_trigger_handler(|x| ctx.dispatcher().dispatch_change_pixel_width(x))
             .process_with_sums();
-        FilterParams::new(*ctx, &mut self.res.scaling.custom_scaling_resolution.width, input.custom_scaling_resolution_width.to_just_pressed())
-            .set_progression(1.0)
-            .set_event_value(input.event_custom_scaling_resolution_width)
-            .set_min(1.0)
-            .set_max(100000.0)
-            .set_trigger_handler(|x| {
-                changed = true;
-                ctx.dispatcher().dispatch_custom_scaling_resolution_width(x as u32);
-            })
-            .process_with_sums();
-        FilterParams::new(*ctx, &mut self.res.scaling.custom_scaling_resolution.height, input.custom_scaling_resolution_height.to_just_pressed())
-            .set_progression(1.0)
-            .set_event_value(input.event_custom_scaling_resolution_height)
-            .set_min(1.0)
-            .set_max(100000.0)
-            .set_trigger_handler(|x| {
-                changed = true;
-                ctx.dispatcher().dispatch_custom_scaling_resolution_height(x as u32);
-            })
-            .process_with_sums();
-        FilterParams::new(*ctx, &mut self.res.scaling.custom_scaling_aspect_ratio.width, input.custom_scaling_aspect_ratio_x.to_just_pressed())
-            .set_progression(1.0)
-            .set_event_value(input.event_custom_scaling_aspect_ratio_x)
-            .set_min(1.0)
-            .set_max(100.0)
-            .set_trigger_handler(|x| {
-                changed = true;
-                ctx.dispatcher().dispatch_custom_scaling_aspect_ratio_x(x as u32);
-            })
-            .process_with_sums();
-        FilterParams::new(*ctx, &mut self.res.scaling.custom_scaling_aspect_ratio.height, input.custom_scaling_aspect_ratio_y.to_just_pressed())
-            .set_progression(1.0)
-            .set_event_value(input.event_custom_scaling_aspect_ratio_y)
-            .set_min(1.0)
-            .set_max(100.0)
-            .set_trigger_handler(|x| {
-                changed = true;
-                ctx.dispatcher().dispatch_custom_scaling_aspect_ratio_y(x as u32);
-            })
-            .process_with_sums();
+        FilterParams::new(
+            *ctx,
+            &mut self.res.scaling.custom_scaling_resolution.width,
+            input.custom_scaling_resolution_width.to_just_pressed(),
+        )
+        .set_progression(1.0)
+        .set_event_value(input.event_custom_scaling_resolution_width)
+        .set_min(1.0)
+        .set_max(100_000.0)
+        .set_trigger_handler(|x| {
+            changed = true;
+            ctx.dispatcher().dispatch_custom_scaling_resolution_width(x as u32);
+        })
+        .process_with_sums();
+        FilterParams::new(
+            *ctx,
+            &mut self.res.scaling.custom_scaling_resolution.height,
+            input.custom_scaling_resolution_height.to_just_pressed(),
+        )
+        .set_progression(1.0)
+        .set_event_value(input.event_custom_scaling_resolution_height)
+        .set_min(1.0)
+        .set_max(100_000.0)
+        .set_trigger_handler(|x| {
+            changed = true;
+            ctx.dispatcher().dispatch_custom_scaling_resolution_height(x as u32);
+        })
+        .process_with_sums();
+        FilterParams::new(
+            *ctx,
+            &mut self.res.scaling.custom_scaling_aspect_ratio.width,
+            input.custom_scaling_aspect_ratio_x.to_just_pressed(),
+        )
+        .set_progression(1.0)
+        .set_event_value(input.event_custom_scaling_aspect_ratio_x)
+        .set_min(1.0)
+        .set_max(100.0)
+        .set_trigger_handler(|x| {
+            changed = true;
+            ctx.dispatcher().dispatch_custom_scaling_aspect_ratio_x(x as u32);
+        })
+        .process_with_sums();
+        FilterParams::new(
+            *ctx,
+            &mut self.res.scaling.custom_scaling_aspect_ratio.height,
+            input.custom_scaling_aspect_ratio_y.to_just_pressed(),
+        )
+        .set_progression(1.0)
+        .set_event_value(input.event_custom_scaling_aspect_ratio_y)
+        .set_min(1.0)
+        .set_max(100.0)
+        .set_trigger_handler(|x| {
+            changed = true;
+            ctx.dispatcher().dispatch_custom_scaling_aspect_ratio_y(x as u32);
+        })
+        .process_with_sums();
         if let Some(stretch_nearest) = input.event_custom_scaling_stretch_nearest {
             if self.res.scaling.custom_scaling_stretch != stretch_nearest {
                 changed = true;
                 self.res.scaling.custom_scaling_stretch = stretch_nearest;
-                ctx.dispatcher().dispatch_custom_scaling_stretch_nearest(self.res.scaling.custom_scaling_stretch);
+                ctx.dispatcher()
+                    .dispatch_custom_scaling_stretch_nearest(self.res.scaling.custom_scaling_stretch);
             }
         }
 
-        return changed;
+        changed
     }
 
     fn update_timers(&mut self) {
@@ -758,30 +776,21 @@ impl<'a> SimulationUpdater<'a> {
     }
 
     fn update_output_scaling(&mut self) {
-        if !self.res.scaling.scaling_changed {
+        if !self.res.scaling.scaling_changed && self.res.scaling.scaling_init {
             return;
         }
         self.res.scaling.scaling_changed = false;
+        self.res.scaling.scaling_init = true;
 
-        let mut video_copy = self.res.video.clone();
+        self.ctx.dispatcher().dispatch_log("update_output_scaling".into());
+
+        let mut stretch = false;
         let last_pixel_width = self.res.scaling.pixel_width;
         match self.res.scaling.scaling_method {
             ScalingMethod::AutoDetect => {
-                if self.res.video.image_size.height > 540 {
-                    self.res.scaling.pixel_width = 1.0;
-                    self.ctx.dispatcher().dispatch_top_message("Automatic scaling: Squared pixels.");
-                } else if self.res.video.image_size.height == 144 {
-                    self.res.scaling.pixel_width = (11.0 / 10.0) / (self.res.video.image_size.width as f32 / self.res.video.image_size.height as f32);
-                    self.ctx.dispatcher().dispatch_top_message("Automatic scaling: 11:10 (Game Boy) on full image.");
-                } else if self.res.video.image_size.height == 160 {
-                    self.res.scaling.pixel_width = (3.0 / 2.0) / (self.res.video.image_size.width as f32 / self.res.video.image_size.height as f32);
-                    self.ctx
-                        .dispatcher()
-                        .dispatch_top_message("Automatic scaling: 3:2 (Game Boy Advance) on full image.");
-                } else {
-                    self.res.scaling.pixel_width = (4.0 / 3.0) / (self.res.video.image_size.width as f32 / self.res.video.image_size.height as f32);
-                    self.ctx.dispatcher().dispatch_top_message("Automatic scaling: 4:3 on full image.");
-                }
+                let (pixel_width, message) = calculate_pixel_width_from_image_size(self.res.video.image_size);
+                self.res.scaling.pixel_width = pixel_width;
+                self.ctx.dispatcher().dispatch_top_message(message);
             }
             ScalingMethod::SquaredPixels => {
                 self.res.scaling.pixel_width = 1.0;
@@ -792,24 +801,29 @@ impl<'a> SimulationUpdater<'a> {
             ScalingMethod::StretchToBothEdges => {
                 self.res.scaling.pixel_width = (self.res.video.viewport_size.width as f32 / self.res.video.viewport_size.height as f32)
                     / (self.res.video.image_size.width as f32 / self.res.video.image_size.height as f32);
-                video_copy.stretch = true;
+                stretch = true;
             }
             ScalingMethod::StretchToNearestEdge => {
                 self.res.scaling.pixel_width = 1.0;
-                video_copy.stretch = true;
+                stretch = true;
             }
             ScalingMethod::Custom => {
                 self.res.scaling.pixel_width = (self.res.scaling.custom_scaling_aspect_ratio.width / self.res.scaling.custom_scaling_aspect_ratio.height)
                     / (self.res.scaling.custom_scaling_resolution.width / self.res.scaling.custom_scaling_resolution.height);
-                video_copy.stretch = self.res.scaling.custom_scaling_stretch;
+                stretch = self.res.scaling.custom_scaling_stretch;
             }
         }
         if self.res.scaling.pixel_width != last_pixel_width {
             self.ctx.dispatcher().dispatch_change_pixel_width(self.res.scaling.pixel_width);
         }
 
-        video_copy.pixel_width = self.res.scaling.pixel_width;
-        self.res.camera.set_position(glm::vec3(0.0, 0.0, calculate_far_away_position(&video_copy)));
+        self.ctx.dispatcher().dispatch_log(format!("stretch: {:?}", stretch));
+
+        self.res.camera.set_position(glm::vec3(
+            0.0,
+            0.0,
+            calculate_far_away_position(&self.res.video, self.res.scaling.pixel_width, stretch),
+        ));
         self.res.camera.direction = glm::vec3(0.0, 0.0, -1.0);
         self.res.camera.axis_up = glm::vec3(0.0, 1.0, 0.0);
     }

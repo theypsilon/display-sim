@@ -48,8 +48,6 @@ impl Default for FakeVideoInput {
                 image_size: Size2D { width: 256, height: 240 },
                 background_size: Size2D { width: 256, height: 240 },
                 viewport_size: Size2D { width: 256, height: 240 },
-                pixel_width: 1.0,
-                stretch: false,
                 current_frame: 0,
                 last_frame_change: 0.0,
                 preset: None,

@@ -20,32 +20,28 @@ import { playHtmlSelection, playQuerystring } from './play_simulation';
 
 import { data, View } from './landing_view_model';
 
-import { Store } from './landing_store';
-
-const store = Store.make();
-const state = data(store);
+const state = data();
 
 class LandingPage extends HTMLElement {
     constructor () {
         super();
-        setupPage(this.attachShadow({ mode: 'open' }), state, store, Observer.make());
+        setupPage(this.attachShadow({ mode: 'open' }), state, Observer.make());
     }
 }
 
 window.customElements.define('landing-page', LandingPage);
 
-function setupPage (root, state, store, observer) {
+function setupPage (root, state, observer) {
     if (window.location.hash.length > 1) {
         playQuerystring(window.location.hash.substr(1));
         return;
     }
 
-    const view = View.make(state, () => renderTemplate(state, (type, message) => observer.fire({ type, message }), root), store);
+    const view = View.make(state, () => renderTemplate(state, (type, message) => observer.fire({ type, message }), root));
     view.turnVisibilityOn();
 
     observer.subscribe(e => {
         const msg = e.message;
-        //console.log('observer.subscribe', e.type, msg);
         switch (e.type) {
         case 'changed-file-input': {
             uploadFile(msg.target.files[0])
@@ -78,14 +74,6 @@ function setupPage (root, state, store, observer) {
         case 'select-scaling': return view.selectScaling(msg.target.value);
         case 'click-play-simulation': {
             view.turnVisibilityOff();
-            store.setScalingSelectOption(state.options.scalingSelection);
-            if (state.options.scalingSelection === 'scaling-custom') {
-                store.setCustomResWidth(state.options.scalingCustom.resolution.width);
-                store.setCustomResHeight(state.options.scalingCustom.resolution.height);
-                store.setCustomArX(state.options.scalingCustom.aspectRatio.x);
-                store.setCustomArY(state.options.scalingCustom.aspectRatio.y);
-                store.setCustomStretchNearest(state.options.scalingCustom.stretchNearest);
-            }
             playHtmlSelection(state);
             break;
         }

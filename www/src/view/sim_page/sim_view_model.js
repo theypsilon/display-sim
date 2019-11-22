@@ -100,18 +100,28 @@ export function data () {
                     open: false,
                     entries: [
                         { type: 'selectors-input', class: 'menu-2 menu-blc-blue', text: 'Scaling Method', ref: options.scaling_method },
-                        { type: 'scaling-input', ref: options.scaling_method, entries: [
-                            { type: 'numeric-pair', text: 'Image resolution', separator: '✕', class: 'menu-blc-lila', pair: [
-                                { min: 1, max: 10000, step: 1, placeholder: 256, ref: options.custom_scaling_resolution_width },
-                                { min: 1, max: 10000, step: 1, placeholder: 240, ref: options.custom_scaling_resolution_height }
-                            ]},
-                            { type: 'numeric-pair', text: 'Aspect Ratio', separator: ':', class: 'menu-blc-lila', pair: [
-                                { min: 1, max: 100, step: 1, placeholder: 4, ref: options.custom_scaling_aspect_ratio_x },
-                                { min: 1, max: 100, step: 1, placeholder: 3, ref: options.custom_scaling_aspect_ratio_y }
-                            ]},
-                            { type: 'checkbox-input', class: 'menu-2 menu-blc-lila', text: 'Stretch to nearest border', ref: options.custom_scaling_stretch_nearest },
-                            { type: 'number-input', class: 'menu-2 menu-blc-yellow', text: 'Pixel width', hk: { inc: 'O', dec: 'Shift + O' }, step: 0.001, min: 0, max: 10, value: 0, placeholder: 0, ref: options.pixel_width }
-                        ]}
+                        { type: 'scaling-input',
+                            ref: options.scaling_method,
+                            entries: [
+                                { type: 'numeric-pair',
+                                    text: 'Image resolution',
+                                    separator: '✕',
+                                    class: 'menu-blc-lila',
+                                    pair: [
+                                        { min: 1, max: 10000, step: 1, placeholder: 256, ref: options.custom_scaling_resolution_width },
+                                        { min: 1, max: 10000, step: 1, placeholder: 240, ref: options.custom_scaling_resolution_height }
+                                    ] },
+                                { type: 'numeric-pair',
+                                    text: 'Aspect Ratio',
+                                    separator: ':',
+                                    class: 'menu-blc-lila',
+                                    pair: [
+                                        { min: 1, max: 100, step: 1, placeholder: 4, ref: options.custom_scaling_aspect_ratio_x },
+                                        { min: 1, max: 100, step: 1, placeholder: 3, ref: options.custom_scaling_aspect_ratio_y }
+                                    ] },
+                                { type: 'checkbox-input', class: 'menu-2 menu-blc-lila', text: 'Stretch to nearest border', ref: options.custom_scaling_stretch_nearest },
+                                { type: 'number-input', class: 'menu-2 menu-blc-yellow', text: 'Pixel width', hk: { inc: 'O', dec: 'Shift + O' }, step: 0.001, min: 0, max: 10, value: 0, placeholder: 0, ref: options.pixel_width }
+                            ] }
                     ]
                 },
                 {
@@ -423,23 +433,23 @@ export class View {
         this._state.options.scaling_method.value = msg;
         this._isDirty = true;
     }
-    changeCustomScalingResWidth(width) {
+    changeCustomScalingResWidth (width) {
         this._state.options.custom_scaling_resolution_width.value = width;
         this._isDirty = true;
     }
-    changeCustomScalingResHeight(height) {
+    changeCustomScalingResHeight (height) {
         this._state.options.custom_scaling_resolution_height.value = height;
         this._isDirty = true;
     }
-    changeCustomScalingArX(x) {
+    changeCustomScalingArX (x) {
         this._state.options.custom_scaling_aspect_ratio_x.value = x;
         this._isDirty = true;
     }
-    changeCustomScalingArY(y) {
+    changeCustomScalingArY (y) {
         this._state.options.custom_scaling_aspect_ratio_y.value = y;
         this._isDirty = true;
     }
-    changeCustomScalingStretchNearest(stretch) {
+    changeCustomScalingStretchNearest (stretch) {
         this._state.options.custom_scaling_stretch_nearest.value = stretch;
         this._isDirty = true;
     }

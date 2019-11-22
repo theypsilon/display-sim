@@ -110,8 +110,6 @@ fn program() -> AppResult<()> {
             width: (monitor.size().width * 0.8) as u32,
             height: (monitor.size().height * 0.8) as u32,
         },
-        pixel_width: 1.0,
-        stretch: false,
         current_frame: 0,
         preset: None,
         last_frame_change: 0.0,
@@ -333,6 +331,21 @@ impl AppEventDispatcher for NativeEventDispatcher {
     }
     fn dispatch_scaling_method(&self, method: ScalingMethod) {
         println!("scaling_method: {}", method);
+    }
+    fn dispatch_custom_scaling_resolution_width(&self, value: u32) {
+        println!("custom_scaling_resolution_width: {}", value);
+    }
+    fn dispatch_custom_scaling_resolution_height(&self, value: u32) {
+        println!("custom_scaling_resolution_height: {}", value);
+    }
+    fn dispatch_custom_scaling_aspect_ratio_x(&self, value: u32) {
+        println!("custom_scaling_aspect_ratio_x: {}", value);
+    }
+    fn dispatch_custom_scaling_aspect_ratio_y(&self, value: u32) {
+        println!("custom_scaling_aspect_ratio_y: {}", value);
+    }
+    fn dispatch_custom_scaling_stretch_nearest(&self, value: bool) {
+        println!("custom_scaling_stretch_nearest: {}", value);
     }
     fn dispatch_change_blur_level(&self, res: usize) {
         println!("change_blur_level: {}", res);

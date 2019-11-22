@@ -29,46 +29,18 @@ export async function playHtmlSelection (state) {
 
     Logger.log('image readed');
 
-    let scaleX = 1;
-    let stretch = false;
-
     const imageWidth = animations[0].raw.width;
     const imageHeight = animations[0].raw.height;
     let backgroundWidth = imageWidth;
     let backgroundHeight = imageHeight;
 
-    switch (state.options.scalingSelection) {
-    case Constants.SCALING_AUTO_ID:
-        const autoScaling = calculateAutoScaling(imageWidth, imageHeight);
-        scaleX = autoScaling.scaleX;
-        break;
-    case Constants.SCALING_43_ID:
-        scaleX = (4 / 3) / (imageWidth / imageHeight);
-        break;
-    case Constants.SCALING_STRETCH_TO_BOTH_EDGES_ID:
-        scaleX = (window.screen.width / window.screen.height) / (imageWidth / imageHeight);
-        stretch = true;
-        break;
-    case Constants.SCALING_STRETCH_TO_NEAREST_EDGE_ID:
-        stretch = true;
-        break;
-    case Constants.SCALING_CUSTOM_ID:
-        stretch = state.options.scalingCustom.stretchNearest;
-        backgroundWidth = +state.options.scalingCustom.resolution.width;
-        backgroundHeight = +state.options.scalingCustom.resolution.height;
-        scaleX = (+state.options.scalingCustom.aspectRatio.x / +state.options.scalingCustom.aspectRatio.y) / (backgroundWidth / backgroundHeight);
-        break;
-    }
-
     mailbox.placeMessage('sim-page', {
         topic: 'launch',
         launcherParams: {
-            scaleX,
             imageWidth,
             imageHeight,
             backgroundWidth,
             backgroundHeight,
-            stretch,
             animations
         }
     });
@@ -94,12 +66,10 @@ export async function playQuerystring (querystring) {
     mailbox.placeMessage('sim-page', {
         topic: 'launch',
         launcherParams: {
-            scaleX: calculateAutoScaling(imageWidth, imageHeight).scaleX,
             imageWidth: imageWidth,
             imageHeight: imageHeight,
             backgroundWidth: imageWidth,
             backgroundHeight: imageHeight,
-            stretch: false,
             activePreset: selectedPreset,
             animations,
             skipDrawing
@@ -119,25 +89,5 @@ async function getAnimations (state) {
         return animationsGateway.getFromImage(selectedImage.img);
     } else {
         return animationsGateway.getFromPath(selectedImage.hq, selectedImage.isGif);
-    }
-}
-
-function calculateAutoScaling (imageWidth, imageHeight) {
-    if (imageHeight > 540) {
-        return {
-            scaleX: 1
-        };
-    } else if (imageHeight === 144) {
-        return {
-            scaleX: (11 / 10) / (imageWidth / imageHeight)
-        };
-    } else if (imageHeight === 160) {
-        return {
-            scaleX: (3 / 2) / (imageWidth / imageHeight)
-        };
-    } else {
-        return {
-            scaleX: (4 / 3) / (imageWidth / imageHeight)
-        };
     }
 }

@@ -21,6 +21,8 @@ import { Launcher } from './sim_launcher';
 
 const STORE_KEY_WEBGL_POWER_PREFERENCE = 'option-powerPreference';
 const STORE_KEY_WEBGL_ANTIALIAS = 'option-antialias';
+const POWER_PREFERENCE_DEFAULT = 'default';
+const FILTERS_PRESET_STORE_KEY = 'FiltersPreset';
 
 export class Model {
     constructor (canvas, eventBus, mailbox, launcher, store) {
@@ -33,8 +35,8 @@ export class Model {
             msg: null,
             simOwner: null,
             storedValues: {
-                selectedPreset: this.store.getItem(Constants.FILTERS_PRESET_STORE_KEY) || Constants.PRESET_KIND_APERTURE_GRILLE_1,
-                powerPreference: this.store.getItem(STORE_KEY_WEBGL_POWER_PREFERENCE) || Constants.POWER_PREFERENCE_DEFAULT,
+                selectedPreset: this.store.getItem(FILTERS_PRESET_STORE_KEY) || Constants.PRESET_KIND_APERTURE_GRILLE_1,
+                powerPreference: this.store.getItem(STORE_KEY_WEBGL_POWER_PREFERENCE) || POWER_PREFERENCE_DEFAULT,
                 antialias: this.store.getItem(STORE_KEY_WEBGL_ANTIALIAS) !== 'false'
             }
         };
@@ -80,13 +82,13 @@ export class Model {
     }
 
     _saveStoredValues () {
-        this.store.setItem(Constants.FILTERS_PRESET_STORE_KEY, this.state.storedValues.selectedPreset);
+        this.store.setItem(FILTERS_PRESET_STORE_KEY, this.state.storedValues.selectedPreset);
         this.store.setItem(STORE_KEY_WEBGL_POWER_PREFERENCE, this.state.storedValues.powerPreference);
         this.store.setItem(STORE_KEY_WEBGL_ANTIALIAS, this.state.storedValues.antialias ? 'true' : 'false');
     }
 
     async changePerformance (performance, direction) {
-        const options = [Constants.POWER_PREFERENCE_DEFAULT, 'high-performance', 'low-power'];
+        const options = [POWER_PREFERENCE_DEFAULT, 'high-performance', 'low-power'];
         let index = options.indexOf(performance);
         switch (direction) {
         case 'inc': index = index + 1; break;

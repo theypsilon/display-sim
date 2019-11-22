@@ -85,7 +85,6 @@ function fireEventOn (observer) {
 
 function setupEventHandling (canvasParent, view, model, frontendBus) {
     function fireBackendEvent (kind, msg) {
-        console.log('fireBackendEvent', kind, msg);
         const event = {
             message: msg,
             type: 'front2back:' + kind
@@ -96,7 +95,6 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
     // Listening backend events
     frontendBus.subscribe(e => {
         const msg = e.message;
-        console.log('frontendBus', e.type, msg);
         switch (e.type) {
         case 'front2front:dispatchKey': {
             if (msg.key.startsWith('webgl:')) {    

@@ -42,10 +42,6 @@ export class Launcher {
         if (params.backgroundWidth !== params.imageWidth) {
             videoInput.set_background_size(params.backgroundWidth, params.backgroundHeight); // to calculate model distance to the camera
         }
-        videoInput.set_pixel_width(params.scaleX);
-        if (params.stretch === true) {
-            videoInput.stretch();
-        }
         videoInput.set_max_texture_size(gl.getParameter(gl.MAX_TEXTURE_SIZE));
         for (let i = 0; i < params.animations.length; i++) {
             const rawImg = params.animations[i];
