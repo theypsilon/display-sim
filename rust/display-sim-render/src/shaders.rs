@@ -62,8 +62,8 @@ pub fn make_quad_vao<GL: HasContext>(gl: &GlowSafeAdapter<GL>, shader: &GL::Prog
     gl.bind_buffer(glow::ELEMENT_ARRAY_BUFFER, Some(quad_ebo));
     gl.buffer_data_u8_slice(glow::ELEMENT_ARRAY_BUFFER, i32_to_u8(&QUAD_INDICES), glow::STATIC_DRAW);
 
-    let q_pos_position = gl.get_attrib_location(*shader, "qPos") as u32;
-    let q_texture_position = gl.get_attrib_location(*shader, "qTexCoords") as u32;
+    let q_pos_position = gl.get_attrib_location(*shader, "qPos");
+    let q_texture_position = gl.get_attrib_location(*shader, "qTexCoords");
 
     gl.enable_vertex_attrib_array(q_pos_position);
     gl.enable_vertex_attrib_array(q_texture_position);

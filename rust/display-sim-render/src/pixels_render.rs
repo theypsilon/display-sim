@@ -67,11 +67,11 @@ impl<GL: HasContext> PixelsRender<GL> {
         gl.bind_buffer(glow::ARRAY_BUFFER, Some(pixels_vbo));
         gl.buffer_data_u8_slice(glow::ARRAY_BUFFER, f32_to_u8(&CUBE_GEOMETRY), glow::STATIC_DRAW);
 
-        let a_pos_position = gl.get_attrib_location(shader, "aPos") as u32;
+        let a_pos_position = gl.get_attrib_location(shader, "aPos");
         gl.vertex_attrib_pointer_f32(a_pos_position, 3, glow::FLOAT, false, 6 * size_of::<f32>() as i32, 0);
         gl.enable_vertex_attrib_array(a_pos_position);
 
-        let a_normal_position = gl.get_attrib_location(shader, "aNormal") as u32;
+        let a_normal_position = gl.get_attrib_location(shader, "aNormal");
         gl.vertex_attrib_pointer_f32(
             a_normal_position,
             3,
@@ -85,7 +85,7 @@ impl<GL: HasContext> PixelsRender<GL> {
         let colors_vbo = gl.create_buffer()?;
         gl.bind_buffer(glow::ARRAY_BUFFER, Some(colors_vbo));
 
-        let a_color_position = gl.get_attrib_location(shader, "aColor") as u32;
+        let a_color_position = gl.get_attrib_location(shader, "aColor");
         gl.enable_vertex_attrib_array(a_color_position);
         gl.vertex_attrib_pointer_f32(a_color_position, 1, glow::FLOAT, false, size_of::<f32>() as i32, 0);
         gl.vertex_attrib_divisor(a_color_position, 1);
@@ -93,7 +93,7 @@ impl<GL: HasContext> PixelsRender<GL> {
         let offsets_vbo = gl.create_buffer()?;
         gl.bind_buffer(glow::ARRAY_BUFFER, Some(offsets_vbo));
 
-        let a_offset_position = gl.get_attrib_location(shader, "aOffset") as u32;
+        let a_offset_position = gl.get_attrib_location(shader, "aOffset");
         gl.enable_vertex_attrib_array(a_offset_position);
         gl.vertex_attrib_pointer_f32(a_offset_position, 2, glow::FLOAT, false, 2 * size_of::<f32>() as i32, 0);
         gl.vertex_attrib_divisor(a_offset_position, 1);

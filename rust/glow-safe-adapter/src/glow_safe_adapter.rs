@@ -29,8 +29,8 @@ impl<GL: HasContext> GlowSafeAdapter<GL> {
         unsafe { self.gl.enable(parameter) }
     }
 
-    pub fn enable_vertex_attrib_array(&self, index: u32) {
-        unsafe { self.gl.enable_vertex_attrib_array(index) }
+    pub fn enable_vertex_attrib_array(&self, index: Option<u32>) {
+        unsafe { self.gl.enable_vertex_attrib_array(index.unwrap()) }
     }
 
     pub fn create_framebuffer(&self) -> Result<GL::Framebuffer, String> {
@@ -209,7 +209,7 @@ impl<GL: HasContext> GlowSafeAdapter<GL> {
         unsafe { self.gl.get_uniform_location(program, name) }
     }
 
-    pub fn get_attrib_location(&self, program: GL::Program, name: &str) -> i32 {
+    pub fn get_attrib_location(&self, program: GL::Program, name: &str) -> Option<u32> {
         unsafe { self.gl.get_attrib_location(program, name) }
     }
 
@@ -284,16 +284,16 @@ impl<GL: HasContext> GlowSafeAdapter<GL> {
         unsafe { self.gl.tex_parameter_i32(target, parameter, value) }
     }
 
-    pub fn vertex_attrib_divisor(&self, index: u32, divisor: u32) {
-        unsafe { self.gl.vertex_attrib_divisor(index, divisor) }
+    pub fn vertex_attrib_divisor(&self, index: Option<u32>, divisor: u32) {
+        unsafe { self.gl.vertex_attrib_divisor(index.unwrap(), divisor) }
     }
 
-    pub fn vertex_attrib_pointer_f32(&self, index: u32, size: i32, data_type: u32, normalized: bool, stride: i32, offset: i32) {
-        unsafe { self.gl.vertex_attrib_pointer_f32(index, size, data_type, normalized, stride, offset) }
+    pub fn vertex_attrib_pointer_f32(&self, index: Option<u32>, size: i32, data_type: u32, normalized: bool, stride: i32, offset: i32) {
+        unsafe { self.gl.vertex_attrib_pointer_f32(index.unwrap(), size, data_type, normalized, stride, offset) }
     }
 
-    pub fn vertex_attrib_pointer_i32(&self, index: u32, size: i32, data_type: u32, stride: i32, offset: i32) {
-        unsafe { self.gl.vertex_attrib_pointer_i32(index, size, data_type, stride, offset) }
+    pub fn vertex_attrib_pointer_i32(&self, index: Option<u32>, size: i32, data_type: u32, stride: i32, offset: i32) {
+        unsafe { self.gl.vertex_attrib_pointer_i32(index.unwrap(), size, data_type, stride, offset) }
     }
 
     pub fn viewport(&self, x: i32, y: i32, width: i32, height: i32) {
