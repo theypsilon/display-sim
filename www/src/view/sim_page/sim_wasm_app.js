@@ -26,43 +26,43 @@ export class WasmApp {
     }
 
     async load (canvas, eventBus, params) {
-        const wasm = await import('../../wasm/display_sim');
+        const exports = await import('../../wasm/display_sim');
 
         if (!this.app) {
             Logger.log('calling new WasmApp');
-            this.app = new wasm.WasmApp();
+            this.app = new exports.WasmApp();
             Logger.log('new WasmApp done');
         }
 
-        const videoInput = new wasm.VideoInputWasm(
+        const config = new exports.VideoInputConfig(
             params.imageWidth, params.imageHeight, // to read the image pixels
             canvas.width, canvas.height // gl.viewport
         );
         if (params.backgroundWidth !== params.imageWidth) {
-            videoInput.set_background_size(params.backgroundWidth, params.backgroundHeight); // to calculate model distance to the camera
+            config.set_background_size(params.backgroundWidth, params.backgroundHeight); // to calculate model distance to the camera
         }
 
         for (let i = 0; i < params.animations.length; i++) {
             const rawImg = params.animations[i];
-            videoInput.add_picture_frame(new Uint8Array(rawImg.raw.data.buffer), rawImg.delay);
+            config.add_picture_frame(new Uint8Array(rawImg.raw.data.buffer), rawImg.delay);
         }
 
         if (params.activePreset) {
-            videoInput.set_preset(params.activePreset);
+            config.set_preset(params.activePreset);
         }
 
         if (params.skipDrawing) {
-            videoInput.set_drawing_activation(false);
+            config.set_drawing_activation(false);
         }
 
         Logger.log('gl context form', params.ctxOptions);
         const gl = canvas.getContext('webgl2', params.ctxOptions);
 
         if (gl) {
-            videoInput.set_max_texture_size(gl.getParameter(gl.MAX_TEXTURE_SIZE));
+            config.set_max_texture_size(gl.getParameter(gl.MAX_TEXTURE_SIZE));
 
             Logger.log('calling wasmApp.load');
-            this.app.load(gl, eventBus, videoInput);
+            this.app.load(gl, eventBus, config);
             Logger.log('wasmApp.load done');
     
             return { success: true };   

@@ -44,7 +44,7 @@ impl WasmApp {
     }
 
     #[wasm_bindgen]
-    pub fn load(&mut self, webgl: JsValue, event_bus: JsValue, video_input: VideoInputWasm) {
+    pub fn load(&mut self, webgl: JsValue, event_bus: JsValue, video_input: VideoInputConfig) {
         if let Some(_) = self.io {
             console!(error. "State already initialized!");
             return;
@@ -86,16 +86,16 @@ fn handle_result(result: AppResult<()>) {
 }
 
 #[wasm_bindgen]
-pub struct VideoInputWasm {
+pub struct VideoInputConfig {
     resources: VideoInputResources,
     materials: VideoInputMaterials,
 }
 
 #[wasm_bindgen]
-impl VideoInputWasm {
+impl VideoInputConfig {
     #[wasm_bindgen(constructor)]
-    pub fn new(image_width: u32, image_height: u32, canvas_width: u32, canvas_height: u32) -> VideoInputWasm {
-        VideoInputWasm {
+    pub fn new(image_width: u32, image_height: u32, canvas_width: u32, canvas_height: u32) -> VideoInputConfig {
+        VideoInputConfig {
             resources: VideoInputResources {
                 image_size: Size2D {
                     width: image_width,

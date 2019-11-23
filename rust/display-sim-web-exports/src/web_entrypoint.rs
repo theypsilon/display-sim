@@ -73,9 +73,7 @@ pub(crate) fn web_unload(io: InputOutput) -> AppResult<()> {
 
 pub(crate) fn web_run_frame(res: &mut Resources, io: &mut InputOutput) -> AppResult<bool> {
     for event in io.events.borrow_mut().drain(0..) {
-        if let Err(e) = read_frontend_event(&mut io.input, event) {
-            console!(error. "Could not read custom event.", e);
-        }
+        read_frontend_event(&mut io.input, event)?;
     }
     let ctx = ConcreteSimulationContext::new(WebEventDispatcher::new(io.webgl.clone(), io.event_bus.clone()), WebRnd {});
     let condition = tick(&ctx, &mut io.input, res, &mut io.materials)?;
@@ -83,7 +81,7 @@ pub(crate) fn web_run_frame(res: &mut Resources, io: &mut InputOutput) -> AppRes
     Ok(condition)
 }
 
-pub fn print_error(e: AppError) {
+pub(crate) fn print_error(e: AppError) {
     console!(error. "An unexpected error ocurred.", e);
 }
 
@@ -123,7 +121,7 @@ fn set_event_listeners(event_bus: JsValue) -> AppResult<(Rc<RefCell<Vec<JsValue>
     Ok((events, onfrontendevent))
 }
 
-pub fn read_frontend_event(input: &mut Input, event: JsValue) -> AppResult<()> {
+fn read_frontend_event(input: &mut Input, event: JsValue) -> AppResult<()> {
     let value = js_sys::Reflect::get(&event, &"message".into())?;
     let frontend_event: AppResult<String> = js_sys::Reflect::get(&event, &"type".into())?.as_string().ok_or("Could not get kind".into());
     let frontend_event = frontend_event?;
