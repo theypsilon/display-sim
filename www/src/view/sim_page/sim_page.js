@@ -26,7 +26,7 @@ class SimPage extends HTMLElement {
     constructor () {
         super();
 
-        this.mess = setupPage(this.attachShadow({ mode: 'open' }), state, {
+        this.future = setupPage(this.attachShadow({ mode: 'open' }), state, {
             front: Observer.make(),
             back: Observer.make()
         });
@@ -39,15 +39,15 @@ class SimPage extends HTMLElement {
         document.body.style.removeProperty('overflow');
         document.body.style.removeProperty('background-color');
 
-        this.mess.clean();
+        this.future.then(mess => mess.clean())
     }
 }
 
 window.customElements.define('sim-page', SimPage);
 
-function setupPage (root, state, observers) {
+async function setupPage (root, state, observers) {
     const [view, canvas] = setupView(state, root, observers.front);
-    const model = setupModel(canvas, view, {
+    const model = await setupModel(canvas, view, {
         subscribe: cb => observers.back.subscribe(cb),
         unsubscribe: cb => observers.back.unsubscribe(cb),
         fire: msg => observers.front.fire(msg)
@@ -67,9 +67,9 @@ function setupView (state, root, frontendObserver) {
     return [view, root.getElementById('gl-canvas-id')];
 }
 
-function setupModel (canvas, view, backendBus) {
+async function setupModel (canvas, view, backendBus) {
     const model = Model.make(canvas, backendBus);
-    model.load().then(result => view.init(result));
+    view.init(await model.load());
     return model;
 }
 
@@ -177,8 +177,12 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
     // frame loop on frontend
     let newFrameId;
     (function requestNewFrame () {
-        view.newFrame();
-        newFrameId = window.requestAnimationFrame(requestNewFrame);
+        if (model.runFrame()) {
+            view.newFrame();
+            newFrameId = window.requestAnimationFrame(requestNewFrame);
+        } else {
+            model.unloadSimulation();
+        }
     })();
 
     const listeners = [];
@@ -203,6 +207,7 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
     return {
         clean: () => {
             window.cancelAnimationFrame(newFrameId);
+            model.unloadSimulation();
             listeners.forEach(({ eventBus, type, callback, options }) => eventBus.removeEventListener(type, callback, options));
         }
     };

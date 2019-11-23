@@ -35,8 +35,8 @@ export async function playHtmlSelection (state) {
     let backgroundHeight = imageHeight;
 
     mailbox.placeMessage('sim-page', {
-        topic: 'launch',
-        launcherParams: {
+        topic: 'load-app',
+        loadAppParams: {
             imageWidth,
             imageHeight,
             backgroundWidth,
@@ -64,8 +64,8 @@ export async function playQuerystring (querystring) {
     const imageHeight = animations[0].raw.height;
 
     mailbox.placeMessage('sim-page', {
-        topic: 'launch',
-        launcherParams: {
+        topic: 'load-app',
+        loadAppParams: {
             imageWidth: imageWidth,
             imageHeight: imageHeight,
             backgroundWidth: imageWidth,

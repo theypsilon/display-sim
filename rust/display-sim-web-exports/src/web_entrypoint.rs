@@ -16,11 +16,11 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
-use web_sys::{WebGl2RenderingContext, Window};
+use web_sys::WebGl2RenderingContext;
 
 use crate::console;
 use crate::web_events::WebEventDispatcher;
-use crate::web_utils::{now, window};
+use crate::web_utils::now;
 use app_error::{AppError, AppResult};
 use core::camera::CameraChange;
 use core::simulation_context::{ConcreteSimulationContext, RandomGenerator, SimulationContext};
@@ -31,102 +31,60 @@ use render::simulation_draw::SimulationDrawer;
 use render::simulation_render_state::{Materials, VideoInputMaterials};
 
 type OwnedClosure = Closure<dyn FnMut(JsValue)>;
-pub type StateOwnerPtr = Rc<RefCell<Option<Box<StateOwner>>>>;
 
-pub struct StateOwner {
-    pub closures: Vec<OwnedClosure>,
-    pub input: Input,
-    pub materials: Materials,
-    pub event_bus: JsValue,
-    pub cancel_id: i32,
+pub(crate) struct InputOutput {
+    event_bus_subscriber: OwnedClosure,
+    input: Input,
+    materials: Materials,
+    event_bus: JsValue,
+    webgl: WebGl2RenderingContext,
+    events: Rc<RefCell<Vec<JsValue>>>,
 }
 
-impl StateOwner {
-    pub fn new_ptr(materials: Materials, input: Input, event_bus: JsValue) -> StateOwnerPtr {
-        Rc::new(RefCell::new(Some(Box::new(StateOwner {
-            closures: Vec::new(),
-            materials,
-            input,
-            cancel_id: 0,
-            event_bus,
-        }))))
-    }
-}
-
-pub fn web_entrypoint(
+pub(crate) fn web_load(
+    res: &mut Resources,
     webgl: JsValue,
     event_bus: JsValue,
-    res: Rc<RefCell<Resources>>,
-    video_input_resources: VideoInputResources,
-    video_input_materials: VideoInputMaterials,
-) -> AppResult<StateOwnerPtr> {
+    input_resources: VideoInputResources,
+    input_materials: VideoInputMaterials,
+) -> AppResult<InputOutput> {
     let webgl = webgl.dyn_into::<WebGl2RenderingContext>()?;
-
-    res.borrow_mut().initialize(video_input_resources, now()?);
     let gl = Rc::new(GlowSafeAdapter::new(glow::Context::from_webgl2_context(webgl.clone())));
-    let owned_state = StateOwner::new_ptr(Materials::new(gl, video_input_materials)?, Input::new(now()?), event_bus.clone());
-    let frame_closure: Closure<dyn FnMut(JsValue)> = {
-        let owned_state = Rc::clone(&owned_state);
-        let window = window()?;
-        let event_bus = event_bus.clone();
-        Closure::wrap(Box::new(move |_| {
-            if let Some(owned_state) = &mut *owned_state.borrow_mut() {
-                let mut ctx = ConcreteSimulationContext::new(WebEventDispatcher::new(webgl.clone(), event_bus.clone()), WebRnd {});
-                if let Err(e) = web_entrypoint_iteration(owned_state, &mut *res.borrow_mut(), &window, &mut ctx) {
-                    console!(error. "An unexpected error happened during web_entrypoint_iteration.", e);
-                    ctx.dispatcher().dispatch_exiting_session();
-                    ctx.dispatcher()
-                        .dispatch_top_message("Error! Try restarting your browser. Contact me if this problem persists!");
-                }
-                if let Err(e) = ctx.dispatcher_instance.check_error() {
-                    console!(error. "Error dispatching some events: ", e);
-                }
-            }
-        }))
-    };
-    let owned_state_clone = owned_state.clone();
-    if let Some(owned_state) = &mut *owned_state.borrow_mut() {
-        owned_state.cancel_id = window()?.request_animation_frame(frame_closure.as_ref().unchecked_ref())?;
-        owned_state.closures.push(frame_closure);
 
-        let listeners = set_event_listeners(event_bus, owned_state_clone)?;
-        owned_state.closures.extend(listeners);
-    }
-
-    Ok(owned_state)
+    res.initialize(input_resources, now()?);
+    let (events, event_bus_subscriber) = set_event_listeners(event_bus.clone())?;
+    Ok(InputOutput {
+        input: Input::new(now()?),
+        materials: Materials::new(gl, input_materials)?,
+        event_bus,
+        webgl,
+        event_bus_subscriber,
+        events,
+    })
 }
 
-pub fn stop_frame_loop(owner: StateOwnerPtr) -> AppResult<()> {
-    if let Some(owner) = &mut *owner.borrow_mut() {
-        window()?.cancel_animation_frame(owner.cancel_id)?;
-        owner.cancel_id = 0;
+pub(crate) fn web_unload(io: InputOutput) -> AppResult<()> {
+    let unsubscribe = js_sys::Reflect::get(&io.event_bus, &"unsubscribe".into())?.dyn_into::<js_sys::Function>()?;
+    let args = js_sys::Array::new();
+    args.push(io.event_bus_subscriber.as_ref().unchecked_ref());
+    unsubscribe.apply(&io.event_bus, &args)?;
+    Ok(())
+}
 
-        if let Some(onfrontendevent) = owner.closures.last() {
-            let unsubscribe = js_sys::Reflect::get(&owner.event_bus, &"unsubscribe".into())?.dyn_into::<js_sys::Function>()?;
-            let args = js_sys::Array::new();
-            args.push(onfrontendevent.as_ref().unchecked_ref());
-            unsubscribe.apply(&owner.event_bus, &args)?;
+pub(crate) fn web_run_frame(res: &mut Resources, io: &mut InputOutput) -> AppResult<bool> {
+    for event in io.events.borrow_mut().drain(0..) {
+        if let Err(e) = read_frontend_event(&mut io.input, event) {
+            console!(error. "Could not read custom event.", e);
         }
     }
-    let _ = owner.borrow_mut().take();
-    Ok(())
+    let ctx = ConcreteSimulationContext::new(WebEventDispatcher::new(io.webgl.clone(), io.event_bus.clone()), WebRnd {});
+    let condition = tick(&ctx, &mut io.input, res, &mut io.materials)?;
+    ctx.dispatcher_instance.check_error()?;
+    Ok(condition)
 }
 
 pub fn print_error(e: AppError) {
     console!(error. "An unexpected error ocurred.", e);
-}
-
-fn web_entrypoint_iteration(owned_state: &mut StateOwner, resources: &mut Resources, window: &Window, ctx: &mut dyn SimulationContext) -> AppResult<()> {
-    match tick(ctx, &mut owned_state.input, resources, &mut owned_state.materials) {
-        Ok(true) => {
-            if owned_state.cancel_id != 0 {
-                owned_state.cancel_id = window.request_animation_frame(owned_state.closures[0].as_ref().as_ref().unchecked_ref())?;
-            }
-        }
-        Ok(false) => {}
-        Err(e) => return Err(e),
-    };
-    Ok(())
 }
 
 struct WebRnd {}
@@ -150,22 +108,19 @@ fn tick(ctx: &dyn SimulationContext, input: &mut Input, res: &mut Resources, mat
     Ok(true)
 }
 
-fn set_event_listeners(event_bus: JsValue, state_owner: StateOwnerPtr) -> AppResult<Vec<OwnedClosure>> {
+fn set_event_listeners(event_bus: JsValue) -> AppResult<(Rc<RefCell<Vec<JsValue>>>, OwnedClosure)> {
+    let events = Rc::new(RefCell::new(vec![]));
     let onfrontendevent: Closure<dyn FnMut(JsValue)> = {
+        let events = events.clone();
         Closure::wrap(Box::new(move |event: JsValue| {
-            if let Some(state_owner) = &mut *state_owner.borrow_mut() {
-                let mut input = &mut state_owner.input;
-                if let Err(e) = read_frontend_event(&mut input, event) {
-                    console!(error. "Could not read custom event.", e);
-                }
-            }
+            events.borrow_mut().push(event);
         }))
     };
     let subscribe = js_sys::Reflect::get(&event_bus, &"subscribe".into())?.dyn_into::<js_sys::Function>()?;
     let args = js_sys::Array::new();
     args.push(onfrontendevent.as_ref().unchecked_ref());
     subscribe.apply(&event_bus, &args)?;
-    Ok(vec![onfrontendevent])
+    Ok((events, onfrontendevent))
 }
 
 pub fn read_frontend_event(input: &mut Input, event: JsValue) -> AppResult<()> {

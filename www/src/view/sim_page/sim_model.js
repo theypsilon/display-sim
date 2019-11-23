@@ -17,7 +17,7 @@ import Constants from '../../services/constants';
 import Logger from '../../services/logger';
 import { Mailbox } from '../../services/mailbox';
 import { LocalStorage } from '../../services/local_storage';
-import { Launcher } from './sim_launcher';
+import { WasmApp } from './sim_wasm_app';
 
 const STORE_KEY_WEBGL_POWER_PREFERENCE = 'option-powerPreference';
 const STORE_KEY_WEBGL_ANTIALIAS = 'option-antialias';
@@ -25,15 +25,15 @@ const POWER_PREFERENCE_DEFAULT = 'default';
 const FILTERS_PRESET_STORE_KEY = 'FiltersPreset';
 
 export class Model {
-    constructor (canvas, eventBus, mailbox, launcher, store) {
+    constructor (canvas, eventBus, mailbox, wasmApp, store) {
         this.eventBus = eventBus;
         this.mailbox = mailbox;
-        this.launcher = launcher;
+        this.wasmApp = wasmApp;
         this.store = store;
         this.state = {
             canvas,
             msg: null,
-            simOwner: null,
+            loaded: false,
             storedValues: {
                 selectedPreset: this.store.getItem(FILTERS_PRESET_STORE_KEY) || Constants.PRESET_KIND_APERTURE_GRILLE_1,
                 powerPreference: this.store.getItem(STORE_KEY_WEBGL_POWER_PREFERENCE) || POWER_PREFERENCE_DEFAULT,
@@ -42,8 +42,8 @@ export class Model {
         };
     }
 
-    static make (canvas, eventBus, mailbox, launcher, store) {
-        return new Model(canvas, eventBus, mailbox || Mailbox.getInstance(), launcher || Launcher.make(), store || LocalStorage.make('sim-page'));
+    static make (canvas, eventBus, mailbox, wasmApp, store) {
+        return new Model(canvas, eventBus, mailbox || Mailbox.getInstance(), wasmApp || WasmApp.getInstance(), store || LocalStorage.make('sim-page'));
     }
 
     load () {
@@ -52,13 +52,14 @@ export class Model {
             throw new Error('Can not handle these messages.', messages);
         }
 
-        this.state.msg = messages.filter(msg => msg.topic === 'launch')[0];
+        this.state.msg = messages.filter(msg => msg.topic === 'load-app')[0];
         return this._launchSimulation();
     }
 
     async _launchSimulation () {
         this.resizeCanvas();
-        const result = await this.launcher.launch(this.state.canvas, this.eventBus, Object.assign({
+        this.state.loaded = true;
+        const result = await this.wasmApp.load(this.state.canvas, this.eventBus, Object.assign({
             ctxOptions: {
                 alpha: false,
                 antialias: this.state.storedValues.antialias,
@@ -69,9 +70,15 @@ export class Model {
                 preserveDrawingBuffer: false,
                 stencil: false
             }
-        }, this.state.msg.launcherParams));
-        this.state.simOwner = result.owner;
+        }, this.state.msg.loadAppParams));
         return Object.assign({ storedValues: this.state.storedValues }, this.state.msg, result);
+    }
+
+    runFrame () {
+        if (!this.state.loaded) {
+            return true;
+        }
+        return this.wasmApp.runFrame();
     }
 
     setPreset (preset) {
@@ -109,13 +116,18 @@ export class Model {
         await this._reloadSimulation();
     }
 
-    async _reloadSimulation () {
-        this.launcher.stop(this.state.simOwner);
-        this.state.simOwner = null;
+    unloadSimulation () {
+        this.state.loaded = false;
+        this.wasmApp.unload();
         const newCanvas = document.createElement('canvas');
         newCanvas.setAttribute('tabindex', 0);
         this.state.canvas.parentNode.replaceChild(newCanvas, this.state.canvas);
+        this.state.canvas.remove();
         this.state.canvas = newCanvas;
+    }
+
+    async _reloadSimulation () {
+        this.unloadSimulation();
         await new Promise(resolve => setTimeout(resolve, 1000));
         return this._launchSimulation();
     }

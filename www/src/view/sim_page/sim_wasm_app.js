@@ -15,34 +15,33 @@
 
 import Logger from '../../services/logger';
 
-const displaySimPromise = import('../../wasm/display_sim');
+let instance;
 
-let simulationResources;
-
-export class Launcher {
-    static make () {
-        return new Launcher();
+export class WasmApp {
+    constructor () {
+        this.app = null;
+    }
+    static getInstance () {
+        return instance;
     }
 
-    async launch (canvas, eventBus, params) {
-        Logger.log('gl context form', params.ctxOptions);
-        const gl = canvas.getContext('webgl2', params.ctxOptions);
+    async load (canvas, eventBus, params) {
+        const wasm = await import('../../wasm/display_sim');
 
-        if (!gl) {
-            console.error(new Error('Could not get webgl2 context.'));
-            return { glError: true };
+        if (!this.app) {
+            Logger.log('calling new WasmApp');
+            this.app = new wasm.WasmApp();
+            Logger.log('new WasmApp done');
         }
 
-        this.displaySim = await displaySimPromise;
-
-        const videoInput = new this.displaySim.VideoInputWasm(
+        const videoInput = new wasm.VideoInputWasm(
             params.imageWidth, params.imageHeight, // to read the image pixels
             canvas.width, canvas.height // gl.viewport
         );
         if (params.backgroundWidth !== params.imageWidth) {
             videoInput.set_background_size(params.backgroundWidth, params.backgroundHeight); // to calculate model distance to the camera
         }
-        videoInput.set_max_texture_size(gl.getParameter(gl.MAX_TEXTURE_SIZE));
+
         for (let i = 0; i < params.animations.length; i++) {
             const rawImg = params.animations[i];
             videoInput.add_picture_frame(new Uint8Array(rawImg.raw.data.buffer), rawImg.delay);
@@ -56,21 +55,30 @@ export class Launcher {
             videoInput.set_drawing_activation(false);
         }
 
-        if (!simulationResources) {
-            Logger.log('calling wasm load_simulation_resources');
-            simulationResources = this.displaySim.load_simulation_resources();
-            Logger.log('wasm load_simulation_resources done');
+        Logger.log('gl context form', params.ctxOptions);
+        const gl = canvas.getContext('webgl2', params.ctxOptions);
+
+        if (gl) {
+            videoInput.set_max_texture_size(gl.getParameter(gl.MAX_TEXTURE_SIZE));
+
+            Logger.log('calling wasmApp.load');
+            this.app.load(gl, eventBus, videoInput);
+            Logger.log('wasmApp.load done');
+    
+            return { success: true };   
+        } else {
+            console.error(new Error('Could not get webgl2 context.'));
+            return { glError: true };
         }
-
-        Logger.log('calling wasm run_program');
-        const owner = this.displaySim.run_program(gl, eventBus, simulationResources, videoInput);
-        Logger.log('wasm run_program done');
-
-        return { success: true, owner };
     }
 
-    stop (owner) {
-        if (!owner) { return new Error('owner must not be null!'); }
-        this.displaySim.stop_program(owner);
+    runFrame () {
+        return this.app.run_frame();
+    }
+
+    unload () {
+        return this.app.unload();
     }
 }
+
+instance = new WasmApp();

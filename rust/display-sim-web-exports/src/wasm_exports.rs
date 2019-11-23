@@ -19,52 +19,70 @@ use js_sys::Uint8Array;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 use crate::console;
-use crate::web_entrypoint::{print_error, stop_frame_loop, web_entrypoint, StateOwnerPtr};
+use crate::web_entrypoint::{print_error, web_load, web_run_frame, web_unload, InputOutput};
+use app_error::AppResult;
 use core::general_types::Size2D;
 use core::simulation_core_state::{AnimationStep, FiltersPreset, Resources, VideoInputResources};
 use render::simulation_render_state::VideoInputMaterials;
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::str::FromStr;
 
 #[wasm_bindgen]
-pub fn load_simulation_resources() -> ResourcesWasm {
-    ResourcesWasm {
-        data: Rc::new(RefCell::new(Resources::default())),
+pub struct WasmApp {
+    res: Resources,
+    io: Option<InputOutput>,
+}
+
+#[wasm_bindgen]
+impl WasmApp {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Self {
+        set_panic_hook();
+        WasmApp {
+            res: Resources::default(),
+            io: None,
+        }
+    }
+
+    #[wasm_bindgen]
+    pub fn load(&mut self, webgl: JsValue, event_bus: JsValue, video_input: VideoInputWasm) {
+        if let Some(_) = self.io {
+            console!(error. "State already initialized!");
+            return;
+        }
+        match web_load(&mut self.res, webgl, event_bus, video_input.resources, video_input.materials) {
+            Ok(io) => self.io = Some(io),
+            Err(e) => print_error(e),
+        }
+    }
+
+    #[wasm_bindgen]
+    pub fn run_frame(&mut self) -> bool {
+        if let Some(ref mut io) = self.io {
+            match web_run_frame(&mut self.res, io) {
+                Ok(condition) => condition,
+                Err(e) => {
+                    print_error(e);
+                    false
+                }
+            }
+        } else {
+            console!(error. "State not yet initialized!");
+            false
+        }
+    }
+
+    #[wasm_bindgen]
+    pub fn unload(&mut self) {
+        if let Some(io) = self.io.take() {
+            handle_result(web_unload(io));
+        }
     }
 }
 
-#[wasm_bindgen]
-pub fn run_program(webgl: JsValue, event_bus: JsValue, res: &ResourcesWasm, video_input: VideoInputWasm) -> OwnerWasm {
-    set_panic_hook();
-    match web_entrypoint(webgl, event_bus, res.data.clone(), video_input.resources, video_input.materials) {
-        Ok(owner) => return OwnerWasm { data: owner },
-        Err(e) => {
-            print_error(e);
-            panic!("Can not recover from run_program.");
-        }
-    };
-}
-
-#[wasm_bindgen]
-pub fn stop_program(owner: OwnerWasm) {
-    match stop_frame_loop(owner.data) {
-        Ok(_) => {}
-        Err(e) => {
-            print_error(e);
-            panic!("Can not recover from stop_frame_loop.");
-        }
+fn handle_result(result: AppResult<()>) {
+    if let Err(e) = result {
+        print_error(e);
     }
-}
-
-#[wasm_bindgen]
-pub struct OwnerWasm {
-    data: StateOwnerPtr,
-}
-
-#[wasm_bindgen]
-pub struct ResourcesWasm {
-    data: Rc<RefCell<Resources>>,
 }
 
 #[wasm_bindgen]

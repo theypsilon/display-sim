@@ -782,8 +782,6 @@ impl<'a> SimulationUpdater<'a> {
         self.res.scaling.scaling_changed = false;
         self.res.scaling.scaling_init = true;
 
-        self.ctx.dispatcher().dispatch_log("update_output_scaling".into());
-
         let mut stretch = false;
         let last_pixel_width = self.res.scaling.pixel_width;
         match self.res.scaling.scaling_method {
@@ -816,8 +814,6 @@ impl<'a> SimulationUpdater<'a> {
         if self.res.scaling.pixel_width != last_pixel_width {
             self.ctx.dispatcher().dispatch_change_pixel_width(self.res.scaling.pixel_width);
         }
-
-        self.ctx.dispatcher().dispatch_log(format!("stretch: {:?}", stretch));
 
         self.res.camera.set_position(glm::vec3(
             0.0,
