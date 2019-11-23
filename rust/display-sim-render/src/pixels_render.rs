@@ -196,46 +196,32 @@ impl<GL: HasContext> PixelsRender<GL> {
     }
 
     pub fn render(&self, uniforms: PixelsUniform) {
-        self.gl.use_program(Some(self.shader));
+        let gl = &self.gl;
+        gl.use_program(Some(self.shader));
         if uniforms.shadow_kind >= self.shadows.len() {
             panic!("Bug on shadow_kind!")
         }
-        self.gl.bind_texture(glow::TEXTURE_2D, self.shadows[uniforms.shadow_kind]);
-        self.gl
-            .uniform_matrix_4_f32_slice(self.gl.get_uniform_location(self.shader, "view"), false, uniforms.view);
-        self.gl
-            .uniform_matrix_4_f32_slice(self.gl.get_uniform_location(self.shader, "projection"), false, uniforms.projection);
-        self.gl
-            .uniform_3_f32_slice(self.gl.get_uniform_location(self.shader, "lightPos"), uniforms.light_pos);
-        self.gl
-            .uniform_3_f32_slice(self.gl.get_uniform_location(self.shader, "lightColor"), uniforms.light_color);
-        self.gl
-            .uniform_3_f32_slice(self.gl.get_uniform_location(self.shader, "extraLight"), uniforms.extra_light);
-        self.gl
-            .uniform_1_f32(self.gl.get_uniform_location(self.shader, "ambientStrength"), uniforms.ambient_strength);
-        self.gl
-            .uniform_1_f32(self.gl.get_uniform_location(self.shader, "contrastFactor"), uniforms.contrast_factor);
-        self.gl.uniform_1_f32(
-            self.gl.get_uniform_location(self.shader, "offset_inverse_max_length"),
+        gl.bind_texture(glow::TEXTURE_2D, self.shadows[uniforms.shadow_kind]);
+        gl.uniform_matrix_4_f32_slice(gl.get_uniform_location(self.shader, "view"), false, uniforms.view);
+        gl.uniform_matrix_4_f32_slice(gl.get_uniform_location(self.shader, "projection"), false, uniforms.projection);
+        gl.uniform_3_f32_slice(gl.get_uniform_location(self.shader, "lightPos"), uniforms.light_pos);
+        gl.uniform_3_f32_slice(gl.get_uniform_location(self.shader, "lightColor"), uniforms.light_color);
+        gl.uniform_3_f32_slice(gl.get_uniform_location(self.shader, "extraLight"), uniforms.extra_light);
+        gl.uniform_1_f32(gl.get_uniform_location(self.shader, "ambientStrength"), uniforms.ambient_strength);
+        gl.uniform_1_f32(gl.get_uniform_location(self.shader, "contrastFactor"), uniforms.contrast_factor);
+        gl.uniform_1_f32(
+            gl.get_uniform_location(self.shader, "offset_inverse_max_length"),
             self.offset_inverse_max_length,
         );
-        self.gl
-            .uniform_1_f32(self.gl.get_uniform_location(self.shader, "screen_curvature"), uniforms.screen_curvature);
-        self.gl
-            .uniform_2_f32_slice(self.gl.get_uniform_location(self.shader, "pixel_spread"), uniforms.pixel_spread);
-        self.gl
-            .uniform_3_f32_slice(self.gl.get_uniform_location(self.shader, "pixel_scale"), uniforms.pixel_scale);
-        self.gl
-            .uniform_3_f32_slice(self.gl.get_uniform_location(self.shader, "pixel_offset"), uniforms.pixel_offset);
-        self.gl
-            .uniform_1_f32(self.gl.get_uniform_location(self.shader, "pixel_pulse"), uniforms.pixel_pulse);
-        self.gl.uniform_1_f32(
-            self.gl.get_uniform_location(self.shader, "heightModifierFactor"),
-            uniforms.height_modifier_factor,
-        );
+        gl.uniform_1_f32(gl.get_uniform_location(self.shader, "screen_curvature"), uniforms.screen_curvature);
+        gl.uniform_2_f32_slice(gl.get_uniform_location(self.shader, "pixel_spread"), uniforms.pixel_spread);
+        gl.uniform_3_f32_slice(gl.get_uniform_location(self.shader, "pixel_scale"), uniforms.pixel_scale);
+        gl.uniform_3_f32_slice(gl.get_uniform_location(self.shader, "pixel_offset"), uniforms.pixel_offset);
+        gl.uniform_1_f32(gl.get_uniform_location(self.shader, "pixel_pulse"), uniforms.pixel_pulse);
+        gl.uniform_1_f32(gl.get_uniform_location(self.shader, "heightModifierFactor"), uniforms.height_modifier_factor);
 
-        self.gl.bind_vertex_array(self.vao);
-        self.gl.draw_arrays_instanced(
+        gl.bind_vertex_array(self.vao);
+        gl.draw_arrays_instanced(
             glow::TRIANGLES,
             0,
             match uniforms.geometry_kind {
