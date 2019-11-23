@@ -197,8 +197,8 @@ impl<GL: HasContext> PixelsRender<GL> {
 
     pub fn render(&self, uniforms: PixelsUniform) {
         let gl = &self.gl;
-        let shader = &self.shader;
-        
+        let shader = self.shader;
+
         gl.use_program(Some(shader));
         if uniforms.shadow_kind >= self.shadows.len() {
             panic!("Bug on shadow_kind!")
