@@ -39,7 +39,7 @@ class SimPage extends HTMLElement {
         document.body.style.removeProperty('overflow');
         document.body.style.removeProperty('background-color');
 
-        this.future.then(mess => mess.clean())
+        this.future.then(mess => mess.clean());
     }
 }
 
