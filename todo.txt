@@ -1,8 +1,3 @@
-· Fix distance on camera.z.
-
-· Fix screenshot. Right now it only works right on fullscreen. 
-    This is because we set the viewport to the screen size and we use the viewport during 
-    rendering where the internal resolution should be used instead.
-
 · Fix bug, on full screen after alt tab and coming back, canvas_focused does not come back or something like that.
+· Figure out how can I get the numbers 0.68 and 1.2076 from the perspective parameters instead of hardcoding them.
 · Improve readme.
