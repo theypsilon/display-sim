@@ -131,7 +131,7 @@ export function data () {
                     entries: [
                         { type: 'selectors-input', class: 'menu-2 menu-blc-white', text: 'Internal Resolution', hk: { inc: 'Y', dec: 'Shift + Y' }, ref: options.internal_resolution },
                         { type: 'selectors-input', class: 'menu-2 menu-blc-red', text: 'Screen curvature type', hk: { inc: 'B', dec: 'Shift + B' }, ref: options.screen_curvature },
-                        { type: 'number-input', class: 'menu-2 menu-blc-blue', text: 'Blur level', hk: { inc: 'J', dec: 'Shift + J' }, step: 1, min: 0, max: 100, value: 0, placeholder: 0, ref: options.blur_level }
+                        { type: 'number-input', class: 'menu-2 menu-blc-blue', text: 'Blur passes', hk: { inc: 'J', dec: 'Shift + J' }, step: 1, min: 0, max: 100, value: 0, placeholder: 0, ref: options.blur_level }
                     ]
                 },
                 {
