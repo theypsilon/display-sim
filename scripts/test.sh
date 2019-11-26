@@ -12,6 +12,7 @@ if [[ "$@" != "--rust-only" ]] ; then
 
     pushd www
     npm test
+    npm run lint
     popd
 fi
 cargo clippy --all
