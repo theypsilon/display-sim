@@ -197,7 +197,7 @@ impl<'a> SimulationDrawer<'a> {
             materials.screenshot_pixels = Some(pixels);
             match materials.screenshot_pixels {
                 Some(ref mut pixels) => self.ctx.dispatcher().dispatch_screenshot(resolution_width, resolution_height, pixels)?,
-                None => Err("Screenshot failed because a bad bug right here.")?,
+                None => return Err("Screenshot failed because a bad bug right here."),
             }
             materials.main_buffer_stack.pop()?;
             materials.main_buffer_stack.assert_no_stack()?;

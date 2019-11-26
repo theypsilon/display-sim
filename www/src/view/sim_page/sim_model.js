@@ -143,7 +143,7 @@ export class Model {
 
     async fireScreenshot ({ buffer, width, height }) {
         Logger.log('starting screenshot');
-        Logger.log("width", width, "height", height);
+        Logger.log('width', width, 'height', height);
 
         var canvas = document.createElement('canvas');
         canvas.width = width;
