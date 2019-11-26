@@ -196,7 +196,7 @@ impl<'a> SimulationDrawer<'a> {
             let pixels: Box<[u8]> = vec![0; (resolution_width * resolution_height * 4) as usize].into_boxed_slice();
             materials.screenshot_pixels = Some(pixels);
             match materials.screenshot_pixels {
-                Some(ref mut pixels) => self.ctx.dispatcher().dispatch_screenshot(resolution_width, resolution_height, pixels),
+                Some(ref mut pixels) => self.ctx.dispatcher().dispatch_screenshot(resolution_width, resolution_height, pixels)?,
                 None => self.ctx.dispatcher().dispatch_log("Screenshot failed.".into()),
             }
             materials.main_buffer_stack.pop()?;

@@ -317,16 +317,16 @@ impl AppEventDispatcher for WebEventDispatcher {
     }
 
     // @TODO no other way to handle this by now, because of glow lacking API, find better way later
-    fn dispatch_screenshot(&self, width: i32, height: i32, pixels: &mut [u8]) {
+    fn dispatch_screenshot(&self, width: i32, height: i32, pixels: &mut [u8]) -> AppResult<()> {
         let gl = &self.gl;
-        gl.read_pixels_with_opt_u8_array(0, 0, width, height, glow::RGBA, glow::UNSIGNED_BYTE, Some(&mut *pixels))
-            .expect("gl.read_pixels failed");
+        gl.read_pixels_with_opt_u8_array(0, 0, width, height, glow::RGBA, glow::UNSIGNED_BYTE, Some(&mut *pixels))?;
         let js_pixels = unsafe { js_sys::Uint8Array::view(pixels) };
         let object = js_sys::Object::new();
         js_sys::Reflect::set(&object, &"width".into(), &width.into()).expect("Reflection failed on width");
         js_sys::Reflect::set(&object, &"height".into(), &height.into()).expect("Reflection failed on height");
         js_sys::Reflect::set(&object, &"buffer".into(), &js_pixels.into()).expect("Reflection failed on js_pixels");
         self.catch_error(dispatch_event_with(&self.event_bus, "back2front:screenshot", &object));
+        Ok(())
     }
 
     fn dispatch_change_preset_selected(&self, name: &str) {

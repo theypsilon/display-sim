@@ -17,6 +17,7 @@ use crate::camera::CameraLockMode;
 use crate::internal_resolution::InternalResolution;
 use crate::pixels_shadow::ShadowShape;
 use crate::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScalingMethod, ScreenCurvatureKind, TextureInterpolation};
+use app_error::AppResult;
 use std::fmt::Display;
 
 pub trait AppEventDispatcher {
@@ -58,7 +59,7 @@ pub trait AppEventDispatcher {
     fn dispatch_fps(&self, fps: f32);
     fn dispatch_request_pointer_lock(&self);
     fn dispatch_exit_pointer_lock(&self);
-    fn dispatch_screenshot(&self, width: i32, height: i32, pixels: &mut [u8]);
+    fn dispatch_screenshot(&self, width: i32, height: i32, pixels: &mut [u8]) -> AppResult<()>;
     fn dispatch_change_camera_movement_mode(&self, locked_mode: CameraLockMode);
     fn dispatch_top_message(&self, message: &str);
     fn dispatch_minimum_value(&self, value: &dyn Display);
@@ -107,7 +108,9 @@ impl AppEventDispatcher for FakeEventDispatcher {
     fn dispatch_fps(&self, fps: f32) {
         println!("frames in 20 seconds: {}", fps);
     }
-    fn dispatch_screenshot(&self, _: i32, _: i32, _: &mut [u8]) {}
+    fn dispatch_screenshot(&self, _: i32, _: i32, _: &mut [u8]) -> AppResult<()> {
+        Ok(())
+    }
     fn dispatch_request_pointer_lock(&self) {}
     fn dispatch_exit_pointer_lock(&self) {}
     fn dispatch_change_camera_movement_mode(&self, _: CameraLockMode) {}
