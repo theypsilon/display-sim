@@ -409,8 +409,7 @@ impl AppEventDispatcher for NativeEventDispatcher {
     fn dispatch_change_preset_selected(&self, preset_name: &str) {
         println!("dispatch_change_preset_selected: {}", preset_name);
     }
-    fn fire_screenshot(&self, _: i32, _: i32, _: &mut [u8]) {}
-    fn dispatch_screenshot(&self, _: &[u8]) {}
+    fn dispatch_screenshot(&self, _: i32, _: i32, _: &mut [u8]) {}
     fn dispatch_change_camera_movement_mode(&self, locked_mode: CameraLockMode) {
         println!("change_camera_movement_mode: {}", locked_mode);
     }

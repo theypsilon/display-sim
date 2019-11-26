@@ -71,7 +71,7 @@ pub struct Size2D<T: Copy + Clone + Default> {
 }
 
 impl Size2D<f32> {
-    pub fn to_u32(&self) -> Size2D<u32> {
+    pub fn to_u32(self) -> Size2D<u32> {
         Size2D {
             width: self.width as u32,
             height: self.height as u32,

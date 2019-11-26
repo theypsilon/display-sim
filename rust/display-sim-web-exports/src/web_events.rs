@@ -316,8 +316,8 @@ impl AppEventDispatcher for WebEventDispatcher {
         self.catch_error(dispatch_event(&self.event_bus, "back2front:exit_pointer_lock"));
     }
 
-    // @TODO no other way to handle this by now, find better way later
-    fn fire_screenshot(&self, width: i32, height: i32, pixels: &mut [u8]) {
+    // @TODO no other way to handle this by now, because of glow lacking API, find better way later
+    fn dispatch_screenshot(&self, width: i32, height: i32, pixels: &mut [u8]) {
         let gl = &self.gl;
         gl.read_pixels_with_opt_u8_array(0, 0, width, height, glow::RGBA, glow::UNSIGNED_BYTE, Some(&mut *pixels))
             .expect("gl.read_pixels failed");
@@ -327,11 +327,6 @@ impl AppEventDispatcher for WebEventDispatcher {
         js_sys::Reflect::set(&object, &"height".into(), &height.into()).expect("Reflection failed on height");
         js_sys::Reflect::set(&object, &"buffer".into(), &js_pixels.into()).expect("Reflection failed on js_pixels");
         self.catch_error(dispatch_event_with(&self.event_bus, "back2front:screenshot", &object));
-    }
-
-    fn dispatch_screenshot(&self, pixels: &[u8]) {
-        let js_pixels = unsafe { js_sys::Uint8Array::view(pixels) };
-        self.catch_error(dispatch_event_with(&self.event_bus, "back2front:screenshot", &js_pixels.into()));
     }
 
     fn dispatch_change_preset_selected(&self, name: &str) {
