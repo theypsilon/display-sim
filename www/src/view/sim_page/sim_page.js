@@ -32,7 +32,7 @@ class SimPage extends HTMLElement {
         });
 
         document.body.style.setProperty('overflow', 'hidden');
-        document.body.style.setProperty('background-color', 'black');
+        //document.body.style.setProperty('background-color', 'black');
     }
 
     disconnectedCallback () {
@@ -195,14 +195,14 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
     // Forwarding other events so they can be readed by the backend
     addDomListener(window, 'keydown', e => fireBackendEvent('keyboard', { pressed: true, key: e.key }));
     addDomListener(window, 'keyup', e => fireBackendEvent('keyboard', { pressed: false, key: e.key }));
-    addDomListener(canvasParent, 'mousedown', e => e.buttons === 1 && fireBackendEvent('mouse_click', true));
-    addDomListener(window, 'mouseup', () => fireBackendEvent('mouse_click', false)); // note this one goes to 'window'. It doesn't work with 'canvas' because of some obscure bug I didn't figure out yet.
-    addDomListener(canvasParent, 'mousemove', e => fireBackendEvent('mouse_move', { x: e.movementX, y: e.movementY }));
-    addDomListener(canvasParent, 'mousewheel', e => fireBackendEvent('mouse_wheel', e.deltaY));
-    addDomListener(canvasParent, 'blur', () => fireBackendEvent('blurred_window'));
+    addDomListener(canvasParent, 'mousedown', e => e.buttons === 1 && fireBackendEvent('mouse-click', true));
+    addDomListener(window, 'mouseup', () => fireBackendEvent('mouse-click', false)); // note this one goes to 'window'. It doesn't work with 'canvas' because of some obscure bug I didn't figure out yet.
+    addDomListener(canvasParent, 'mousemove', e => fireBackendEvent('mouse-move', { x: e.movementX, y: e.movementY }));
+    addDomListener(canvasParent, 'mousewheel', e => fireBackendEvent('mouse-wheel', e.deltaY));
+    addDomListener(canvasParent, 'blur', () => fireBackendEvent('blurred-window'));
     addDomListener(canvasParent, 'mouseover', () => fireBackendEvent('keyboard', { pressed: true, key: 'canvas_focused' }));
     addDomListener(canvasParent, 'mouseout', () => fireBackendEvent('keyboard', { pressed: false, key: 'canvas_focused' }));
-    addDomListener(window, 'resize', () => setTimeout(() => model.resizeCanvas(), 1000));
+    addDomListener(window, 'resize', () => fireBackendEvent('viewport-resize', model.resizeCanvas()));
 
     return {
         clean: () => {

@@ -13,8 +13,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
+use arraygen::Arraygen;
 use enum_len_derive::EnumLen;
-use getters_by_type::GettersMutByType;
 use num_derive::{FromPrimitive, ToPrimitive};
 
 use crate::boolean_button::BooleanButton;
@@ -148,7 +148,12 @@ impl Default for FlightDemoData {
 
 impl Resources {
     pub fn initialize(&mut self, video_input: VideoInputResources, now: f64) {
-        let initial_position_z = calculate_far_away_position(&video_input, calculate_pixel_width_from_image_size(video_input.image_size).0, false);
+        let initial_position_z = calculate_far_away_position(
+            &video_input,
+            &self.filters.internal_resolution,
+            calculate_pixel_width_from_image_size(video_input.image_size).0,
+            false,
+        );
         let camera = CameraData::new(MOVEMENT_BASE_SPEED * initial_position_z / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED);
         self.quit = false;
         self.resetted = true;
@@ -165,9 +170,6 @@ impl Resources {
             initial_position_z,
             initial_movement_speed: camera.movement_speed,
         };
-        self.filters
-            .internal_resolution
-            .initialize(video_input.viewport_size, video_input.max_texture_size);
         self.camera = camera;
         self.video = video_input;
     }
@@ -336,7 +338,7 @@ impl Filters {
     }
     pub fn preset_sharp_1(&self) -> Filters {
         Filters {
-            internal_resolution: self.internal_resolution.clone(),
+            internal_resolution: InternalResolution::default(),
             texture_interpolation: TextureInterpolation::Linear,
             blur_passes: 0,
             vertical_lpp: 1,
@@ -360,7 +362,7 @@ impl Filters {
 
     pub fn preset_crt_aperture_grille_1(&self) -> Filters {
         Filters {
-            internal_resolution: self.internal_resolution.clone(),
+            internal_resolution: InternalResolution::default(),
             texture_interpolation: TextureInterpolation::Linear,
             blur_passes: 1,
             vertical_lpp: 3,
@@ -384,7 +386,7 @@ impl Filters {
 
     pub fn preset_crt_shadow_mask_1(&self) -> Filters {
         Filters {
-            internal_resolution: self.internal_resolution.clone(),
+            internal_resolution: InternalResolution::default(),
             texture_interpolation: TextureInterpolation::Linear,
             blur_passes: 2,
             vertical_lpp: 2,
@@ -408,7 +410,7 @@ impl Filters {
 
     pub fn preset_crt_shadow_mask_2(&self) -> Filters {
         Filters {
-            internal_resolution: self.internal_resolution.clone(),
+            internal_resolution: InternalResolution::default(),
             texture_interpolation: TextureInterpolation::Linear,
             blur_passes: 2,
             vertical_lpp: 1,
@@ -432,7 +434,7 @@ impl Filters {
 
     pub fn preset_demo_1(&self) -> Self {
         Filters {
-            internal_resolution: self.internal_resolution.clone(),
+            internal_resolution: InternalResolution::default(),
             texture_interpolation: TextureInterpolation::Linear,
             blur_passes: 0,
             vertical_lpp: 1,
@@ -576,10 +578,10 @@ impl std::fmt::Display for ScalingMethod {
 
 pub mod frontend_event {
     pub const KEYBOARD: &str = "front2back:keyboard";
-    pub const MOUSE_CLICK: &str = "front2back:mouse_click";
-    pub const MOUSE_MOVE: &str = "front2back:mouse_move";
-    pub const MOUSE_WHEEL: &str = "front2back:mouse_wheel";
-    pub const BLURRED_WINDOW: &str = "front2back:blurred_window";
+    pub const MOUSE_CLICK: &str = "front2back:mouse-click";
+    pub const MOUSE_MOVE: &str = "front2back:mouse-move";
+    pub const MOUSE_WHEEL: &str = "front2back:mouse-wheel";
+    pub const BLURRED_WINDOW: &str = "front2back:blurred-window";
 
     pub const FILTER_PRESET: &str = "front2back:filter-presets-selected";
     pub const PIXEL_BRIGHTNESS: &str = "front2back:pixel-brightness";
@@ -611,6 +613,7 @@ pub mod frontend_event {
     pub const CUSTOM_SCALING_ASPECT_RATIO_X: &str = "front2back:custom-scaling-aspect-ratio-x";
     pub const CUSTOM_SCALING_ASPECT_RATIO_Y: &str = "front2back:custom-scaling-aspect-ratio-y";
     pub const CUSTOM_SCALING_STRETCH_NEAREST: &str = "front2back:custom-scaling-stretch-nearest";
+    pub const VIEWPORT_RESIZE: &str = "front2back:viewport-resize";
 }
 
 #[derive(Clone, Debug)]
@@ -643,6 +646,7 @@ pub enum InputEventValue {
     CustomScalingAspectRatioX(f32),
     CustomScalingAspectRatioY(f32),
     CustomScalingStretchNearest(bool),
+    ViewportResize(u32, u32),
 }
 
 pub struct CustomInputEvent {
@@ -669,7 +673,31 @@ impl Default for CustomInputEvent {
     }
 }
 
-#[derive(Default, GettersMutByType)]
+pub trait SetOptionNone {
+    fn set_none(&mut self);
+}
+impl<T> SetOptionNone for Option<T> {
+    fn set_none(&mut self) {
+        *self = None;
+    }
+}
+pub trait TrackedButton {
+    fn track(&mut self);
+}
+impl TrackedButton for BooleanButton {
+    fn track(&mut self) {
+        self.track_input();
+    }
+}
+impl TrackedButton for IncDec<BooleanButton> {
+    fn track(&mut self) {
+        self.get_buttons().iter_mut().for_each(|button| button.track_input());
+    }
+}
+
+#[derive(Default, Arraygen)]
+#[gen_array(pub fn get_options_to_be_noned: &mut dyn SetOptionNone)]
+#[gen_array(pub fn get_tracked_buttons: &mut dyn TrackedButton)]
 pub struct Input {
     pub now: f64,
     pub custom_event: CustomInputEvent,
@@ -704,49 +732,93 @@ pub struct Input {
     pub bright: IncDec<bool>,
     pub contrast: IncDec<bool>,
     pub backlight_percent: IncDec<bool>,
+    #[in_array(get_tracked_buttons)]
     pub next_camera_movement_mode: IncDec<BooleanButton>,
+    #[in_array(get_tracked_buttons)]
     pub translation_speed: IncDec<BooleanButton>,
+    #[in_array(get_tracked_buttons)]
     pub turn_speed: IncDec<BooleanButton>,
+    #[in_array(get_tracked_buttons)]
     pub filter_speed: IncDec<BooleanButton>,
+    #[in_array(get_tracked_buttons)]
     pub mouse_click: BooleanButton,
+    #[in_array(get_tracked_buttons)]
     pub blur: IncDec<BooleanButton>,
+    #[in_array(get_tracked_buttons)]
     pub vertical_lpp: IncDec<BooleanButton>,
+    #[in_array(get_tracked_buttons)]
     pub horizontal_lpp: IncDec<BooleanButton>,
+    #[in_array(get_tracked_buttons)]
     pub next_pixel_shadow_shape_kind: IncDec<BooleanButton>,
     pub next_pixels_shadow_height: IncDec<bool>,
+    #[in_array(get_tracked_buttons)]
     pub next_color_representation_kind: IncDec<BooleanButton>,
+    #[in_array(get_tracked_buttons)]
     pub next_pixel_geometry_kind: IncDec<BooleanButton>,
+    #[in_array(get_tracked_buttons)]
     pub next_screen_curvature_type: IncDec<BooleanButton>,
+    #[in_array(get_tracked_buttons)]
     pub next_internal_resolution: IncDec<BooleanButton>,
+    #[in_array(get_tracked_buttons)]
     pub next_texture_interpolation: IncDec<BooleanButton>,
+    #[in_array(get_tracked_buttons)]
     pub scaling_method: IncDec<BooleanButton>,
+    #[in_array(get_tracked_buttons)]
     pub custom_scaling_resolution_width: IncDec<BooleanButton>,
+    #[in_array(get_tracked_buttons)]
     pub custom_scaling_resolution_height: IncDec<BooleanButton>,
+    #[in_array(get_tracked_buttons)]
     pub custom_scaling_aspect_ratio_x: IncDec<BooleanButton>,
+    #[in_array(get_tracked_buttons)]
     pub custom_scaling_aspect_ratio_y: IncDec<BooleanButton>,
+    #[in_array(get_tracked_buttons)]
     pub esc: BooleanButton,
+    #[in_array(get_tracked_buttons)]
     pub space: BooleanButton,
+    #[in_array(get_tracked_buttons)]
     pub screenshot: BooleanButton,
 
+    #[in_array(get_options_to_be_noned)]
     pub event_filter_preset: Option<String>,
+    #[in_array(get_options_to_be_noned)]
     pub event_pixel_brighttness: Option<f32>,
+    #[in_array(get_options_to_be_noned)]
     pub event_pixel_contrast: Option<f32>,
+    #[in_array(get_options_to_be_noned)]
     pub event_light_color: Option<i32>,
+    #[in_array(get_options_to_be_noned)]
     pub event_brightness_color: Option<i32>,
+    #[in_array(get_options_to_be_noned)]
     pub event_blur_level: Option<usize>,
+    #[in_array(get_options_to_be_noned)]
     pub event_vertical_lpp: Option<usize>,
+    #[in_array(get_options_to_be_noned)]
     pub event_horizontal_lpp: Option<usize>,
+    #[in_array(get_options_to_be_noned)]
     pub event_custom_scaling_resolution_width: Option<f32>,
+    #[in_array(get_options_to_be_noned)]
     pub event_custom_scaling_resolution_height: Option<f32>,
+    #[in_array(get_options_to_be_noned)]
     pub event_custom_scaling_aspect_ratio_x: Option<f32>,
+    #[in_array(get_options_to_be_noned)]
     pub event_custom_scaling_aspect_ratio_y: Option<f32>,
+    #[in_array(get_options_to_be_noned)]
     pub event_custom_scaling_stretch_nearest: Option<bool>,
+    #[in_array(get_options_to_be_noned)]
     pub event_backlight_percent: Option<f32>,
+    #[in_array(get_options_to_be_noned)]
     pub event_pixel_shadow_height: Option<f32>,
+    #[in_array(get_options_to_be_noned)]
     pub event_pixel_vertical_gap: Option<f32>,
+    #[in_array(get_options_to_be_noned)]
     pub event_pixel_horizontal_gap: Option<f32>,
+    #[in_array(get_options_to_be_noned)]
     pub event_pixel_width: Option<f32>,
+    #[in_array(get_options_to_be_noned)]
     pub event_pixel_spread: Option<f32>,
+    #[in_array(get_options_to_be_noned)]
+    pub event_viewport_resize: Option<Size2D<u32>>,
+    #[in_array(get_options_to_be_noned)]
     pub event_camera: Option<CameraChange>,
 }
 
@@ -758,34 +830,33 @@ impl Input {
     }
 }
 
-pub(crate) fn calculate_far_away_position(video_input: &VideoInputResources, pixel_width: f32, stretch: bool) -> f32 {
-    let width = video_input.background_size.width as f32;
-    let height = video_input.background_size.height as f32;
-    let viewport_width_scaled = (video_input.viewport_size.width as f32 / pixel_width) as u32;
-    let width_ratio = viewport_width_scaled as f32 / width;
-    let height_ratio = video_input.viewport_size.height as f32 / height;
+pub(crate) fn calculate_far_away_position(video_input: &VideoInputResources, internal_resolution: &InternalResolution, pixel_width: f32, stretch: bool) -> f32 {
+    let image_width = video_input.background_size.width as f32;
+    let image_height = video_input.background_size.height as f32;
+
+    let resolution_width = internal_resolution.width() as f32;
+    let resolution_height = internal_resolution.height() as f32;
+
+    let virtual_resolution_width = resolution_width / pixel_width;
+
+    let width_ratio = virtual_resolution_width / image_width;
+    let height_ratio = resolution_height / image_height;
+
     let is_height_bounded = width_ratio > height_ratio;
-    let mut bound_ratio = if is_height_bounded { height_ratio } else { width_ratio };
-    let mut resolution = if is_height_bounded {
-        video_input.viewport_size.height
-    } else {
-        viewport_width_scaled
-    } as i32;
-    while bound_ratio < 1.0 {
-        bound_ratio *= 2.0;
-        resolution *= 2;
-    }
-    if !stretch {
-        let mut divisor = bound_ratio as i32;
-        while divisor > 1 {
-            if resolution % divisor == 0 {
-                break;
-            }
-            divisor -= 1;
-        }
-        bound_ratio = divisor as f32;
-    }
-    0.5 + (resolution as f32 / bound_ratio) * if is_height_bounded { 1.2076 } else { 0.68 * pixel_width }
+
+    let bound_ratio = if is_height_bounded { height_ratio } else { width_ratio };
+    let bound_resolution = if is_height_bounded { resolution_height } else { virtual_resolution_width };
+
+    bound_resolution * if is_height_bounded { 1.2076 } else { 0.68 * pixel_width } / if stretch { bound_ratio } else { bound_ratio.floor() }
+
+    /*
+    @TODO: Honestly, I'm not sure where did I take these numbers from but they seem to work fine with that formula.
+        It's a bit sad to admit it, but I think I took them by meassuring screenshots from the framebuffer,
+        and moving the camera back and forth between meassures until alignment was pixel perfect for 8k/4k/1080p/720p.
+        I just meassured those resolutions now and they seem to work fine for 4:3 and 21:9 images in a 16:9 screen.
+
+        Interesting mathematical fact: 0.68 * squared(4/3) = 1.2076 = 0.68 * 16/9
+    */
 }
 
 pub(crate) fn calculate_pixel_width_from_image_size(image_size: Size2D<u32>) -> (f32, &'static str) {

@@ -1,2 +1,8 @@
-· Create presets: Aperture Grille, Shadow Mask.
+· Fix distance on camera.z.
+
+· Fix screenshot. Right now it only works right on fullscreen. 
+    This is because we set the viewport to the screen size and we use the viewport during 
+    rendering where the internal resolution should be used instead.
+
+· Fix bug, on full screen after alt tab and coming back, canvas_focused does not come back or something like that.
 · Improve readme.

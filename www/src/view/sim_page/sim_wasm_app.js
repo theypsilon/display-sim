@@ -34,10 +34,13 @@ export class WasmApp {
             Logger.log('new WasmApp done');
         }
 
+        Logger.log('resolutions:', canvas.width, canvas.height, params.imageWidth, params.imageHeight);
+
         const config = new exports.VideoInputConfig(
             params.imageWidth, params.imageHeight, // to read the image pixels
             canvas.width, canvas.height // gl.viewport
         );
+
         if (params.backgroundWidth !== params.imageWidth) {
             config.set_background_size(params.backgroundWidth, params.backgroundHeight); // to calculate model distance to the camera
         }

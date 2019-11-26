@@ -172,6 +172,10 @@ fn read_frontend_event(input: &mut Input, event: JsValue) -> AppResult<()> {
         frontend_event::CUSTOM_SCALING_ASPECT_RATIO_X => InputEventValue::CustomScalingAspectRatioX(value.as_f64().ok_or("it should be a number")? as f32),
         frontend_event::CUSTOM_SCALING_ASPECT_RATIO_Y => InputEventValue::CustomScalingAspectRatioY(value.as_f64().ok_or("it should be a number")? as f32),
         frontend_event::CUSTOM_SCALING_STRETCH_NEAREST => InputEventValue::CustomScalingStretchNearest(value.as_bool().ok_or("it should be a bool")?),
+        frontend_event::VIEWPORT_RESIZE => InputEventValue::ViewportResize(
+            js_sys::Reflect::get(&value, &"width".into())?.as_f64().ok_or("it should contain width")? as u32,
+            js_sys::Reflect::get(&value, &"height".into())?.as_f64().ok_or("it should contain height")? as u32,
+        ),
         _ => return Err(format!("Can't read frontend_event: {}", frontend_event).into()),
     };
     input.custom_event.add_value(event_value);

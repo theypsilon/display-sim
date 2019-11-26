@@ -14,13 +14,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 use crate::boolean_button::BooleanButton;
+use arraygen::Arraygen;
 use enum_len_trait::EnumLen;
-use getters_by_type::GettersMutByType;
 use num_traits::{FromPrimitive, ToPrimitive};
 
-#[derive(Clone, Default, GettersMutByType)]
+#[derive(Clone, Default, Arraygen)]
+#[gen_array(pub fn get_buttons: &mut T)]
 pub struct IncDec<T> {
+    #[in_array(get_buttons)]
     pub increase: T,
+    #[in_array(get_buttons)]
     pub decrease: T,
 }
 
@@ -61,10 +64,19 @@ pub trait DefaultReset {
 
 impl<T> DefaultReset for IncDec<T> where T: std::marker::Sized + std::default::Default {}
 
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, Debug)]
 pub struct Size2D<T: Copy + Clone + Default> {
     pub width: T,
     pub height: T,
+}
+
+impl Size2D<f32> {
+    pub fn to_u32(&self) -> Size2D<u32> {
+        Size2D {
+            width: self.width as u32,
+            height: self.height as u32,
+        }
+    }
 }
 
 pub trait OptionCursor {

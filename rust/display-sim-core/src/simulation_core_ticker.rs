@@ -14,9 +14,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 use crate::action_bindings::on_button_action;
-use crate::camera::{CameraData, CameraDirection, CameraLockMode, CameraSystem};
+use crate::camera::{CameraDirection, CameraLockMode, CameraSystem};
 use crate::filter_params::FilterParams;
-use crate::general_types::{get_3_f32color_from_int, get_int_from_3_f32color};
+use crate::general_types::{get_3_f32color_from_int, get_int_from_3_f32color, Size2D};
 use crate::pixels_shadow::ShadowShape;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::{
@@ -85,15 +85,12 @@ impl<'a> SimulationCoreTicker<'a> {
                 InputEventValue::CustomScalingAspectRatioX(width) => self.input.event_custom_scaling_aspect_ratio_x = Some(width),
                 InputEventValue::CustomScalingAspectRatioY(width) => self.input.event_custom_scaling_aspect_ratio_y = Some(width),
                 InputEventValue::CustomScalingStretchNearest(flag) => self.input.event_custom_scaling_stretch_nearest = Some(flag),
+                InputEventValue::ViewportResize(width, height) => self.input.event_viewport_resize = Some(Size2D { width, height }),
                 InputEventValue::None => {}
             };
         }
 
-        self.input.get_mut_fields_booleanbutton().iter_mut().for_each(|button| button.track_input());
-        self.input
-            .get_mut_fields_incdec_booleanbutton_()
-            .iter_mut()
-            .for_each(|incdec| incdec.get_mut_fields_t().iter_mut().for_each(|button| button.track_input()));
+        self.input.get_tracked_buttons().iter_mut().for_each(|button| button.track());
     }
 
     fn post_process_input(&mut self) {
@@ -105,12 +102,7 @@ impl<'a> SimulationCoreTicker<'a> {
         self.input.reset_position = false;
         self.input.reset_speeds = false;
 
-        self.input.get_mut_fields_option_f32_().iter_mut().for_each(|opt| **opt = None);
-        self.input.get_mut_fields_option_usize_().iter_mut().for_each(|opt| **opt = None);
-        self.input.get_mut_fields_option_i32_().iter_mut().for_each(|opt| **opt = None);
-        self.input.get_mut_fields_option_string_().iter_mut().for_each(|opt| **opt = None);
-        self.input.get_mut_fields_option_camerachange_().iter_mut().for_each(|opt| **opt = None);
-        self.input.get_mut_fields_option_bool_().iter_mut().for_each(|opt| **opt = None);
+        self.input.get_options_to_be_noned().iter_mut().for_each(|opt| opt.set_none());
     }
 }
 
@@ -135,6 +127,13 @@ impl<'a> SimulationUpdater<'a> {
         if self.res.resetted {
             self.change_frontend_input_values();
         }
+
+        if let Some(viewport) = self.input.event_viewport_resize {
+            self.ctx.dispatcher().dispatch_log(format!("viewport:resize: {:?}", viewport));
+            self.res.video.viewport_size = viewport;
+            self.res.scaling.scaling_init = false;
+        }
+
         self.update_timers();
 
         self.update_animation_buffer();
@@ -172,8 +171,8 @@ impl<'a> SimulationUpdater<'a> {
             self.res.screenshot_trigger.delay -= 1;
         } else if self.input.screenshot.is_just_released() {
             self.res.screenshot_trigger.is_triggered = true;
-            let multiplier = self.res.filters.internal_resolution.multiplier as f32;
-            self.res.screenshot_trigger.delay = (2.0 * multiplier * multiplier * (1.0 / self.dt)) as i32; // 2 seconds aprox.
+            //let multiplier = self.res.filters.internal_resolution.multiplier as f32;
+            self.res.screenshot_trigger.delay = 120; //(2.0 * multiplier * multiplier * (1.0 / self.dt)) as i32; // 2 seconds aprox.
             if self.res.screenshot_trigger.delay as f32 * self.dt > 2.0 {
                 self.ctx.dispatcher().dispatch_top_message("Screenshot about to be downloaded, please wait.");
             }
@@ -350,10 +349,6 @@ impl<'a> SimulationUpdater<'a> {
         self.update_filter_presets_from_event()?;
         if self.input.reset_filters {
             self.res.filters = Filters::default();
-            self.res
-                .filters
-                .internal_resolution
-                .initialize(self.res.video.viewport_size, self.res.video.max_texture_size);
             self.change_frontend_input_values();
             self.ctx.dispatcher().dispatch_top_message("All filter options have been reset.");
             return Ok(());
@@ -431,12 +426,19 @@ impl<'a> SimulationUpdater<'a> {
                 ctx.dispatcher().dispatch_color_representation(*x);
             })
             .process_options();
+
+        filters.internal_resolution.set_max_texture_size(self.res.video.max_texture_size);
+        let mut resolution_changed = false;
         FilterParams::new(*ctx, &mut filters.internal_resolution, input.next_internal_resolution.to_just_pressed())
             .set_trigger_handler(|x| {
                 changed = true;
+                resolution_changed = true;
                 ctx.dispatcher().dispatch_internal_resolution(x);
             })
             .process_options();
+        if resolution_changed {
+            self.res.scaling.scaling_init = false;
+        }
         FilterParams::new(*ctx, &mut filters.vertical_lpp, input.vertical_lpp.to_just_pressed())
             .set_progression(1)
             .set_event_value(input.event_vertical_lpp)
@@ -550,9 +552,7 @@ impl<'a> SimulationUpdater<'a> {
 
     fn update_camera(&mut self) {
         if self.input.reset_position {
-            let initial_position = glm::vec3(0.0, 0.0, self.res.initial_parameters.initial_position_z);
-            self.res.camera = CameraData::new(self.res.camera.movement_speed, self.res.camera.turning_speed);
-            self.res.camera.set_position(initial_position);
+            self.res.scaling.scaling_init = false;
             self.ctx.dispatcher().dispatch_top_message("The camera have been reset.");
         }
 
@@ -783,6 +783,7 @@ impl<'a> SimulationUpdater<'a> {
         self.res.scaling.scaling_init = true;
 
         let mut stretch = false;
+        let mut video = self.res.video.clone();
         let last_pixel_width = self.res.scaling.pixel_width;
         match self.res.scaling.scaling_method {
             ScalingMethod::AutoDetect => {
@@ -806,6 +807,8 @@ impl<'a> SimulationUpdater<'a> {
                 stretch = true;
             }
             ScalingMethod::Custom => {
+                video.background_size = self.res.scaling.custom_scaling_resolution.to_u32();
+                video.image_size = self.res.scaling.custom_scaling_resolution.to_u32();
                 self.res.scaling.pixel_width = (self.res.scaling.custom_scaling_aspect_ratio.width / self.res.scaling.custom_scaling_aspect_ratio.height)
                     / (self.res.scaling.custom_scaling_resolution.width / self.res.scaling.custom_scaling_resolution.height);
                 stretch = self.res.scaling.custom_scaling_stretch;
@@ -818,7 +821,7 @@ impl<'a> SimulationUpdater<'a> {
         self.res.camera.set_position(glm::vec3(
             0.0,
             0.0,
-            calculate_far_away_position(&self.res.video, self.res.scaling.pixel_width, stretch),
+            calculate_far_away_position(&video, &self.res.filters.internal_resolution, self.res.scaling.pixel_width, stretch),
         ));
         self.res.camera.direction = glm::vec3(0.0, 0.0, -1.0);
         self.res.camera.axis_up = glm::vec3(0.0, 1.0, 0.0);

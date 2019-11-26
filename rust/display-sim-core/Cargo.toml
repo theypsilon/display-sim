@@ -8,7 +8,7 @@ edition = "2018"
 glm = { version = "0.5", package = "nalgebra-glm" }
 num-traits = "0.2"
 num-derive = "0.2"
-getters-by-type = "0.2"
+arraygen = "0.1.2"
 enum-len-derive = { path = "../enum-len-derive" }
 enum-len-trait = { path = "../enum-len-trait" }
 derive-new = "0.5.6"

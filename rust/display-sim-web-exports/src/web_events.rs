@@ -21,7 +21,7 @@ use core::camera::CameraLockMode;
 use core::internal_resolution::InternalResolution;
 use core::pixels_shadow::ShadowShape;
 use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScalingMethod, ScreenCurvatureKind, TextureInterpolation};
-use js_sys::{Array, Float32Array};
+use js_sys::Float32Array;
 use std::cell::RefCell;
 use std::fmt::Display;
 use wasm_bindgen::JsValue;
@@ -317,19 +317,21 @@ impl AppEventDispatcher for WebEventDispatcher {
     }
 
     // @TODO no other way to handle this by now, find better way later
-    fn fire_screenshot(&self, width: i32, height: i32, pixels: &mut [u8], multiplier: f64) {
-        self.gl
-            .read_pixels_with_opt_u8_array(0, 0, width, height, glow::RGBA, glow::UNSIGNED_BYTE, Some(&mut *pixels))
+    fn fire_screenshot(&self, width: i32, height: i32, pixels: &mut [u8]) {
+        let gl = &self.gl;
+        gl.read_pixels_with_opt_u8_array(0, 0, width, height, glow::RGBA, glow::UNSIGNED_BYTE, Some(&mut *pixels))
             .expect("gl.read_pixels failed");
-        self.dispatch_screenshot(pixels, multiplier)
+        let js_pixels = unsafe { js_sys::Uint8Array::view(pixels) };
+        let object = js_sys::Object::new();
+        js_sys::Reflect::set(&object, &"width".into(), &width.into()).expect("Reflection failed on width");
+        js_sys::Reflect::set(&object, &"height".into(), &height.into()).expect("Reflection failed on height");
+        js_sys::Reflect::set(&object, &"buffer".into(), &js_pixels.into()).expect("Reflection failed on js_pixels");
+        self.catch_error(dispatch_event_with(&self.event_bus, "back2front:screenshot", &object));
     }
 
-    fn dispatch_screenshot(&self, pixels: &[u8], multiplier: f64) {
+    fn dispatch_screenshot(&self, pixels: &[u8]) {
         let js_pixels = unsafe { js_sys::Uint8Array::view(pixels) };
-        let array = Array::new();
-        array.push(&js_pixels);
-        array.push(&multiplier.into());
-        self.catch_error(dispatch_event_with(&self.event_bus, "back2front:screenshot", &array));
+        self.catch_error(dispatch_event_with(&self.event_bus, "back2front:screenshot", &js_pixels.into()));
     }
 
     fn dispatch_change_preset_selected(&self, name: &str) {

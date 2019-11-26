@@ -57,6 +57,7 @@ export class Model {
     }
 
     async _launchSimulation () {
+        await new Promise(resolve => window.requestAnimationFrame(resolve));
         this.resizeCanvas();
         this.state.loaded = true;
         const result = await this.wasmApp.load(this.state.canvas, this.eventBus, Object.assign({
@@ -134,34 +135,23 @@ export class Model {
 
     resizeCanvas () {
         const dpi = window.devicePixelRatio;
-        const width = window.screen.width;
-        const height = window.screen.height;
-        const zoom = window.outerWidth / window.innerWidth;
-    
-        this.state.canvas.width = Math.round(width * dpi / zoom / 80) * 80;
-        this.state.canvas.height = Math.round(height * dpi / zoom / 60) * 60;
-    
-        this.state.canvas.style.width = window.innerWidth;
-        this.state.canvas.style.height = window.innerHeight + 0.5;
-    
-        Logger.log('resolution:', this.state.canvas.width, this.state.canvas.height, width, height);
+        const canvas = this.state.canvas;
+        const width = canvas.width = canvas.offsetWidth * dpi;
+        const height = canvas.height = canvas.offsetHeight * dpi;    
+        return { width, height };
     }
 
-    async fireScreenshot (args) {
+    async fireScreenshot ({ buffer, width, height }) {
         Logger.log('starting screenshot');
-    
-        const arrayBuffer = args[0];
-        const multiplier = args[1];
-    
-        const width = 1920 * 2 * multiplier;
-        const height = 1080 * 2 * multiplier;
+        Logger.log("width", width, "height", height);
+
         var canvas = document.createElement('canvas');
         canvas.width = width;
         canvas.height = height;
         var ctx = canvas.getContext('2d');
     
         var imageData = ctx.createImageData(width, height);
-        imageData.data.set(arrayBuffer);
+        imageData.data.set(buffer);
         ctx.putImageData(imageData, 0, 0);
         ctx.globalCompositeOperation = 'copy';
         ctx.scale(1, -1); // Y flip

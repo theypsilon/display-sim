@@ -195,12 +195,9 @@ impl<'a> SimulationDrawer<'a> {
             let height = self.res.filters.internal_resolution.height();
             let pixels: Box<[u8]> = vec![0; (width * height * 4) as usize].into_boxed_slice();
             self.materials.screenshot_pixels = Some(pixels);
-            self.ctx.dispatcher().fire_screenshot(
-                width,
-                height,
-                self.materials.screenshot_pixels.as_mut().expect("Screenshot bug"),
-                self.res.filters.internal_resolution.multiplier,
-            );
+            self.ctx
+                .dispatcher()
+                .fire_screenshot(width, height, self.materials.screenshot_pixels.as_mut().expect("Screenshot bug"));
         }
 
         self.materials.main_buffer_stack.pop()?;
@@ -208,6 +205,7 @@ impl<'a> SimulationDrawer<'a> {
 
         gl.bind_framebuffer(glow::FRAMEBUFFER, None);
         gl.clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
+
         gl.viewport(0, 0, self.res.video.viewport_size.width as i32, self.res.video.viewport_size.height as i32);
 
         self.materials
