@@ -1,3 +1,4 @@
+· Fix moving camera with mouse not working. 
 · Fix bug, on full screen after alt tab and coming back, canvas_focused does not come back or something like that.
 · Figure out how can I get the numbers 0.68 and 1.2076 from the perspective parameters instead of hardcoding them.
 · Improve readme.

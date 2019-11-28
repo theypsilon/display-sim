@@ -13,9 +13,27 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
+function enabled () {
+    return window.display_sim_bench || window.localStorage.getItem('display_sim_bench');
+}
+
+if (enabled()) {
+    const NativeError = window.Error;
+    class Error extends NativeError {
+        constructor (...args) {
+            super();
+            console.error(...args);
+            this.message = args[0]; 
+            this.stack = (new NativeError(...args)).stack;
+            this.name = this.constructor.name;
+        }
+    }
+    window.Error = Error;
+}
+
 export default {
     log: function () {
-        if (!window.display_sim_bench && !window.localStorage.getItem('display_sim_bench')) return;
+        if (!enabled()) return;
         console.log(new Date().toISOString(), ...arguments);
     },
     reportIfFalsy: function (o) {

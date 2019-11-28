@@ -66,27 +66,33 @@ pub struct Resources {
     pub quit: bool,
 }
 
+#[derive(Clone, Copy)]
+pub enum LatestCustomScalingChange {
+    AspectRatio,
+    PixelSize,
+}
+
 #[derive(Clone)]
 pub struct Scaling {
     pub pixel_width: f32,
-    pub custom_scaling_resolution: Size2D<f32>,
-    pub custom_scaling_aspect_ratio: Size2D<f32>,
-    pub custom_scaling_stretch: bool,
-    pub scaling_changed: bool,
-    pub scaling_init: bool,
+    pub custom_resolution: Size2D<f32>,
+    pub custom_aspect_ratio: Size2D<f32>,
+    pub custom_stretch: bool,
+    pub custom_change: LatestCustomScalingChange,
+    pub scaling_initialized: bool,
     pub scaling_method: ScalingMethod,
 }
 
 impl Default for Scaling {
     fn default() -> Self {
         Scaling {
-            scaling_changed: false,
-            scaling_init: false,
+            scaling_initialized: false,
             scaling_method: ScalingMethod::AutoDetect,
-            custom_scaling_resolution: Size2D { width: 256.0, height: 240.0 },
-            custom_scaling_aspect_ratio: Size2D { width: 4.0, height: 3.0 },
-            custom_scaling_stretch: false,
+            custom_resolution: Size2D { width: 256.0, height: 240.0 },
+            custom_aspect_ratio: Size2D { width: 4.0, height: 3.0 },
+            custom_stretch: false,
             pixel_width: 1.0,
+            custom_change: LatestCustomScalingChange::AspectRatio,
         }
     }
 }
@@ -148,16 +154,9 @@ impl Default for FlightDemoData {
 
 impl Resources {
     pub fn initialize(&mut self, video_input: VideoInputResources, now: f64) {
-        let initial_position_z = calculate_far_away_position(
-            &video_input,
-            &self.filters.internal_resolution,
-            calculate_pixel_width_from_image_size(video_input.image_size).0,
-            false,
-        );
-        let camera = CameraData::new(MOVEMENT_BASE_SPEED * initial_position_z / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED);
         self.quit = false;
         self.resetted = true;
-        self.scaling.scaling_init = false;
+        self.scaling.scaling_initialized = false;
         if let Some(preset) = video_input.preset {
             self.filters = self.filters.preset_factory(preset, &None);
         }
@@ -166,11 +165,6 @@ impl Resources {
             last_time: now,
             last_second: now,
         };
-        self.initial_parameters = InitialParameters {
-            initial_position_z,
-            initial_movement_speed: camera.movement_speed,
-        };
-        self.camera = camera;
         self.video = video_input;
     }
 }
@@ -764,13 +758,13 @@ pub struct Input {
     #[in_array(get_tracked_buttons)]
     pub scaling_method: IncDec<BooleanButton>,
     #[in_array(get_tracked_buttons)]
-    pub custom_scaling_resolution_width: IncDec<BooleanButton>,
+    pub scaling_resolution_width: IncDec<BooleanButton>,
     #[in_array(get_tracked_buttons)]
-    pub custom_scaling_resolution_height: IncDec<BooleanButton>,
+    pub scaling_resolution_height: IncDec<BooleanButton>,
     #[in_array(get_tracked_buttons)]
-    pub custom_scaling_aspect_ratio_x: IncDec<BooleanButton>,
+    pub scaling_aspect_ratio_x: IncDec<BooleanButton>,
     #[in_array(get_tracked_buttons)]
-    pub custom_scaling_aspect_ratio_y: IncDec<BooleanButton>,
+    pub scaling_aspect_ratio_y: IncDec<BooleanButton>,
     #[in_array(get_tracked_buttons)]
     pub esc: BooleanButton,
     #[in_array(get_tracked_buttons)]
@@ -795,13 +789,13 @@ pub struct Input {
     #[in_array(get_options_to_be_noned)]
     pub event_horizontal_lpp: Option<usize>,
     #[in_array(get_options_to_be_noned)]
-    pub event_custom_scaling_resolution_width: Option<f32>,
+    pub event_scaling_resolution_width: Option<f32>,
     #[in_array(get_options_to_be_noned)]
-    pub event_custom_scaling_resolution_height: Option<f32>,
+    pub event_scaling_resolution_height: Option<f32>,
     #[in_array(get_options_to_be_noned)]
-    pub event_custom_scaling_aspect_ratio_x: Option<f32>,
+    pub event_scaling_aspect_ratio_x: Option<f32>,
     #[in_array(get_options_to_be_noned)]
-    pub event_custom_scaling_aspect_ratio_y: Option<f32>,
+    pub event_scaling_aspect_ratio_y: Option<f32>,
     #[in_array(get_options_to_be_noned)]
     pub event_custom_scaling_stretch_nearest: Option<bool>,
     #[in_array(get_options_to_be_noned)]
@@ -830,17 +824,14 @@ impl Input {
     }
 }
 
-pub(crate) fn calculate_far_away_position(video_input: &VideoInputResources, internal_resolution: &InternalResolution, pixel_width: f32, stretch: bool) -> f32 {
-    let image_width = video_input.background_size.width as f32;
-    let image_height = video_input.background_size.height as f32;
-
+pub(crate) fn calculate_far_away_position(bg_size: Size2D<f32>, internal_resolution: &InternalResolution, pixel_width: f32, stretch: bool) -> f32 {
     let resolution_width = internal_resolution.width() as f32;
     let resolution_height = internal_resolution.height() as f32;
 
     let virtual_resolution_width = resolution_width / pixel_width;
 
-    let width_ratio = virtual_resolution_width / image_width;
-    let height_ratio = resolution_height / image_height;
+    let width_ratio = virtual_resolution_width / bg_size.width;
+    let height_ratio = resolution_height / bg_size.height;
 
     let is_height_bounded = width_ratio > height_ratio;
 
@@ -859,23 +850,26 @@ pub(crate) fn calculate_far_away_position(video_input: &VideoInputResources, int
     */
 }
 
-pub(crate) fn calculate_pixel_width_from_image_size(image_size: Size2D<u32>) -> (f32, &'static str) {
+pub(crate) fn calculate_pixel_width_from_image_size(image_size: Size2D<u32>) -> (f32, &'static str, (u32, u32)) {
     if image_size.height > 540 {
-        (1.0, "Automatic scaling: Squared pixels.")
+        (1.0, "Automatic scaling: Squared pixels.", (1, 1))
     } else if image_size.height == 144 {
         (
             (11.0 / 10.0) / (image_size.width as f32 / image_size.height as f32),
             "Automatic scaling: 11:10 (Game Boy) on full image.",
+            (11, 10),
         )
     } else if image_size.height == 160 {
         (
             (3.0 / 2.0) / (image_size.width as f32 / image_size.height as f32),
             "Automatic scaling: 3:2 (Game Boy Advance) on full image.",
+            (3, 2),
         )
     } else {
         (
             (4.0 / 3.0) / (image_size.width as f32 / image_size.height as f32),
             "Automatic scaling: 4:3 on full image.",
+            (4, 3),
         )
     }
 }

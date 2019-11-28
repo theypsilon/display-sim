@@ -77,9 +77,14 @@ export class Model {
 
     runFrame () {
         if (!this.state.loaded) {
-            return true;
+            return false;
         }
-        return this.wasmApp.runFrame();
+        if (this.wasmApp.runFrame()) {
+            return true;
+        } else {
+            this.unloadSimulation();
+            return false;
+        }
     }
 
     setPreset (preset) {

@@ -38,7 +38,7 @@ impl<GL: HasContext> std::clone::Clone for TextureBuffer<GL> {
 }
 
 impl<GL: HasContext> TextureBuffer<GL> {
-    pub fn new(gl: &GlowSafeAdapter<GL>, width: i32, height: i32, interpolation: u32) -> AppResult<TextureBuffer<GL>> {
+    fn new(gl: &GlowSafeAdapter<GL>, width: i32, height: i32, interpolation: u32) -> AppResult<TextureBuffer<GL>> {
         let framebuffer = Some(gl.create_framebuffer()?);
         gl.bind_framebuffer(glow::FRAMEBUFFER, framebuffer);
 
@@ -60,7 +60,7 @@ impl<GL: HasContext> TextureBuffer<GL> {
         })
     }
 
-    pub fn new_with_depthbuffer(gl: &GlowSafeAdapter<GL>, width: i32, height: i32, interpolation: u32) -> AppResult<TextureBuffer<GL>> {
+    fn new_with_depthbuffer(gl: &GlowSafeAdapter<GL>, width: i32, height: i32, interpolation: u32) -> AppResult<TextureBuffer<GL>> {
         let depthbuffer = Some(gl.create_renderbuffer()?);
         let texture_buffer = Self::new(gl, width, height, interpolation)?;
         gl.bind_renderbuffer(glow::RENDERBUFFER, depthbuffer);

@@ -49,10 +49,10 @@ pub trait AppEventDispatcher {
     fn dispatch_change_movement_speed(&self, speed: f32);
     fn dispatch_change_preset_selected(&self, name: &str);
     fn dispatch_scaling_method(&self, method: ScalingMethod);
-    fn dispatch_custom_scaling_resolution_width(&self, width: u32);
-    fn dispatch_custom_scaling_resolution_height(&self, height: u32);
-    fn dispatch_custom_scaling_aspect_ratio_x(&self, x: u32);
-    fn dispatch_custom_scaling_aspect_ratio_y(&self, y: u32);
+    fn dispatch_scaling_resolution_width(&self, width: u32);
+    fn dispatch_scaling_resolution_height(&self, height: u32);
+    fn dispatch_scaling_aspect_ratio_x(&self, x: f32);
+    fn dispatch_scaling_aspect_ratio_y(&self, y: f32);
     fn dispatch_custom_scaling_stretch_nearest(&self, stretch: bool);
     fn dispatch_exiting_session(&self);
     fn dispatch_toggle_info_panel(&self);
@@ -98,10 +98,10 @@ impl AppEventDispatcher for FakeEventDispatcher {
     fn dispatch_change_movement_speed(&self, _: f32) {}
     fn dispatch_change_preset_selected(&self, _: &str) {}
     fn dispatch_scaling_method(&self, _: ScalingMethod) {}
-    fn dispatch_custom_scaling_resolution_width(&self, _: u32) {}
-    fn dispatch_custom_scaling_resolution_height(&self, _: u32) {}
-    fn dispatch_custom_scaling_aspect_ratio_x(&self, _: u32) {}
-    fn dispatch_custom_scaling_aspect_ratio_y(&self, _: u32) {}
+    fn dispatch_scaling_resolution_width(&self, _: u32) {}
+    fn dispatch_scaling_resolution_height(&self, _: u32) {}
+    fn dispatch_scaling_aspect_ratio_x(&self, _: f32) {}
+    fn dispatch_scaling_aspect_ratio_y(&self, _: f32) {}
     fn dispatch_custom_scaling_stretch_nearest(&self, _: bool) {}
     fn dispatch_exiting_session(&self) {}
     fn dispatch_toggle_info_panel(&self) {}

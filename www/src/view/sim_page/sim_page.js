@@ -32,7 +32,7 @@ class SimPage extends HTMLElement {
         });
 
         document.body.style.setProperty('overflow', 'hidden');
-        //document.body.style.setProperty('background-color', 'black');
+        document.body.style.setProperty('background-color', 'black');
     }
 
     disconnectedCallback () {
@@ -152,10 +152,10 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
         case 'back2front:change_turning_speed': return view.changeTurningSpeed(msg);
         case 'back2front:color_representation': return view.changeColorRepresentation(msg);
         case 'back2front:scaling_method': return view.changeScalingMethod(msg);
-        case 'back2front:custom_scaling_resolution_width': return view.changeCustomScalingResWidth(msg);
-        case 'back2front:custom_scaling_resolution_height': return view.changeCustomScalingResHeight(msg);
-        case 'back2front:custom_scaling_aspect_ratio_x': return view.changeCustomScalingArX(msg);
-        case 'back2front:custom_scaling_aspect_ratio_y': return view.changeCustomScalingArY(msg);
+        case 'back2front:scaling_resolution_width': return view.changeCustomScalingResWidth(msg);
+        case 'back2front:scaling_resolution_height': return view.changeCustomScalingResHeight(msg);
+        case 'back2front:scaling_aspect_ratio_x': return view.changeCustomScalingArX(msg);
+        case 'back2front:scaling_aspect_ratio_y': return view.changeCustomScalingArY(msg);
         case 'back2front:custom_scaling_stretch_nearest': return view.changeCustomScalingStretchNearest(msg);
         case 'back2front:pixel_geometry': return view.changePixelGeometry(msg);
         case 'back2front:pixel_shadow_shape': return view.changePixelShadowShape(msg);
@@ -177,12 +177,9 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
     // frame loop on frontend
     let newFrameId;
     (function requestNewFrame () {
-        if (model.runFrame()) {
-            view.newFrame();
-            newFrameId = window.requestAnimationFrame(requestNewFrame);
-        } else {
-            model.unloadSimulation();
-        }
+        model.runFrame();
+        view.newFrame();
+        newFrameId = window.requestAnimationFrame(requestNewFrame);
     })();
 
     const listeners = [];
@@ -195,7 +192,12 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
     // Forwarding other events so they can be readed by the backend
     addDomListener(window, 'keydown', e => fireBackendEvent('keyboard', { pressed: true, key: e.key }));
     addDomListener(window, 'keyup', e => fireBackendEvent('keyboard', { pressed: false, key: e.key }));
-    addDomListener(canvasParent, 'mousedown', e => e.buttons === 1 && fireBackendEvent('mouse-click', true));
+    addDomListener(canvasParent, 'mousedown', e => {
+        if (e.buttons === 1) {
+            fireBackendEvent('mouse-click', true);
+            model.runFrame(); // Needed so Firefox can go fullscreen during the scope of this event handler, otherwise the request is rejected.
+        }
+    });
     addDomListener(window, 'mouseup', () => fireBackendEvent('mouse-click', false)); // note this one goes to 'window'. It doesn't work with 'canvas' because of some obscure bug I didn't figure out yet.
     addDomListener(canvasParent, 'mousemove', e => fireBackendEvent('mouse-move', { x: e.movementX, y: e.movementY }));
     addDomListener(canvasParent, 'mousewheel', e => fireBackendEvent('mouse-wheel', e.deltaY));

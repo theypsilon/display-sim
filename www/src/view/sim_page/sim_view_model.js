@@ -69,10 +69,10 @@ export function data () {
         webgl_performance: { value: null, eventKind: 'webgl:performance' },
         webgl_antialias: { value: null, eventKind: 'webgl:antialias' },
         scaling_method: { value: null, eventKind: 'scaling-method' },
-        custom_scaling_resolution_width: { value: null, eventKind: 'custom-scaling-resolution-width' },
-        custom_scaling_resolution_height: { value: null, eventKind: 'custom-scaling-resolution-height' },
-        custom_scaling_aspect_ratio_x: { value: null, eventKind: 'custom-scaling-aspect-ratio-x' },
-        custom_scaling_aspect_ratio_y: { value: null, eventKind: 'custom-scaling-aspect-ratio-y' },
+        custom_resolution_width: { value: null, eventKind: 'custom-scaling-resolution-width' },
+        custom_resolution_height: { value: null, eventKind: 'custom-scaling-resolution-height' },
+        custom_aspect_ratio_x: { value: null, eventKind: 'custom-scaling-aspect-ratio-x' },
+        custom_aspect_ratio_y: { value: null, eventKind: 'custom-scaling-aspect-ratio-y' },
         custom_scaling_stretch_nearest: { value: null, eventKind: 'custom-scaling-stretch-nearest' },
         quit_simulation: { eventKind: 'quit-simulation' }
     };
@@ -108,16 +108,16 @@ export function data () {
                                     separator: '✕',
                                     class: 'menu-blc-lila',
                                     pair: [
-                                        { min: 1, max: 10000, step: 1, placeholder: 256, ref: options.custom_scaling_resolution_width },
-                                        { min: 1, max: 10000, step: 1, placeholder: 240, ref: options.custom_scaling_resolution_height }
+                                        { min: 1, max: 10000, step: 1, placeholder: 256, ref: options.custom_resolution_width },
+                                        { min: 1, max: 10000, step: 1, placeholder: 240, ref: options.custom_resolution_height }
                                     ] },
                                 { type: 'numeric-pair',
                                     text: 'Aspect Ratio',
                                     separator: ':',
                                     class: 'menu-blc-lila',
                                     pair: [
-                                        { min: 1, max: 100, step: 1, placeholder: 4, ref: options.custom_scaling_aspect_ratio_x },
-                                        { min: 1, max: 100, step: 1, placeholder: 3, ref: options.custom_scaling_aspect_ratio_y }
+                                        { min: 1, max: 1920 * 4, step: 1, placeholder: 4, ref: options.custom_aspect_ratio_x },
+                                        { min: 1, max: 1080 * 4, step: 1, placeholder: 3, ref: options.custom_aspect_ratio_y }
                                     ] },
                                 { type: 'checkbox-input', class: 'menu-2 menu-blc-lila', text: 'Stretch to nearest border', ref: options.custom_scaling_stretch_nearest },
                                 { type: 'number-input', class: 'menu-2 menu-blc-yellow', text: 'Pixel width', hk: { inc: 'O', dec: 'Shift + O' }, step: 0.001, min: 0, max: 10, value: 0, placeholder: 0, ref: options.pixel_width }
@@ -434,19 +434,19 @@ export class View {
         this._isDirty = true;
     }
     changeCustomScalingResWidth (width) {
-        this._state.options.custom_scaling_resolution_width.value = width;
+        this._state.options.custom_resolution_width.value = width;
         this._isDirty = true;
     }
     changeCustomScalingResHeight (height) {
-        this._state.options.custom_scaling_resolution_height.value = height;
+        this._state.options.custom_resolution_height.value = height;
         this._isDirty = true;
     }
     changeCustomScalingArX (x) {
-        this._state.options.custom_scaling_aspect_ratio_x.value = x;
+        this._state.options.custom_aspect_ratio_x.value = x;
         this._isDirty = true;
     }
     changeCustomScalingArY (y) {
-        this._state.options.custom_scaling_aspect_ratio_y.value = y;
+        this._state.options.custom_aspect_ratio_y.value = y;
         this._isDirty = true;
     }
     changeCustomScalingStretchNearest (stretch) {

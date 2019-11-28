@@ -20,18 +20,6 @@ import './view/sim_page/sim_page';
 import FontFaceObserver from 'fontfaceobserver';
 import { Navigator } from './services/navigator';
 
-const NativeError = window.Error;
-class Error extends NativeError {
-    constructor (...args) {
-        super();
-        console.error(...args);
-        this.message = args[0]; 
-        this.stack = (new NativeError(...args)).stack;
-        this.name = this.constructor.name;
-    }
-}
-window.Error = Error;
-
 window.ondrop = event => {
     event.preventDefault();
 };

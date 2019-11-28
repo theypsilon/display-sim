@@ -76,7 +76,7 @@ where
     TriggerHandler: FnOnce(&'a T),
 {
     #[allow(clippy::useless_let_if_seq)]
-    pub fn process_options(self) {
+    pub fn process_options(self) -> bool {
         let mut changed = false;
         if self.incdec.increase {
             self.var.next_option();
@@ -97,8 +97,10 @@ where
                 self.ctx.dispatcher().dispatch_maximum_value(self.var);
             } else if let Some(handler) = self.trigger_handler {
                 handler(self.var);
+                return true;
             }
         }
+        false
     }
 }
 
@@ -107,7 +109,7 @@ where
     T: Display + AddAssign + SubAssign + PartialOrd + PartialEq + Copy + Default,
     TriggerHandler: FnOnce(T),
 {
-    pub fn process_with_sums(self) {
+    pub fn process_with_sums(self) -> bool {
         operate_filter(self, AddAssign::add_assign, SubAssign::sub_assign)
     }
 }
@@ -117,12 +119,12 @@ where
     T: Display + MulAssign + DivAssign + PartialOrd + PartialEq + Copy + Default,
     TriggerHandler: FnOnce(T),
 {
-    pub fn process_with_multiplications(self) {
+    pub fn process_with_multiplications(self) -> bool {
         operate_filter(self, MulAssign::mul_assign, DivAssign::div_assign)
     }
 }
 
-fn operate_filter<T, TriggerHandler>(params: FilterParams<T, T, TriggerHandler>, inc_op: impl FnOnce(&mut T, T), dec_op: impl FnOnce(&mut T, T))
+fn operate_filter<T, TriggerHandler>(params: FilterParams<T, T, TriggerHandler>, inc_op: impl FnOnce(&mut T, T), dec_op: impl FnOnce(&mut T, T)) -> bool
 where
     T: Display + PartialOrd + PartialEq + Copy + Default,
     TriggerHandler: FnOnce(T),
@@ -155,8 +157,10 @@ where
     if last_value != *params.var {
         if let Some(handler) = params.trigger_handler {
             handler(*params.var);
+            return true;
         }
     }
+    false
 }
 
 #[cfg(test)]
