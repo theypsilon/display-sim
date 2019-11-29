@@ -98,7 +98,7 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
         switch (e.type) {
         case 'front2front:dispatchKey': {
             if (msg.key.startsWith('webgl:')) {    
-                return handleWebGLKeys(msg, model, view, frontendBus);
+                return await handleWebGLKeys(msg, model, view, frontendBus);
             }
             let pressed;
             switch (msg.action) {
@@ -216,7 +216,7 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
     };
 }
 
-function handleWebGLKeys (msg, model, view) {
+async function handleWebGLKeys (msg, model, view) {
     let direction;
     if (msg.key.endsWith('-dec')) {
         direction = 'dec';
