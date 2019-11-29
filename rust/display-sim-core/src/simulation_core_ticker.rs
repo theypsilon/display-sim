@@ -748,9 +748,9 @@ impl<'a> SimulationUpdater<'a> {
         match self.res.scaling.scaling_method {
             ScalingMethod::AutoDetect => {
                 let (message, ar) = calculate_aspect_ratio_from_image_size(self.res.video.image_size);
-                let gcd = gcd(ar.0, ar.1);
-                ar_x = (ar.0 / gcd) as f32;
-                ar_y = (ar.1 / gcd) as f32;
+                let ar = simplify_ar(ar);
+                ar_x = ar.0;
+                ar_y = ar.1;
                 image_width = self.res.video.image_size.width;
                 image_height = self.res.video.image_size.height;
                 pixel_width = (ar_x / ar_y) / (image_width as f32 / image_height as f32);
@@ -758,9 +758,9 @@ impl<'a> SimulationUpdater<'a> {
                 self.ctx.dispatcher().dispatch_top_message(&format!("Automatic scaling: {}", message));
             }
             ScalingMethod::SquaredPixels => {
-                let gcd = gcd(self.res.video.image_size.width, self.res.video.image_size.height);
-                ar_x = (self.res.video.image_size.width / gcd) as f32;
-                ar_y = (self.res.video.image_size.height / gcd) as f32;
+                let ar = simplify_ar(self.res.video.image_size.to_f32().to_tuple());
+                ar_x = ar.0;
+                ar_y = ar.1;
                 image_width = self.res.video.image_size.width;
                 image_height = self.res.video.image_size.height;
                 pixel_width = 1.0;
@@ -775,9 +775,9 @@ impl<'a> SimulationUpdater<'a> {
                 stretch = false;
             }
             ScalingMethod::StretchToBothEdges => {
-                let gcd = gcd(self.res.video.viewport_size.width, self.res.video.viewport_size.height);
-                ar_x = (self.res.video.viewport_size.width / gcd) as f32;
-                ar_y = (self.res.video.viewport_size.height / gcd) as f32;
+                let ar = simplify_ar(self.res.video.viewport_size.to_f32().to_tuple());
+                ar_x = ar.0;
+                ar_y = ar.1;
                 image_width = self.res.video.image_size.width;
                 image_height = self.res.video.image_size.height;
                 pixel_width = (ar_x / ar_y) / (image_width as f32 / image_height as f32);
@@ -785,9 +785,9 @@ impl<'a> SimulationUpdater<'a> {
             }
             ScalingMethod::StretchToNearestEdge => {
                 let (message, ar) = calculate_aspect_ratio_from_image_size(self.res.video.image_size);
-                let gcd = gcd(ar.0, ar.1);
-                ar_x = (ar.0 / gcd) as f32;
-                ar_y = (ar.1 / gcd) as f32;
+                let ar = simplify_ar(ar);
+                ar_x = ar.0;
+                ar_y = ar.1;
                 image_width = self.res.video.image_size.width;
                 image_height = self.res.video.image_size.height;
                 pixel_width = (ar_x / ar_y) / (image_width as f32 / image_height as f32);
@@ -988,15 +988,34 @@ impl<'a> SimulationUpdater<'a> {
     }
 }
 
-fn calculate_aspect_ratio_from_image_size(image_size: Size2D<u32>) -> (&'static str, (u32, u32)) {
-    if image_size.height > 540 {
-        ("Squared pixels.", (image_size.width, image_size.height))
-    } else if image_size.height == 144 {
-        ("11:10 (Game Boy) on full image.", (11, 10))
-    } else if image_size.height == 160 {
-        ("3:2 (Game Boy Advance) on full image.", (3, 2))
+fn simplify_ar(ar: (f32, f32)) -> (f32, f32) {
+    if ar.0.fract() == 0.0 && ar.1.fract() == 0.0 {
+        let a = ar.0.trunc() as u32;
+        let b = ar.1.trunc() as u32;
+        let gcd = gcd(a, b);
+        ((a / gcd) as f32, (b / gcd) as f32)
     } else {
-        ("4:3 on full image.", (4, 3))
+        (ar.0 / ar.1, 1.0)
+    }
+}
+
+fn calculate_aspect_ratio_from_image_size(image_size: Size2D<u32>) -> (&'static str, (f32, f32)) {
+    if image_size.height > 540 {
+        ("Squared pixels.", (image_size.width as f32, image_size.height as f32))
+    } else if image_size.height == 102 {
+        ("1.57:1 (Atari Lynx) on full image.", (1.11, 1.0))
+    } else if image_size.height == 144 {
+        ("1.11:1 (Game Boy) on full image.", (1.11, 1.0))
+    } else if image_size.height == 152 {
+        ("21:20 (Neo Geo Pocket) on full image.", (21.0, 20.0))
+    } else if image_size.height == 160 {
+        ("3:2 (Game Boy Advance) on full image.", (3.0, 2.0))
+    } else if image_size.height == 192 {
+        ("1.33:1 (Nintendo DS) on full image.", (1.33, 1.0))
+    } else if image_size.height == 272 {
+        ("44:25 (PSP) on full image.", (44.0, 25.0))
+    } else {
+        ("4:3 on full image.", (4.0, 3.0))
     }
 }
 

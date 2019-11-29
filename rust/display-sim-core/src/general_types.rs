@@ -70,6 +70,21 @@ pub struct Size2D<T: Copy + Clone + Default> {
     pub height: T,
 }
 
+impl Size2D<u32> {
+    pub fn to_f32(self) -> Size2D<f32> {
+        Size2D {
+            width: self.width as f32,
+            height: self.height as f32,
+        }
+    }
+}
+
+impl<T: Copy + Clone + Default> Size2D<T> {
+    pub fn to_tuple(self) -> (T, T) {
+        (self.width, self.height)
+    }
+}
+
 pub trait OptionCursor {
     fn next_option(&mut self);
     fn previous_option(&mut self);

@@ -1,8 +1,15 @@
 use std::ops::Rem;
 use num_traits::Zero;
 
-pub fn gcd<T>(a: T, b: T) -> T
-where T: Zero + Copy + PartialOrd + Rem<Output = T> {
+pub trait NonNegativeInteger : Zero + Copy + PartialOrd + Rem<Output = Self> {}
+
+impl NonNegativeInteger for u8 {}
+impl NonNegativeInteger for u16 {}
+impl NonNegativeInteger for u32 {}
+impl NonNegativeInteger for u64 {}
+impl NonNegativeInteger for u128 {}
+
+pub fn gcd<T: NonNegativeInteger>(a: T, b: T) -> T {
     let (mut a, mut b) = if a > b {
         (a, b)
     } else {
@@ -21,10 +28,10 @@ mod test {
     use super::gcd;
     #[test]
     fn test_gcd() {
-        assert_eq!(0, gcd(0, 0));
-        assert_eq!(10, gcd(10, 0));
-        assert_eq!(10, gcd(0, 10));
-        assert_eq!(10, gcd(10, 20));
-        assert_eq!(44, gcd(2024, 748));
+        assert_eq!(0u32, gcd(0u32, 0u32));
+        assert_eq!(10u32, gcd(10u32, 0u32));
+        assert_eq!(10u32, gcd(0u32, 10u32));
+        assert_eq!(10u32, gcd(10u32, 20u32));
+        assert_eq!(44u32, gcd(2024u32, 748u32));
     }
 }
