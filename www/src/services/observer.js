@@ -30,7 +30,9 @@ export class Observer {
         this._callbacks = this._callbacks.filter(cb => cb !== unsubscribedCb);
     }
 
-    fire (event) {
-        this._callbacks.forEach(cb => cb(event));
+    async fire (event) {
+        for (const cb of this._callbacks) {
+            await cb(event);
+        }
     }
 }

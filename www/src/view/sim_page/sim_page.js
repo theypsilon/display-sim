@@ -29,7 +29,7 @@ class SimPage extends HTMLElement {
         this.future = setupPage(this.attachShadow({ mode: 'open' }), state, {
             front: Observer.make(),
             back: Observer.make()
-        });
+        }).catch(e => console.error(e));
 
         document.body.style.setProperty('overflow', 'hidden');
         document.body.style.setProperty('background-color', 'black');
@@ -50,7 +50,7 @@ async function setupPage (root, state, observers) {
     const model = await setupModel(canvas, view, {
         subscribe: cb => observers.back.subscribe(cb),
         unsubscribe: cb => observers.back.unsubscribe(cb),
-        fire: msg => observers.front.fire(msg)
+        fire: msg => observers.front.fire(msg).catch(e => console.error(e))
     });
     return setupEventHandling(canvas.parentNode, view, model, {
         subscribe: cb => observers.front.subscribe(cb),
@@ -79,7 +79,7 @@ function fireEventOn (observer) {
             message,
             type: 'front2front:' + topic
         };
-        observer.fire(event);
+        observer.fire(event).catch(e => console.error(e));
     };
 }
 
@@ -89,12 +89,11 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
             message: msg,
             type: 'front2back:' + kind
         };
-        console.log(kind, msg);
         frontendBus.fire(event);
     }
 
     // Listening backend events
-    frontendBus.subscribe(e => {
+    frontendBus.subscribe(async e => {
         const msg = e.message;
         switch (e.type) {
         case 'front2front:dispatchKey': {
@@ -118,7 +117,8 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
         case 'front2front:toggleCheckbox': {
             if (msg.kind === 'webgl:antialias') {
                 view.showLoading();
-                return model.changeAntialiasing(msg.value).then(() => view.changeAntialias(msg.value));
+                await model.changeAntialiasing(msg.value);
+                view.changeAntialias(msg.value);
             } else {
                 return fireBackendEvent(msg.kind, msg.value);
             }
@@ -230,7 +230,8 @@ function handleWebGLKeys (msg, model, view) {
     case 'webgl:performance-dec': {
         if (msg.action === 'keydown') {
             view.showLoading();
-            model.changePerformance(msg.current, direction).then(performance => view.changePerformance(performance));
+            const performance = await model.changePerformance(msg.current, direction);
+            view.changePerformance(performance);
         }
         break;
     }

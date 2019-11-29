@@ -127,7 +127,6 @@ impl<'a> SimulationUpdater<'a> {
 
     pub fn update(&mut self) -> AppResult<()> {
         if self.res.resetted {
-            self.res.resetted = false;
             self.change_frontend_input_values();
         }
 
@@ -162,6 +161,7 @@ impl<'a> SimulationUpdater<'a> {
 
         self.update_outputs();
 
+        self.res.resetted = false;
         self.res.drawable = self.res.screenshot_trigger.is_triggered || self.res.screenshot_trigger.delay <= 0;
 
         Ok(())

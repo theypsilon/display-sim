@@ -25,31 +25,34 @@ const state = data();
 class LandingPage extends HTMLElement {
     constructor () {
         super();
-        setupPage(this.attachShadow({ mode: 'open' }), state, Observer.make());
+        setupPage(this.attachShadow({ mode: 'open' }), state, Observer.make())
+            .catch(e => console.error(e));
     }
 }
 
 window.customElements.define('landing-page', LandingPage);
 
-function setupPage (root, state, observer) {
+async function setupPage (root, state, observer) {
     if (window.location.hash.length > 1) {
-        playQuerystring(window.location.hash.substr(1));
-        return;
+        return await playQuerystring(window.location.hash.substr(1));
     }
 
-    const view = View.make(state, () => renderTemplate(state, (type, message) => observer.fire({ type, message }), root));
+    function fireEvent(type, message) {
+        observer.fire({ type, message }).catch(e => console.error(e));
+    }
+
+    const view = View.make(state, () => renderTemplate(state, fireEvent, root));
     view.turnVisibilityOn();
 
-    observer.subscribe(e => {
+    observer.subscribe(async e => {
         const msg = e.message;
         switch (e.type) {
         case 'changed-file-input': {
-            uploadFile(msg.target.files[0])
-                .then(image => view.addImage(image))
-                .catch(e => {
-                    console.error(e);
-                    view.showError('That file could not be loaded, try again with a picture.');
-                });
+            const image = await uploadFile(msg.target.files[0]).catch(e => {
+                console.error(e);
+                view.showError('That file could not be loaded, try again with a picture.');
+            });
+            view.addImage(image);
             break;
         }
         case 'select-image': return view.selectImage(msg);
@@ -57,12 +60,11 @@ function setupPage (root, state, observer) {
         case 'drop-on-drop-zone': {
             msg.stopPropagation();
             msg.preventDefault();
-            uploadFile(msg.dataTransfer.files[0])
-                .then(image => view.addImage(image))
-                .catch(e => {
-                    console.error(e);
-                    view.showError('That file could not be loaded, try again with a picture.');
-                });
+            const image = await uploadFile(msg.dataTransfer.files[0]).catch(e => {
+                console.error(e);
+                view.showError('That file could not be loaded, try again with a picture.');
+            });
+            view.addImage(image);
             break;
         }
         case 'drag-over-drop-zone': {
@@ -74,7 +76,7 @@ function setupPage (root, state, observer) {
         case 'select-scaling': return view.selectScaling(msg.target.value);
         case 'click-play-simulation': {
             view.turnVisibilityOff();
-            playHtmlSelection(state);
+            await playHtmlSelection(state);
             break;
         }
         default: throw new Error('Not covered following event: ', e.type, e);

@@ -110,6 +110,9 @@ export class AnimationsGateway {
         canvas.width = img.width;
         canvas.height = img.height;
         ctx.drawImage(img, 0, 0);
-        return [{ raw: ctx.getImageData(0, 0, img.width, img.height), delay: 16 }];
+        const imageData = ctx.getImageData(0, 0, img.width, img.height);
+        window.saveCanvas = canvas;
+        window.saveImageData = imageData;
+        return [{ raw: imageData, delay: 16 }];
     }
 }

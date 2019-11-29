@@ -1,21 +1,17 @@
 use std::ops::Rem;
-use num_traits::Zero;
 
-pub trait NonNegativeInteger : Zero + Copy + PartialOrd + Rem<Output = Self> {}
+pub trait NonNegativeInteger: Copy + PartialOrd + Rem<Output = Self> + From<u8> {}
 
 impl NonNegativeInteger for u8 {}
 impl NonNegativeInteger for u16 {}
 impl NonNegativeInteger for u32 {}
 impl NonNegativeInteger for u64 {}
 impl NonNegativeInteger for u128 {}
+impl NonNegativeInteger for usize {}
 
 pub fn gcd<T: NonNegativeInteger>(a: T, b: T) -> T {
-    let (mut a, mut b) = if a > b {
-        (a, b)
-    } else {
-        (b, a)
-    };
-    while !b.is_zero() {
+    let (mut a, mut b) = if a > b { (a, b) } else { (b, a) };
+    while b != 0.into() {
         let r = a % b;
         a = b;
         b = r;
