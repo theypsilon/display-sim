@@ -90,7 +90,6 @@ impl Default for Resources {
     }
 }
 
-
 impl Resources {
     pub fn initialize(&mut self, video_input: VideoInputResources, now: f64) {
         self.quit = false;

@@ -17,14 +17,13 @@ use crate::action_bindings::on_button_action;
 use crate::camera::{CameraData, CameraDirection, CameraLockMode, CameraSystem};
 use crate::filter_params::FilterParams;
 use crate::general_types::{get_3_f32color_from_int, get_int_from_3_f32color, Size2D};
+use crate::internal_resolution::InternalResolution;
 use crate::math::gcd;
 use crate::pixels_shadow::ShadowShape;
 use crate::simulation_context::SimulationContext;
-use crate::internal_resolution::InternalResolution;
 use crate::simulation_core_state::{
-    ColorChannels, Filters, FiltersPreset, InitialParameters, Input, InputEventValue,
-    LatestCustomScalingChange, PixelsGeometryKind, Resources, ScalingMethod, ScreenCurvatureKind, TextureInterpolation, MOVEMENT_BASE_SPEED,
-    MOVEMENT_SPEED_FACTOR, PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
+    ColorChannels, Filters, FiltersPreset, InitialParameters, Input, InputEventValue, LatestCustomScalingChange, PixelsGeometryKind, Resources, ScalingMethod,
+    ScreenCurvatureKind, TextureInterpolation, MOVEMENT_BASE_SPEED, MOVEMENT_SPEED_FACTOR, PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
 };
 use app_error::AppResult;
 use derive_new::new;
@@ -993,20 +992,11 @@ fn calculate_aspect_ratio_from_image_size(image_size: Size2D<u32>) -> (&'static 
     if image_size.height > 540 {
         ("Squared pixels.", (image_size.width, image_size.height))
     } else if image_size.height == 144 {
-        (
-            "11:10 (Game Boy) on full image.",
-            (11, 10),
-        )
+        ("11:10 (Game Boy) on full image.", (11, 10))
     } else if image_size.height == 160 {
-        (
-            "3:2 (Game Boy Advance) on full image.",
-            (3, 2),
-        )
+        ("3:2 (Game Boy Advance) on full image.", (3, 2))
     } else {
-        (
-            "4:3 on full image.",
-            (4, 3),
-        )
+        ("4:3 on full image.", (4, 3))
     }
 }
 
