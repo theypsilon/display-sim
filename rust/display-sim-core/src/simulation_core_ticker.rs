@@ -1000,10 +1000,8 @@ fn simplify_ar(ar: (f32, f32)) -> (f32, f32) {
 }
 
 fn calculate_aspect_ratio_from_image_size(image_size: Size2D<u32>) -> (&'static str, (f32, f32)) {
-    if image_size.height > 540 {
-        ("Squared pixels.", (image_size.width as f32, image_size.height as f32))
-    } else if image_size.height == 102 {
-        ("1.57:1 (Atari Lynx) on full image.", (1.11, 1.0))
+    if image_size.height == 102 {
+        ("1.57:1 (Atari Lynx) on full image.", (1.57, 1.0))
     } else if image_size.height == 144 {
         ("1.11:1 (Game Boy) on full image.", (1.11, 1.0))
     } else if image_size.height == 152 {
@@ -1011,9 +1009,13 @@ fn calculate_aspect_ratio_from_image_size(image_size: Size2D<u32>) -> (&'static 
     } else if image_size.height == 160 {
         ("3:2 (Game Boy Advance) on full image.", (3.0, 2.0))
     } else if image_size.height == 192 {
-        ("1.33:1 (Nintendo DS) on full image.", (1.33, 1.0))
+        ("4:3 (Nintendo DS) on full image.", (4.0, 3.0))
     } else if image_size.height == 272 {
         ("44:25 (PSP) on full image.", (44.0, 25.0))
+    } else if image_size.height == 544 {
+        ("44:25 (PS Vita) on full image.", (44.0, 25.0))
+    } else if image_size.height > 540 {
+        ("Squared pixels.", (image_size.width as f32, image_size.height as f32))
     } else {
         ("4:3 on full image.", (4.0, 3.0))
     }
