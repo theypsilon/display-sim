@@ -149,7 +149,7 @@ export function data () {
                         { type: 'selectors-input', class: 'menu-2 menu-blc-red', text: 'Color channels type', hk: { inc: 'C', dec: 'Shift + C' }, ref: options.color_representation },
                         { type: 'selectors-input', class: 'menu-2 menu-blc-yellow', text: 'Pixel geometry type', hk: { inc: 'V', dec: 'Shift + V' }, ref: options.pixel_geometry },
                         { type: 'selectors-input', class: 'menu-2 menu-blc-blue', text: 'Pixel texture', hk: { inc: 'N', dec: 'Shift + N' }, ref: options.pixel_shadow_shape },
-                        { type: 'number-input', class: 'menu-2 menu-blc-lila', text: 'Pixel variable height', hk: { inc: 'M', dec: 'Shift + M' }, step: 0.001, min: 0, max: 1, value: 0, placeholder: 0, ref: options.texture_interpolation },
+                        { type: 'number-input', class: 'menu-2 menu-blc-lila', text: 'Pixel variable height', hk: { inc: 'M', dec: 'Shift + M' }, step: 0.001, min: 0, max: 1, value: 0, placeholder: 0, ref: options.pixel_shadow_height },
                         { type: 'selectors-input', class: 'menu-2 menu-blc-yellow', text: 'Texture interpolation', hk: { inc: 'H', dec: 'Shift + H' }, ref: options.texture_interpolation },
                         { type: 'number-input', class: 'menu-2 menu-blc-green', text: 'Backlight', hk: { inc: 'dot', dec: 'Shift + dot' }, step: 0.001, min: 0, max: 1, value: 0.5, placeholder: 0.5, ref: options.backlight_percent },
                         { type: 'number-input', class: 'display-none', text: 'Pixel spread', hk: { inc: 'P', dec: 'Shift + P' }, step: 0.001, min: 0, max: 10, value: 0, placeholder: 0, ref: options.pixel_spread },

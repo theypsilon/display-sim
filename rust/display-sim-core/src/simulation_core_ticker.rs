@@ -50,9 +50,8 @@ impl<'a> SimulationCoreTicker<'a> {
         for value in self.input.custom_event.consume_values() {
             match value {
                 InputEventValue::Keyboard { pressed, key } => {
-                    let used = on_button_action(&mut self.input, key.to_lowercase().as_ref(), pressed);
-                    if !used {
-                        self.ctx.dispatcher().dispatch_log(format!("Ignored key: {} {}", key, pressed));
+                    if let Some(not_used) = on_button_action(&mut self.input, key.to_lowercase().as_ref(), pressed) {
+                        self.ctx.dispatcher().dispatch_log(format!("Ignored key: {} {}", not_used, pressed));
                     }
                 }
                 InputEventValue::MouseClick(pressed) => self.input.mouse_click.input = pressed,

@@ -15,7 +15,7 @@
 
 use crate::simulation_core_state::Input;
 
-pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) -> bool {
+pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) -> Option<String> {
     let mut matched = true;
     match button_action {
         "shift" | "left shift" | "right shift" => input.shift = pressed,
@@ -29,7 +29,7 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) -
         _ => matched = false,
     };
     if matched || input.input_focused {
-        return true;
+        return None;
     }
 
     let action: String;
@@ -110,7 +110,7 @@ pub fn on_button_action(input: &mut Input, button_action: &str, pressed: bool) -
         "." | "backlight-percent-dec" => input.backlight_percent.decrease = pressed,
         "g" | "camera-movement-mode-inc" => input.next_camera_movement_mode.increase.input = pressed,
         "shift+g" | "camera-movement-mode-dec" => input.next_camera_movement_mode.decrease.input = pressed,
-        _ => return false,
+        _ => return Some(action),
     }
-    true
+    None
 }
