@@ -89,6 +89,7 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
             message: msg,
             type: 'front2back:' + kind
         };
+        console.log(kind, msg);
         frontendBus.fire(event);
     }
 

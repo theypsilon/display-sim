@@ -26,6 +26,7 @@ pub mod camera;
 mod filter_params;
 pub mod general_types;
 pub mod internal_resolution;
+mod math;
 pub mod pixels_shadow;
 pub mod simulation_context;
 pub mod simulation_core_state;

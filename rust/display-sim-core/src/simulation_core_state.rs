@@ -66,10 +66,46 @@ pub struct Resources {
     pub quit: bool,
 }
 
-#[derive(Clone, Copy)]
-pub enum LatestCustomScalingChange {
-    AspectRatio,
-    PixelSize,
+impl Default for Resources {
+    fn default() -> Self {
+        Resources {
+            initial_parameters: InitialParameters::default(),
+            timers: SimulationTimers::default(),
+            video: VideoInputResources::default(),
+            camera: CameraData::new(MOVEMENT_BASE_SPEED / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED),
+            demo_1: FlightDemoData::default(),
+            output: ViewModel::default(),
+            speed: Speeds {
+                filter_speed: PIXEL_MANIPULATION_BASE_SPEED,
+            },
+            filters: Filters::default(),
+            scaling: Scaling::default(),
+            saved_filters: None,
+            custom_is_changed: false,
+            screenshot_trigger: ScreenshotTrigger { is_triggered: false, delay: 0 },
+            drawable: false,
+            resetted: true,
+            quit: false,
+        }
+    }
+}
+
+
+impl Resources {
+    pub fn initialize(&mut self, video_input: VideoInputResources, now: f64) {
+        self.quit = false;
+        self.resetted = true;
+        self.scaling.scaling_initialized = false;
+        if let Some(preset) = video_input.preset {
+            self.filters = self.filters.preset_factory(preset, &None);
+        }
+        self.timers = SimulationTimers {
+            frame_count: 0,
+            last_time: now,
+            last_second: now,
+        };
+        self.video = video_input;
+    }
 }
 
 #[derive(Clone)]
@@ -97,33 +133,15 @@ impl Default for Scaling {
     }
 }
 
+#[derive(Clone, Copy)]
+pub enum LatestCustomScalingChange {
+    AspectRatio,
+    PixelSize,
+}
+
 pub struct ScreenshotTrigger {
     pub is_triggered: bool,
     pub delay: i32,
-}
-
-impl Default for Resources {
-    fn default() -> Self {
-        Resources {
-            initial_parameters: InitialParameters::default(),
-            timers: SimulationTimers::default(),
-            video: VideoInputResources::default(),
-            camera: CameraData::new(MOVEMENT_BASE_SPEED / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED),
-            demo_1: FlightDemoData::default(),
-            output: ViewModel::default(),
-            speed: Speeds {
-                filter_speed: PIXEL_MANIPULATION_BASE_SPEED,
-            },
-            filters: Filters::default(),
-            scaling: Scaling::default(),
-            saved_filters: None,
-            custom_is_changed: false,
-            screenshot_trigger: ScreenshotTrigger { is_triggered: false, delay: 0 },
-            drawable: false,
-            resetted: true,
-            quit: false,
-        }
-    }
 }
 
 pub struct FlightDemoData {
@@ -149,23 +167,6 @@ impl Default for FlightDemoData {
             spreading: true,
             needs_initialization: true,
         }
-    }
-}
-
-impl Resources {
-    pub fn initialize(&mut self, video_input: VideoInputResources, now: f64) {
-        self.quit = false;
-        self.resetted = true;
-        self.scaling.scaling_initialized = false;
-        if let Some(preset) = video_input.preset {
-            self.filters = self.filters.preset_factory(preset, &None);
-        }
-        self.timers = SimulationTimers {
-            frame_count: 0,
-            last_time: now,
-            last_second: now,
-        };
-        self.video = video_input;
     }
 }
 
@@ -821,55 +822,5 @@ impl Input {
         let mut input: Input = Input::default();
         input.now = now;
         input
-    }
-}
-
-pub(crate) fn calculate_far_away_position(bg_size: Size2D<f32>, internal_resolution: &InternalResolution, pixel_width: f32, stretch: bool) -> f32 {
-    let resolution_width = internal_resolution.width() as f32;
-    let resolution_height = internal_resolution.height() as f32;
-
-    let virtual_resolution_width = resolution_width / pixel_width;
-
-    let width_ratio = virtual_resolution_width / bg_size.width;
-    let height_ratio = resolution_height / bg_size.height;
-
-    let is_height_bounded = width_ratio > height_ratio;
-
-    let bound_ratio = if is_height_bounded { height_ratio } else { width_ratio };
-    let bound_resolution = if is_height_bounded { resolution_height } else { virtual_resolution_width };
-
-    bound_resolution * if is_height_bounded { 1.2076 } else { 0.68 * pixel_width } / if stretch { bound_ratio } else { bound_ratio.floor() }
-
-    /*
-    @TODO: Honestly, I'm not sure where did I take these numbers from but they seem to work fine with that formula.
-        It's a bit sad to admit it, but I think I took them by meassuring screenshots from the framebuffer,
-        and moving the camera back and forth between meassures until alignment was pixel perfect for 8k/4k/1080p/720p.
-        I just meassured those resolutions now and they seem to work fine for 4:3 and 21:9 images in a 16:9 screen.
-
-        Interesting mathematical fact: 0.68 * squared(4/3) = 1.2076 = 0.68 * 16/9
-    */
-}
-
-pub(crate) fn calculate_pixel_width_from_image_size(image_size: Size2D<u32>) -> (f32, &'static str, (u32, u32)) {
-    if image_size.height > 540 {
-        (1.0, "Automatic scaling: Squared pixels.", (1, 1))
-    } else if image_size.height == 144 {
-        (
-            (11.0 / 10.0) / (image_size.width as f32 / image_size.height as f32),
-            "Automatic scaling: 11:10 (Game Boy) on full image.",
-            (11, 10),
-        )
-    } else if image_size.height == 160 {
-        (
-            (3.0 / 2.0) / (image_size.width as f32 / image_size.height as f32),
-            "Automatic scaling: 3:2 (Game Boy Advance) on full image.",
-            (3, 2),
-        )
-    } else {
-        (
-            (4.0 / 3.0) / (image_size.width as f32 / image_size.height as f32),
-            "Automatic scaling: 4:3 on full image.",
-            (4, 3),
-        )
     }
 }

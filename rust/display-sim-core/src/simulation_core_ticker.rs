@@ -17,10 +17,12 @@ use crate::action_bindings::on_button_action;
 use crate::camera::{CameraData, CameraDirection, CameraLockMode, CameraSystem};
 use crate::filter_params::FilterParams;
 use crate::general_types::{get_3_f32color_from_int, get_int_from_3_f32color, Size2D};
+use crate::math::gcd;
 use crate::pixels_shadow::ShadowShape;
 use crate::simulation_context::SimulationContext;
+use crate::internal_resolution::InternalResolution;
 use crate::simulation_core_state::{
-    calculate_far_away_position, calculate_pixel_width_from_image_size, ColorChannels, Filters, FiltersPreset, InitialParameters, Input, InputEventValue,
+    ColorChannels, Filters, FiltersPreset, InitialParameters, Input, InputEventValue,
     LatestCustomScalingChange, PixelsGeometryKind, Resources, ScalingMethod, ScreenCurvatureKind, TextureInterpolation, MOVEMENT_BASE_SPEED,
     MOVEMENT_SPEED_FACTOR, PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
 };
@@ -746,18 +748,20 @@ impl<'a> SimulationUpdater<'a> {
         let pixel_width;
         match self.res.scaling.scaling_method {
             ScalingMethod::AutoDetect => {
-                let (pw, message, ar) = calculate_pixel_width_from_image_size(self.res.video.image_size);
-                ar_x = ar.0 as f32;
-                ar_y = ar.1 as f32;
+                let (message, ar) = calculate_aspect_ratio_from_image_size(self.res.video.image_size);
+                let gcd = gcd(ar.0, ar.1);
+                ar_x = (ar.0 / gcd) as f32;
+                ar_y = (ar.1 / gcd) as f32;
                 image_width = self.res.video.image_size.width;
                 image_height = self.res.video.image_size.height;
-                pixel_width = pw;
+                pixel_width = (ar_x / ar_y) / (image_width as f32 / image_height as f32);
                 stretch = false;
-                self.ctx.dispatcher().dispatch_top_message(message);
+                self.ctx.dispatcher().dispatch_top_message(&format!("Automatic scaling: {}", message));
             }
             ScalingMethod::SquaredPixels => {
-                ar_x = self.res.video.image_size.width as f32;
-                ar_y = self.res.video.image_size.height as f32;
+                let gcd = gcd(self.res.video.image_size.width, self.res.video.image_size.height);
+                ar_x = (self.res.video.image_size.width / gcd) as f32;
+                ar_y = (self.res.video.image_size.height / gcd) as f32;
                 image_width = self.res.video.image_size.width;
                 image_height = self.res.video.image_size.height;
                 pixel_width = 1.0;
@@ -768,25 +772,28 @@ impl<'a> SimulationUpdater<'a> {
                 ar_y = 3.0;
                 image_width = self.res.video.image_size.width;
                 image_height = self.res.video.image_size.height;
-                pixel_width = (ar_x / ar_y) / (self.res.video.image_size.width as f32 / self.res.video.image_size.height as f32);
+                pixel_width = (ar_x / ar_y) / (image_width as f32 / image_height as f32);
                 stretch = false;
             }
             ScalingMethod::StretchToBothEdges => {
-                ar_x = self.res.video.viewport_size.width as f32;
-                ar_y = self.res.video.viewport_size.height as f32;
+                let gcd = gcd(self.res.video.viewport_size.width, self.res.video.viewport_size.height);
+                ar_x = (self.res.video.viewport_size.width / gcd) as f32;
+                ar_y = (self.res.video.viewport_size.height / gcd) as f32;
                 image_width = self.res.video.image_size.width;
                 image_height = self.res.video.image_size.height;
-                pixel_width = (ar_x / ar_y as f32) / (self.res.video.image_size.width as f32 / self.res.video.image_size.height as f32);
+                pixel_width = (ar_x / ar_y) / (image_width as f32 / image_height as f32);
                 stretch = true;
             }
             ScalingMethod::StretchToNearestEdge => {
-                let (pw, _, ar) = calculate_pixel_width_from_image_size(self.res.video.image_size);
-                ar_x = ar.0 as f32;
-                ar_y = ar.1 as f32;
+                let (message, ar) = calculate_aspect_ratio_from_image_size(self.res.video.image_size);
+                let gcd = gcd(ar.0, ar.1);
+                ar_x = (ar.0 / gcd) as f32;
+                ar_y = (ar.1 / gcd) as f32;
                 image_width = self.res.video.image_size.width;
                 image_height = self.res.video.image_size.height;
-                pixel_width = pw;
+                pixel_width = (ar_x / ar_y) / (image_width as f32 / image_height as f32);
                 stretch = true;
+                self.ctx.dispatcher().dispatch_top_message(&format!("Nearest edge with: {}", message));
             }
             ScalingMethod::Custom => {
                 stretch = self.res.scaling.custom_stretch;
@@ -797,11 +804,11 @@ impl<'a> SimulationUpdater<'a> {
                     LatestCustomScalingChange::AspectRatio => {
                         ar_x = self.res.scaling.custom_aspect_ratio.width;
                         ar_y = self.res.scaling.custom_aspect_ratio.height;
-                        pixel_width = (ar_x / ar_y as f32) / custom_resolution_ratio;
+                        pixel_width = (ar_x / ar_y) / custom_resolution_ratio;
                     }
                     LatestCustomScalingChange::PixelSize => {
                         pixel_width = self.res.scaling.pixel_width;
-                        ar_x = custom_resolution_ratio / self.res.scaling.pixel_width;
+                        ar_x = pixel_width * custom_resolution_ratio;
                         ar_y = 1.0;
                     }
                 }
@@ -980,4 +987,51 @@ impl<'a> SimulationUpdater<'a> {
             }
         }
     }
+}
+
+fn calculate_aspect_ratio_from_image_size(image_size: Size2D<u32>) -> (&'static str, (u32, u32)) {
+    if image_size.height > 540 {
+        ("Squared pixels.", (image_size.width, image_size.height))
+    } else if image_size.height == 144 {
+        (
+            "11:10 (Game Boy) on full image.",
+            (11, 10),
+        )
+    } else if image_size.height == 160 {
+        (
+            "3:2 (Game Boy Advance) on full image.",
+            (3, 2),
+        )
+    } else {
+        (
+            "4:3 on full image.",
+            (4, 3),
+        )
+    }
+}
+
+fn calculate_far_away_position(bg_size: Size2D<f32>, internal_resolution: &InternalResolution, pixel_width: f32, stretch: bool) -> f32 {
+    let resolution_width = internal_resolution.width() as f32;
+    let resolution_height = internal_resolution.height() as f32;
+
+    let virtual_resolution_width = resolution_width / pixel_width;
+
+    let width_ratio = virtual_resolution_width / bg_size.width;
+    let height_ratio = resolution_height / bg_size.height;
+
+    let is_height_bounded = width_ratio > height_ratio;
+
+    let bound_ratio = if is_height_bounded { height_ratio } else { width_ratio };
+    let bound_resolution = if is_height_bounded { resolution_height } else { virtual_resolution_width };
+
+    bound_resolution * if is_height_bounded { 1.2076 } else { 0.68 * pixel_width } / if stretch { bound_ratio } else { bound_ratio.floor() }
+
+    /*
+    @TODO: Honestly, I'm not sure where did I take these numbers from but they seem to work fine with that formula.
+        It's a bit sad to admit it, but I think I took them by meassuring screenshots from the framebuffer,
+        and moving the camera back and forth between meassures until alignment was pixel perfect for 8k/4k/1080p/720p.
+        I just meassured those resolutions now and they seem to work fine for 4:3 and 21:9 images in a 16:9 screen.
+
+        Interesting mathematical fact: 0.68 * squared(4/3) = 1.2076 = 0.68 * 16/9
+    */
 }
