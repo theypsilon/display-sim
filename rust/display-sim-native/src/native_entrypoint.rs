@@ -279,7 +279,7 @@ impl NativeSimulationState {
 
 pub fn read_key(input: &mut Input, key: VirtualKeyCode, pressed: bool) {
     let used = on_button_action(input, &format!("{:?}", key).to_lowercase(), pressed);
-    if !used {
+    if let Some(key) = used {
         println!("Not used: {:?}", key);
     }
 }
