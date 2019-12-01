@@ -14,6 +14,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 import Constants from '../../services/constants';
+import Logger from '../../services/logger';
 import { Observer } from '../../services/observer';
 
 import { renderTemplate } from './sim_template';
@@ -92,26 +93,33 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
         frontendBus.fire(event);
     }
 
+    function fireKeyboardEvent ({ pressed, key, timeout }) {
+        fireBackendEvent('keyboard', { pressed, key });
+        if (pressed && timeout) {
+            setTimeout(() => {
+                Logger.log('Expired keydown for: ' + key);
+                fireKeyboardEvent({ pressed: false, key });
+            }, timeout);
+        }
+    }
+
     // Listening backend events
     frontendBus.subscribe(async e => {
         const msg = e.message;
         switch (e.type) {
         case 'front2front:dispatchKey': {
             if (msg.key.startsWith('webgl:')) {    
-                return await handleWebGLKeys(msg, model, view, frontendBus);
+                return handleWebGLKeys(msg, model, view, frontendBus);
             }
             let pressed;
+            let timeout;
             switch (msg.action) {
+            case 'keyboth': timeout = 250; // fall through 
             case 'keydown': pressed = true; break;
             case 'keyup': pressed = false; break;
-            case 'keyboth': {
-                pressed = true;
-                setTimeout(() => fireBackendEvent('keyboard', { pressed: false, key: msg.key }), 250);
-                break;
-            }
             default: throw new Error('Incorrect action for dispatchKey', msg.action);
             }
-            fireBackendEvent('keyboard', { pressed, key: msg.key });
+            fireKeyboardEvent({ pressed, key: msg.key, timeout });
             break;
         }
         case 'front2front:toggleCheckbox': {
@@ -122,6 +130,7 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
             } else {
                 return fireBackendEvent(msg.kind, msg.value);
             }
+            break;
         }
         case 'front2front:changeSyncedInput': return fireBackendEvent(msg.kind, msg.value);
         case 'front2front:toggleControls': return view.toggleControls();
@@ -191,8 +200,8 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
     }
 
     // Forwarding other events so they can be readed by the backend
-    addDomListener(window, 'keydown', e => fireBackendEvent('keyboard', { pressed: true, key: e.key }));
-    addDomListener(window, 'keyup', e => fireBackendEvent('keyboard', { pressed: false, key: e.key }));
+    addDomListener(window, 'keydown', e => fireKeyboardEvent({ pressed: true, key: e.key }));
+    addDomListener(window, 'keyup', e => fireKeyboardEvent({ pressed: false, key: e.key }));
     addDomListener(canvasParent, 'mousedown', e => {
         if (e.buttons === 1) {
             fireBackendEvent('mouse-click', true);
@@ -203,8 +212,8 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
     addDomListener(canvasParent, 'mousemove', e => fireBackendEvent('mouse-move', { x: e.movementX, y: e.movementY }));
     addDomListener(canvasParent, 'mousewheel', e => fireBackendEvent('mouse-wheel', e.deltaY));
     addDomListener(canvasParent, 'blur', () => fireBackendEvent('blurred-window'));
-    addDomListener(canvasParent, 'mouseover', () => fireBackendEvent('keyboard', { pressed: true, key: 'canvas_focused' }));
-    addDomListener(canvasParent, 'mouseout', () => fireBackendEvent('keyboard', { pressed: false, key: 'canvas_focused' }));
+    addDomListener(canvasParent, 'mouseover', () => fireKeyboardEvent({ pressed: true, key: 'canvas_focused' }));
+    addDomListener(canvasParent, 'mouseout', () => fireKeyboardEvent({ pressed: false, key: 'canvas_focused' }));
     addDomListener(window, 'resize', () => fireBackendEvent('viewport-resize', model.resizeCanvas()));
 
     return {

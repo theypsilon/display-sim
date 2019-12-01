@@ -15,8 +15,9 @@
 
 use core::app_events::FakeEventDispatcher;
 use core::general_types::Size2D;
+use core::input_types::Input;
 use core::simulation_context::{ConcreteSimulationContext, FakeRngGenerator};
-use core::simulation_core_state::{AnimationStep, Input, Resources, VideoInputResources};
+use core::simulation_core_state::{AnimationStep, Resources, VideoInputResources};
 use core::simulation_core_ticker::SimulationCoreTicker;
 use render::background_render::BackgroundRender;
 use render::blur_render::BlurRender;

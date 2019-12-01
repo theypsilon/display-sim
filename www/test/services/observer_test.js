@@ -9,53 +9,53 @@ describe('Observer', () => {
         spy = sinon.spy();
     });
 
-    it('should call once the subscribed callback after calling once method fire', () => {
+    it('should call once the subscribed callback after calling once method fire', async () => {
         sut.subscribe(spy);
-        sut.fire();
+        await sut.fire();
         assert.isTrue(spy.calledOnce);
     });
 
-    it('should not call the subscribed callback after being unsubscribed', () => {
+    it('should not call the subscribed callback after being unsubscribed', async () => {
         sut.subscribe(spy);
         sut.unsubscribe(spy);
-        sut.fire();
+        await sut.fire();
         assert.isTrue(spy.notCalled);
     });
 
-    it('should call thrice the subscribed callback after calling the method fire 3 times', () => {
+    it('should call thrice the subscribed callback after calling the method fire 3 times', async () => {
         sut.subscribe(spy);
-        sut.fire();
-        sut.fire();
-        sut.fire();
+        await sut.fire();
+        await sut.fire();
+        await sut.fire();
         assert.isTrue(spy.calledThrice);
     });
 
-    it('should call the subscribed callback with the arguments given to the method fire', () => {
+    it('should call the subscribed callback with the arguments given to the method fire', async () => {
         sut.subscribe(spy);
-        sut.fire('called1');
-        sut.fire('called2');
+        await sut.fire('called1');
+        await sut.fire('called2');
         assert.isTrue(spy.calledTwice);
         assert.isTrue(spy.firstCall.calledWith('called1'));
         assert.isTrue(spy.secondCall.calledWith('called2'));
     });
 
-    it('should call all the callbacks when the method fire is called', () => {
+    it('should call all the callbacks when the method fire is called', async () => {
         const spy1 = spy;
         const spy2 = sinon.spy();
         sut.subscribe(spy1);
         sut.subscribe(spy2);
-        sut.fire();
+        await sut.fire();
         assert.isTrue(spy1.calledOnce);
         assert.isTrue(spy2.calledOnce);
     });
 
-    it('should call all the callbacks at all times with the proper arguments when the method fire is called', () => {
+    it('should call all the callbacks at all times with the proper arguments when the method fire is called', async () => {
         const spy1 = spy;
         const spy2 = sinon.spy();
         sut.subscribe(spy1);
         sut.subscribe(spy2);
-        sut.fire('call1');
-        sut.fire('call2');
+        await sut.fire('call1');
+        await sut.fire('call2');
         assert.isTrue(spy1.calledTwice);
         assert.isTrue(spy2.calledTwice);
         assert.isTrue(spy1.firstCall.calledWith('call1'));

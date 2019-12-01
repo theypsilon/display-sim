@@ -17,13 +17,14 @@ use crate::action_bindings::on_button_action;
 use crate::camera::{CameraData, CameraDirection, CameraLockMode, CameraSystem};
 use crate::filter_params::FilterParams;
 use crate::general_types::{get_3_f32color_from_int, get_int_from_3_f32color, Size2D};
+use crate::input_types::{Input, InputEventValue};
 use crate::internal_resolution::InternalResolution;
 use crate::math::gcd;
 use crate::pixels_shadow::ShadowShape;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::{
-    ColorChannels, Filters, FiltersPreset, InitialParameters, Input, InputEventValue, LatestCustomScalingChange, PixelsGeometryKind, Resources, ScalingMethod,
-    ScreenCurvatureKind, TextureInterpolation, MOVEMENT_BASE_SPEED, MOVEMENT_SPEED_FACTOR, PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
+    ColorChannels, Filters, FiltersPreset, InitialParameters, LatestCustomScalingChange, PixelsGeometryKind, Resources, ScalingMethod, ScreenCurvatureKind,
+    TextureInterpolation, MOVEMENT_BASE_SPEED, MOVEMENT_SPEED_FACTOR, PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
 };
 use app_error::AppResult;
 use derive_new::new;
@@ -54,7 +55,7 @@ impl<'a> SimulationCoreTicker<'a> {
                         self.ctx.dispatcher().dispatch_log(format!("Ignored key: {} {}", not_used, pressed));
                     }
                 }
-                InputEventValue::MouseClick(pressed) => self.input.mouse_click.input = pressed,
+                InputEventValue::MouseClick(pressed) => assert_eq!(on_button_action(&mut self.input, "mouse_click", pressed).is_none(), true),
                 InputEventValue::MouseMove { x, y } => {
                     self.input.mouse_position_x = x;
                     self.input.mouse_position_y = y;

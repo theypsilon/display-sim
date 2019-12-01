@@ -34,10 +34,10 @@ window.customElements.define('landing-page', LandingPage);
 
 async function setupPage (root, state, observer) {
     if (window.location.hash.length > 1) {
-        return await playQuerystring(window.location.hash.substr(1));
+        return playQuerystring(window.location.hash.substr(1));
     }
 
-    function fireEvent(type, message) {
+    function fireEvent (type, message) {
         observer.fire({ type, message }).catch(e => console.error(e));
     }
 

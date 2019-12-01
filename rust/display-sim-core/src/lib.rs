@@ -25,6 +25,7 @@ pub mod boolean_button;
 pub mod camera;
 mod filter_params;
 pub mod general_types;
+pub mod input_types;
 pub mod internal_resolution;
 mod math;
 pub mod pixels_shadow;

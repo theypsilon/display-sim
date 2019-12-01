@@ -23,8 +23,9 @@ use crate::web_events::WebEventDispatcher;
 use crate::web_utils::now;
 use app_error::{AppError, AppResult};
 use core::camera::CameraChange;
+use core::input_types::{frontend_event, Input, InputEventValue};
 use core::simulation_context::{ConcreteSimulationContext, RandomGenerator, SimulationContext};
-use core::simulation_core_state::{frontend_event, Input, InputEventValue, Resources, VideoInputResources};
+use core::simulation_core_state::{Resources, VideoInputResources};
 use core::simulation_core_ticker::SimulationCoreTicker;
 use glow::GlowSafeAdapter;
 use render::simulation_draw::SimulationDrawer;
@@ -178,6 +179,6 @@ fn read_frontend_event(input: &mut Input, event: JsValue) -> AppResult<()> {
         ),
         _ => return Err(format!("Can't read frontend_event: {}", frontend_event).into()),
     };
-    input.custom_event.add_value(event_value);
+    input.push_input_event(event_value);
     Ok(())
 }

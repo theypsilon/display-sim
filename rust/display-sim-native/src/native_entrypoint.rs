@@ -17,10 +17,11 @@ use core::action_bindings::on_button_action;
 use core::app_events::AppEventDispatcher;
 use core::camera::CameraLockMode;
 use core::general_types::Size2D;
+use core::input_types::{Input, InputEventValue};
 use core::internal_resolution::InternalResolution;
 use core::pixels_shadow::ShadowShape;
 use core::simulation_context::{ConcreteSimulationContext, RandomGenerator};
-use core::simulation_core_state::{AnimationStep, Input, Resources, VideoInputResources};
+use core::simulation_core_state::{AnimationStep, Resources, VideoInputResources};
 use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScalingMethod, ScreenCurvatureKind, TextureInterpolation};
 use core::simulation_core_ticker::SimulationCoreTicker;
 use render::error::AppResult;
@@ -221,11 +222,12 @@ impl NativeSimulationState {
                 }
                 WindowEvent::MouseInput { button, state, .. } => {
                     if *button == MouseButton::Left {
-                        self.input.mouse_click.input = match state {
+                        let pressed = match state {
                             ElementState::Pressed => true,
                             ElementState::Released => false,
                         };
-                        if self.input.mouse_click.input
+                        self.input.push_input_event(InputEventValue::MouseClick(pressed));
+                        if pressed
                             && match self.windowed_ctx.window().fullscreen() {
                                 None => true,
                                 _ => false,
@@ -236,14 +238,17 @@ impl NativeSimulationState {
                     }
                 }
                 WindowEvent::MouseWheel { delta, .. } => {
-                    self.input.mouse_scroll_y = match delta {
+                    let mouse_wheel = match delta {
                         MouseScrollDelta::LineDelta(y, ..) => *y,
                         MouseScrollDelta::PixelDelta(position) => position.y as f32,
                     };
+                    self.input.push_input_event(InputEventValue::MouseWheel(mouse_wheel));
                 }
                 WindowEvent::CursorMoved { position, .. } => {
-                    self.input.mouse_position_x = position.x as i32;
-                    self.input.mouse_position_y = position.y as i32;
+                    self.input.push_input_event(InputEventValue::MouseMove {
+                        x: position.x as i32,
+                        y: position.y as i32,
+                    });
                 }
                 WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                 _ => (),
