@@ -19,8 +19,8 @@
 
 extern crate derive_new;
 
-mod button_actions;
 pub mod app_events;
+mod boolean_actions;
 mod boolean_button;
 pub mod camera;
 mod field_changer;

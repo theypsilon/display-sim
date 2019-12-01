@@ -280,7 +280,7 @@ pub struct Input {
     #[in_array(get_options_to_be_noned)]
     pub(crate) event_camera: Option<CameraChange>,
 
-    pub(crate) active_button_actions: Vec<KeyCodeButtonAction>,
+    pub(crate) active_pressed_actions: Vec<KeyCodeBooleanAction>,
 }
 
 impl Input {
@@ -295,16 +295,16 @@ impl Input {
     }
 }
 
-pub(crate) type KeyCodeButtonAction = (String, ButtonAction);
+pub(crate) type KeyCodeBooleanAction = (String, BooleanAction);
 
 #[derive(PartialEq, Clone, Copy, Debug)]
-pub(crate) enum Button2DAction {
+pub(crate) enum Boolean2DAction {
     Increase,
     Decrease,
 }
 
 #[derive(PartialEq, Clone, Copy, Debug)]
-pub(crate) enum ButtonAction {
+pub(crate) enum BooleanAction {
     WalkLeft,
     WalkRight,
     WalkUp,
@@ -330,33 +330,33 @@ pub(crate) enum ButtonAction {
     CanvasFocused,
     MouseClick,
 
-    CameraZoom(Button2DAction),
-    PixelHorizontalGap(Button2DAction),
-    PixelVerticalGap(Button2DAction),
-    PixelWidth(Button2DAction),
-    PixelSpread(Button2DAction),
-    Bright(Button2DAction),
-    Contrast(Button2DAction),
-    BacklightPercent(Button2DAction),
-    NextCameraMovementMode(Button2DAction),
-    TranslationSpeed(Button2DAction),
-    TurnSpeed(Button2DAction),
-    FilterSpeed(Button2DAction),
-    Blur(Button2DAction),
-    VerticalLpp(Button2DAction),
-    HorizontalLpp(Button2DAction),
-    NextPixelShadowShapeKind(Button2DAction),
-    NextPixelsShadowHeight(Button2DAction),
-    NextColorRepresentationKind(Button2DAction),
-    NextPixelGeometryKind(Button2DAction),
-    NextScreenCurvatureType(Button2DAction),
-    NextInternalResolution(Button2DAction),
-    NextTextureInterpolation(Button2DAction),
-    ScalingMethod(Button2DAction),
-    ScalingResolutionWidth(Button2DAction),
-    ScalingResolutionHeight(Button2DAction),
-    ScalingAspectRatioX(Button2DAction),
-    ScalingAspectRatioY(Button2DAction),
+    CameraZoom(Boolean2DAction),
+    PixelHorizontalGap(Boolean2DAction),
+    PixelVerticalGap(Boolean2DAction),
+    PixelWidth(Boolean2DAction),
+    PixelSpread(Boolean2DAction),
+    Bright(Boolean2DAction),
+    Contrast(Boolean2DAction),
+    BacklightPercent(Boolean2DAction),
+    NextCameraMovementMode(Boolean2DAction),
+    TranslationSpeed(Boolean2DAction),
+    TurnSpeed(Boolean2DAction),
+    FilterSpeed(Boolean2DAction),
+    Blur(Boolean2DAction),
+    VerticalLpp(Boolean2DAction),
+    HorizontalLpp(Boolean2DAction),
+    NextPixelShadowShapeKind(Boolean2DAction),
+    NextPixelsShadowHeight(Boolean2DAction),
+    NextColorRepresentationKind(Boolean2DAction),
+    NextPixelGeometryKind(Boolean2DAction),
+    NextScreenCurvatureType(Boolean2DAction),
+    NextInternalResolution(Boolean2DAction),
+    NextTextureInterpolation(Boolean2DAction),
+    ScalingMethod(Boolean2DAction),
+    ScalingResolutionWidth(Boolean2DAction),
+    ScalingResolutionHeight(Boolean2DAction),
+    ScalingAspectRatioX(Boolean2DAction),
+    ScalingAspectRatioY(Boolean2DAction),
 
     None,
 }

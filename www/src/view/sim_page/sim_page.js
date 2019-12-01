@@ -91,7 +91,7 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
             type: 'front2back:' + kind
         };
         frontendBus.fire(event);
-        console.log("front2back", kind, msg);
+        console.log('front2back', kind, msg);
     }
 
     function fireKeyboardEvent ({ pressed, key, timeout }) {

@@ -217,7 +217,7 @@ impl<'a> CameraSystem<'a> {
                 let position_delta = self.data.axis_up * yoffset * 0.1 - self.data.axis_right * xoffset * 0.1;
                 self.data.position_destiny += position_delta;
                 self.data.position_changed = true;
-            },
+            }
             CameraLockMode::ThreeDimensional => {
                 self.data.pitch -= xoffset * 0.0003;
                 self.data.heading -= yoffset * 0.0003;
