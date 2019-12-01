@@ -15,22 +15,34 @@
 
 use crate::input_types::{Boolean2DAction, BooleanAction, Input, KeyCodeBooleanAction, Pressed};
 
-pub(crate) fn trigger_hotkey_action(input: &mut Input, keycode: &str, pressed: Pressed) -> Option<String> {
+pub(crate) fn trigger_hotkey_action(input: &mut Input, keycode: &str, pressed: Pressed) -> ActionUsed {
     let (maybe_new_keycode, action) = get_contextualized_action(input, keycode);
     process_modifiers(input, action, pressed);
     if pressed == Pressed::Yes && input.active_pressed_actions.iter().any(|(_, active_action)| *active_action == action) {
-        return None;
+        return ActionUsed::Yes;
     }
     match handle_action(input, action, pressed) {
-        ActionUsed::No => maybe_new_keycode.or_else(|| Some(keycode.into())),
-        ActionUsed::Yes => {
+        #[cfg(debug_assertions)]
+        HandleActionResult::Skipped => ActionUsed::No(maybe_new_keycode.unwrap_or_else(|| keycode.into())),
+        #[cfg(not(debug_assertions))]
+        HandleActionResult::Skipped => ActionUsed::No,
+        HandleActionResult::Processed => {
             match pressed {
                 Pressed::Yes => input.active_pressed_actions.push((maybe_new_keycode.unwrap_or_else(|| keycode.into()), action)),
                 Pressed::No => remove_action(input, action),
             }
-            None
+            ActionUsed::Yes
         }
     }
+}
+
+#[derive(PartialEq, Debug)]
+pub(crate) enum ActionUsed {
+    Yes,
+    #[cfg(debug_assertions)]
+    No(String),
+    #[cfg(not(debug_assertions))]
+    No,
 }
 
 fn get_contextualized_action(input: &Input, keycode: &str) -> (Option<String>, BooleanAction) {
@@ -136,8 +148,7 @@ fn remove_action(input: &mut Input, action: BooleanAction) {
     let mut index = None;
     for (i, (_, active_action)) in input.active_pressed_actions.iter().enumerate() {
         if *active_action == action {
-            #[cfg(debug_assertions)]
-            assert_eq!(index, None);
+            debug_assert_eq!(index, None);
             index = Some(i);
             #[cfg(not(debug_assertions))]
             break;
@@ -148,12 +159,12 @@ fn remove_action(input: &mut Input, action: BooleanAction) {
     }
 }
 
-enum ActionUsed {
-    Yes,
-    No,
+enum HandleActionResult {
+    Skipped,
+    Processed,
 }
 
-fn handle_action(input: &mut Input, action: BooleanAction, pressed: Pressed) -> ActionUsed {
+fn handle_action(input: &mut Input, action: BooleanAction, pressed: Pressed) -> HandleActionResult {
     let pressed = match pressed {
         Pressed::Yes => true,
         Pressed::No => false,
@@ -238,9 +249,9 @@ fn handle_action(input: &mut Input, action: BooleanAction, pressed: Pressed) -> 
         BooleanAction::TurnSpeed(Boolean2DAction::Decrease) => input.turn_speed.decrease.input = pressed,
         BooleanAction::MouseClick => input.mouse_click.input = pressed,
 
-        BooleanAction::None => return ActionUsed::No,
+        BooleanAction::None => return HandleActionResult::Skipped,
     }
-    ActionUsed::Yes
+    HandleActionResult::Processed
 }
 
 fn to_boolean_action(boolean_action: &str) -> BooleanAction {
@@ -329,6 +340,8 @@ fn to_boolean_action(boolean_action: &str) -> BooleanAction {
 
 #[cfg(test)]
 mod test_trigger_hotkey_action {
+    #![allow(non_snake_case)]
+
     use super::*;
     #[test]
     fn test_press__i___release__i() {

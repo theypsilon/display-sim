@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-use crate::boolean_actions::trigger_hotkey_action;
+use crate::boolean_actions::{trigger_hotkey_action, ActionUsed};
 use crate::camera::{CameraData, CameraDirection, CameraLockMode, CameraSystem};
 use crate::field_changer::FieldChanger;
 use crate::general_types::{get_3_f32color_from_int, get_int_from_3_f32color, Size2D};
@@ -51,11 +51,18 @@ impl<'a> SimulationCoreTicker<'a> {
         for value in self.input.custom_event.consume_values() {
             match value {
                 InputEventValue::Keyboard { pressed, key } => {
-                    if let Some(not_used) = trigger_hotkey_action(&mut self.input, key.to_lowercase().as_ref(), pressed) {
-                        self.ctx.dispatcher().dispatch_log(format!("Ignored key: {} {:?}", not_used, pressed));
+                    let result = trigger_hotkey_action(&mut self.input, key.to_lowercase().as_ref(), pressed);
+                    #[cfg(debug_assertions)]
+                    {
+                        if let ActionUsed::No(not_used) = result {
+                            self.ctx.dispatcher().dispatch_log(format!("Ignored key: {} {:?}", not_used, pressed));
+                        }
                     }
                 }
-                InputEventValue::MouseClick(pressed) => assert_eq!(trigger_hotkey_action(&mut self.input, "mouse_click", pressed).is_none(), true),
+                InputEventValue::MouseClick(pressed) => {
+                    let result = trigger_hotkey_action(&mut self.input, "mouse_click", pressed);
+                    debug_assert_eq!(result, ActionUsed::Yes)
+                }
                 InputEventValue::MouseMove { x, y } => {
                     self.input.mouse_position_x = x;
                     self.input.mouse_position_y = y;
