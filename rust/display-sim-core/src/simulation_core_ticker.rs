@@ -52,7 +52,7 @@ impl<'a> SimulationCoreTicker<'a> {
             match value {
                 InputEventValue::Keyboard { pressed, key } => {
                     if let Some(not_used) = on_button_action(&mut self.input, key.to_lowercase().as_ref(), pressed) {
-                        self.ctx.dispatcher().dispatch_log(format!("Ignored key: {} {}", not_used, pressed));
+                        self.ctx.dispatcher().dispatch_log(format!("Ignored key: {} {:?}", not_used, pressed));
                     }
                 }
                 InputEventValue::MouseClick(pressed) => assert_eq!(on_button_action(&mut self.input, "mouse_click", pressed).is_none(), true),

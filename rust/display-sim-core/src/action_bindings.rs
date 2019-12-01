@@ -13,9 +13,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-use crate::input_types::{Button2DAction, ButtonAction, Input, KeyCodeButtonAction};
+use crate::input_types::{Button2DAction, ButtonAction, Input, KeyCodeButtonAction, Pressed};
 
-pub fn on_button_action(input: &mut Input, key_code: &str, pressed: bool) -> Option<String> {
+pub(crate) fn on_button_action(input: &mut Input, key_code: &str, pressed: Pressed) -> Option<String> {
     let action = to_boolean_action(key_code);
     let (key_code, action) = if input.shift {
         get_modified_action(action, key_code, ButtonAction::Shift)
@@ -32,18 +32,18 @@ pub fn on_button_action(input: &mut Input, key_code: &str, pressed: bool) -> Opt
         ButtonAction::Alt => react_to_modifier(input, ButtonAction::Alt, pressed),
         _ => {}
     }
-    if pressed && input.active_button_actions.iter().any(|(_, active_action)| *active_action == action) {
+    if pressed == Pressed::Yes && input.active_button_actions.iter().any(|(_, active_action)| *active_action == action) {
         return None;
     }
-    if !handle_action(input, action, pressed) {
-        Some(key_code)
-    } else {
-        if pressed {
-            input.active_button_actions.push((key_code, action));
-        } else {
-            remove_action(input, action);
+    match handle_action(input, action, pressed) {
+        ActionUsed::No => Some(key_code),
+        ActionUsed::Yes => {
+            match pressed {
+                Pressed::Yes => input.active_button_actions.push((key_code, action)),
+                Pressed::No => remove_action(input, action),
+            }
+            None
         }
-        None
     }
 }
 
@@ -69,19 +69,18 @@ fn get_modifier_code(modifier: ButtonAction) -> &'static str {
     }
 }
 
-fn react_to_modifier(input: &mut Input, modifier: ButtonAction, pressed: bool) {
+fn react_to_modifier(input: &mut Input, modifier: ButtonAction, pressed: Pressed) {
     let modifier_code = get_modifier_code(modifier);
-    let (to_add, to_delete) = if pressed {
-        modify_active_buttons(&input.active_button_actions, modifier_code)
-    } else {
-        unmodify_active_buttons(&input.active_button_actions, modifier_code)
+    let (to_add, to_delete) = match pressed {
+        Pressed::Yes => modify_active_buttons(&input.active_button_actions, modifier_code),
+        Pressed::No => unmodify_active_buttons(&input.active_button_actions, modifier_code),
     };
     resolve_modifications(input, to_add, to_delete);
 }
 
 type IndexButtonAction = (usize, ButtonAction);
 
-fn modify_active_buttons(active_buttons: &Vec<KeyCodeButtonAction>, modifier_code: &str) -> (Vec<KeyCodeButtonAction>, Vec<IndexButtonAction>) {
+fn modify_active_buttons(active_buttons: &[KeyCodeButtonAction], modifier_code: &str) -> (Vec<KeyCodeButtonAction>, Vec<IndexButtonAction>) {
     let mut to_delete = Vec::new();
     let mut to_add = Vec::new();
     for (i, (key_code, action)) in active_buttons.iter().enumerate() {
@@ -96,7 +95,7 @@ fn modify_active_buttons(active_buttons: &Vec<KeyCodeButtonAction>, modifier_cod
     (to_add, to_delete)
 }
 
-fn unmodify_active_buttons(active_buttons: &Vec<KeyCodeButtonAction>, modifier_code: &str) -> (Vec<KeyCodeButtonAction>, Vec<IndexButtonAction>) {
+fn unmodify_active_buttons(active_buttons: &[KeyCodeButtonAction], modifier_code: &str) -> (Vec<KeyCodeButtonAction>, Vec<IndexButtonAction>) {
     let mut to_delete = Vec::new();
     let mut to_add = Vec::new();
     for (i, (key_code, action)) in active_buttons.iter().enumerate() {
@@ -116,20 +115,23 @@ fn unmodify_active_buttons(active_buttons: &Vec<KeyCodeButtonAction>, modifier_c
 
 fn resolve_modifications(input: &mut Input, to_add: Vec<KeyCodeButtonAction>, to_delete: Vec<IndexButtonAction>) {
     for (i, removed_action) in to_delete.into_iter() {
-        handle_action(input, removed_action, false);
+        handle_action(input, removed_action, Pressed::No);
         input.active_button_actions.remove(i);
     }
     for (modified_key_code, modified_action) in to_add.into_iter() {
-        handle_action(input, modified_action, true);
+        handle_action(input, modified_action, Pressed::Yes);
         input.active_button_actions.push((modified_key_code, modified_action));
     }
 }
 
 fn remove_action(input: &mut Input, action: ButtonAction) {
     let mut index = None;
-    for (i, value) in input.active_button_actions.iter().enumerate() {
-        if value.1 == action {
+    for (i, (_, active_action)) in input.active_button_actions.iter().enumerate() {
+        if *active_action == action {
+            #[cfg(debug_assertions)]
+            assert_eq!(index, None);
             index = Some(i);
+            #[cfg(not(debug_assertions))]
             break;
         }
     }
@@ -138,7 +140,16 @@ fn remove_action(input: &mut Input, action: ButtonAction) {
     }
 }
 
-fn handle_action(input: &mut Input, action: ButtonAction, pressed: bool) -> bool {
+enum ActionUsed {
+    Yes,
+    No,
+}
+
+fn handle_action(input: &mut Input, action: ButtonAction, pressed: Pressed) -> ActionUsed {
+    let pressed = match pressed {
+        Pressed::Yes => true,
+        Pressed::No => false,
+    };
     match action {
         ButtonAction::Shift => input.shift = pressed,
         ButtonAction::Control => input.control = pressed,
@@ -219,9 +230,9 @@ fn handle_action(input: &mut Input, action: ButtonAction, pressed: bool) -> bool
         ButtonAction::TurnSpeed(Button2DAction::Decrease) => input.turn_speed.decrease.input = pressed,
         ButtonAction::MouseClick => input.mouse_click.input = pressed,
 
-        ButtonAction::None => return false,
+        ButtonAction::None => return ActionUsed::No,
     }
-    true
+    ActionUsed::Yes
 }
 
 fn to_boolean_action(button_action: &str) -> ButtonAction {
@@ -315,9 +326,9 @@ mod test {
     fn test_action_i_then_i() {
         let mut input_owned = Input::default();
         let input = &mut input_owned;
-        on_button_action(input, "i", true);
+        on_button_action(input, "i", Pressed::Yes);
         assert_eq!(format!("{:?}", input.active_button_actions), "[(\"i\", PixelVerticalGap(Increase))]");
-        on_button_action(input, "i", false);
+        on_button_action(input, "i", Pressed::No);
         assert_eq!(format!("{:?}", input.active_button_actions), "[]");
     }
 
@@ -325,9 +336,9 @@ mod test {
     fn test_action_i_shift_done() {
         let mut input_owned = Input::default();
         let input = &mut input_owned;
-        on_button_action(input, "i", true);
+        on_button_action(input, "i", Pressed::Yes);
         assert_eq!(format!("{:?}", input.active_button_actions), "[(\"i\", PixelVerticalGap(Increase))]");
-        on_button_action(input, "shift", true);
+        on_button_action(input, "shift", Pressed::Yes);
         assert_eq!(
             format!("{:?}", input.active_button_actions),
             "[(\"shift+i\", PixelVerticalGap(Decrease)), (\"shift\", Shift)]"
@@ -338,9 +349,9 @@ mod test {
     fn test_action_shift_i_done() {
         let mut input_owned = Input::default();
         let input = &mut input_owned;
-        on_button_action(input, "shift", true);
+        on_button_action(input, "shift", Pressed::Yes);
         assert_eq!(format!("{:?}", input.active_button_actions), "[(\"shift\", Shift)]");
-        on_button_action(input, "i", true);
+        on_button_action(input, "i", Pressed::Yes);
         assert_eq!(
             format!("{:?}", input.active_button_actions),
             "[(\"shift\", Shift), (\"shift+i\", PixelVerticalGap(Decrease))]"
@@ -351,14 +362,14 @@ mod test {
     fn test_action_i_shift_then_i() {
         let mut input_owned = Input::default();
         let input = &mut input_owned;
-        on_button_action(input, "i", true);
+        on_button_action(input, "i", Pressed::Yes);
         assert_eq!(format!("{:?}", input.active_button_actions), "[(\"i\", PixelVerticalGap(Increase))]");
-        on_button_action(input, "shift", true);
+        on_button_action(input, "shift", Pressed::Yes);
         assert_eq!(
             format!("{:?}", input.active_button_actions),
             "[(\"shift+i\", PixelVerticalGap(Decrease)), (\"shift\", Shift)]"
         );
-        on_button_action(input, "i", false);
+        on_button_action(input, "i", Pressed::No);
         assert_eq!(format!("{:?}", input.active_button_actions), "[(\"shift\", Shift)]");
     }
 
@@ -366,14 +377,14 @@ mod test {
     fn test_action_shift_i_then_shift() {
         let mut input_owned = Input::default();
         let input = &mut input_owned;
-        on_button_action(input, "shift", true);
+        on_button_action(input, "shift", Pressed::Yes);
         assert_eq!(format!("{:?}", input.active_button_actions), "[(\"shift\", Shift)]");
-        on_button_action(input, "i", true);
+        on_button_action(input, "i", Pressed::Yes);
         assert_eq!(
             format!("{:?}", input.active_button_actions),
             "[(\"shift\", Shift), (\"shift+i\", PixelVerticalGap(Decrease))]"
         );
-        on_button_action(input, "shift", false);
+        on_button_action(input, "shift", Pressed::No);
         assert_eq!(format!("{:?}", input.active_button_actions), "[(\"i\", PixelVerticalGap(Increase))]");
     }
 }

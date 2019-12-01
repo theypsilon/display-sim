@@ -13,11 +13,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-use core::action_bindings::on_button_action;
 use core::app_events::AppEventDispatcher;
 use core::camera::CameraLockMode;
 use core::general_types::Size2D;
-use core::input_types::{Input, InputEventValue};
+use core::input_types::{Input, InputEventValue, Pressed};
 use core::internal_resolution::InternalResolution;
 use core::pixels_shadow::ShadowShape;
 use core::simulation_context::{ConcreteSimulationContext, RandomGenerator};
@@ -32,7 +31,7 @@ use std::fmt::Display;
 use std::rc::Rc;
 use std::time::{Duration, Instant};
 
-use glutin::event::{ElementState, Event, MouseButton, MouseScrollDelta, VirtualKeyCode, WindowEvent};
+use glutin::event::{ElementState, Event, MouseButton, MouseScrollDelta, WindowEvent};
 use glutin::event_loop::{ControlFlow, EventLoop};
 use glutin::monitor::MonitorHandle;
 use glutin::window::{Fullscreen, WindowBuilder};
@@ -210,24 +209,23 @@ impl NativeSimulationState {
                 }
                 WindowEvent::KeyboardInput { input: keyevent, .. } => {
                     if let Some(key) = keyevent.virtual_keycode {
-                        read_key(
-                            &mut self.input,
-                            key,
-                            match keyevent.state {
-                                ElementState::Pressed => true,
-                                ElementState::Released => false,
+                        self.input.push_input_event(InputEventValue::Keyboard {
+                            pressed: match keyevent.state {
+                                ElementState::Pressed => Pressed::Yes,
+                                ElementState::Released => Pressed::No,
                             },
-                        );
+                            key: format!("{:?}", key),
+                        });
                     }
                 }
                 WindowEvent::MouseInput { button, state, .. } => {
                     if *button == MouseButton::Left {
                         let pressed = match state {
-                            ElementState::Pressed => true,
-                            ElementState::Released => false,
+                            ElementState::Pressed => Pressed::Yes,
+                            ElementState::Released => Pressed::No,
                         };
                         self.input.push_input_event(InputEventValue::MouseClick(pressed));
-                        if pressed
+                        if pressed == Pressed::Yes
                             && match self.windowed_ctx.window().fullscreen() {
                                 None => true,
                                 _ => false,
@@ -279,13 +277,6 @@ impl NativeSimulationState {
             self.windowed_ctx.swap_buffers()?;
         }
         Ok(())
-    }
-}
-
-pub fn read_key(input: &mut Input, key: VirtualKeyCode, pressed: bool) {
-    let used = on_button_action(input, &format!("{:?}", key).to_lowercase(), pressed);
-    if let Some(key) = used {
-        println!("Not used: {:?}", key);
     }
 }
 

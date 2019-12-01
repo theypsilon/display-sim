@@ -23,7 +23,7 @@ use crate::web_events::WebEventDispatcher;
 use crate::web_utils::now;
 use app_error::{AppError, AppResult};
 use core::camera::CameraChange;
-use core::input_types::{frontend_event, Input, InputEventValue};
+use core::input_types::{frontend_event, Input, InputEventValue, Pressed};
 use core::simulation_context::{ConcreteSimulationContext, RandomGenerator, SimulationContext};
 use core::simulation_core_state::{Resources, VideoInputResources};
 use core::simulation_core_ticker::SimulationCoreTicker;
@@ -129,12 +129,17 @@ fn read_frontend_event(input: &mut Input, event: JsValue) -> AppResult<()> {
     let event_value = match frontend_event.as_ref() as &str {
         frontend_event::KEYBOARD => {
             let pressed = js_sys::Reflect::get(&value, &"pressed".into())?.as_bool().ok_or("it should be a bool")?;
+            let pressed = if pressed { Pressed::Yes } else { Pressed::No };
             let key = js_sys::Reflect::get(&value, &"key".into())?
                 .as_string()
                 .ok_or_else(|| format!("it should be a string, but was {:?}", value))?;
             InputEventValue::Keyboard { pressed, key }
         }
-        frontend_event::MOUSE_CLICK => InputEventValue::MouseClick(value.as_bool().ok_or("it should be a bool")?),
+        frontend_event::MOUSE_CLICK => {
+            let pressed = value.as_bool().ok_or("it should be a bool")?;
+            let pressed = if pressed { Pressed::Yes } else { Pressed::No };
+            InputEventValue::MouseClick(pressed)
+        }
         frontend_event::MOUSE_MOVE => {
             let x = js_sys::Reflect::get(&value, &"x".into())?.as_f64().ok_or("it should be a number")? as i32;
             let y = js_sys::Reflect::get(&value, &"y".into())?.as_f64().ok_or("it should be a number")? as i32;

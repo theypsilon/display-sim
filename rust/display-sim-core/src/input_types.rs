@@ -59,12 +59,28 @@ pub mod frontend_event {
     pub const VIEWPORT_RESIZE: &str = "front2back:viewport-resize";
 }
 
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum Pressed {
+    Yes,
+    No,
+}
+
+impl Pressed {
+    pub fn from_bool(pressed: bool) -> Self {
+        if pressed {
+            Pressed::Yes
+        } else {
+            Pressed::No
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub enum InputEventValue {
     None,
 
-    Keyboard { pressed: bool, key: String },
-    MouseClick(bool),
+    Keyboard { pressed: Pressed, key: String },
+    MouseClick(Pressed),
     MouseMove { x: i32, y: i32 },
     MouseWheel(f32),
     BlurredWindow,
