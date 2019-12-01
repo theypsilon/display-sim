@@ -17,23 +17,23 @@ use crate::input_types::{Boolean2DAction, BooleanAction, Input, KeyCodeBooleanAc
 
 pub(crate) fn trigger_hotkey_action(input: &mut Input, keycode: &str, pressed: Pressed) -> ActionUsed {
     let (maybe_new_keycode, action) = get_contextualized_action(input, keycode);
+    let action = match action {
+        #[cfg(debug_assertions)]
+        None => return ActionUsed::No(maybe_new_keycode.unwrap_or_else(|| keycode.into())),
+        #[cfg(not(debug_assertions))]
+        None => return ActionUsed::No,
+        Some(action) => action,
+    };
     process_modifiers(input, action, pressed);
     if pressed == Pressed::Yes && input.active_pressed_actions.iter().any(|(_, active_action)| *active_action == action) {
         return ActionUsed::Yes;
     }
-    match handle_action(input, action, pressed) {
-        #[cfg(debug_assertions)]
-        HandleActionResult::Skipped => ActionUsed::No(maybe_new_keycode.unwrap_or_else(|| keycode.into())),
-        #[cfg(not(debug_assertions))]
-        HandleActionResult::Skipped => ActionUsed::No,
-        HandleActionResult::Processed => {
-            match pressed {
-                Pressed::Yes => input.active_pressed_actions.push((maybe_new_keycode.unwrap_or_else(|| keycode.into()), action)),
-                Pressed::No => remove_action(input, action),
-            }
-            ActionUsed::Yes
-        }
+    handle_action(input, action, pressed);
+    match pressed {
+        Pressed::Yes => input.active_pressed_actions.push((maybe_new_keycode.unwrap_or_else(|| keycode.into()), action)),
+        Pressed::No => remove_action(input, action),
     }
+    ActionUsed::Yes
 }
 
 #[derive(PartialEq, Debug)]
@@ -45,16 +45,23 @@ pub(crate) enum ActionUsed {
     No,
 }
 
-fn get_contextualized_action(input: &Input, keycode: &str) -> (Option<String>, BooleanAction) {
-    let action = to_boolean_action(keycode);
-    if input.shift {
+fn get_contextualized_action(input: &Input, keycode: &str) -> (Option<String>, Option<BooleanAction>) {
+    let action = match to_boolean_action(keycode) {
+        None => return (None, None),
+        Some(action) => action,
+    };
+    let maybe_modification = if input.shift {
         try_modify_action(action, keycode, BooleanAction::Shift)
     } else if input.control {
         try_modify_action(action, keycode, BooleanAction::Control)
     } else if input.alt {
         try_modify_action(action, keycode, BooleanAction::Alt)
     } else {
-        (None, action)
+        None
+    };
+    match maybe_modification {
+        Some((modified_keycode, modified_action)) => (Some(modified_keycode), Some(modified_action)),
+        None => (None, Some(action)),
     }
 }
 
@@ -67,16 +74,14 @@ fn process_modifiers(input: &mut Input, action: BooleanAction, pressed: Pressed)
     }
 }
 
-fn try_modify_action(action: BooleanAction, keycode: &str, modifier: BooleanAction) -> (Option<String>, BooleanAction) {
+fn try_modify_action(action: BooleanAction, keycode: &str, modifier: BooleanAction) -> Option<(String, BooleanAction)> {
     if action == modifier {
-        return (None, action);
+        return None;
     }
     let modified_keycode = format!("{}{}", get_modifier_code(modifier), keycode);
-    let modified_action = to_boolean_action(&modified_keycode);
-    if modified_action != BooleanAction::None {
-        (Some(modified_keycode), modified_action)
-    } else {
-        (None, action)
+    match to_boolean_action(&modified_keycode) {
+        Some(modified_action) => Some((modified_keycode, modified_action)),
+        None => None,
     }
 }
 
@@ -105,10 +110,10 @@ fn modify_active_actions(active_actions: &[KeyCodeBooleanAction], modifier_code:
     let mut to_add = Vec::new();
     for (i, (keycode, action)) in active_actions.iter().enumerate() {
         let modified_keycode = format!("{}{}", modifier_code, keycode);
-        let modified_action = to_boolean_action(&modified_keycode);
-        if let BooleanAction::None = modified_action {
-            continue;
-        }
+        let modified_action = match to_boolean_action(&modified_keycode) {
+            None => continue,
+            Some(modified_action) => modified_action,
+        };
         to_delete.push((i, *action));
         to_add.push((modified_keycode, modified_action));
     }
@@ -124,10 +129,10 @@ fn unmodify_active_actions(active_actions: &[KeyCodeBooleanAction], modifier_cod
         }
         to_delete.push((i, *action));
         let unmodified_keycode = keycode.replace(modifier_code, "");
-        let unmodified_action = to_boolean_action(&unmodified_keycode);
-        if let BooleanAction::None = unmodified_action {
-            continue;
-        }
+        let unmodified_action = match to_boolean_action(&unmodified_keycode) {
+            None => continue,
+            Some(unmodified_action) => unmodified_action,
+        };
         to_add.push((unmodified_keycode, unmodified_action));
     }
     (to_add, to_delete)
@@ -159,12 +164,7 @@ fn remove_action(input: &mut Input, action: BooleanAction) {
     }
 }
 
-enum HandleActionResult {
-    Skipped,
-    Processed,
-}
-
-fn handle_action(input: &mut Input, action: BooleanAction, pressed: Pressed) -> HandleActionResult {
+fn handle_action(input: &mut Input, action: BooleanAction, pressed: Pressed) {
     let pressed = match pressed {
         Pressed::Yes => true,
         Pressed::No => false,
@@ -248,93 +248,90 @@ fn handle_action(input: &mut Input, action: BooleanAction, pressed: Pressed) -> 
         BooleanAction::TurnSpeed(Boolean2DAction::Increase) => input.turn_speed.increase.input = pressed,
         BooleanAction::TurnSpeed(Boolean2DAction::Decrease) => input.turn_speed.decrease.input = pressed,
         BooleanAction::MouseClick => input.mouse_click.input = pressed,
-
-        BooleanAction::None => return HandleActionResult::Skipped,
     }
-    HandleActionResult::Processed
 }
 
-fn to_boolean_action(boolean_action: &str) -> BooleanAction {
+fn to_boolean_action(boolean_action: &str) -> Option<BooleanAction> {
     match boolean_action {
-        "mouse_click" => BooleanAction::MouseClick,
-        "shift" | "left shift" | "right shift" => BooleanAction::Shift,
-        "control" => BooleanAction::Control,
-        "alt" => BooleanAction::Alt,
-        "f4" | "capture-framebuffer" => BooleanAction::Screenshot,
-        "reset-camera" => BooleanAction::ResetPosition,
-        "reset-filters" => BooleanAction::ResetFilters,
-        "input_focused" => BooleanAction::InputFocused,
-        "canvas_focused" => BooleanAction::CanvasFocused,
-        "escape" | "esc" | "quit-simulation" => BooleanAction::Esc,
-        " " | "space" | "feature-close-panel" => BooleanAction::Space,
-        "+" => BooleanAction::RotateLeft,
-        "-" => BooleanAction::RotateRight,
-        "arrowleft" | "left" | "←" | "◀" => BooleanAction::TurnLeft,
-        "arrowright" | "right" | "→" | "▶" => BooleanAction::TurnRight,
-        "arrowup" | "up" | "↑" | "▲" => BooleanAction::TurnUp,
-        "arrowdown" | "down" | "↓" | "▼" => BooleanAction::TurnDown,
-        "a" => BooleanAction::WalkLeft,
-        "d" => BooleanAction::WalkRight,
-        "w" => BooleanAction::WalkForward,
-        "s" => BooleanAction::WalkBackward,
-        "q" => BooleanAction::WalkUp,
-        "e" => BooleanAction::WalkDown,
-        "scaling-method-inc" => BooleanAction::ScalingMethod(Boolean2DAction::Increase),
-        "scaling-method-dec" => BooleanAction::ScalingMethod(Boolean2DAction::Decrease),
-        "custom-scaling-resolution-width-inc" => BooleanAction::ScalingResolutionWidth(Boolean2DAction::Increase),
-        "custom-scaling-resolution-width-dec" => BooleanAction::ScalingResolutionWidth(Boolean2DAction::Decrease),
-        "custom-scaling-resolution-height-inc" => BooleanAction::ScalingResolutionHeight(Boolean2DAction::Increase),
-        "custom-scaling-resolution-height-dec" => BooleanAction::ScalingResolutionHeight(Boolean2DAction::Decrease),
-        "custom-scaling-aspect-ratio-x-inc" => BooleanAction::ScalingAspectRatioX(Boolean2DAction::Increase),
-        "custom-scaling-aspect-ratio-x-dec" => BooleanAction::ScalingAspectRatioX(Boolean2DAction::Decrease),
-        "custom-scaling-aspect-ratio-y-inc" => BooleanAction::ScalingAspectRatioY(Boolean2DAction::Increase),
-        "custom-scaling-aspect-ratio-y-dec" => BooleanAction::ScalingAspectRatioY(Boolean2DAction::Decrease),
-        "f" | "move-speed-inc" => BooleanAction::TranslationSpeed(Boolean2DAction::Increase),
-        "shift+f" | "move-speed-dec" => BooleanAction::TranslationSpeed(Boolean2DAction::Decrease),
-        "r" | "pixel-speed-inc" => BooleanAction::FilterSpeed(Boolean2DAction::Increase),
-        "shift+r" | "pixel-speed-dec" => BooleanAction::FilterSpeed(Boolean2DAction::Decrease),
-        "turn-speed-inc" => BooleanAction::TurnSpeed(Boolean2DAction::Increase),
-        "turn-speed-dec" => BooleanAction::TurnSpeed(Boolean2DAction::Decrease),
-        "t" | "reset-speeds" => BooleanAction::ResetSpeeds,
-        "camera-zoom-inc" => BooleanAction::CameraZoom(Boolean2DAction::Increase),
-        "camera-zoom-dec" => BooleanAction::CameraZoom(Boolean2DAction::Decrease),
-        "u" | "pixel-horizontal-gap-inc" => BooleanAction::PixelHorizontalGap(Boolean2DAction::Increase),
-        "shift+u" | "pixel-horizontal-gap-dec" => BooleanAction::PixelHorizontalGap(Boolean2DAction::Decrease),
-        "i" | "pixel-vertical-gap-inc" => BooleanAction::PixelVerticalGap(Boolean2DAction::Increase),
-        "shift+i" | "pixel-vertical-gap-dec" => BooleanAction::PixelVerticalGap(Boolean2DAction::Decrease),
-        "o" | "pixel-width-inc" => BooleanAction::PixelWidth(Boolean2DAction::Increase),
-        "shift+o" | "pixel-width-dec" => BooleanAction::PixelWidth(Boolean2DAction::Decrease),
-        "p" => BooleanAction::PixelSpread(Boolean2DAction::Increase),
-        "shift+p" => BooleanAction::PixelSpread(Boolean2DAction::Decrease),
-        "j" | "blur-level-inc" => BooleanAction::Blur(Boolean2DAction::Increase),
-        "shift+j" | "blur-level-dec" => BooleanAction::Blur(Boolean2DAction::Decrease),
-        "k" | "vertical-lpp-inc" => BooleanAction::VerticalLpp(Boolean2DAction::Increase),
-        "shift+k" | "vertical-lpp-dec" => BooleanAction::VerticalLpp(Boolean2DAction::Decrease),
-        "l" | "horizontal-lpp-inc" => BooleanAction::HorizontalLpp(Boolean2DAction::Increase),
-        "shift+l" | "horizontal-lpp-dec" => BooleanAction::HorizontalLpp(Boolean2DAction::Decrease),
-        "z" | "&lt;" | "pixel-contrast-inc" => BooleanAction::Contrast(Boolean2DAction::Increase),
-        "shift+z" | "pixel-contrast-dec" => BooleanAction::Contrast(Boolean2DAction::Decrease),
-        "x" | "pixel-brightness-inc" => BooleanAction::Bright(Boolean2DAction::Increase),
-        "shift+x" | "pixel-brightness-dec" => BooleanAction::Bright(Boolean2DAction::Decrease),
-        "c" | "color-representation-inc" => BooleanAction::NextColorRepresentationKind(Boolean2DAction::Increase),
-        "shift+c" | "color-representation-dec" => BooleanAction::NextColorRepresentationKind(Boolean2DAction::Decrease),
-        "v" | "pixel-geometry-inc" => BooleanAction::NextPixelGeometryKind(Boolean2DAction::Increase),
-        "shift+v" | "pixel-geometry-dec" => BooleanAction::NextPixelGeometryKind(Boolean2DAction::Decrease),
-        "b" | "screen-curvature-inc" => BooleanAction::NextScreenCurvatureType(Boolean2DAction::Increase),
-        "shift+b" | "screen-curvature-dec" => BooleanAction::NextScreenCurvatureType(Boolean2DAction::Decrease),
-        "n" | "pixel-shadow-shape-inc" => BooleanAction::NextPixelShadowShapeKind(Boolean2DAction::Increase),
-        "shift+n" | "pixel-shadow-shape-dec" => BooleanAction::NextPixelShadowShapeKind(Boolean2DAction::Decrease),
-        "m" | "pixel-shadow-height-inc" => BooleanAction::NextPixelsShadowHeight(Boolean2DAction::Increase),
-        "shift+m" | "pixel-shadow-height-dec" => BooleanAction::NextPixelsShadowHeight(Boolean2DAction::Decrease),
-        "y" | "internal-resolution-inc" => BooleanAction::NextInternalResolution(Boolean2DAction::Increase),
-        "shift+y" | "internal-resolution-dec" => BooleanAction::NextInternalResolution(Boolean2DAction::Decrease),
-        "h" | "texture-interpolation-inc" => BooleanAction::NextTextureInterpolation(Boolean2DAction::Increase),
-        "shift+h" | "texture-interpolation-dec" => BooleanAction::NextTextureInterpolation(Boolean2DAction::Decrease),
-        "," | "backlight-percent-inc" => BooleanAction::BacklightPercent(Boolean2DAction::Increase),
-        "." | "backlight-percent-dec" => BooleanAction::BacklightPercent(Boolean2DAction::Decrease),
-        "g" | "camera-movement-mode-inc" => BooleanAction::NextCameraMovementMode(Boolean2DAction::Increase),
-        "shift+g" | "camera-movement-mode-dec" => BooleanAction::NextCameraMovementMode(Boolean2DAction::Decrease),
-        _ => BooleanAction::None,
+        "mouse_click" => Some(BooleanAction::MouseClick),
+        "shift" | "left shift" | "right shift" => Some(BooleanAction::Shift),
+        "control" => Some(BooleanAction::Control),
+        "alt" => Some(BooleanAction::Alt),
+        "f4" | "capture-framebuffer" => Some(BooleanAction::Screenshot),
+        "reset-camera" => Some(BooleanAction::ResetPosition),
+        "reset-filters" => Some(BooleanAction::ResetFilters),
+        "input_focused" => Some(BooleanAction::InputFocused),
+        "canvas_focused" => Some(BooleanAction::CanvasFocused),
+        "escape" | "esc" | "quit-simulation" => Some(BooleanAction::Esc),
+        " " | "space" | "feature-close-panel" => Some(BooleanAction::Space),
+        "+" => Some(BooleanAction::RotateLeft),
+        "-" => Some(BooleanAction::RotateRight),
+        "arrowleft" | "left" | "←" | "◀" => Some(BooleanAction::TurnLeft),
+        "arrowright" | "right" | "→" | "▶" => Some(BooleanAction::TurnRight),
+        "arrowup" | "up" | "↑" | "▲" => Some(BooleanAction::TurnUp),
+        "arrowdown" | "down" | "↓" | "▼" => Some(BooleanAction::TurnDown),
+        "a" => Some(BooleanAction::WalkLeft),
+        "d" => Some(BooleanAction::WalkRight),
+        "w" => Some(BooleanAction::WalkForward),
+        "s" => Some(BooleanAction::WalkBackward),
+        "q" => Some(BooleanAction::WalkUp),
+        "e" => Some(BooleanAction::WalkDown),
+        "scaling-method-inc" => Some(BooleanAction::ScalingMethod(Boolean2DAction::Increase)),
+        "scaling-method-dec" => Some(BooleanAction::ScalingMethod(Boolean2DAction::Decrease)),
+        "custom-scaling-resolution-width-inc" => Some(BooleanAction::ScalingResolutionWidth(Boolean2DAction::Increase)),
+        "custom-scaling-resolution-width-dec" => Some(BooleanAction::ScalingResolutionWidth(Boolean2DAction::Decrease)),
+        "custom-scaling-resolution-height-inc" => Some(BooleanAction::ScalingResolutionHeight(Boolean2DAction::Increase)),
+        "custom-scaling-resolution-height-dec" => Some(BooleanAction::ScalingResolutionHeight(Boolean2DAction::Decrease)),
+        "custom-scaling-aspect-ratio-x-inc" => Some(BooleanAction::ScalingAspectRatioX(Boolean2DAction::Increase)),
+        "custom-scaling-aspect-ratio-x-dec" => Some(BooleanAction::ScalingAspectRatioX(Boolean2DAction::Decrease)),
+        "custom-scaling-aspect-ratio-y-inc" => Some(BooleanAction::ScalingAspectRatioY(Boolean2DAction::Increase)),
+        "custom-scaling-aspect-ratio-y-dec" => Some(BooleanAction::ScalingAspectRatioY(Boolean2DAction::Decrease)),
+        "f" | "move-speed-inc" => Some(BooleanAction::TranslationSpeed(Boolean2DAction::Increase)),
+        "shift+f" | "move-speed-dec" => Some(BooleanAction::TranslationSpeed(Boolean2DAction::Decrease)),
+        "r" | "pixel-speed-inc" => Some(BooleanAction::FilterSpeed(Boolean2DAction::Increase)),
+        "shift+r" | "pixel-speed-dec" => Some(BooleanAction::FilterSpeed(Boolean2DAction::Decrease)),
+        "turn-speed-inc" => Some(BooleanAction::TurnSpeed(Boolean2DAction::Increase)),
+        "turn-speed-dec" => Some(BooleanAction::TurnSpeed(Boolean2DAction::Decrease)),
+        "t" | "reset-speeds" => Some(BooleanAction::ResetSpeeds),
+        "camera-zoom-inc" => Some(BooleanAction::CameraZoom(Boolean2DAction::Increase)),
+        "camera-zoom-dec" => Some(BooleanAction::CameraZoom(Boolean2DAction::Decrease)),
+        "u" | "pixel-horizontal-gap-inc" => Some(BooleanAction::PixelHorizontalGap(Boolean2DAction::Increase)),
+        "shift+u" | "pixel-horizontal-gap-dec" => Some(BooleanAction::PixelHorizontalGap(Boolean2DAction::Decrease)),
+        "i" | "pixel-vertical-gap-inc" => Some(BooleanAction::PixelVerticalGap(Boolean2DAction::Increase)),
+        "shift+i" | "pixel-vertical-gap-dec" => Some(BooleanAction::PixelVerticalGap(Boolean2DAction::Decrease)),
+        "o" | "pixel-width-inc" => Some(BooleanAction::PixelWidth(Boolean2DAction::Increase)),
+        "shift+o" | "pixel-width-dec" => Some(BooleanAction::PixelWidth(Boolean2DAction::Decrease)),
+        "p" => Some(BooleanAction::PixelSpread(Boolean2DAction::Increase)),
+        "shift+p" => Some(BooleanAction::PixelSpread(Boolean2DAction::Decrease)),
+        "j" | "blur-level-inc" => Some(BooleanAction::Blur(Boolean2DAction::Increase)),
+        "shift+j" | "blur-level-dec" => Some(BooleanAction::Blur(Boolean2DAction::Decrease)),
+        "k" | "vertical-lpp-inc" => Some(BooleanAction::VerticalLpp(Boolean2DAction::Increase)),
+        "shift+k" | "vertical-lpp-dec" => Some(BooleanAction::VerticalLpp(Boolean2DAction::Decrease)),
+        "l" | "horizontal-lpp-inc" => Some(BooleanAction::HorizontalLpp(Boolean2DAction::Increase)),
+        "shift+l" | "horizontal-lpp-dec" => Some(BooleanAction::HorizontalLpp(Boolean2DAction::Decrease)),
+        "z" | "&lt;" | "pixel-contrast-inc" => Some(BooleanAction::Contrast(Boolean2DAction::Increase)),
+        "shift+z" | "pixel-contrast-dec" => Some(BooleanAction::Contrast(Boolean2DAction::Decrease)),
+        "x" | "pixel-brightness-inc" => Some(BooleanAction::Bright(Boolean2DAction::Increase)),
+        "shift+x" | "pixel-brightness-dec" => Some(BooleanAction::Bright(Boolean2DAction::Decrease)),
+        "c" | "color-representation-inc" => Some(BooleanAction::NextColorRepresentationKind(Boolean2DAction::Increase)),
+        "shift+c" | "color-representation-dec" => Some(BooleanAction::NextColorRepresentationKind(Boolean2DAction::Decrease)),
+        "v" | "pixel-geometry-inc" => Some(BooleanAction::NextPixelGeometryKind(Boolean2DAction::Increase)),
+        "shift+v" | "pixel-geometry-dec" => Some(BooleanAction::NextPixelGeometryKind(Boolean2DAction::Decrease)),
+        "b" | "screen-curvature-inc" => Some(BooleanAction::NextScreenCurvatureType(Boolean2DAction::Increase)),
+        "shift+b" | "screen-curvature-dec" => Some(BooleanAction::NextScreenCurvatureType(Boolean2DAction::Decrease)),
+        "n" | "pixel-shadow-shape-inc" => Some(BooleanAction::NextPixelShadowShapeKind(Boolean2DAction::Increase)),
+        "shift+n" | "pixel-shadow-shape-dec" => Some(BooleanAction::NextPixelShadowShapeKind(Boolean2DAction::Decrease)),
+        "m" | "pixel-shadow-height-inc" => Some(BooleanAction::NextPixelsShadowHeight(Boolean2DAction::Increase)),
+        "shift+m" | "pixel-shadow-height-dec" => Some(BooleanAction::NextPixelsShadowHeight(Boolean2DAction::Decrease)),
+        "y" | "internal-resolution-inc" => Some(BooleanAction::NextInternalResolution(Boolean2DAction::Increase)),
+        "shift+y" | "internal-resolution-dec" => Some(BooleanAction::NextInternalResolution(Boolean2DAction::Decrease)),
+        "h" | "texture-interpolation-inc" => Some(BooleanAction::NextTextureInterpolation(Boolean2DAction::Increase)),
+        "shift+h" | "texture-interpolation-dec" => Some(BooleanAction::NextTextureInterpolation(Boolean2DAction::Decrease)),
+        "," | "backlight-percent-inc" => Some(BooleanAction::BacklightPercent(Boolean2DAction::Increase)),
+        "." | "backlight-percent-dec" => Some(BooleanAction::BacklightPercent(Boolean2DAction::Decrease)),
+        "g" | "camera-movement-mode-inc" => Some(BooleanAction::NextCameraMovementMode(Boolean2DAction::Increase)),
+        "shift+g" | "camera-movement-mode-dec" => Some(BooleanAction::NextCameraMovementMode(Boolean2DAction::Decrease)),
+        _ => None,
     }
 }
 

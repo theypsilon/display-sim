@@ -357,6 +357,4 @@ pub(crate) enum BooleanAction {
     ScalingResolutionHeight(Boolean2DAction),
     ScalingAspectRatioX(Boolean2DAction),
     ScalingAspectRatioY(Boolean2DAction),
-
-    None,
 }
