@@ -20,14 +20,29 @@ pub fn gcd<T: NonNegativeInteger>(a: T, b: T) -> T {
 }
 
 #[cfg(test)]
-mod test {
+mod test_gcd {
     use super::gcd;
     #[test]
-    fn test_gcd() {
+    fn test_gcd_gives_good_results() {
         assert_eq!(0u32, gcd(0u32, 0u32));
         assert_eq!(10u32, gcd(10u32, 0u32));
         assert_eq!(10u32, gcd(0u32, 10u32));
         assert_eq!(10u32, gcd(10u32, 20u32));
         assert_eq!(44u32, gcd(2024u32, 748u32));
+    }
+}
+
+pub fn radians(grad: f32) -> f32 {
+    let pi: f32 = glm::pi();
+    grad * pi / 180.0
+}
+
+#[cfg(test)]
+mod test_radians {
+    use super::radians;
+    #[test]
+    fn test_radians_gives_good_results() {
+        assert_eq!(2.0 * glm::pi::<f32>(), radians(360.0));
+        assert_eq!(0.0, radians(0.0));
     }
 }

@@ -36,10 +36,10 @@ impl Default for InternalResolution {
 }
 
 impl InternalResolution {
-    pub fn set_max_texture_size(&mut self, value: i32) {
+    pub(crate) fn set_max_texture_size(&mut self, value: i32) {
         self.max_texture_size = value;
     }
-    pub fn set_resolution(&mut self, resolution: i32) {
+    pub(crate) fn set_resolution(&mut self, resolution: i32) {
         self.viewport.height = resolution;
         self.viewport.width = match resolution {
             0 => unreachable!(),

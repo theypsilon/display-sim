@@ -23,7 +23,7 @@ mod action_bindings;
 pub mod app_events;
 mod boolean_button;
 pub mod camera;
-mod filter_params;
+mod field_changer;
 pub mod general_types;
 pub mod input_types;
 pub mod internal_resolution;

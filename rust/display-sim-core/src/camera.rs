@@ -15,7 +15,7 @@
 
 use crate::app_events::AppEventDispatcher;
 
-pub enum CameraDirection {
+pub(crate) enum CameraDirection {
     Down,
     Up,
     Left,
@@ -93,7 +93,7 @@ pub struct CameraData {
 }
 
 impl CameraData {
-    pub fn new(movement_speed: f32, turning_speed: f32) -> CameraData {
+    pub(crate) fn new(movement_speed: f32, turning_speed: f32) -> CameraData {
         CameraData {
             position_destiny: glm::vec3(0.0, 0.0, 0.0),
             position_eye: glm::vec3(0.0, 0.0, 0.0),
@@ -112,7 +112,7 @@ impl CameraData {
         }
     }
 
-    pub fn set_position(&mut self, new_position: glm::Vec3) {
+    pub(crate) fn set_position(&mut self, new_position: glm::Vec3) {
         self.position_destiny = new_position;
         self.position_eye = new_position;
         self.position_changed = true;
@@ -127,21 +127,21 @@ impl CameraData {
     }
 
     pub fn get_projection(&self, width: f32, height: f32) -> glm::TMat4<f32> {
-        glm::perspective::<f32>(width / height, radians(self.zoom), 0.01, 10000.0)
+        glm::perspective::<f32>(width / height, crate::math::radians(self.zoom), 0.01, 10000.0)
     }
 }
 
-pub struct CameraSystem<'a> {
+pub(crate) struct CameraSystem<'a> {
     data: &'a mut CameraData,
     dispatcher: &'a dyn AppEventDispatcher,
 }
 
 impl<'a> CameraSystem<'a> {
-    pub fn new(data: &'a mut CameraData, dispatcher: &'a dyn AppEventDispatcher) -> CameraSystem<'a> {
+    pub(crate) fn new(data: &'a mut CameraData, dispatcher: &'a dyn AppEventDispatcher) -> CameraSystem<'a> {
         CameraSystem { data, dispatcher }
     }
 
-    pub fn advance(&mut self, direction: CameraDirection, dt: f32) {
+    pub(crate) fn advance(&mut self, direction: CameraDirection, dt: f32) {
         let velocity = self.data.movement_speed
             * dt
             * match self.data.locked_mode {
@@ -169,7 +169,7 @@ impl<'a> CameraSystem<'a> {
         self.data.position_changed = true;
     }
 
-    pub fn turn(&mut self, direction: CameraDirection, dt: f32) {
+    pub(crate) fn turn(&mut self, direction: CameraDirection, dt: f32) {
         let velocity = dt
             * self.data.turning_speed
             * match self.data.locked_mode {
@@ -185,7 +185,7 @@ impl<'a> CameraSystem<'a> {
         };
     }
 
-    pub fn rotate(&mut self, direction: CameraDirection, dt: f32) {
+    pub(crate) fn rotate(&mut self, direction: CameraDirection, dt: f32) {
         let velocity = 60.0
             * dt
             * 0.001
@@ -201,12 +201,12 @@ impl<'a> CameraSystem<'a> {
         };
     }
 
-    pub fn drag(&mut self, xoffset: i32, yoffset: i32) {
+    pub(crate) fn drag(&mut self, xoffset: i32, yoffset: i32) {
         self.data.pitch -= xoffset as f32 * 0.0003;
         self.data.heading -= yoffset as f32 * 0.0003;
     }
 
-    pub fn look_at(&mut self, target: glm::Vec3) {
+    pub(crate) fn look_at(&mut self, target: glm::Vec3) {
         let mut new_direction = (target - self.data.position_eye).normalize();
         if glm::length(&new_direction) <= 0.1 {
             new_direction = self.data.direction;
@@ -215,7 +215,7 @@ impl<'a> CameraSystem<'a> {
         self.data.axis_right = glm::quat_cross_vec(&glm::quat_look_at(&new_direction, &self.data.axis_up), &self.data.axis_right);
     }
 
-    pub fn handle_camera_change(&mut self, change: CameraChange) {
+    pub(crate) fn handle_camera_change(&mut self, change: CameraChange) {
         match change {
             CameraChange::PosX(x) => self.data.position_eye.x = x,
             CameraChange::PosY(y) => self.data.position_eye.y = y,
@@ -232,7 +232,7 @@ impl<'a> CameraSystem<'a> {
         self.data.position_destiny = self.data.position_eye;
     }
 
-    pub fn change_zoom(&mut self, change: f32, dispatcher: &dyn AppEventDispatcher) {
+    pub(crate) fn change_zoom(&mut self, change: f32, dispatcher: &dyn AppEventDispatcher) {
         let last_zoom = self.data.zoom;
         if self.data.zoom >= 0.1 && self.data.zoom <= 90.0 {
             self.data.zoom -= change * 0.1;
@@ -250,7 +250,7 @@ impl<'a> CameraSystem<'a> {
         }
     }
 
-    pub fn update_view(&mut self, dt: f32) {
+    pub(crate) fn update_view(&mut self, dt: f32) {
         if self.data.pitch == 0.0 && self.data.heading == 0.0 && self.data.rotate == 0.0 && !self.data.position_changed {
             return;
         }
@@ -314,9 +314,4 @@ impl<'a> CameraSystem<'a> {
         self.dispatcher
             .dispatch_camera_update(&self.data.position_eye, &self.data.direction, &self.data.axis_up);
     }
-}
-
-pub fn radians(grad: f32) -> f32 {
-    let pi: f32 = glm::pi();
-    grad * pi / 180.0
 }

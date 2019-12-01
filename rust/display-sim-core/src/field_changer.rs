@@ -19,7 +19,7 @@ use std::cmp::{PartialEq, PartialOrd};
 use std::fmt::Display;
 use std::ops::{AddAssign, DivAssign, MulAssign, SubAssign};
 
-pub struct FilterParams<'a, T, U, TriggerHandler: FnOnce(U)> {
+pub(crate) struct FieldChanger<'a, T, U, TriggerHandler: FnOnce(U)> {
     ctx: &'a dyn SimulationContext,
     var: &'a mut T,
     incdec: IncDec<bool>,
@@ -31,9 +31,9 @@ pub struct FilterParams<'a, T, U, TriggerHandler: FnOnce(U)> {
     _u: std::marker::PhantomData<dyn FnOnce(U)>,
 }
 
-impl<'a, T, U, TriggerHandler: FnOnce(U)> FilterParams<'a, T, U, TriggerHandler> {
-    pub fn new(ctx: &'a dyn SimulationContext, var: &'a mut T, incdec: IncDec<bool>) -> Self {
-        FilterParams {
+impl<'a, T, U, TriggerHandler: FnOnce(U)> FieldChanger<'a, T, U, TriggerHandler> {
+    pub(crate) fn new(ctx: &'a dyn SimulationContext, var: &'a mut T, incdec: IncDec<bool>) -> Self {
+        FieldChanger {
             ctx,
             var,
             incdec,
@@ -45,38 +45,38 @@ impl<'a, T, U, TriggerHandler: FnOnce(U)> FilterParams<'a, T, U, TriggerHandler>
             _u: Default::default(),
         }
     }
-    pub fn set_event_value(mut self, event_value: Option<T>) -> Self {
+    pub(crate) fn set_event_value(mut self, event_value: Option<T>) -> Self {
         self.event_value = event_value;
         self
     }
-    pub fn set_trigger_handler(mut self, trigger_handler: TriggerHandler) -> Self {
+    pub(crate) fn set_trigger_handler(mut self, trigger_handler: TriggerHandler) -> Self {
         self.trigger_handler = Some(trigger_handler);
         self
     }
 }
 
-impl<'a, T: PartialOrd + PartialEq + AddAssign + SubAssign, TriggerHandler: FnOnce(T)> FilterParams<'a, T, T, TriggerHandler> {
-    pub fn set_progression(mut self, velocity: T) -> Self {
+impl<'a, T: PartialOrd + PartialEq + AddAssign + SubAssign, TriggerHandler: FnOnce(T)> FieldChanger<'a, T, T, TriggerHandler> {
+    pub(crate) fn set_progression(mut self, velocity: T) -> Self {
         self.velocity = Some(velocity);
         self
     }
-    pub fn set_min(mut self, min: T) -> Self {
+    pub(crate) fn set_min(mut self, min: T) -> Self {
         self.min = Some(min);
         self
     }
-    pub fn set_max(mut self, max: T) -> Self {
+    pub(crate) fn set_max(mut self, max: T) -> Self {
         self.max = Some(max);
         self
     }
 }
 
-impl<'a, T, TriggerHandler> FilterParams<'a, T, &'a T, TriggerHandler>
+impl<'a, T, TriggerHandler> FieldChanger<'a, T, &'a T, TriggerHandler>
 where
     T: OptionCursor + Display,
     TriggerHandler: FnOnce(&'a T),
 {
     #[allow(clippy::useless_let_if_seq)]
-    pub fn process_options(self) -> bool {
+    pub(crate) fn process_options(self) -> bool {
         let mut changed = false;
         if self.incdec.increase {
             self.var.next_option();
@@ -104,27 +104,27 @@ where
     }
 }
 
-impl<'a, T, TriggerHandler> FilterParams<'a, T, T, TriggerHandler>
+impl<'a, T, TriggerHandler> FieldChanger<'a, T, T, TriggerHandler>
 where
     T: Display + AddAssign + SubAssign + PartialOrd + PartialEq + Copy + Default,
     TriggerHandler: FnOnce(T),
 {
-    pub fn process_with_sums(self) -> bool {
+    pub(crate) fn process_with_sums(self) -> bool {
         operate_filter(self, AddAssign::add_assign, SubAssign::sub_assign)
     }
 }
 
-impl<'a, T, TriggerHandler> FilterParams<'a, T, T, TriggerHandler>
+impl<'a, T, TriggerHandler> FieldChanger<'a, T, T, TriggerHandler>
 where
     T: Display + MulAssign + DivAssign + PartialOrd + PartialEq + Copy + Default,
     TriggerHandler: FnOnce(T),
 {
-    pub fn process_with_multiplications(self) -> bool {
+    pub(crate) fn process_with_multiplications(self) -> bool {
         operate_filter(self, MulAssign::mul_assign, DivAssign::div_assign)
     }
 }
 
-fn operate_filter<T, TriggerHandler>(params: FilterParams<T, T, TriggerHandler>, inc_op: impl FnOnce(&mut T, T), dec_op: impl FnOnce(&mut T, T)) -> bool
+fn operate_filter<T, TriggerHandler>(params: FieldChanger<T, T, TriggerHandler>, inc_op: impl FnOnce(&mut T, T), dec_op: impl FnOnce(&mut T, T)) -> bool
 where
     T: Display + PartialOrd + PartialEq + Copy + Default,
     TriggerHandler: FnOnce(T),
@@ -239,7 +239,7 @@ mod tests {
         fn trigger_handler__on_change__triggers() {
             let mut actual = OptionKind::A;
             let mut triggered = false;
-            FilterParams::new(&CTX, &mut actual, INCDEC_DOWN)
+            FieldChanger::new(&CTX, &mut actual, INCDEC_DOWN)
                 .set_trigger_handler(|_: &OptionKind| triggered = true)
                 .process_options();
             assert_eq!(triggered, true);
@@ -322,7 +322,7 @@ mod tests {
         fn trigger_handler__on_change__triggers() {
             let mut actual = 0;
             let mut triggered = false;
-            FilterParams::new(&CTX, &mut actual, INCDEC_DOWN)
+            FieldChanger::new(&CTX, &mut actual, INCDEC_DOWN)
                 .set_trigger_handler(|_| triggered = true)
                 .set_progression(1)
                 .process_with_sums();
@@ -333,7 +333,7 @@ mod tests {
         fn trigger_handler__on_blocked_change__doesnt_trigger() {
             let mut actual = 0;
             let mut triggered = false;
-            FilterParams::new(&CTX, &mut actual, INCDEC_DOWN)
+            FieldChanger::new(&CTX, &mut actual, INCDEC_DOWN)
                 .set_trigger_handler(|_| triggered = true)
                 .set_progression(1)
                 .set_min(0)
@@ -362,11 +362,11 @@ mod tests {
 
     static CTX: ConcreteSimulationContext<FakeEventDispatcher, FakeRngGenerator> = make_fake_simulation_context();
 
-    fn sut<'a, T>(parameter: &'a mut T, incdec: IncDec<bool>) -> FilterParams<'a, T, T, impl FnOnce(T)> {
-        FilterParams::new(&CTX, parameter, incdec).set_trigger_handler(|_| {})
+    fn sut<'a, T>(parameter: &'a mut T, incdec: IncDec<bool>) -> FieldChanger<'a, T, T, impl FnOnce(T)> {
+        FieldChanger::new(&CTX, parameter, incdec).set_trigger_handler(|_| {})
     }
 
-    fn sut_ref<'a, T>(parameter: &'a mut T, incdec: IncDec<bool>) -> FilterParams<'a, T, &'a T, impl FnOnce(&'a T)> {
-        FilterParams::new(&CTX, parameter, incdec).set_trigger_handler(|_| {})
+    fn sut_ref<'a, T>(parameter: &'a mut T, incdec: IncDec<bool>) -> FieldChanger<'a, T, &'a T, impl FnOnce(&'a T)> {
+        FieldChanger::new(&CTX, parameter, incdec).set_trigger_handler(|_| {})
     }
 }
