@@ -323,10 +323,10 @@ fn to_boolean_action(boolean_action: &str) -> BooleanAction {
 }
 
 #[cfg(test)]
-mod test {
+mod test_trigger_hotkey_action {
     use super::*;
     #[test]
-    fn test_hotkey_press_i_release_i() {
+    fn test_press__i___release__i() {
         let mut input_owned = Input::default();
         let input = &mut input_owned;
         trigger_hotkey_action(input, "i", Pressed::Yes);
@@ -336,7 +336,7 @@ mod test {
     }
 
     #[test]
-    fn test_hotkey_press_i_shift_done() {
+    fn test_press__i_shift___done() {
         let mut input_owned = Input::default();
         let input = &mut input_owned;
         trigger_hotkey_action(input, "i", Pressed::Yes);
@@ -349,7 +349,7 @@ mod test {
     }
 
     #[test]
-    fn test_hotkey_press_shift_i_done() {
+    fn test_press__shift_i___done() {
         let mut input_owned = Input::default();
         let input = &mut input_owned;
         trigger_hotkey_action(input, "shift", Pressed::Yes);
@@ -362,7 +362,7 @@ mod test {
     }
 
     #[test]
-    fn test_hotkey_press_i_shift_release_i() {
+    fn test_press__i_shift___release__i() {
         let mut input_owned = Input::default();
         let input = &mut input_owned;
         trigger_hotkey_action(input, "i", Pressed::Yes);
@@ -377,7 +377,7 @@ mod test {
     }
 
     #[test]
-    fn test_hotkey_press_shift_i_release_shift() {
+    fn test_press__shift_i___release__shift() {
         let mut input_owned = Input::default();
         let input = &mut input_owned;
         trigger_hotkey_action(input, "shift", Pressed::Yes);
