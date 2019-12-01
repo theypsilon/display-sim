@@ -184,6 +184,6 @@ fn read_frontend_event(input: &mut Input, event: JsValue) -> AppResult<()> {
         ),
         _ => return Err(format!("Can't read frontend_event: {}", frontend_event).into()),
     };
-    input.push_input_event(event_value);
+    input.push_event(event_value);
     Ok(())
 }

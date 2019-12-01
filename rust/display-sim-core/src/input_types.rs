@@ -290,7 +290,7 @@ impl Input {
         input
     }
 
-    pub fn push_input_event(&mut self, event: InputEventValue) {
+    pub fn push_event(&mut self, event: InputEventValue) {
         self.custom_event.add_value(event);
     }
 }

@@ -209,7 +209,7 @@ impl NativeSimulationState {
                 }
                 WindowEvent::KeyboardInput { input: keyevent, .. } => {
                     if let Some(key) = keyevent.virtual_keycode {
-                        self.input.push_input_event(InputEventValue::Keyboard {
+                        self.input.push_event(InputEventValue::Keyboard {
                             pressed: match keyevent.state {
                                 ElementState::Pressed => Pressed::Yes,
                                 ElementState::Released => Pressed::No,
@@ -224,7 +224,7 @@ impl NativeSimulationState {
                             ElementState::Pressed => Pressed::Yes,
                             ElementState::Released => Pressed::No,
                         };
-                        self.input.push_input_event(InputEventValue::MouseClick(pressed));
+                        self.input.push_event(InputEventValue::MouseClick(pressed));
                         if pressed == Pressed::Yes
                             && match self.windowed_ctx.window().fullscreen() {
                                 None => true,
@@ -240,10 +240,10 @@ impl NativeSimulationState {
                         MouseScrollDelta::LineDelta(y, ..) => *y,
                         MouseScrollDelta::PixelDelta(position) => position.y as f32,
                     };
-                    self.input.push_input_event(InputEventValue::MouseWheel(mouse_wheel));
+                    self.input.push_event(InputEventValue::MouseWheel(mouse_wheel));
                 }
                 WindowEvent::CursorMoved { position, .. } => {
-                    self.input.push_input_event(InputEventValue::MouseMove {
+                    self.input.push_event(InputEventValue::MouseMove {
                         x: position.x as i32,
                         y: position.y as i32,
                     });
