@@ -16,33 +16,16 @@
 use crate::input_types::{Boolean2DAction, BooleanAction, Input, KeyCodeBooleanAction, Pressed};
 
 pub(crate) fn trigger_hotkey_action(input: &mut Input, keycode: &str, pressed: Pressed) -> Option<String> {
-    let action = to_boolean_action(keycode);
-    let (maybe_keycode, action) = if input.shift {
-        get_modified_action(action, keycode, BooleanAction::Shift)
-    } else if input.control {
-        get_modified_action(action, keycode, BooleanAction::Control)
-    } else if input.alt {
-        get_modified_action(action, keycode, BooleanAction::Alt)
-    } else {
-        (None, action)
-    };
-    match action {
-        BooleanAction::Shift => react_to_modifier(input, BooleanAction::Shift, pressed),
-        BooleanAction::Control => react_to_modifier(input, BooleanAction::Control, pressed),
-        BooleanAction::Alt => react_to_modifier(input, BooleanAction::Alt, pressed),
-        _ => {}
-    }
+    let (maybe_new_keycode, action) = get_contextualized_action(input, keycode);
+    process_modifiers(input, action, pressed);
     if pressed == Pressed::Yes && input.active_pressed_actions.iter().any(|(_, active_action)| *active_action == action) {
         return None;
     }
     match handle_action(input, action, pressed) {
-        ActionUsed::No => Some(keycode.into()),
+        ActionUsed::No => maybe_new_keycode.or_else(|| Some(keycode.into())),
         ActionUsed::Yes => {
             match pressed {
-                Pressed::Yes => {
-                    let keycode = if let Some(keycode) = maybe_keycode { keycode } else { keycode.into() };
-                    input.active_pressed_actions.push((keycode, action));
-                }
+                Pressed::Yes => input.active_pressed_actions.push((maybe_new_keycode.unwrap_or_else(|| keycode.into()), action)),
                 Pressed::No => remove_action(input, action),
             }
             None
@@ -50,7 +33,29 @@ pub(crate) fn trigger_hotkey_action(input: &mut Input, keycode: &str, pressed: P
     }
 }
 
-fn get_modified_action(action: BooleanAction, keycode: &str, modifier: BooleanAction) -> (Option<String>, BooleanAction) {
+fn get_contextualized_action(input: &Input, keycode: &str) -> (Option<String>, BooleanAction) {
+    let action = to_boolean_action(keycode);
+    if input.shift {
+        try_modify_action(action, keycode, BooleanAction::Shift)
+    } else if input.control {
+        try_modify_action(action, keycode, BooleanAction::Control)
+    } else if input.alt {
+        try_modify_action(action, keycode, BooleanAction::Alt)
+    } else {
+        (None, action)
+    }
+}
+
+fn process_modifiers(input: &mut Input, action: BooleanAction, pressed: Pressed) {
+    match action {
+        BooleanAction::Shift => react_to_modifier(input, BooleanAction::Shift, pressed),
+        BooleanAction::Control => react_to_modifier(input, BooleanAction::Control, pressed),
+        BooleanAction::Alt => react_to_modifier(input, BooleanAction::Alt, pressed),
+        _ => {}
+    }
+}
+
+fn try_modify_action(action: BooleanAction, keycode: &str, modifier: BooleanAction) -> (Option<String>, BooleanAction) {
     if action == modifier {
         return (None, action);
     }
