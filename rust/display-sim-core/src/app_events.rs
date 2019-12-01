@@ -57,6 +57,7 @@ pub trait AppEventDispatcher {
     fn dispatch_exiting_session(&self);
     fn dispatch_toggle_info_panel(&self);
     fn dispatch_fps(&self, fps: f32);
+    fn dispatch_request_fullscreen(&self);
     fn dispatch_request_pointer_lock(&self);
     fn dispatch_exit_pointer_lock(&self);
     fn dispatch_screenshot(&self, width: i32, height: i32, pixels: &mut [u8]) -> AppResult<()>;
@@ -111,6 +112,7 @@ impl AppEventDispatcher for FakeEventDispatcher {
     fn dispatch_screenshot(&self, _: i32, _: i32, _: &mut [u8]) -> AppResult<()> {
         Ok(())
     }
+    fn dispatch_request_fullscreen(&self) {}
     fn dispatch_request_pointer_lock(&self) {}
     fn dispatch_exit_pointer_lock(&self) {}
     fn dispatch_change_camera_movement_mode(&self, _: CameraLockMode) {}

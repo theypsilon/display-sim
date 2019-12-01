@@ -308,6 +308,10 @@ impl AppEventDispatcher for WebEventDispatcher {
         self.catch_error(dispatch_event_with(&self.event_bus, "back2front:fps", &fps.into()));
     }
 
+    fn dispatch_request_fullscreen(&self) {
+        self.catch_error(dispatch_event(&self.event_bus, "back2front:request_fullscreen"));
+    }
+
     fn dispatch_request_pointer_lock(&self) {
         self.catch_error(dispatch_event(&self.event_bus, "back2front:request_pointer_lock"));
     }

@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-use crate::action_bindings::on_button_action;
+use crate::button_actions::on_button_action;
 use crate::camera::{CameraData, CameraDirection, CameraLockMode, CameraSystem};
 use crate::field_changer::FieldChanger;
 use crate::general_types::{get_3_f32color_from_int, get_int_from_3_f32color, Size2D};
@@ -126,10 +126,6 @@ impl<'a> SimulationUpdater<'a> {
     }
 
     pub fn update(&mut self) -> AppResult<()> {
-        if self.res.resetted {
-            self.change_frontend_input_values();
-        }
-
         if let Some(viewport) = self.input.event_viewport_resize {
             self.ctx.dispatcher().dispatch_log(format!("viewport:resize: {:?}", viewport));
             self.res.video.viewport_size = viewport;
@@ -161,7 +157,10 @@ impl<'a> SimulationUpdater<'a> {
 
         self.update_outputs();
 
-        self.res.resetted = false;
+        if self.res.resetted {
+            self.res.resetted = false;
+            self.change_frontend_input_values();
+        }
         self.res.drawable = self.res.screenshot_trigger.is_triggered || self.res.screenshot_trigger.delay <= 0;
 
         Ok(())
@@ -516,8 +515,8 @@ impl<'a> SimulationUpdater<'a> {
 
         if self.input.next_camera_movement_mode.increase.is_just_pressed() || self.input.next_camera_movement_mode.decrease.is_just_pressed() {
             self.res.camera.locked_mode = match self.res.camera.locked_mode {
-                CameraLockMode::FreeFlight => CameraLockMode::LockOnDisplay,
-                CameraLockMode::LockOnDisplay => CameraLockMode::FreeFlight,
+                CameraLockMode::ThreeDimensional => CameraLockMode::TwoDimensional,
+                CameraLockMode::TwoDimensional => CameraLockMode::ThreeDimensional,
             };
             self.ctx.dispatcher().dispatch_change_camera_movement_mode(self.res.camera.locked_mode);
             self.ctx
@@ -525,6 +524,7 @@ impl<'a> SimulationUpdater<'a> {
                 .dispatch_top_message(&format!("Camera movement: {}.", &self.res.camera.locked_mode.to_string()));
         }
 
+        let camera_lock_mode = self.res.camera.locked_mode;
         let mut camera = CameraSystem::new(&mut self.res.camera, self.ctx.dispatcher());
 
         if self.input.walk_left {
@@ -566,12 +566,19 @@ impl<'a> SimulationUpdater<'a> {
             camera.rotate(CameraDirection::Right, self.dt);
         }
 
-        if self.input.mouse_click.is_just_pressed() && self.input.canvas_focused {
-            self.ctx.dispatcher().dispatch_request_pointer_lock();
-        } else if self.input.mouse_click.is_activated() && self.input.canvas_focused {
+        if self.input.mouse_click.is_just_pressed() {
+            self.ctx.dispatcher().dispatch_request_fullscreen();
+            match camera_lock_mode {
+                CameraLockMode::ThreeDimensional => self.ctx.dispatcher().dispatch_request_pointer_lock(),
+                CameraLockMode::TwoDimensional => {}
+            };
+        } else if self.input.mouse_click.is_activated() {
             camera.drag(self.input.mouse_position_x, self.input.mouse_position_y);
         } else if self.input.mouse_click.is_just_released() {
-            self.ctx.dispatcher().dispatch_exit_pointer_lock();
+            match camera_lock_mode {
+                CameraLockMode::ThreeDimensional => self.ctx.dispatcher().dispatch_exit_pointer_lock(),
+                CameraLockMode::TwoDimensional => {}
+            };
         }
 
         if self.input.camera_zoom.increase {
@@ -631,7 +638,7 @@ impl<'a> SimulationUpdater<'a> {
         if self.res.demo_1.needs_initialization {
             self.res.demo_1.needs_initialization = false;
             self.res.demo_1.camera_backup = self.res.camera.clone();
-            self.res.camera.locked_mode = CameraLockMode::FreeFlight;
+            self.res.camera.locked_mode = CameraLockMode::ThreeDimensional;
             self.res.demo_1.movement_target = glm::vec3(0.0, 0.0, 0.0);
             self.res.demo_1.movement_speed = glm::vec3(0.0, 0.0, 0.0);
             self.res.camera.set_position(glm::vec3(0.0, 0.0, 0.0));

@@ -19,7 +19,7 @@
 
 extern crate derive_new;
 
-mod action_bindings;
+mod button_actions;
 pub mod app_events;
 mod boolean_button;
 pub mod camera;

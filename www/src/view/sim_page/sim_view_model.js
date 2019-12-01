@@ -53,7 +53,7 @@ export function data () {
         brightness_color: { value: '#FFFFFF', eventKind: 'brightness-color' },
         camera_movement_mode: { value: '', title: '', eventKind: 'camera-movement-mode' },
         camera_matrix: {
-            free: false,
+            lockMode: false,
             pos: { x: { eventKind: 'camera-pos-x', value: 0 }, y: { eventKind: 'camera-pos-y', value: 0 }, z: { eventKind: 'camera-pos-z', value: 0 } },
             dir: { x: { eventKind: 'camera-dir-x', value: 0 }, y: { eventKind: 'camera-dir-y', value: 0 }, z: { eventKind: 'camera-dir-z', value: 0 } },
             axis_up: { x: { eventKind: 'camera-axis-up-x', value: 0 }, y: { eventKind: 'camera-axis-up-y', value: 0 }, z: { eventKind: 'camera-axis-up-z', value: 0 } }
@@ -275,15 +275,14 @@ export class View {
         this._navigator.openTopMessage(msg);
     }
     setFullscreen () {
-        const element = document.documentElement;
-        (element.requestFullscreen || element.webkitRequestFullScreen || element.mozRequestFullScreen || element.msRequestFullscreen).bind(element)();
+        if (window.screen.width !== window.innerWidth && window.screen.height !== window.innerHeight) {
+            const element = document.documentElement;
+            (element.requestFullscreen || element.webkitRequestFullScreen || element.mozRequestFullScreen || element.msRequestFullscreen).bind(element)();
+        }
     }
     requestPointerLock () {
         const element = document.documentElement;
         (element.requestPointerLock || element.mozRequestPointerLock).bind(element)();
-        if (window.screen.width !== window.innerWidth && window.screen.height !== window.innerHeight) {
-            this.setFullscreen();
-        }
     }
     exitPointerLock () {
         (document.exitPointerLock || document.mozExitPointerLock).bind(document)();
@@ -324,13 +323,13 @@ export class View {
     }
     changeCameraMovementMode (msg) {
         switch (msg) {
-        case 'Lock on Display':
-            this._state.options.camera_movement_mode.title = 'The camera will move around the picture, always looking at it';
-            this._state.options.camera_matrix.free = false;
+        case '2D':
+            this._state.options.camera_movement_mode.title = 'The camera can move up down left right, facing the picture';
+            this._state.options.camera_matrix.lockMode = false;
             break;
-        case 'Free Flight':
-            this._state.options.camera_movement_mode.title = 'The camera can move without any restriction in the whole 3D space with plane-like controls';
-            this._state.options.camera_matrix.free = true;
+        case '3D':
+            this._state.options.camera_movement_mode.title = 'The camera can move in all 3 axis and also can turn and rotate.';
+            this._state.options.camera_matrix.lockMode = true;
             break;
         default: throw new Error('Unreachable!');
         }

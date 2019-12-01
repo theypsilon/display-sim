@@ -91,6 +91,7 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
             type: 'front2back:' + kind
         };
         frontendBus.fire(event);
+        console.log("front2back", kind, msg);
     }
 
     function fireKeyboardEvent ({ pressed, key, timeout }) {
@@ -136,6 +137,7 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
         case 'front2front:toggleControls': return view.toggleControls();
         case 'front2front:toggleMenu': return view.toggleMenu(msg);
         case 'back2front:top_message': return view.openTopMessage(msg);
+        case 'back2front:request_fullscreen': return view.setFullscreen(msg);
         case 'back2front:request_pointer_lock': return view.requestPointerLock(msg);
         case 'back2front:preset_selected_name': return view.presetSelectedName(msg);
         case 'back2front:screenshot': return model.fireScreenshot(msg);
@@ -209,7 +211,7 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
         }
     });
     addDomListener(window, 'mouseup', () => fireBackendEvent('mouse-click', false)); // note this one goes to 'window'. It doesn't work with 'canvas' because of some obscure bug I didn't figure out yet.
-    addDomListener(canvasParent, 'mousemove', e => fireBackendEvent('mouse-move', { x: e.movementX, y: e.movementY }));
+    addDomListener(window, 'mousemove', e => fireBackendEvent('mouse-move', { x: e.movementX, y: e.movementY }));
     addDomListener(canvasParent, 'mousewheel', e => fireBackendEvent('mouse-wheel', e.deltaY));
     addDomListener(canvasParent, 'blur', () => fireBackendEvent('blurred-window'));
     addDomListener(canvasParent, 'mouseover', () => fireKeyboardEvent({ pressed: true, key: 'canvas_focused' }));

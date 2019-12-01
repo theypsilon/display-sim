@@ -40,8 +40,8 @@ pub enum CameraChange {
 
 #[derive(Copy, Clone)]
 pub enum CameraLockMode {
-    LockOnDisplay,
-    FreeFlight,
+    TwoDimensional,
+    ThreeDimensional,
 }
 
 impl std::fmt::Display for CameraLockMode {
@@ -50,8 +50,8 @@ impl std::fmt::Display for CameraLockMode {
             f,
             "{}",
             match self {
-                CameraLockMode::LockOnDisplay => "Lock on Display",
-                CameraLockMode::FreeFlight => "Free Flight",
+                CameraLockMode::TwoDimensional => "2D",
+                CameraLockMode::ThreeDimensional => "3D",
             }
         )
     }
@@ -108,7 +108,7 @@ impl CameraData {
             turning_speed,
             position_changed: true,
             sending_camera_update_event: true,
-            locked_mode: CameraLockMode::LockOnDisplay,
+            locked_mode: CameraLockMode::TwoDimensional,
         }
     }
 
@@ -145,18 +145,18 @@ impl<'a> CameraSystem<'a> {
         let velocity = self.data.movement_speed
             * dt
             * match self.data.locked_mode {
-                CameraLockMode::LockOnDisplay => -1.0,
-                CameraLockMode::FreeFlight => 1.0,
+                CameraLockMode::TwoDimensional => -1.0,
+                CameraLockMode::ThreeDimensional => 1.0,
             };
         let position_delta = match self.data.locked_mode {
-            CameraLockMode::LockOnDisplay => match direction {
+            CameraLockMode::TwoDimensional => match direction {
                 CameraDirection::Forward => self.data.axis_up * velocity,
                 CameraDirection::Backward => -self.data.axis_up * velocity,
                 CameraDirection::Left => -self.data.axis_right * velocity,
                 CameraDirection::Right => self.data.axis_right * velocity,
                 _ => glm::vec3(0.0, 0.0, 0.0),
             },
-            CameraLockMode::FreeFlight => match direction {
+            CameraLockMode::ThreeDimensional => match direction {
                 CameraDirection::Up => self.data.axis_up * velocity,
                 CameraDirection::Down => -self.data.axis_up * velocity,
                 CameraDirection::Left => -self.data.axis_right * velocity,
@@ -170,11 +170,15 @@ impl<'a> CameraSystem<'a> {
     }
 
     pub(crate) fn turn(&mut self, direction: CameraDirection, dt: f32) {
+        match self.data.locked_mode {
+            CameraLockMode::TwoDimensional => return,
+            CameraLockMode::ThreeDimensional => {}
+        }
         let velocity = dt
             * self.data.turning_speed
             * match self.data.locked_mode {
-                CameraLockMode::LockOnDisplay => 0.03,
-                CameraLockMode::FreeFlight => 0.06,
+                CameraLockMode::TwoDimensional => 0.03,
+                CameraLockMode::ThreeDimensional => 0.06,
             };
         match direction {
             CameraDirection::Up => self.data.heading += velocity,
@@ -186,13 +190,17 @@ impl<'a> CameraSystem<'a> {
     }
 
     pub(crate) fn rotate(&mut self, direction: CameraDirection, dt: f32) {
+        match self.data.locked_mode {
+            CameraLockMode::TwoDimensional => return,
+            CameraLockMode::ThreeDimensional => {}
+        }
         let velocity = 60.0
             * dt
             * 0.001
             * self.data.turning_speed
             * match self.data.locked_mode {
-                CameraLockMode::LockOnDisplay => -1.0,
-                CameraLockMode::FreeFlight => 1.0,
+                CameraLockMode::TwoDimensional => -1.0,
+                CameraLockMode::ThreeDimensional => 1.0,
             };
         match direction {
             CameraDirection::Left => self.data.rotate += velocity,
@@ -202,8 +210,19 @@ impl<'a> CameraSystem<'a> {
     }
 
     pub(crate) fn drag(&mut self, xoffset: i32, yoffset: i32) {
-        self.data.pitch -= xoffset as f32 * 0.0003;
-        self.data.heading -= yoffset as f32 * 0.0003;
+        let xoffset = xoffset as f32;
+        let yoffset = yoffset as f32;
+        match self.data.locked_mode {
+            CameraLockMode::TwoDimensional => {
+                let position_delta = self.data.axis_up * yoffset * 0.1 - self.data.axis_right * xoffset * 0.1;
+                self.data.position_destiny += position_delta;
+                self.data.position_changed = true;
+            },
+            CameraLockMode::ThreeDimensional => {
+                self.data.pitch -= xoffset * 0.0003;
+                self.data.heading -= yoffset * 0.0003;
+            }
+        }
     }
 
     pub(crate) fn look_at(&mut self, target: glm::Vec3) {
@@ -265,7 +284,7 @@ impl<'a> CameraSystem<'a> {
         let new_direction = glm::quat_cross_vec(&temp, &self.data.direction);
 
         if match self.data.locked_mode {
-            CameraLockMode::FreeFlight => true,
+            CameraLockMode::ThreeDimensional => true,
             _ => false,
         } || new_direction.z <= -0.01
         {
@@ -278,7 +297,7 @@ impl<'a> CameraSystem<'a> {
         self.data.pitch *= 0.5;
         self.data.rotate *= 0.5;
 
-        if let CameraLockMode::LockOnDisplay = self.data.locked_mode {
+        if let CameraLockMode::TwoDimensional = self.data.locked_mode {
             if self.data.pitch.abs() > std::f32::EPSILON || self.data.heading.abs() > std::f32::EPSILON {
                 let distance_to_origin = glm::length(&self.data.position_destiny);
                 self.data.position_destiny = -self.data.direction * distance_to_origin;

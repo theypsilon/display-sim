@@ -394,6 +394,9 @@ impl AppEventDispatcher for NativeEventDispatcher {
     fn dispatch_fps(&self, fps: f32) {
         println!("frames in 20 seconds: {}", fps);
     }
+    fn dispatch_request_fullscreen(&self) {
+        println!("request_fullscreen");
+    }
     fn dispatch_request_pointer_lock(&self) {
         println!("request_pointer_lock");
         self.video_ctx.window().set_cursor_visible(false);

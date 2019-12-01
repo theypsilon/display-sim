@@ -230,9 +230,9 @@ function generateTemplateFromCameraInput (fire, cameraInput) {
         <div class="menu-dual-entry-container">
             <div class="menu-dual-entry-item menu-dual-entry-1 ${cameraInput.class}">
                 <div class="feature-name">Translation</div>
-                <div id="feature-camera-movements" class="arrows-grid ${cameraInput.ref.free ? 'arrows-grid-move-free' : 'arrows-grid-move-lock'}">
-                    <div></div><div class="input-cell">${generateTemplateArrowKey(fire, 'W')}</div><div></div><div></div><div class="input-cell">${cameraInput.ref.free ? generateTemplateArrowKey(fire, 'Q') : ''}</div>
-                    <div class="input-cell">${generateTemplateArrowKey(fire, 'A')}</div><div class="input-cell">${generateTemplateArrowKey(fire, 'S')}</div><div class="input-cell">${generateTemplateArrowKey(fire, 'D')}</div><div></div><div>${cameraInput.ref.free ? generateTemplateArrowKey(fire, 'E') : ''}</div>
+                <div id="feature-camera-movements" class="arrows-grid ${cameraInput.ref.lockMode ? 'arrows-grid-move-free' : 'arrows-grid-move-lock'}">
+                    <div></div><div class="input-cell">${generateTemplateArrowKey(fire, 'W')}</div><div></div><div></div><div class="input-cell">${cameraInput.ref.lockMode ? generateTemplateArrowKey(fire, 'Q') : ''}</div>
+                    <div class="input-cell">${generateTemplateArrowKey(fire, 'A')}</div><div class="input-cell">${generateTemplateArrowKey(fire, 'S')}</div><div class="input-cell">${generateTemplateArrowKey(fire, 'D')}</div><div></div><div>${cameraInput.ref.lockMode ? generateTemplateArrowKey(fire, 'E') : ''}</div>
                 </div>
             </div>
             <div class="menu-dual-entry-item menu-dual-entry-2">
