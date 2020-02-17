@@ -101,7 +101,7 @@ impl OptionCursor for InternalResolution {
     fn previous_option(&mut self) {
         self.maximium_reached = false;
         let new_height = match self.height() {
-            std::i32::MIN..=0 => 1080,
+            std::i32::MIN..=-1 => 1080,
             1080 => 720,
             720 => 486,
             486 => 480,

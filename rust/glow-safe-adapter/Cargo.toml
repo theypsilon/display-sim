@@ -5,4 +5,4 @@ authors = ["José manuel Barroso Galindo <theypsilon@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-glow = { git = "https://github.com/grovesNL/glow.git", package = "glow" }
+glow = "0.4.0"
