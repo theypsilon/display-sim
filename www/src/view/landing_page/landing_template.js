@@ -35,9 +35,9 @@ function generateLandingTemplate (state, fire) {
             <h1 class="margin-sm-bottom">Display Sim</h1>
             <div class="row">
                 <div class="col-md-6 col-sm-12 margin-sm-bottom">
-                    <p>This tool offers you a way to explore video filtering parameters that could be used to recreate
-                        old
-                        display visual appearances within modern LCD screens.</p>
+                    <p>This tool offers you a way to recreate
+                        the retro visual feeling of old
+                        displays within your modern LCD screens, with a strong emphasis on accuracy and flexibility.</p>
                 </div>
                 <div class="col-md-4 col-md-offset-2 col-sm-12 text-center">
                     <p>Don't get why this is a thing?</p>
