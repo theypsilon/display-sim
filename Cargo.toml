@@ -2,6 +2,9 @@
 name = "display-sim"
 version = "0.1.0"
 authors = ["José manuel Barroso Galindo <theypsilon@gmail.com>"]
+description = "Tool for making image filters with emphasis in CRT aesthetics."
+repository = "https://github.com/theypsilon/display-sim/"
+license-file = "COPYING.txt"
 edition = "2018"
 
 [lib]
