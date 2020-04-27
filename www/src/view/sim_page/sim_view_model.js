@@ -58,6 +58,11 @@ export function data () {
             dir: { x: { eventKind: 'camera-dir-x', value: 0 }, y: { eventKind: 'camera-dir-y', value: 0 }, z: { eventKind: 'camera-dir-z', value: 0 } },
             axis_up: { x: { eventKind: 'camera-axis-up-x', value: 0 }, y: { eventKind: 'camera-axis-up-y', value: 0 }, z: { eventKind: 'camera-axis-up-z', value: 0 } }
         },
+        rgb_values: {
+            red: { r: { eventKind: 'rgb-red-r', value: 1 }, g: { eventKind: 'rgb-red-g', value: 0 }, b: { eventKind: 'rgb-red-b', value: 0 } },
+            green: { r: { eventKind: 'rgb-green-r', value: 0 }, g: { eventKind: 'rgb-green-g', value: 1 }, b: { eventKind: 'rgb-green-b', value: 0 } },
+            blue: { r: { eventKind: 'rgb-blue-r', value: 0 }, g: { eventKind: 'rgb-blue-g', value: 0 }, b: { eventKind: 'rgb-blue-b', value: 1 } },
+        },
         camera_zoom: { value: null, eventKind: 'camera_zoom' },
         move_speed: { value: null, eventKind: 'move-speed' },
         pixel_speed: { value: null, eventKind: 'pixel-speed' },
@@ -126,26 +131,35 @@ export function data () {
                 },
                 {
                     type: 'menu',
-                    text: 'Basic Filter Settings',
+                    text: 'Performance',
                     open: true,
                     entries: [
                         { type: 'selectors-input', class: 'menu-2 menu-blc-white', text: 'Internal Resolution', hk: { inc: 'Y', dec: 'Shift + Y' }, ref: options.internal_resolution },
-                        { type: 'selectors-input', class: 'menu-2 menu-blc-red', text: 'Screen curvature type', hk: { inc: 'B', dec: 'Shift + B' }, ref: options.screen_curvature },
                         { type: 'number-input', class: 'menu-2 menu-blc-blue', text: 'Blur passes', hk: { inc: 'J', dec: 'Shift + J' }, step: 1, min: 0, max: 100, value: 0, placeholder: 0, ref: options.blur_level }
                     ]
                 },
                 {
                     type: 'menu',
-                    text: 'Advanced Filter Settings',
+                    text: 'Colors',
                     open: false,
                     entries: [
+                        { type: 'rgb-input', class: 'menu-blc-red', ref: options.rgb_values },
+                        { type: 'color-input', class: 'menu-2 menu-blc-blue', text: 'Source light color', value: '#ffffff', ref: options.light_color },
+                        { type: 'number-input', class: 'menu-2 menu-blc-white', text: 'Brightness', hk: { inc: 'X', dec: 'Shift + X' }, step: 0.001, min: -1, max: 1, value: 0, placeholder: 0, ref: options.pixel_brightness },
+                        { type: 'number-input', class: 'menu-2 menu-blc-white', text: 'Contrast', hk: { inc: 'Z', dec: 'Shift + Z' }, step: 0.001, min: 0, max: 20, value: 1, placeholder: 0, ref: options.pixel_contrast },
+                        { type: 'color-input', class: 'display-none', text: 'Brightness color', value: '#ffffff', ref: options.brightness_color },
+                    ]
+                },
+                {
+                    type: 'menu',
+                    text: 'Geometry & Textures',
+                    open: false,
+                    entries: [
+                        { type: 'selectors-input', class: 'menu-2 menu-blc-white', text: 'Screen curvature type', hk: { inc: 'B', dec: 'Shift + B' }, ref: options.screen_curvature },
                         { type: 'number-input', class: 'menu-2 menu-blc-red', text: 'Horizontal gap', hk: { inc: 'U', dec: 'Shift + U' }, step: 0.001, min: 0, max: 10, value: 0, placeholder: 0, ref: options.horizontal_gap },
                         { type: 'number-input', class: 'menu-2 menu-blc-red', text: 'Vertical gap', hk: { inc: 'I', dec: 'Shift + I' }, step: 0.001, min: 0, max: 10, value: 0, placeholder: 0, ref: options.vertical_gap },
                         { type: 'number-input', class: 'menu-2 menu-blc-lila', text: 'Vertical lines per pixel', hk: { inc: 'K', dec: 'Shift + K' }, step: 1, min: 0, max: 100, value: 0, placeholder: 0, ref: options.vertical_lpp },
                         { type: 'number-input', class: 'menu-2 menu-blc-lila', text: 'Horizontal lines per pixel', hk: { inc: 'L', dec: 'Shift + L' }, step: 1, min: 0, max: 100, value: 0, placeholder: 0, ref: options.horizontal_lpp },
-                        { type: 'color-input', class: 'menu-2 menu-blc-blue', text: 'Source light color', value: '#ffffff', ref: options.light_color },
-                        { type: 'number-input', class: 'menu-2 menu-blc-white', text: 'Brightness', hk: { inc: 'X', dec: 'Shift + X' }, step: 0.001, min: -1, max: 1, value: 0, placeholder: 0, ref: options.pixel_brightness },
-                        { type: 'number-input', class: 'menu-2 menu-blc-white', text: 'Contrast', hk: { inc: 'Z', dec: 'Shift + Z' }, step: 0.001, min: 0, max: 20, value: 1, placeholder: 0, ref: options.pixel_contrast },
                         { type: 'selectors-input', class: 'menu-2 menu-blc-red', text: 'Color channels type', hk: { inc: 'C', dec: 'Shift + C' }, ref: options.color_representation },
                         { type: 'selectors-input', class: 'menu-2 menu-blc-yellow', text: 'Pixel geometry type', hk: { inc: 'V', dec: 'Shift + V' }, ref: options.pixel_geometry },
                         { type: 'selectors-input', class: 'menu-2 menu-blc-blue', text: 'Pixel texture', hk: { inc: 'N', dec: 'Shift + N' }, ref: options.pixel_shadow_shape },
@@ -153,7 +167,6 @@ export function data () {
                         { type: 'selectors-input', class: 'menu-2 menu-blc-yellow', text: 'Texture interpolation', hk: { inc: 'H', dec: 'Shift + H' }, ref: options.texture_interpolation },
                         { type: 'number-input', class: 'menu-2 menu-blc-green', text: 'Backlight', hk: { inc: 'dot', dec: 'Shift + dot' }, step: 0.001, min: 0, max: 1, value: 0.5, placeholder: 0.5, ref: options.backlight_percent },
                         { type: 'number-input', class: 'display-none', text: 'Pixel spread', hk: { inc: 'P', dec: 'Shift + P' }, step: 0.001, min: 0, max: 10, value: 0, placeholder: 0, ref: options.pixel_spread },
-                        { type: 'color-input', class: 'display-none', text: 'Brightness color', value: '#ffffff', ref: options.brightness_color },
                         { type: 'button-input', class: 'menu-2 menu-blc-grey', text: 'Reset Filter Values', ref: options.reset_filters }
                     ]
                 },

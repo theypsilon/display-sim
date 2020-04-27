@@ -23,7 +23,7 @@ use crate::web_events::WebEventDispatcher;
 use crate::web_utils::now;
 use app_error::{AppError, AppResult};
 use core::camera::CameraChange;
-use core::input_types::{frontend_event, Input, InputEventValue, Pressed};
+use core::input_types::{frontend_event, Input, InputEventValue, Pressed, RgbChange};
 use core::simulation_context::{ConcreteSimulationContext, RandomGenerator, SimulationContext};
 use core::simulation_core_state::{Resources, VideoInputResources};
 use core::simulation_core_ticker::SimulationCoreTicker;
@@ -171,6 +171,15 @@ fn read_frontend_event(input: &mut Input, event: JsValue) -> AppResult<()> {
         frontend_event::CAMERA_DIRECTION_X => InputEventValue::Camera(CameraChange::DirectionX(value.as_f64().ok_or("it should be a number")? as f32)),
         frontend_event::CAMERA_DIRECTION_Y => InputEventValue::Camera(CameraChange::DirectionY(value.as_f64().ok_or("it should be a number")? as f32)),
         frontend_event::CAMERA_DIRECTION_Z => InputEventValue::Camera(CameraChange::DirectionZ(value.as_f64().ok_or("it should be a number")? as f32)),
+        frontend_event::RGB_RED_R => InputEventValue::Rgb(RgbChange::RedR(value.as_f64().ok_or("it should be a number")? as f32)),
+        frontend_event::RGB_RED_G => InputEventValue::Rgb(RgbChange::RedG(value.as_f64().ok_or("it should be a number")? as f32)),
+        frontend_event::RGB_RED_B => InputEventValue::Rgb(RgbChange::RedB(value.as_f64().ok_or("it should be a number")? as f32)),
+        frontend_event::RGB_GREEN_R => InputEventValue::Rgb(RgbChange::GreenR(value.as_f64().ok_or("it should be a number")? as f32)),
+        frontend_event::RGB_GREEN_G => InputEventValue::Rgb(RgbChange::GreenG(value.as_f64().ok_or("it should be a number")? as f32)),
+        frontend_event::RGB_GREEN_B => InputEventValue::Rgb(RgbChange::GreenB(value.as_f64().ok_or("it should be a number")? as f32)),
+        frontend_event::RGB_BLUE_R => InputEventValue::Rgb(RgbChange::BlueR(value.as_f64().ok_or("it should be a number")? as f32)),
+        frontend_event::RGB_BLUE_G => InputEventValue::Rgb(RgbChange::BlueG(value.as_f64().ok_or("it should be a number")? as f32)),
+        frontend_event::RGB_BLUE_B => InputEventValue::Rgb(RgbChange::BlueB(value.as_f64().ok_or("it should be a number")? as f32)),
         frontend_event::CUSTOM_SCALING_RESOLUTION_WIDTH => InputEventValue::CustomScalingResolutionWidth(value.as_f64().ok_or("it should be a number")? as f32),
         frontend_event::CUSTOM_SCALING_RESOLUTION_HEIGHT => {
             InputEventValue::CustomScalingResolutionHeight(value.as_f64().ok_or("it should be a number")? as f32)

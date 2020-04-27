@@ -54,6 +54,7 @@ function generateTemplateFromGenericEntry (fire, entry) {
     case 'number-input': return generateTemplateFromNumberInput(fire, entry);
     case 'color-input': return generateTemplateFromColorInput(fire, entry);
     case 'camera-input': return generateTemplateFromCameraInput(fire, entry);
+    case 'rgb-input': return generateTemplateFromRgbInput(fire, entry);
     default: throw new Error('Entry type ' + entry.type + ' not handled.');
     }
 }
@@ -251,6 +252,20 @@ function generateTemplateFromCameraInput (fire, cameraInput) {
                 ${[cameraInput.ref.dir.x, cameraInput.ref.dir.y, cameraInput.ref.dir.z].map(ref => generateTemplateForCameraMatrixInput(fire, ref))}
             <div class="matrix-row ${cameraInput.class}"><div class="matrix-row-head">axis up</div></div>
                 ${[cameraInput.ref.axis_up.x, cameraInput.ref.axis_up.y, cameraInput.ref.axis_up.z].map(ref => generateTemplateForCameraMatrixInput(fire, ref))}
+        </div>
+    `;
+}
+
+function generateTemplateFromRgbInput (fire, rgb) {
+    return html`
+        <div class="camera-matrix input-holder">
+            <div class="matrix-row ${rgb.class}"></div><div class="matrix-top-row"><label class="text-center">R</label></div><div class="matrix-top-row"><label class="text-center">G</label></div><div class="matrix-top-row"><label class="text-center">B</label></div>
+            <div class="matrix-row ${rgb.class}"><div class="matrix-row-head">red</div></div>
+                ${[rgb.ref.red.r, rgb.ref.red.g, rgb.ref.red.b].map(ref => generateTemplateForCameraMatrixInput(fire, ref))}
+            <div class="matrix-row ${rgb.class}"><div class="matrix-row-head">green</div></div>
+                ${[rgb.ref.green.r, rgb.ref.green.g, rgb.ref.green.b].map(ref => generateTemplateForCameraMatrixInput(fire, ref))}
+            <div class="matrix-row ${rgb.class}"><div class="matrix-row-head">blue</div></div>
+                ${[rgb.ref.blue.r, rgb.ref.blue.g, rgb.ref.blue.b].map(ref => generateTemplateForCameraMatrixInput(fire, ref))}
         </div>
     `;
 }

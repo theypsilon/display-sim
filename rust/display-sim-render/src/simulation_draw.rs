@@ -109,6 +109,9 @@ impl<'a> SimulationDrawer<'a> {
                             .pixel_offset_foreground
                             .get(vl_idx * filters.horizontal_lpp + hl_idx)
                             .expect("Bad pixel_offset_foreground")[color_idx],
+                        rgb_red: &output.rgb_red,
+                        rgb_green: &output.rgb_green,
+                        rgb_blue: &output.rgb_blue,
                         height_modifier_factor: output.height_modifier_factor,
                     });
                 }
@@ -162,6 +165,9 @@ impl<'a> SimulationDrawer<'a> {
                         screen_curvature: output.screen_curvature_factor,
                         pixel_pulse: output.pixels_pulse,
                         pixel_offset: &output.pixel_offset_background[vl_idx * filters.horizontal_lpp + hl_idx],
+                        rgb_red: &output.rgb_red,
+                        rgb_green: &output.rgb_green,
+                        rgb_blue: &output.rgb_blue,
                         height_modifier_factor: 0.0,
                     });
                 }

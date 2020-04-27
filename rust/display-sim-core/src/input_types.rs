@@ -50,7 +50,15 @@ pub mod frontend_event {
     pub const CAMERA_DIRECTION_X: &str = "front2back:camera-dir-x";
     pub const CAMERA_DIRECTION_Y: &str = "front2back:camera-dir-y";
     pub const CAMERA_DIRECTION_Z: &str = "front2back:camera-dir-z";
-
+    pub const RGB_RED_R: &str = "front2back:rgb-red-r";
+    pub const RGB_RED_G: &str = "front2back:rgb-red-g";
+    pub const RGB_RED_B: &str = "front2back:rgb-red-b";
+    pub const RGB_GREEN_R: &str = "front2back:rgb-green-r";
+    pub const RGB_GREEN_G: &str = "front2back:rgb-green-g";
+    pub const RGB_GREEN_B: &str = "front2back:rgb-green-b";
+    pub const RGB_BLUE_R: &str = "front2back:rgb-blue-r";
+    pub const RGB_BLUE_G: &str = "front2back:rgb-blue-g";
+    pub const RGB_BLUE_B: &str = "front2back:rgb-blue-b";
     pub const CUSTOM_SCALING_RESOLUTION_WIDTH: &str = "front2back:custom-scaling-resolution-width";
     pub const CUSTOM_SCALING_RESOLUTION_HEIGHT: &str = "front2back:custom-scaling-resolution-height";
     pub const CUSTOM_SCALING_ASPECT_RATIO_X: &str = "front2back:custom-scaling-aspect-ratio-x";
@@ -100,12 +108,26 @@ pub enum InputEventValue {
     PixelWidth(f32),
     PixelSpread(f32),
     Camera(CameraChange),
+    Rgb(RgbChange),
     CustomScalingResolutionWidth(f32),
     CustomScalingResolutionHeight(f32),
     CustomScalingAspectRatioX(f32),
     CustomScalingAspectRatioY(f32),
     CustomScalingStretchNearest(bool),
     ViewportResize(u32, u32),
+}
+
+#[derive(Clone, Debug)]
+pub enum RgbChange {
+    RedR(f32),
+    RedG(f32),
+    RedB(f32),
+    GreenR(f32),
+    GreenG(f32),
+    GreenB(f32),
+    BlueR(f32),
+    BlueG(f32),
+    BlueB(f32),
 }
 
 pub(crate) struct CustomInputEvent {
@@ -279,6 +301,8 @@ pub struct Input {
     pub(crate) event_viewport_resize: Option<Size2D<u32>>,
     #[in_array(get_options_to_be_noned)]
     pub(crate) event_camera: Option<CameraChange>,
+    #[in_array(get_options_to_be_noned)]
+    pub(crate) event_rgb: Option<RgbChange>,
 
     pub(crate) active_pressed_actions: Vec<KeyCodeBooleanAction>,
 }

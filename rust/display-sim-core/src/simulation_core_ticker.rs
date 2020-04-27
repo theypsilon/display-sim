@@ -17,7 +17,7 @@ use crate::boolean_actions::{trigger_hotkey_action, ActionUsed};
 use crate::camera::{CameraData, CameraDirection, CameraLockMode, CameraSystem};
 use crate::field_changer::FieldChanger;
 use crate::general_types::{get_3_f32color_from_int, get_int_from_3_f32color, Size2D};
-use crate::input_types::{Input, InputEventValue};
+use crate::input_types::{Input, InputEventValue, RgbChange};
 use crate::internal_resolution::InternalResolution;
 use crate::math::gcd;
 use crate::pixels_shadow::ShadowShape;
@@ -95,6 +95,7 @@ impl<'a> SimulationCoreTicker<'a> {
                 InputEventValue::CustomScalingAspectRatioY(width) => self.input.event_scaling_aspect_ratio_y = Some(width),
                 InputEventValue::CustomScalingStretchNearest(flag) => self.input.event_custom_scaling_stretch_nearest = Some(flag),
                 InputEventValue::ViewportResize(width, height) => self.input.event_viewport_resize = Some(Size2D { width, height }),
+                InputEventValue::Rgb(rgb) => self.input.event_rgb = Some(rgb),
                 InputEventValue::None => {}
             };
         }
@@ -157,6 +158,7 @@ impl<'a> SimulationUpdater<'a> {
         self.update_scaling();
         self.update_filters()?;
         self.update_camera();
+        self.update_colors();
         self.update_screenshot();
         if self.res.filters.preset_kind == FiltersPreset::DemoFlight1 {
             self.update_demo();
@@ -603,6 +605,22 @@ impl<'a> SimulationUpdater<'a> {
         camera.update_view(self.dt)
     }
 
+    fn update_colors(&mut self) {
+        if let Some(ref rgb) = self.input.event_rgb {
+            match *rgb {
+                RgbChange::RedR(value) => self.res.filters.rgb_red_r = value,
+                RgbChange::RedG(value) => self.res.filters.rgb_red_g = value,
+                RgbChange::RedB(value) => self.res.filters.rgb_red_b = value,
+                RgbChange::GreenR(value) => self.res.filters.rgb_green_r = value,
+                RgbChange::GreenG(value) => self.res.filters.rgb_green_g = value,
+                RgbChange::GreenB(value) => self.res.filters.rgb_green_b = value,
+                RgbChange::BlueR(value) => self.res.filters.rgb_blue_r = value,
+                RgbChange::BlueG(value) => self.res.filters.rgb_blue_g = value,
+                RgbChange::BlueB(value) => self.res.filters.rgb_blue_b = value,
+            }
+        }
+    }
+
     fn change_frontend_input_values(&self) {
         let dispatcher = self.ctx.dispatcher();
         dispatcher.enable_extra_messages(false);
@@ -878,6 +896,15 @@ impl<'a> SimulationUpdater<'a> {
         for light in output.extra_light.iter_mut() {
             *light *= filters.extra_bright;
         }
+        output.rgb_red[0] = filters.rgb_red_r;
+        output.rgb_red[1] = filters.rgb_red_g;
+        output.rgb_red[2] = filters.rgb_red_b;
+        output.rgb_green[0] = filters.rgb_green_r;
+        output.rgb_green[1] = filters.rgb_green_g;
+        output.rgb_green[2] = filters.rgb_green_b;
+        output.rgb_blue[0] = filters.rgb_blue_r;
+        output.rgb_blue[1] = filters.rgb_blue_g;
+        output.rgb_blue[2] = filters.rgb_blue_b;
     }
 
     fn update_output_filter_curvature(&mut self) {
