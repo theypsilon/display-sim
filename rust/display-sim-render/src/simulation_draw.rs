@@ -112,6 +112,7 @@ impl<'a> SimulationDrawer<'a> {
                         rgb_red: &output.rgb_red,
                         rgb_green: &output.rgb_green,
                         rgb_blue: &output.rgb_blue,
+                        color_gamma: output.color_gamma,
                         height_modifier_factor: output.height_modifier_factor,
                     });
                 }
@@ -168,6 +169,7 @@ impl<'a> SimulationDrawer<'a> {
                         rgb_red: &output.rgb_red,
                         rgb_green: &output.rgb_green,
                         rgb_blue: &output.rgb_blue,
+                        color_gamma: output.color_gamma,
                         height_modifier_factor: 0.0,
                     });
                 }

@@ -213,6 +213,7 @@ pub struct Filters {
     pub rgb_blue_r: f32,
     pub rgb_blue_g: f32,
     pub rgb_blue_b: f32,
+    pub color_gamma: f32,
     pub preset_kind: FiltersPreset,
 }
 
@@ -246,6 +247,7 @@ impl Default for Filters {
             rgb_blue_r: 0.0,
             rgb_blue_g: 0.0,
             rgb_blue_b: 1.0,
+            color_gamma: 1.0,
             preset_kind: FiltersPreset::Sharp1,
         }
         .preset_crt_aperture_grille_1()
@@ -374,6 +376,7 @@ impl Filters {
             rgb_blue_r: 0.0,
             rgb_blue_g: 0.0,
             rgb_blue_b: 1.0,
+            color_gamma: 1.0,
             backlight_presence: 0.0,
             preset_kind: FiltersPreset::Sharp1,
         }
@@ -407,6 +410,7 @@ impl Filters {
             rgb_blue_r: 0.0,
             rgb_blue_g: 0.0,
             rgb_blue_b: 1.0,
+            color_gamma: 1.0,
             backlight_presence: 0.5,
             preset_kind: FiltersPreset::CrtApertureGrille1,
         }
@@ -440,6 +444,7 @@ impl Filters {
             rgb_blue_r: 0.0,
             rgb_blue_g: 0.0,
             rgb_blue_b: 1.0,
+            color_gamma: 1.0,
             backlight_presence: 0.25,
             preset_kind: FiltersPreset::CrtShadowMask1,
         }
@@ -473,6 +478,7 @@ impl Filters {
             rgb_blue_r: 0.0,
             rgb_blue_g: 0.0,
             rgb_blue_b: 1.0,
+            color_gamma: 1.0,
             backlight_presence: 0.4,
             preset_kind: FiltersPreset::CrtShadowMask2,
         }
@@ -506,6 +512,7 @@ impl Filters {
             rgb_blue_r: 0.0,
             rgb_blue_g: 0.0,
             rgb_blue_b: 1.0,
+            color_gamma: 1.0,
             backlight_presence: 0.2,
             preset_kind: FiltersPreset::DemoFlight1,
         }
@@ -538,6 +545,7 @@ pub struct ViewModel {
     pub rgb_red: [f32; 3],
     pub rgb_green: [f32; 3],
     pub rgb_blue: [f32; 3],
+    pub color_gamma: f32,
     pub showing_background: bool,
 }
 

@@ -96,6 +96,7 @@ impl<'a> SimulationCoreTicker<'a> {
                 InputEventValue::CustomScalingStretchNearest(flag) => self.input.event_custom_scaling_stretch_nearest = Some(flag),
                 InputEventValue::ViewportResize(width, height) => self.input.event_viewport_resize = Some(Size2D { width, height }),
                 InputEventValue::Rgb(rgb) => self.input.event_rgb = Some(rgb),
+                InputEventValue::ColorGamma(gamma) => self.input.event_color_gamma = Some(gamma),
                 InputEventValue::None => {}
             };
         }
@@ -619,6 +620,9 @@ impl<'a> SimulationUpdater<'a> {
                 RgbChange::BlueB(value) => self.res.filters.rgb_blue_b = value,
             }
         }
+        if let Some(gamma) = self.input.event_color_gamma {
+            self.res.filters.color_gamma = gamma;
+        }
     }
 
     fn change_frontend_input_values(&self) {
@@ -905,6 +909,7 @@ impl<'a> SimulationUpdater<'a> {
         output.rgb_blue[0] = filters.rgb_blue_r;
         output.rgb_blue[1] = filters.rgb_blue_g;
         output.rgb_blue[2] = filters.rgb_blue_b;
+        output.color_gamma = filters.color_gamma;
     }
 
     fn update_output_filter_curvature(&mut self) {

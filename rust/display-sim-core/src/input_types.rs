@@ -59,6 +59,7 @@ pub mod frontend_event {
     pub const RGB_BLUE_R: &str = "front2back:rgb-blue-r";
     pub const RGB_BLUE_G: &str = "front2back:rgb-blue-g";
     pub const RGB_BLUE_B: &str = "front2back:rgb-blue-b";
+    pub const COLOR_GAMMA: &str = "front2back:color-gamma";
     pub const CUSTOM_SCALING_RESOLUTION_WIDTH: &str = "front2back:custom-scaling-resolution-width";
     pub const CUSTOM_SCALING_RESOLUTION_HEIGHT: &str = "front2back:custom-scaling-resolution-height";
     pub const CUSTOM_SCALING_ASPECT_RATIO_X: &str = "front2back:custom-scaling-aspect-ratio-x";
@@ -109,6 +110,7 @@ pub enum InputEventValue {
     PixelSpread(f32),
     Camera(CameraChange),
     Rgb(RgbChange),
+    ColorGamma(f32),
     CustomScalingResolutionWidth(f32),
     CustomScalingResolutionHeight(f32),
     CustomScalingAspectRatioX(f32),
@@ -297,6 +299,8 @@ pub struct Input {
     pub(crate) event_pixel_width: Option<f32>,
     #[in_array(get_options_to_be_noned)]
     pub(crate) event_pixel_spread: Option<f32>,
+    #[in_array(get_options_to_be_noned)]
+    pub(crate) event_color_gamma: Option<f32>,
     #[in_array(get_options_to_be_noned)]
     pub(crate) event_viewport_resize: Option<Size2D<u32>>,
     #[in_array(get_options_to_be_noned)]

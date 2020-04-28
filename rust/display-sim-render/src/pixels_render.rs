@@ -56,6 +56,7 @@ pub struct PixelsUniform<'a> {
     pub rgb_red: &'a [f32; 3],
     pub rgb_green: &'a [f32; 3],
     pub rgb_blue: &'a [f32; 3],
+    pub color_gamma: f32,
 
     pub pixel_pulse: f32,
     pub height_modifier_factor: f32,
@@ -227,6 +228,7 @@ impl<GL: HasContext> PixelsRender<GL> {
         gl.uniform_3_f32_slice(gl.get_uniform_location(shader, "red"), uniforms.rgb_red);
         gl.uniform_3_f32_slice(gl.get_uniform_location(shader, "green"), uniforms.rgb_green);
         gl.uniform_3_f32_slice(gl.get_uniform_location(shader, "blue"), uniforms.rgb_blue);
+        gl.uniform_1_f32(gl.get_uniform_location(shader, "gamma"), uniforms.color_gamma);
 
         gl.bind_vertex_array(self.vao);
         gl.draw_arrays_instanced(
@@ -389,6 +391,8 @@ uniform vec3 red;
 uniform vec3 green;
 uniform vec3 blue;
 
+uniform float gamma;
+
 uniform vec3 lightColor;
 uniform vec3 extraLight;
 uniform vec3 lightPos;
@@ -421,6 +425,7 @@ void main()
     result.r = (result.r - contrastUmbral) * contrastFactor + contrastFactor * contrastUmbral;
     result.g = (result.g - contrastUmbral) * contrastFactor + contrastFactor * contrastUmbral;
     result.b = (result.b - contrastUmbral) * contrastFactor + contrastFactor * contrastUmbral;
-    FragColor = result.r * vec4(red, 1.0) + result.g * vec4(green, 1.0) + result.b * vec4(blue, 1.0) + vec4(extraLight, 0.0);
+    result = result.r * vec4(red, 1.0) + result.g * vec4(green, 1.0) + result.b * vec4(blue, 1.0) + vec4(extraLight, 0.0);
+    FragColor = vec4(pow(result.r, gamma), pow(result.g, gamma), pow(result.b, gamma), result.a);
 } 
 "#;
