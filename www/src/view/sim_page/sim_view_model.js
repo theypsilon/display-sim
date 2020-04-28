@@ -146,7 +146,7 @@ export function data () {
                     entries: [
                         { type: 'rgb-input', class: 'menu-blc-red', ref: options.rgb_values },
                         { type: 'number-input', class: 'menu-2 menu-blc-lila', text: 'Gamma correction', hk: { inc: '????', dec: 'Shift + ????' }, step: 0.1, min: 0, max: 1, value: 0, placeholder: 0, ref: options.color_gamma },
-                        { type: 'color-input', class: 'menu-2 menu-blc-blue', text: 'Color noise', value: '#ffffff', ref: options.light_color },
+                        { type: 'color-input', class: 'menu-2 menu-blc-blue', text: 'Source light color', value: '#ffffff', ref: options.light_color },
                         { type: 'number-input', class: 'menu-2 menu-blc-white', text: 'Brightness', hk: { inc: 'X', dec: 'Shift + X' }, step: 0.001, min: -1, max: 1, value: 0, placeholder: 0, ref: options.pixel_brightness },
                         { type: 'number-input', class: 'menu-2 menu-blc-white', text: 'Contrast', hk: { inc: 'Z', dec: 'Shift + Z' }, step: 0.001, min: 0, max: 20, value: 1, placeholder: 0, ref: options.pixel_contrast },
                         { type: 'color-input', class: 'display-none', text: 'Brightness color', value: '#ffffff', ref: options.brightness_color },
