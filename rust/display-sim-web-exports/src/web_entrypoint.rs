@@ -23,7 +23,7 @@ use crate::web_events::WebEventDispatcher;
 use crate::web_utils::now;
 use app_error::{AppError, AppResult};
 use core::camera::CameraChange;
-use core::input_types::{frontend_event, Input, InputEventValue, Pressed, RgbChange};
+use core::input_types::{Input, InputEventValue, Pressed, RgbChange};
 use core::simulation_context::{ConcreteSimulationContext, RandomGenerator, SimulationContext};
 use core::simulation_core_state::{Resources, VideoInputResources};
 use core::simulation_core_ticker::SimulationCoreTicker;
@@ -127,7 +127,7 @@ fn read_frontend_event(input: &mut Input, event: JsValue) -> AppResult<()> {
     let frontend_event: AppResult<String> = js_sys::Reflect::get(&event, &"type".into())?.as_string().ok_or("Could not get kind".into());
     let frontend_event = frontend_event?;
     let event_value = match frontend_event.as_ref() as &str {
-        frontend_event::KEYBOARD => {
+        "front2back:keyboard" => {
             let pressed = js_sys::Reflect::get(&value, &"pressed".into())?.as_bool().ok_or("it should be a bool")?;
             let pressed = if pressed { Pressed::Yes } else { Pressed::No };
             let key = js_sys::Reflect::get(&value, &"key".into())?
@@ -135,61 +135,59 @@ fn read_frontend_event(input: &mut Input, event: JsValue) -> AppResult<()> {
                 .ok_or_else(|| format!("it should be a string, but was {:?}", value))?;
             InputEventValue::Keyboard { pressed, key }
         }
-        frontend_event::MOUSE_CLICK => {
+        "front2back:mouse-click" => {
             let pressed = value.as_bool().ok_or("it should be a bool")?;
             let pressed = if pressed { Pressed::Yes } else { Pressed::No };
             InputEventValue::MouseClick(pressed)
         }
-        frontend_event::MOUSE_MOVE => {
+        "front2back:mouse-move" => {
             let x = js_sys::Reflect::get(&value, &"x".into())?.as_f64().ok_or("it should be a number")? as i32;
             let y = js_sys::Reflect::get(&value, &"y".into())?.as_f64().ok_or("it should be a number")? as i32;
             InputEventValue::MouseMove { x, y }
         }
-        frontend_event::MOUSE_WHEEL => InputEventValue::MouseWheel(value.as_f64().ok_or("it should be a number")? as f32),
-        frontend_event::BLURRED_WINDOW => InputEventValue::BlurredWindow,
-        frontend_event::FILTER_PRESET => InputEventValue::FilterPreset(value.as_string().ok_or("it should be a string")?),
-        frontend_event::PIXEL_BRIGHTNESS => InputEventValue::PixelBrighttness(value.as_f64().ok_or("it should be a number")? as f32),
-        frontend_event::PIXEL_CONTRAST => InputEventValue::PixelContrast(value.as_f64().ok_or("it should be a number")? as f32),
-        frontend_event::LIGHT_COLOR => InputEventValue::LightColor(value.as_f64().ok_or("it should be a number")? as i32),
-        frontend_event::BRIGHTNESS_COLOR => InputEventValue::BrightnessColor(value.as_f64().ok_or("it should be a number")? as i32),
-        frontend_event::BLUR_LEVEL => InputEventValue::BlurLevel(value.as_f64().ok_or("it should be a number")? as usize),
-        frontend_event::VERTICAL_LPP => InputEventValue::VerticalLpp(value.as_f64().ok_or("it should be a number")? as usize),
-        frontend_event::HORIZONTAL_LPP => InputEventValue::HorizontalLpp(value.as_f64().ok_or("it should be a number")? as usize),
-        frontend_event::PIXEL_SHADOW_HEIGHT => InputEventValue::PixelShadowHeight(value.as_f64().ok_or("it should be a number")? as f32),
-        frontend_event::BACKLIGHT_PERCENT => InputEventValue::BacklightPercent(value.as_f64().ok_or("it should be a number")? as f32),
-        frontend_event::PIXEL_VERTICAL_GAP => InputEventValue::PixelVerticalGap(value.as_f64().ok_or("it should be a number")? as f32),
-        frontend_event::PIXEL_HORIZONTAL_GAP => InputEventValue::PixelHorizontalGap(value.as_f64().ok_or("it should be a number")? as f32),
-        frontend_event::PIXEL_WIDTH => InputEventValue::PixelWidth(value.as_f64().ok_or("it should be a number")? as f32),
-        frontend_event::PIXEL_SPREAD => InputEventValue::PixelSpread(value.as_f64().ok_or("it should be a number")? as f32),
-        frontend_event::CAMERA_ZOOM => InputEventValue::Camera(CameraChange::Zoom(value.as_f64().ok_or("it should be a number")? as f32)),
-        frontend_event::CAMERA_POS_X => InputEventValue::Camera(CameraChange::PosX(value.as_f64().ok_or("it should be a number")? as f32)),
-        frontend_event::CAMERA_POS_Y => InputEventValue::Camera(CameraChange::PosY(value.as_f64().ok_or("it should be a number")? as f32)),
-        frontend_event::CAMERA_POS_Z => InputEventValue::Camera(CameraChange::PosZ(value.as_f64().ok_or("it should be a number")? as f32)),
-        frontend_event::CAMERA_AXIS_UP_X => InputEventValue::Camera(CameraChange::AxisUpX(value.as_f64().ok_or("it should be a number")? as f32)),
-        frontend_event::CAMERA_AXIS_UP_Y => InputEventValue::Camera(CameraChange::AxisUpY(value.as_f64().ok_or("it should be a number")? as f32)),
-        frontend_event::CAMERA_AXIS_UP_Z => InputEventValue::Camera(CameraChange::AxisUpZ(value.as_f64().ok_or("it should be a number")? as f32)),
-        frontend_event::CAMERA_DIRECTION_X => InputEventValue::Camera(CameraChange::DirectionX(value.as_f64().ok_or("it should be a number")? as f32)),
-        frontend_event::CAMERA_DIRECTION_Y => InputEventValue::Camera(CameraChange::DirectionY(value.as_f64().ok_or("it should be a number")? as f32)),
-        frontend_event::CAMERA_DIRECTION_Z => InputEventValue::Camera(CameraChange::DirectionZ(value.as_f64().ok_or("it should be a number")? as f32)),
-        frontend_event::RGB_RED_R => InputEventValue::Rgb(RgbChange::RedR(value.as_f64().ok_or("it should be a number")? as f32)),
-        frontend_event::RGB_RED_G => InputEventValue::Rgb(RgbChange::RedG(value.as_f64().ok_or("it should be a number")? as f32)),
-        frontend_event::RGB_RED_B => InputEventValue::Rgb(RgbChange::RedB(value.as_f64().ok_or("it should be a number")? as f32)),
-        frontend_event::RGB_GREEN_R => InputEventValue::Rgb(RgbChange::GreenR(value.as_f64().ok_or("it should be a number")? as f32)),
-        frontend_event::RGB_GREEN_G => InputEventValue::Rgb(RgbChange::GreenG(value.as_f64().ok_or("it should be a number")? as f32)),
-        frontend_event::RGB_GREEN_B => InputEventValue::Rgb(RgbChange::GreenB(value.as_f64().ok_or("it should be a number")? as f32)),
-        frontend_event::RGB_BLUE_R => InputEventValue::Rgb(RgbChange::BlueR(value.as_f64().ok_or("it should be a number")? as f32)),
-        frontend_event::RGB_BLUE_G => InputEventValue::Rgb(RgbChange::BlueG(value.as_f64().ok_or("it should be a number")? as f32)),
-        frontend_event::RGB_BLUE_B => InputEventValue::Rgb(RgbChange::BlueB(value.as_f64().ok_or("it should be a number")? as f32)),
-        frontend_event::COLOR_GAMMA => InputEventValue::ColorGamma(value.as_f64().ok_or("it should be a number")? as f32),
-        frontend_event::COLOR_NOISE => InputEventValue::ColorNoise(value.as_f64().ok_or("it should be a number")? as f32),
-        frontend_event::CUSTOM_SCALING_RESOLUTION_WIDTH => InputEventValue::CustomScalingResolutionWidth(value.as_f64().ok_or("it should be a number")? as f32),
-        frontend_event::CUSTOM_SCALING_RESOLUTION_HEIGHT => {
-            InputEventValue::CustomScalingResolutionHeight(value.as_f64().ok_or("it should be a number")? as f32)
-        }
-        frontend_event::CUSTOM_SCALING_ASPECT_RATIO_X => InputEventValue::CustomScalingAspectRatioX(value.as_f64().ok_or("it should be a number")? as f32),
-        frontend_event::CUSTOM_SCALING_ASPECT_RATIO_Y => InputEventValue::CustomScalingAspectRatioY(value.as_f64().ok_or("it should be a number")? as f32),
-        frontend_event::CUSTOM_SCALING_STRETCH_NEAREST => InputEventValue::CustomScalingStretchNearest(value.as_bool().ok_or("it should be a bool")?),
-        frontend_event::VIEWPORT_RESIZE => InputEventValue::ViewportResize(
+        "front2back:mouse-wheel" => InputEventValue::MouseWheel(value.as_f64().ok_or("it should be a number")? as f32),
+        "front2back:blurred-window" => InputEventValue::BlurredWindow,
+        "front2back:filter-presets-selected" => InputEventValue::FilterPreset(value.as_string().ok_or("it should be a string")?),
+        "front2back:pixel-brightness" => InputEventValue::PixelBrighttness(value.as_f64().ok_or("it should be a number")? as f32),
+        "front2back:pixel-contrast" => InputEventValue::PixelContrast(value.as_f64().ok_or("it should be a number")? as f32),
+        "front2back:light-color" => InputEventValue::LightColor(value.as_f64().ok_or("it should be a number")? as i32),
+        "front2back:brightness-color" => InputEventValue::BrightnessColor(value.as_f64().ok_or("it should be a number")? as i32),
+        "front2back:blur-level" => InputEventValue::BlurLevel(value.as_f64().ok_or("it should be a number")? as usize),
+        "front2back:vertical-lpp" => InputEventValue::VerticalLpp(value.as_f64().ok_or("it should be a number")? as usize),
+        "front2back:horizontal-lpp" => InputEventValue::HorizontalLpp(value.as_f64().ok_or("it should be a number")? as usize),
+        "front2back:pixel-shadow-height" => InputEventValue::PixelShadowHeight(value.as_f64().ok_or("it should be a number")? as f32),
+        "front2back:backlight-percent" => InputEventValue::BacklightPercent(value.as_f64().ok_or("it should be a number")? as f32),
+        "front2back:pixel-vertical-gap" => InputEventValue::PixelVerticalGap(value.as_f64().ok_or("it should be a number")? as f32),
+        "front2back:pixel-horizontal-gap" => InputEventValue::PixelHorizontalGap(value.as_f64().ok_or("it should be a number")? as f32),
+        "front2back:pixel-width" => InputEventValue::PixelWidth(value.as_f64().ok_or("it should be a number")? as f32),
+        "front2back:pixel-spread" => InputEventValue::PixelSpread(value.as_f64().ok_or("it should be a number")? as f32),
+        "front2back:camera_zoom" => InputEventValue::Camera(CameraChange::Zoom(value.as_f64().ok_or("it should be a number")? as f32)),
+        "front2back:camera-pos-x" => InputEventValue::Camera(CameraChange::PosX(value.as_f64().ok_or("it should be a number")? as f32)),
+        "front2back:camera-pos-y" => InputEventValue::Camera(CameraChange::PosY(value.as_f64().ok_or("it should be a number")? as f32)),
+        "front2back:camera-pos-z" => InputEventValue::Camera(CameraChange::PosZ(value.as_f64().ok_or("it should be a number")? as f32)),
+        "front2back:camera-axis-up-x" => InputEventValue::Camera(CameraChange::AxisUpX(value.as_f64().ok_or("it should be a number")? as f32)),
+        "front2back:camera-axis-up-y" => InputEventValue::Camera(CameraChange::AxisUpY(value.as_f64().ok_or("it should be a number")? as f32)),
+        "front2back:camera-axis-up-z" => InputEventValue::Camera(CameraChange::AxisUpZ(value.as_f64().ok_or("it should be a number")? as f32)),
+        "front2back:camera-dir-x" => InputEventValue::Camera(CameraChange::DirectionX(value.as_f64().ok_or("it should be a number")? as f32)),
+        "front2back:camera-dir-y" => InputEventValue::Camera(CameraChange::DirectionY(value.as_f64().ok_or("it should be a number")? as f32)),
+        "front2back:camera-dir-z" => InputEventValue::Camera(CameraChange::DirectionZ(value.as_f64().ok_or("it should be a number")? as f32)),
+        "front2back:rgb-red-r" => InputEventValue::Rgb(RgbChange::RedR(value.as_f64().ok_or("it should be a number")? as f32)),
+        "front2back:rgb-red-g" => InputEventValue::Rgb(RgbChange::RedG(value.as_f64().ok_or("it should be a number")? as f32)),
+        "front2back:rgb-red-b" => InputEventValue::Rgb(RgbChange::RedB(value.as_f64().ok_or("it should be a number")? as f32)),
+        "front2back:rgb-green-r" => InputEventValue::Rgb(RgbChange::GreenR(value.as_f64().ok_or("it should be a number")? as f32)),
+        "front2back:rgb-green-g" => InputEventValue::Rgb(RgbChange::GreenG(value.as_f64().ok_or("it should be a number")? as f32)),
+        "front2back:rgb-green-b" => InputEventValue::Rgb(RgbChange::GreenB(value.as_f64().ok_or("it should be a number")? as f32)),
+        "front2back:rgb-blue-r" => InputEventValue::Rgb(RgbChange::BlueR(value.as_f64().ok_or("it should be a number")? as f32)),
+        "front2back:rgb-blue-g" => InputEventValue::Rgb(RgbChange::BlueG(value.as_f64().ok_or("it should be a number")? as f32)),
+        "front2back:rgb-blue-b" => InputEventValue::Rgb(RgbChange::BlueB(value.as_f64().ok_or("it should be a number")? as f32)),
+        "front2back:color-gamma" => InputEventValue::ColorGamma(value.as_f64().ok_or("it should be a number")? as f32),
+        "front2back:color-noise" => InputEventValue::ColorNoise(value.as_f64().ok_or("it should be a number")? as f32),
+        "front2back:custom-scaling-resolution-width" => InputEventValue::CustomScalingResolutionWidth(value.as_f64().ok_or("it should be a number")? as f32),
+        "front2back:custom-scaling-resolution-height" => InputEventValue::CustomScalingResolutionHeight(value.as_f64().ok_or("it should be a number")? as f32),
+        "front2back:custom-scaling-aspect-ratio-x" => InputEventValue::CustomScalingAspectRatioX(value.as_f64().ok_or("it should be a number")? as f32),
+        "front2back:custom-scaling-aspect-ratio-y" => InputEventValue::CustomScalingAspectRatioY(value.as_f64().ok_or("it should be a number")? as f32),
+        "front2back:custom-scaling-stretch-nearest" => InputEventValue::CustomScalingStretchNearest(value.as_bool().ok_or("it should be a bool")?),
+        "front2back:viewport-resize" => InputEventValue::ViewportResize(
             js_sys::Reflect::get(&value, &"width".into())?.as_f64().ok_or("it should contain width")? as u32,
             js_sys::Reflect::get(&value, &"height".into())?.as_f64().ok_or("it should contain height")? as u32,
         ),

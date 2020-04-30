@@ -19,56 +19,6 @@ use crate::boolean_button::BooleanButton;
 use crate::camera::CameraChange;
 use crate::general_types::{IncDec, Size2D};
 
-pub mod frontend_event {
-    pub const KEYBOARD: &str = "front2back:keyboard";
-    pub const MOUSE_CLICK: &str = "front2back:mouse-click";
-    pub const MOUSE_MOVE: &str = "front2back:mouse-move";
-    pub const MOUSE_WHEEL: &str = "front2back:mouse-wheel";
-    pub const BLURRED_WINDOW: &str = "front2back:blurred-window";
-
-    pub const FILTER_PRESET: &str = "front2back:filter-presets-selected";
-    pub const PIXEL_BRIGHTNESS: &str = "front2back:pixel-brightness";
-    pub const PIXEL_CONTRAST: &str = "front2back:pixel-contrast";
-    pub const LIGHT_COLOR: &str = "front2back:light-color";
-    pub const BRIGHTNESS_COLOR: &str = "front2back:brightness-color";
-    pub const BLUR_LEVEL: &str = "front2back:blur-level";
-    pub const VERTICAL_LPP: &str = "front2back:vertical-lpp";
-    pub const HORIZONTAL_LPP: &str = "front2back:horizontal-lpp";
-    pub const PIXEL_SHADOW_HEIGHT: &str = "front2back:pixel-shadow-height";
-    pub const PIXEL_VERTICAL_GAP: &str = "front2back:pixel-vertical-gap";
-    pub const PIXEL_HORIZONTAL_GAP: &str = "front2back:pixel-horizontal-gap";
-    pub const PIXEL_WIDTH: &str = "front2back:pixel-width";
-    pub const PIXEL_SPREAD: &str = "front2back:pixel-spread";
-    pub const BACKLIGHT_PERCENT: &str = "front2back:backlight-percent";
-    pub const CAMERA_ZOOM: &str = "front2back:camera_zoom";
-    pub const CAMERA_POS_X: &str = "front2back:camera-pos-x";
-    pub const CAMERA_POS_Y: &str = "front2back:camera-pos-y";
-    pub const CAMERA_POS_Z: &str = "front2back:camera-pos-z";
-    pub const CAMERA_AXIS_UP_X: &str = "front2back:camera-axis-up-x";
-    pub const CAMERA_AXIS_UP_Y: &str = "front2back:camera-axis-up-y";
-    pub const CAMERA_AXIS_UP_Z: &str = "front2back:camera-axis-up-z";
-    pub const CAMERA_DIRECTION_X: &str = "front2back:camera-dir-x";
-    pub const CAMERA_DIRECTION_Y: &str = "front2back:camera-dir-y";
-    pub const CAMERA_DIRECTION_Z: &str = "front2back:camera-dir-z";
-    pub const RGB_RED_R: &str = "front2back:rgb-red-r";
-    pub const RGB_RED_G: &str = "front2back:rgb-red-g";
-    pub const RGB_RED_B: &str = "front2back:rgb-red-b";
-    pub const RGB_GREEN_R: &str = "front2back:rgb-green-r";
-    pub const RGB_GREEN_G: &str = "front2back:rgb-green-g";
-    pub const RGB_GREEN_B: &str = "front2back:rgb-green-b";
-    pub const RGB_BLUE_R: &str = "front2back:rgb-blue-r";
-    pub const RGB_BLUE_G: &str = "front2back:rgb-blue-g";
-    pub const RGB_BLUE_B: &str = "front2back:rgb-blue-b";
-    pub const COLOR_GAMMA: &str = "front2back:color-gamma";
-    pub const COLOR_NOISE: &str = "front2back:color-noise";
-    pub const CUSTOM_SCALING_RESOLUTION_WIDTH: &str = "front2back:custom-scaling-resolution-width";
-    pub const CUSTOM_SCALING_RESOLUTION_HEIGHT: &str = "front2back:custom-scaling-resolution-height";
-    pub const CUSTOM_SCALING_ASPECT_RATIO_X: &str = "front2back:custom-scaling-aspect-ratio-x";
-    pub const CUSTOM_SCALING_ASPECT_RATIO_Y: &str = "front2back:custom-scaling-aspect-ratio-y";
-    pub const CUSTOM_SCALING_STRETCH_NEAREST: &str = "front2back:custom-scaling-stretch-nearest";
-    pub const VIEWPORT_RESIZE: &str = "front2back:viewport-resize";
-}
-
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Pressed {
     Yes,
