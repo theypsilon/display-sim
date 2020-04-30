@@ -113,6 +113,8 @@ impl<'a> SimulationDrawer<'a> {
                         rgb_green: &output.rgb_green,
                         rgb_blue: &output.rgb_blue,
                         color_gamma: output.color_gamma,
+                        color_noise: output.color_noise,
+                        time: output.time as f32,
                         height_modifier_factor: output.height_modifier_factor,
                     });
                 }
@@ -170,6 +172,8 @@ impl<'a> SimulationDrawer<'a> {
                         rgb_green: &output.rgb_green,
                         rgb_blue: &output.rgb_blue,
                         color_gamma: output.color_gamma,
+                        color_noise: output.color_noise,
+                        time: output.time as f32,
                         height_modifier_factor: 0.0,
                     });
                 }

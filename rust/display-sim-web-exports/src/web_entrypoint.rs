@@ -181,6 +181,7 @@ fn read_frontend_event(input: &mut Input, event: JsValue) -> AppResult<()> {
         frontend_event::RGB_BLUE_G => InputEventValue::Rgb(RgbChange::BlueG(value.as_f64().ok_or("it should be a number")? as f32)),
         frontend_event::RGB_BLUE_B => InputEventValue::Rgb(RgbChange::BlueB(value.as_f64().ok_or("it should be a number")? as f32)),
         frontend_event::COLOR_GAMMA => InputEventValue::ColorGamma(value.as_f64().ok_or("it should be a number")? as f32),
+        frontend_event::COLOR_NOISE => InputEventValue::ColorNoise(value.as_f64().ok_or("it should be a number")? as f32),
         frontend_event::CUSTOM_SCALING_RESOLUTION_WIDTH => InputEventValue::CustomScalingResolutionWidth(value.as_f64().ok_or("it should be a number")? as f32),
         frontend_event::CUSTOM_SCALING_RESOLUTION_HEIGHT => {
             InputEventValue::CustomScalingResolutionHeight(value.as_f64().ok_or("it should be a number")? as f32)

@@ -97,6 +97,7 @@ impl<'a> SimulationCoreTicker<'a> {
                 InputEventValue::ViewportResize(width, height) => self.input.event_viewport_resize = Some(Size2D { width, height }),
                 InputEventValue::Rgb(rgb) => self.input.event_rgb = Some(rgb),
                 InputEventValue::ColorGamma(gamma) => self.input.event_color_gamma = Some(gamma),
+                InputEventValue::ColorNoise(noise) => self.input.event_color_noise = Some(noise),
                 InputEventValue::None => {}
             };
         }
@@ -623,6 +624,9 @@ impl<'a> SimulationUpdater<'a> {
         if let Some(gamma) = self.input.event_color_gamma {
             self.res.filters.color_gamma = gamma;
         }
+        if let Some(noise) = self.input.event_color_noise {
+            self.res.filters.color_noise = noise;
+        }
     }
 
     fn change_frontend_input_values(&self) {
@@ -765,6 +769,7 @@ impl<'a> SimulationUpdater<'a> {
         output.ambient_strength = ambient_strength;
         output.pixel_have_depth = pixel_have_depth;
         output.height_modifier_factor = 1.0 - filters.pixel_shadow_height;
+        output.time = self.input.now;
 
         self.update_output_pixel_scale_gap_offset();
     }
@@ -910,6 +915,7 @@ impl<'a> SimulationUpdater<'a> {
         output.rgb_blue[1] = filters.rgb_blue_g;
         output.rgb_blue[2] = filters.rgb_blue_b;
         output.color_gamma = filters.color_gamma;
+        output.color_noise = filters.color_noise;
     }
 
     fn update_output_filter_curvature(&mut self) {

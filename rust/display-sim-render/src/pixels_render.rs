@@ -57,6 +57,8 @@ pub struct PixelsUniform<'a> {
     pub rgb_green: &'a [f32; 3],
     pub rgb_blue: &'a [f32; 3],
     pub color_gamma: f32,
+    pub time: f32,
+    pub color_noise: f32,
 
     pub pixel_pulse: f32,
     pub height_modifier_factor: f32,
@@ -229,6 +231,8 @@ impl<GL: HasContext> PixelsRender<GL> {
         gl.uniform_3_f32_slice(gl.get_uniform_location(shader, "green"), uniforms.rgb_green);
         gl.uniform_3_f32_slice(gl.get_uniform_location(shader, "blue"), uniforms.rgb_blue);
         gl.uniform_1_f32(gl.get_uniform_location(shader, "gamma"), uniforms.color_gamma);
+        gl.uniform_1_f32(gl.get_uniform_location(shader, "time"), uniforms.time);
+        gl.uniform_1_f32(gl.get_uniform_location(shader, "color_noise"), uniforms.color_noise);
 
         gl.bind_vertex_array(self.vao);
         gl.draw_arrays_instanced(
@@ -400,6 +404,32 @@ uniform float ambientStrength;
 uniform float contrastFactor;
 
 uniform sampler2D image;
+uniform float time;
+uniform float color_noise;
+
+uint hash( uint x ) {
+    x += ( x << 10u );
+    x ^= ( x >>  6u );
+    x += ( x <<  3u );
+    x ^= ( x >> 11u );
+    x += ( x << 15u );
+    return x;
+}
+
+uint hash( uvec3 v ) { return hash( v.x ^ hash(v.y) ^ hash(v.z)             ); }
+
+float floatConstruct( uint m ) {
+    const uint ieeeMantissa = 0x007FFFFFu; // binary32 mantissa bitmask
+    const uint ieeeOne      = 0x3F800000u; // 1.0 in IEEE binary32
+
+    m &= ieeeMantissa;                     // Keep only mantissa bits (fractional part)
+    m |= ieeeOne;                          // Add fractional part to 1.0
+
+    float  f = uintBitsToFloat( m );       // Range [1:2]
+    return f - 1.0;                        // Range [0:1]
+}
+
+float random( vec3  v ) { return floatConstruct(hash(floatBitsToUint(v))); }
 
 void main()
 {
@@ -422,9 +452,9 @@ void main()
         result = ObjectColor * vec4(ambient + diffuse * (1.0 - ambientStrength), 1.0) * texture(image, ImagePos);
     }
     float contrastUmbral = 0.5;
-    result.r = (result.r - contrastUmbral) * contrastFactor + contrastFactor * contrastUmbral;
-    result.g = (result.g - contrastUmbral) * contrastFactor + contrastFactor * contrastUmbral;
-    result.b = (result.b - contrastUmbral) * contrastFactor + contrastFactor * contrastUmbral;
+    result.r = (result.r - contrastUmbral) * contrastFactor + contrastFactor * contrastUmbral - color_noise/2.0 + color_noise * random(vec3(ImagePos, time * 0.5));
+    result.g = (result.g - contrastUmbral) * contrastFactor + contrastFactor * contrastUmbral - color_noise/2.0 + color_noise * random(vec3(ImagePos, time));
+    result.b = (result.b - contrastUmbral) * contrastFactor + contrastFactor * contrastUmbral - color_noise/2.0 + color_noise * random(vec3(ImagePos, time * 2.0));
     result = result.r * vec4(red, 1.0) + result.g * vec4(green, 1.0) + result.b * vec4(blue, 1.0) + vec4(extraLight, 0.0);
     FragColor = vec4(pow(result.r, gamma), pow(result.g, gamma), pow(result.b, gamma), result.a);
 } 
