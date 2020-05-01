@@ -176,6 +176,8 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
         case 'back2front:internal_resolution': return view.changeInternalResolution(msg);
         case 'back2front:texture_interpolation': return view.changeTextureInterpolation(msg);
         case 'back2front:screen_curvature': return view.changeScreenCurvature(msg);
+        case 'back2front:color_gamma': return view.changeColorGamma(msg);
+        case 'back2front:color_noise': return view.changeColorNoise(msg);
         case 'front2front:clickPreset': {
             view.clickPreset(msg);
             model.setPreset(msg);

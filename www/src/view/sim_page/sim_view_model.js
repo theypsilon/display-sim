@@ -41,7 +41,7 @@ export function data () {
         vertical_lpp: { value: null, eventKind: 'vertical-lpp' },
         horizontal_lpp: { value: null, eventKind: 'horizontal-lpp' },
         color_gamma: { value: 1.0, eventKind: 'color-gamma' },
-        color_noise: { value: 1.0, eventKind: 'color-noise' },
+        color_noise: { value: 0.0, eventKind: 'color-noise' },
         light_color: { value: '#FFFFFF', eventKind: 'light-color' },
         pixel_brightness: { value: null, eventKind: 'pixel-brightness' },
         pixel_contrast: { value: null, eventKind: 'pixel-contrast' },
@@ -478,5 +478,13 @@ export class View {
         this._state.options.webgl_antialias.value = antialias;
         this._isDirty = true;
         this._visibility.hideLoading();
+    }
+    changeColorGamma (gamma) {
+        this._state.options.color_gamma.value = gamma;
+        this._isDirty = true;
+    }
+    changeColorNoise (noise) {
+        this._state.options.color_noise.value = noise;
+        this._isDirty = true;
     }
 }

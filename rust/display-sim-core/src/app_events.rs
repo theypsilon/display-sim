@@ -54,6 +54,8 @@ pub trait AppEventDispatcher {
     fn dispatch_scaling_aspect_ratio_x(&self, x: f32);
     fn dispatch_scaling_aspect_ratio_y(&self, y: f32);
     fn dispatch_custom_scaling_stretch_nearest(&self, stretch: bool);
+    fn dispatch_color_gamma(&self, gamma: f32);
+    fn dispatch_color_noise(&self, noise: f32);
     fn dispatch_exiting_session(&self);
     fn dispatch_toggle_info_panel(&self);
     fn dispatch_fps(&self, fps: f32);
@@ -104,6 +106,8 @@ impl AppEventDispatcher for FakeEventDispatcher {
     fn dispatch_scaling_aspect_ratio_x(&self, _: f32) {}
     fn dispatch_scaling_aspect_ratio_y(&self, _: f32) {}
     fn dispatch_custom_scaling_stretch_nearest(&self, _: bool) {}
+    fn dispatch_color_gamma(&self, _: f32) {}
+    fn dispatch_color_noise(&self, _: f32) {}
     fn dispatch_exiting_session(&self) {}
     fn dispatch_toggle_info_panel(&self) {}
     fn dispatch_fps(&self, fps: f32) {

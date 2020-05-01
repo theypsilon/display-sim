@@ -167,6 +167,8 @@ pub struct Input {
     pub(crate) bright: IncDec<bool>,
     pub(crate) contrast: IncDec<bool>,
     pub(crate) backlight_percent: IncDec<bool>,
+    pub(crate) color_gamma: IncDec<bool>,
+    pub(crate) color_noise: IncDec<bool>,
     #[in_array(get_tracked_buttons)]
     pub(crate) next_camera_movement_mode: IncDec<BooleanButton>,
     #[in_array(get_tracked_buttons)]
@@ -339,4 +341,6 @@ pub(crate) enum BooleanAction {
     ScalingResolutionHeight(Boolean2DAction),
     ScalingAspectRatioX(Boolean2DAction),
     ScalingAspectRatioY(Boolean2DAction),
+    ColorGamma(Boolean2DAction),
+    ColorNoise(Boolean2DAction),
 }

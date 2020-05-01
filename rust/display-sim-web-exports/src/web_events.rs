@@ -240,6 +240,22 @@ impl AppEventDispatcher for WebEventDispatcher {
         ));
     }
 
+    fn dispatch_color_gamma(&self, gam: f32) {
+        self.catch_error(dispatch_event_with(
+            &self.event_bus,
+            "back2front:color_gamma",
+            &(if gam.floor() == gam { format!("{:.00}", gam) } else { format!("{:.03}", gam) }).into(),
+        ));
+    }
+
+    fn dispatch_color_noise(&self, noi: f32) {
+        self.catch_error(dispatch_event_with(
+            &self.event_bus,
+            "back2front:color_noise",
+            &(if noi.floor() == noi { format!("{:.00}", noi) } else { format!("{:.03}", noi) }).into(),
+        ));
+    }
+
     fn dispatch_custom_scaling_stretch_nearest(&self, stretch: bool) {
         self.catch_error(dispatch_event_with(
             &self.event_bus,

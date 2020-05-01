@@ -371,6 +371,22 @@ impl<'a> SimulationUpdater<'a> {
         let mut changed = false;
 
         changed = changed
+            || FieldChanger::new(*ctx, &mut filters.color_gamma, input.color_gamma)
+                .set_progression(0.025 * self.dt * self.res.speed.filter_speed)
+                .set_event_value(input.event_color_gamma)
+                .set_min(0.0)
+                .set_max(20.0)
+                .set_trigger_handler(|x| ctx.dispatcher().dispatch_color_gamma(x))
+                .process_with_sums();
+        changed = changed
+            || FieldChanger::new(*ctx, &mut filters.color_noise, input.color_noise)
+                .set_progression(0.01 * self.dt * self.res.speed.filter_speed)
+                .set_event_value(input.event_color_noise)
+                .set_min(0.0)
+                .set_max(1.0)
+                .set_trigger_handler(|x| ctx.dispatcher().dispatch_color_noise(x))
+                .process_with_sums();
+        changed = changed
             || FieldChanger::new(*ctx, &mut filters.extra_bright, input.bright)
                 .set_progression(0.01 * self.dt * self.res.speed.filter_speed)
                 .set_event_value(input.event_pixel_brighttness)
@@ -662,6 +678,8 @@ impl<'a> SimulationUpdater<'a> {
         dispatcher.dispatch_scaling_aspect_ratio_y(self.res.scaling.custom_aspect_ratio.height);
         dispatcher.dispatch_custom_scaling_stretch_nearest(self.res.scaling.custom_stretch);
         dispatcher.dispatch_change_pixel_width(self.res.scaling.pixel_width);
+        dispatcher.dispatch_color_gamma(self.res.filters.color_gamma);
+        dispatcher.dispatch_color_noise(self.res.filters.color_noise);
         // This one shouldn't be needed because it's always coming from frontend to backend.
         //dispatcher.dispatch_change_preset_selected(&self.res.filters.preset_kind.to_string());
         dispatcher.enable_extra_messages(true);
