@@ -136,11 +136,11 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
         case 'front2front:changeSyncedInput': return fireBackendEvent(msg.kind, msg.value);
         case 'front2front:toggleControls': return view.toggleControls();
         case 'front2front:toggleMenu': return view.toggleMenu(msg);
+        case 'back2front:screenshot': return model.fireScreenshot(msg);
         case 'back2front:top_message': return view.openTopMessage(msg);
         case 'back2front:request_fullscreen': return view.setFullscreen(msg);
         case 'back2front:request_pointer_lock': return view.requestPointerLock(msg);
         case 'back2front:preset_selected_name': return view.presetSelectedName(msg);
-        case 'back2front:screenshot': return model.fireScreenshot(msg);
         case 'back2front:camera_update': return view.updateCameraMatrix(msg);
         case 'back2front:toggle_info_panel': return view.toggleInfoPanel(msg);
         case 'back2front:fps': return view.changeFps(msg);

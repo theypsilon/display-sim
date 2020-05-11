@@ -338,6 +338,12 @@ export class View {
         window.location.hash = '';
         this._navigator.goToLandingPage();
     }
+    handleViewEvents (eventKind, msg) {
+        switch (eventKind) {
+        default: return false;
+        }
+        return true;
+    }
     changeCameraMovementMode (msg) {
         switch (msg) {
         case '2D':

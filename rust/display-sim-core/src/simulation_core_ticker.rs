@@ -118,11 +118,11 @@ impl<'a> SimulationCoreTicker<'a> {
     }
 }
 
-struct SimulationUpdater<'a> {
-    ctx: &'a dyn SimulationContext,
-    res: &'a mut Resources,
-    input: &'a Input,
-    dt: f32,
+pub struct SimulationUpdater<'a> {
+    pub ctx: &'a dyn SimulationContext,
+    pub res: &'a mut Resources,
+    pub input: &'a Input,
+    pub dt: f32,
 }
 
 impl<'a> SimulationUpdater<'a> {
