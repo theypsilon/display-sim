@@ -455,7 +455,7 @@ void main()
     result.r = (result.r - contrastUmbral) * contrastFactor + contrastFactor * contrastUmbral - color_noise/2.0 + color_noise * random(vec3(ImagePos, time * 0.5));
     result.g = (result.g - contrastUmbral) * contrastFactor + contrastFactor * contrastUmbral - color_noise/2.0 + color_noise * random(vec3(ImagePos, time));
     result.b = (result.b - contrastUmbral) * contrastFactor + contrastFactor * contrastUmbral - color_noise/2.0 + color_noise * random(vec3(ImagePos, time * 2.0));
-    result = result.r * vec4(red, 1.0) + result.g * vec4(green, 1.0) + result.b * vec4(blue, 1.0) + vec4(extraLight, 0.0);
+    result = result.r * vec4(red, result.a) + result.g * vec4(green, result.a) + result.b * vec4(blue, result.a) + vec4(extraLight, 0.0);
     FragColor = vec4(pow(result.r, gamma), pow(result.g, gamma), pow(result.b, gamma), result.a);
 } 
 "#;
