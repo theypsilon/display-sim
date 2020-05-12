@@ -62,7 +62,6 @@ pub enum InputEventValue {
     Camera(CameraChange),
     Rgb(RgbChange),
     ColorGamma(f32),
-    ColorNoise(f32),
     CustomScalingResolutionWidth(f32),
     CustomScalingResolutionHeight(f32),
     CustomScalingAspectRatioX(f32),
@@ -168,7 +167,6 @@ pub struct Input {
     pub(crate) contrast: IncDec<bool>,
     pub(crate) backlight_percent: IncDec<bool>,
     pub(crate) color_gamma: IncDec<bool>,
-    pub(crate) color_noise: IncDec<bool>,
     #[in_array(get_tracked_buttons)]
     pub(crate) next_camera_movement_mode: IncDec<BooleanButton>,
     #[in_array(get_tracked_buttons)]
@@ -256,8 +254,6 @@ pub struct Input {
     #[in_array(get_options_to_be_noned)]
     pub(crate) event_color_gamma: Option<f32>,
     #[in_array(get_options_to_be_noned)]
-    pub(crate) event_color_noise: Option<f32>,
-    #[in_array(get_options_to_be_noned)]
     pub(crate) event_viewport_resize: Option<Size2D<u32>>,
     #[in_array(get_options_to_be_noned)]
     pub(crate) event_camera: Option<CameraChange>,
@@ -342,5 +338,4 @@ pub(crate) enum BooleanAction {
     ScalingAspectRatioX(Boolean2DAction),
     ScalingAspectRatioY(Boolean2DAction),
     ColorGamma(Boolean2DAction),
-    ColorNoise(Boolean2DAction),
 }

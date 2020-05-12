@@ -32,9 +32,9 @@ use std::str::FromStr;
 
 #[derive(new)]
 pub struct SimulationCoreTicker<'a> {
-    pub ctx: &'a dyn SimulationContext,
-    pub res: &'a mut Resources,
-    pub input: &'a mut Input,
+    ctx: &'a dyn SimulationContext,
+    res: &'a mut Resources,
+    input: &'a mut Input,
 }
 
 impl<'a> SimulationCoreTicker<'a> {
@@ -47,11 +47,10 @@ impl<'a> SimulationCoreTicker<'a> {
 
     fn pre_process_input(&mut self, now: f64) {
         self.input.now = now;
-
         for value in self.input.custom_event.consume_values() {
             match value {
                 InputEventValue::Keyboard { pressed, key } => {
-                    let result = trigger_hotkey_action(&mut self.input, key.to_lowercase().as_ref(), pressed);
+                    let result = trigger_hotkey_action(&mut self.input, &mut self.res, key.to_lowercase().as_ref(), pressed);
                     #[cfg(debug_assertions)]
                     {
                         if let ActionUsed::No(not_used) = result {
@@ -60,7 +59,7 @@ impl<'a> SimulationCoreTicker<'a> {
                     }
                 }
                 InputEventValue::MouseClick(pressed) => {
-                    let result = trigger_hotkey_action(&mut self.input, "mouse_click", pressed);
+                    let result = trigger_hotkey_action(&mut self.input, &mut self.res, "mouse_click", pressed);
                     debug_assert_eq!(result, ActionUsed::Yes)
                 }
                 InputEventValue::MouseMove { x, y } => {
@@ -97,12 +96,14 @@ impl<'a> SimulationCoreTicker<'a> {
                 InputEventValue::ViewportResize(width, height) => self.input.event_viewport_resize = Some(Size2D { width, height }),
                 InputEventValue::Rgb(rgb) => self.input.event_rgb = Some(rgb),
                 InputEventValue::ColorGamma(gamma) => self.input.event_color_gamma = Some(gamma),
-                InputEventValue::ColorNoise(noise) => self.input.event_color_noise = Some(noise),
                 InputEventValue::None => {}
             };
         }
 
         self.input.get_tracked_buttons().iter_mut().for_each(|button| button.track());
+        for controller in self.res.filters.get_ui_controllers_mut().iter_mut() {
+            controller.pre_process_input();
+        }
     }
 
     fn post_process_input(&mut self) {
@@ -115,10 +116,13 @@ impl<'a> SimulationCoreTicker<'a> {
         self.input.reset_speeds = false;
 
         self.input.get_options_to_be_noned().iter_mut().for_each(|opt| opt.set_none());
+        for controller in self.res.filters.get_ui_controllers_mut().iter_mut() {
+            controller.post_process_input();
+        }
     }
 }
 
-struct SimulationUpdater<'a> {
+pub struct SimulationUpdater<'a> {
     ctx: &'a dyn SimulationContext,
     res: &'a mut Resources,
     input: &'a Input,
@@ -369,7 +373,9 @@ impl<'a> SimulationUpdater<'a> {
         let input = &self.input;
 
         let mut changed = false;
-
+        for controller in filters.get_ui_controllers_mut().iter_mut() {
+            changed = changed || controller.update(self.res.speed.filter_speed * self.dt, *ctx);
+        }
         changed = changed
             || FieldChanger::new(*ctx, &mut filters.color_gamma, input.color_gamma)
                 .set_progression(0.025 * self.dt * self.res.speed.filter_speed)
@@ -377,14 +383,6 @@ impl<'a> SimulationUpdater<'a> {
                 .set_min(0.0)
                 .set_max(20.0)
                 .set_trigger_handler(|x| ctx.dispatcher().dispatch_color_gamma(x))
-                .process_with_sums();
-        changed = changed
-            || FieldChanger::new(*ctx, &mut filters.color_noise, input.color_noise)
-                .set_progression(0.01 * self.dt * self.res.speed.filter_speed)
-                .set_event_value(input.event_color_noise)
-                .set_min(0.0)
-                .set_max(1.0)
-                .set_trigger_handler(|x| ctx.dispatcher().dispatch_color_noise(x))
                 .process_with_sums();
         changed = changed
             || FieldChanger::new(*ctx, &mut filters.extra_bright, input.bright)
@@ -523,7 +521,7 @@ impl<'a> SimulationUpdater<'a> {
         if self.res.filters.preset_kind == FiltersPreset::DemoFlight1 {
             self.res.camera = self.res.demo_1.camera_backup.clone();
         }
-        self.res.filters = self.res.filters.preset_factory(preset, &self.res.saved_filters);
+        self.res.filters.preset_factory(preset, &self.res.saved_filters);
         if self.res.filters.preset_kind == FiltersPreset::DemoFlight1 {
             self.res.demo_1.needs_initialization = true;
         }
@@ -640,8 +638,8 @@ impl<'a> SimulationUpdater<'a> {
         if let Some(gamma) = self.input.event_color_gamma {
             self.res.filters.color_gamma = gamma;
         }
-        if let Some(noise) = self.input.event_color_noise {
-            self.res.filters.color_noise = noise;
+        for controller in self.res.filters.get_ui_controllers_mut().iter_mut() {
+            controller.apply_event();
         }
     }
 
@@ -679,7 +677,9 @@ impl<'a> SimulationUpdater<'a> {
         dispatcher.dispatch_custom_scaling_stretch_nearest(self.res.scaling.custom_stretch);
         dispatcher.dispatch_change_pixel_width(self.res.scaling.pixel_width);
         dispatcher.dispatch_color_gamma(self.res.filters.color_gamma);
-        dispatcher.dispatch_color_noise(self.res.filters.color_noise);
+        for controller in self.res.filters.get_ui_controllers().iter() {
+            controller.dispatch_event(dispatcher);
+        }
         // This one shouldn't be needed because it's always coming from frontend to backend.
         //dispatcher.dispatch_change_preset_selected(&self.res.filters.preset_kind.to_string());
         dispatcher.enable_extra_messages(true);
@@ -933,7 +933,7 @@ impl<'a> SimulationUpdater<'a> {
         output.rgb_blue[1] = filters.rgb_blue_g;
         output.rgb_blue[2] = filters.rgb_blue_b;
         output.color_gamma = filters.color_gamma;
-        output.color_noise = filters.color_noise;
+        output.color_noise = filters.color_noise.value;
     }
 
     fn update_output_filter_curvature(&mut self) {

@@ -13,6 +13,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
+use std::collections::HashMap;
+
+use arraygen::Arraygen;
 use enum_len_derive::EnumLen;
 use num_derive::{FromPrimitive, ToPrimitive};
 
@@ -20,6 +23,7 @@ use crate::camera::CameraData;
 use crate::general_types::Size2D;
 use crate::internal_resolution::InternalResolution;
 use crate::pixels_shadow::ShadowShape;
+use crate::ui_controller::{color_noise::ColorNoise, UiController};
 
 pub const PIXEL_MANIPULATION_BASE_SPEED: f32 = 20.0;
 pub const TURNING_BASE_SPEED: f32 = 3.0;
@@ -45,6 +49,12 @@ pub struct AnimationStep {
     pub delay: u32,
 }
 
+pub enum KeyEventKind {
+    Inc,
+    Dec,
+    Set,
+}
+
 // Simulation Resources
 pub struct Resources {
     pub video: VideoInputResources,
@@ -62,10 +72,12 @@ pub struct Resources {
     pub drawable: bool,
     pub resetted: bool,
     pub quit: bool,
+    pub controller_events: HashMap<&'static str, (KeyEventKind, usize)>,
 }
 
 impl Default for Resources {
     fn default() -> Self {
+        let mut filters = Filters::default();
         Resources {
             initial_parameters: InitialParameters::default(),
             timers: SimulationTimers::default(),
@@ -76,7 +88,6 @@ impl Default for Resources {
             speed: Speeds {
                 filter_speed: PIXEL_MANIPULATION_BASE_SPEED,
             },
-            filters: Filters::default(),
             scaling: Scaling::default(),
             saved_filters: None,
             custom_is_changed: false,
@@ -84,6 +95,20 @@ impl Default for Resources {
             drawable: false,
             resetted: true,
             quit: false,
+            controller_events: {
+                let mut map: HashMap<&'static str, (KeyEventKind, usize)> = HashMap::new();
+                for (i, controller) in filters.get_ui_controllers_mut().iter().enumerate() {
+                    for key in controller.keys_dec().clone() {
+                        map.insert(*key, (KeyEventKind::Dec, i));
+                    }
+                    for key in controller.keys_inc().clone() {
+                        map.insert(*key, (KeyEventKind::Inc, i));
+                    }
+                    map.insert(controller.event_tag(), (KeyEventKind::Set, i));
+                }
+                map
+            },
+            filters,
         }
     }
 }
@@ -94,7 +119,7 @@ impl Resources {
         self.resetted = true;
         self.scaling.scaling_initialized = false;
         if let Some(preset) = video_input.preset {
-            self.filters = self.filters.preset_factory(preset, &None);
+            self.filters.preset_factory(preset, &None);
         }
         self.timers = SimulationTimers {
             frame_count: 0,
@@ -184,7 +209,9 @@ pub struct Speeds {
     pub filter_speed: f32,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Arraygen)]
+#[gen_array(pub fn get_ui_controllers: &dyn UiController)]
+#[gen_array(pub fn get_ui_controllers_mut: &mut dyn UiController)]
 pub struct Filters {
     pub internal_resolution: InternalResolution,
     pub texture_interpolation: TextureInterpolation,
@@ -214,13 +241,15 @@ pub struct Filters {
     pub rgb_blue_g: f32,
     pub rgb_blue_b: f32,
     pub color_gamma: f32,
-    pub color_noise: f32,
+    #[in_array(get_ui_controllers)]
+    #[in_array(get_ui_controllers_mut)]
+    pub color_noise: ColorNoise,
     pub preset_kind: FiltersPreset,
 }
 
 impl Default for Filters {
     fn default() -> Self {
-        Filters {
+        let mut filters = Filters {
             internal_resolution: InternalResolution::default(),
             texture_interpolation: TextureInterpolation::Linear,
             blur_passes: 0,
@@ -249,10 +278,11 @@ impl Default for Filters {
             rgb_blue_g: 0.0,
             rgb_blue_b: 1.0,
             color_gamma: 1.0,
-            color_noise: 0.0,
+            color_noise: ColorNoise::default(),
             preset_kind: FiltersPreset::Sharp1,
-        }
-        .preset_crt_aperture_grille_1()
+        };
+        filters.preset_crt_aperture_grille_1();
+        filters
     }
 }
 
@@ -337,7 +367,7 @@ impl Default for FiltersPreset {
 }
 
 impl Filters {
-    pub fn preset_factory(&self, preset: FiltersPreset, previous_custom: &Option<Filters>) -> Filters {
+    pub fn preset_factory(&mut self, preset: FiltersPreset, previous_custom: &Option<Filters>) {
         match preset {
             FiltersPreset::Sharp1 => self.preset_sharp_1(),
             FiltersPreset::CrtApertureGrille1 => self.preset_crt_aperture_grille_1(),
@@ -345,190 +375,123 @@ impl Filters {
             FiltersPreset::CrtShadowMask2 => self.preset_crt_shadow_mask_2(),
             FiltersPreset::DemoFlight1 => self.preset_demo_1(),
             FiltersPreset::Custom => match previous_custom {
-                Some(ref filter) => filter.clone(),
+                Some(_) => {}
                 None => self.preset_custom(),
             },
         }
     }
-    pub fn preset_sharp_1(&self) -> Filters {
-        Filters {
-            internal_resolution: InternalResolution::default(),
-            texture_interpolation: TextureInterpolation::Linear,
-            blur_passes: 0,
-            vertical_lpp: 1,
-            horizontal_lpp: 1,
-            light_color: 0x00FF_FFFF,
-            brightness_color: 0x00FF_FFFF,
-            extra_bright: 0.0,
-            extra_contrast: 1.0,
-            cur_pixel_vertical_gap: 0.0,
-            cur_pixel_horizontal_gap: 0.0,
-            cur_pixel_spread: 0.0,
-            pixel_shadow_height: 1.0,
-            pixels_geometry_kind: PixelsGeometryKind::Squares,
-            pixel_shadow_shape_kind: ShadowShape { value: 0 },
-            color_channels: ColorChannels::Combined,
-            screen_curvature_kind: ScreenCurvatureKind::Flat,
-            rgb_red_r: 1.0,
-            rgb_red_g: 0.0,
-            rgb_red_b: 0.0,
-            rgb_green_r: 0.0,
-            rgb_green_g: 1.0,
-            rgb_green_b: 0.0,
-            rgb_blue_r: 0.0,
-            rgb_blue_g: 0.0,
-            rgb_blue_b: 1.0,
-            color_gamma: 1.0,
-            color_noise: 0.0,
-            backlight_presence: 0.0,
-            preset_kind: FiltersPreset::Sharp1,
-        }
+    pub fn preset_sharp_1(&mut self) {
+        self.internal_resolution = InternalResolution::default();
+        self.texture_interpolation = TextureInterpolation::Linear;
+        self.blur_passes = 0;
+        self.vertical_lpp = 1;
+        self.horizontal_lpp = 1;
+        self.light_color = 0x00FF_FFFF;
+        self.brightness_color = 0x00FF_FFFF;
+        self.extra_bright = 0.0;
+        self.extra_contrast = 1.0;
+        self.cur_pixel_vertical_gap = 0.0;
+        self.cur_pixel_horizontal_gap = 0.0;
+        self.cur_pixel_spread = 0.0;
+        self.pixel_shadow_height = 1.0;
+        self.pixels_geometry_kind = PixelsGeometryKind::Squares;
+        self.pixel_shadow_shape_kind = ShadowShape { value: 0 };
+        self.color_channels = ColorChannels::Combined;
+        self.screen_curvature_kind = ScreenCurvatureKind::Flat;
+        self.backlight_presence = 0.0;
+        self.preset_kind = FiltersPreset::Sharp1;
     }
 
-    pub fn preset_crt_aperture_grille_1(&self) -> Filters {
-        Filters {
-            internal_resolution: InternalResolution::default(),
-            texture_interpolation: TextureInterpolation::Linear,
-            blur_passes: 1,
-            vertical_lpp: 3,
-            horizontal_lpp: 1,
-            light_color: 0x00FF_FFFF,
-            brightness_color: 0x00FF_FFFF,
-            extra_bright: 0.0,
-            extra_contrast: 1.0,
-            cur_pixel_vertical_gap: 0.0,
-            cur_pixel_horizontal_gap: 0.0,
-            cur_pixel_spread: 0.0,
-            pixel_shadow_height: 0.0,
-            pixels_geometry_kind: PixelsGeometryKind::Squares,
-            pixel_shadow_shape_kind: ShadowShape { value: 3 },
-            color_channels: ColorChannels::Combined,
-            screen_curvature_kind: ScreenCurvatureKind::Flat,
-            rgb_red_r: 1.0,
-            rgb_red_g: 0.0,
-            rgb_red_b: 0.0,
-            rgb_green_r: 0.0,
-            rgb_green_g: 1.0,
-            rgb_green_b: 0.0,
-            rgb_blue_r: 0.0,
-            rgb_blue_g: 0.0,
-            rgb_blue_b: 1.0,
-            color_gamma: 1.0,
-            color_noise: 0.0,
-            backlight_presence: 0.5,
-            preset_kind: FiltersPreset::CrtApertureGrille1,
-        }
+    pub fn preset_crt_aperture_grille_1(&mut self) {
+        self.internal_resolution = InternalResolution::default();
+        self.texture_interpolation = TextureInterpolation::Linear;
+        self.blur_passes = 1;
+        self.vertical_lpp = 3;
+        self.horizontal_lpp = 1;
+        self.light_color = 0x00FF_FFFF;
+        self.brightness_color = 0x00FF_FFFF;
+        self.extra_bright = 0.0;
+        self.extra_contrast = 1.0;
+        self.cur_pixel_vertical_gap = 0.0;
+        self.cur_pixel_horizontal_gap = 0.0;
+        self.cur_pixel_spread = 0.0;
+        self.pixel_shadow_height = 0.0;
+        self.pixels_geometry_kind = PixelsGeometryKind::Squares;
+        self.pixel_shadow_shape_kind = ShadowShape { value: 3 };
+        self.color_channels = ColorChannels::Combined;
+        self.screen_curvature_kind = ScreenCurvatureKind::Flat;
+        self.backlight_presence = 0.5;
+        self.preset_kind = FiltersPreset::CrtApertureGrille1;
     }
 
-    pub fn preset_crt_shadow_mask_1(&self) -> Filters {
-        Filters {
-            internal_resolution: InternalResolution::default(),
-            texture_interpolation: TextureInterpolation::Linear,
-            blur_passes: 2,
-            vertical_lpp: 2,
-            horizontal_lpp: 2,
-            light_color: 0x00FF_FFFF,
-            brightness_color: 0x00FF_FFFF,
-            extra_bright: 0.05,
-            extra_contrast: 1.2,
-            cur_pixel_vertical_gap: 0.5,
-            cur_pixel_horizontal_gap: 0.5,
-            cur_pixel_spread: 0.0,
-            pixel_shadow_height: 1.0,
-            pixels_geometry_kind: PixelsGeometryKind::Squares,
-            pixel_shadow_shape_kind: ShadowShape { value: 3 },
-            color_channels: ColorChannels::Combined,
-            screen_curvature_kind: ScreenCurvatureKind::Flat,
-            rgb_red_r: 1.0,
-            rgb_red_g: 0.0,
-            rgb_red_b: 0.0,
-            rgb_green_r: 0.0,
-            rgb_green_g: 1.0,
-            rgb_green_b: 0.0,
-            rgb_blue_r: 0.0,
-            rgb_blue_g: 0.0,
-            rgb_blue_b: 1.0,
-            color_gamma: 1.0,
-            color_noise: 0.0,
-            backlight_presence: 0.25,
-            preset_kind: FiltersPreset::CrtShadowMask1,
-        }
+    pub fn preset_crt_shadow_mask_1(&mut self) {
+        self.internal_resolution = InternalResolution::default();
+        self.texture_interpolation = TextureInterpolation::Linear;
+        self.blur_passes = 2;
+        self.vertical_lpp = 2;
+        self.horizontal_lpp = 2;
+        self.light_color = 0x00FF_FFFF;
+        self.brightness_color = 0x00FF_FFFF;
+        self.extra_bright = 0.05;
+        self.extra_contrast = 1.2;
+        self.cur_pixel_vertical_gap = 0.5;
+        self.cur_pixel_horizontal_gap = 0.5;
+        self.cur_pixel_spread = 0.0;
+        self.pixel_shadow_height = 1.0;
+        self.pixels_geometry_kind = PixelsGeometryKind::Squares;
+        self.pixel_shadow_shape_kind = ShadowShape { value: 3 };
+        self.color_channels = ColorChannels::Combined;
+        self.screen_curvature_kind = ScreenCurvatureKind::Flat;
+        self.backlight_presence = 0.25;
+        self.preset_kind = FiltersPreset::CrtShadowMask1;
     }
 
-    pub fn preset_crt_shadow_mask_2(&self) -> Filters {
-        Filters {
-            internal_resolution: InternalResolution::default(),
-            texture_interpolation: TextureInterpolation::Linear,
-            blur_passes: 2,
-            vertical_lpp: 1,
-            horizontal_lpp: 2,
-            light_color: 0x00FF_FFFF,
-            brightness_color: 0x00FF_FFFF,
-            extra_bright: 0.05,
-            extra_contrast: 1.2,
-            cur_pixel_vertical_gap: 1.0,
-            cur_pixel_horizontal_gap: 0.5,
-            cur_pixel_spread: 0.0,
-            pixel_shadow_height: 1.0,
-            pixels_geometry_kind: PixelsGeometryKind::Squares,
-            pixel_shadow_shape_kind: ShadowShape { value: 3 },
-            color_channels: ColorChannels::Combined,
-            screen_curvature_kind: ScreenCurvatureKind::Flat,
-            rgb_red_r: 1.0,
-            rgb_red_g: 0.0,
-            rgb_red_b: 0.0,
-            rgb_green_r: 0.0,
-            rgb_green_g: 1.0,
-            rgb_green_b: 0.0,
-            rgb_blue_r: 0.0,
-            rgb_blue_g: 0.0,
-            rgb_blue_b: 1.0,
-            color_gamma: 1.0,
-            color_noise: 0.0,
-            backlight_presence: 0.4,
-            preset_kind: FiltersPreset::CrtShadowMask2,
-        }
+    pub fn preset_crt_shadow_mask_2(&mut self) {
+        self.internal_resolution = InternalResolution::default();
+        self.texture_interpolation = TextureInterpolation::Linear;
+        self.blur_passes = 2;
+        self.vertical_lpp = 1;
+        self.horizontal_lpp = 2;
+        self.light_color = 0x00FF_FFFF;
+        self.brightness_color = 0x00FF_FFFF;
+        self.extra_bright = 0.05;
+        self.extra_contrast = 1.2;
+        self.cur_pixel_vertical_gap = 1.0;
+        self.cur_pixel_horizontal_gap = 0.5;
+        self.cur_pixel_spread = 0.0;
+        self.pixel_shadow_height = 1.0;
+        self.pixels_geometry_kind = PixelsGeometryKind::Squares;
+        self.pixel_shadow_shape_kind = ShadowShape { value: 3 };
+        self.color_channels = ColorChannels::Combined;
+        self.screen_curvature_kind = ScreenCurvatureKind::Flat;
+        self.backlight_presence = 0.4;
+        self.preset_kind = FiltersPreset::CrtShadowMask2;
     }
 
-    pub fn preset_demo_1(&self) -> Self {
-        Filters {
-            internal_resolution: InternalResolution::default(),
-            texture_interpolation: TextureInterpolation::Linear,
-            blur_passes: 0,
-            vertical_lpp: 1,
-            horizontal_lpp: 1,
-            light_color: self.light_color,
-            brightness_color: 0x00FF_FFFF,
-            extra_bright: 0.0,
-            extra_contrast: 1.0,
-            cur_pixel_vertical_gap: 0.0,
-            cur_pixel_horizontal_gap: 0.0,
-            cur_pixel_spread: 1.0,
-            pixel_shadow_height: 1.0,
-            pixels_geometry_kind: PixelsGeometryKind::Cubes,
-            pixel_shadow_shape_kind: ShadowShape { value: 0 },
-            color_channels: ColorChannels::Combined,
-            screen_curvature_kind: ScreenCurvatureKind::Pulse,
-            rgb_red_r: 1.0,
-            rgb_red_g: 0.0,
-            rgb_red_b: 0.0,
-            rgb_green_r: 0.0,
-            rgb_green_g: 1.0,
-            rgb_green_b: 0.0,
-            rgb_blue_r: 0.0,
-            rgb_blue_g: 0.0,
-            rgb_blue_b: 1.0,
-            color_gamma: 1.0,
-            color_noise: 0.0,
-            backlight_presence: 0.2,
-            preset_kind: FiltersPreset::DemoFlight1,
-        }
+    pub fn preset_demo_1(&mut self) {
+        self.internal_resolution = InternalResolution::default();
+        self.texture_interpolation = TextureInterpolation::Linear;
+        self.blur_passes = 0;
+        self.vertical_lpp = 1;
+        self.horizontal_lpp = 1;
+        self.light_color = self.light_color;
+        self.brightness_color = 0x00FF_FFFF;
+        self.extra_bright = 0.0;
+        self.extra_contrast = 1.0;
+        self.cur_pixel_vertical_gap = 0.0;
+        self.cur_pixel_horizontal_gap = 0.0;
+        self.cur_pixel_spread = 1.0;
+        self.pixel_shadow_height = 1.0;
+        self.pixels_geometry_kind = PixelsGeometryKind::Cubes;
+        self.pixel_shadow_shape_kind = ShadowShape { value: 0 };
+        self.color_channels = ColorChannels::Combined;
+        self.screen_curvature_kind = ScreenCurvatureKind::Pulse;
+        self.backlight_presence = 0.2;
+        self.preset_kind = FiltersPreset::DemoFlight1;
     }
 
-    pub fn preset_custom(&self) -> Self {
-        let mut clone = self.clone();
-        clone.preset_kind = FiltersPreset::Custom;
-        clone
+    pub fn preset_custom(&mut self) {
+        self.preset_kind = FiltersPreset::Custom;
     }
 }
 

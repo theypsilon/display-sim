@@ -25,8 +25,9 @@ use app_error::{AppError, AppResult};
 use core::camera::CameraChange;
 use core::input_types::{Input, InputEventValue, Pressed, RgbChange};
 use core::simulation_context::{ConcreteSimulationContext, RandomGenerator, SimulationContext};
-use core::simulation_core_state::{Resources, VideoInputResources};
+use core::simulation_core_state::{KeyEventKind, Resources, VideoInputResources};
 use core::simulation_core_ticker::SimulationCoreTicker;
+use core::ui_controller::EncodedValue;
 use glow::GlowSafeAdapter;
 use render::simulation_draw::SimulationDrawer;
 use render::simulation_render_state::{Materials, VideoInputMaterials};
@@ -74,7 +75,7 @@ pub(crate) fn web_unload(io: InputOutput) -> AppResult<()> {
 
 pub(crate) fn web_run_frame(res: &mut Resources, io: &mut InputOutput) -> AppResult<bool> {
     for event in io.events.borrow_mut().drain(0..) {
-        read_frontend_event(&mut io.input, event)?;
+        read_frontend_event(&mut io.input, res, event)?;
     }
     let ctx = ConcreteSimulationContext::new(WebEventDispatcher::new(io.webgl.clone(), io.event_bus.clone()), WebRnd {});
     let condition = tick(&ctx, &mut io.input, res, &mut io.materials)?;
@@ -122,10 +123,43 @@ fn set_event_listeners(event_bus: JsValue) -> AppResult<(Rc<RefCell<Vec<JsValue>
     Ok((events, onfrontendevent))
 }
 
-fn read_frontend_event(input: &mut Input, event: JsValue) -> AppResult<()> {
+struct JsEncodedValue {
+    value: JsValue,
+}
+
+impl JsEncodedValue {
+    pub fn new(value: JsValue) -> Self {
+        JsEncodedValue { value }
+    }
+}
+
+impl EncodedValue for JsEncodedValue {
+    fn to_f64(&self) -> AppResult<f64> {
+        Ok(self.value.as_f64().ok_or("it should be a number")?)
+    }
+    fn to_f32(&self) -> AppResult<f32> {
+        Ok(self.to_f64()? as f32)
+    }
+    fn to_u32(&self) -> AppResult<u32> {
+        Ok(self.to_f64()? as u32)
+    }
+    fn to_i32(&self) -> AppResult<i32> {
+        Ok(self.to_f64()? as i32)
+    }
+    fn to_usize(&self) -> AppResult<usize> {
+        Ok(self.to_f64()? as usize)
+    }
+}
+
+fn read_frontend_event(input: &mut Input, res: &mut Resources, event: JsValue) -> AppResult<()> {
     let value = js_sys::Reflect::get(&event, &"message".into())?;
     let frontend_event: AppResult<String> = js_sys::Reflect::get(&event, &"type".into())?.as_string().ok_or("Could not get kind".into());
     let frontend_event = frontend_event?;
+    if let Some((KeyEventKind::Set, index)) = res.controller_events.get_mut(frontend_event.as_ref() as &str) {
+        let controller = &mut res.filters.get_ui_controllers_mut()[*index];
+        controller.read_event(&JsEncodedValue::new(value))?;
+        return Ok(());
+    }
     let event_value = match frontend_event.as_ref() as &str {
         "front2back:keyboard" => {
             let pressed = js_sys::Reflect::get(&value, &"pressed".into())?.as_bool().ok_or("it should be a bool")?;
@@ -181,7 +215,6 @@ fn read_frontend_event(input: &mut Input, event: JsValue) -> AppResult<()> {
         "front2back:rgb-blue-g" => InputEventValue::Rgb(RgbChange::BlueG(value.as_f64().ok_or("it should be a number")? as f32)),
         "front2back:rgb-blue-b" => InputEventValue::Rgb(RgbChange::BlueB(value.as_f64().ok_or("it should be a number")? as f32)),
         "front2back:color-gamma" => InputEventValue::ColorGamma(value.as_f64().ok_or("it should be a number")? as f32),
-        "front2back:color-noise" => InputEventValue::ColorNoise(value.as_f64().ok_or("it should be a number")? as f32),
         "front2back:custom-scaling-resolution-width" => InputEventValue::CustomScalingResolutionWidth(value.as_f64().ok_or("it should be a number")? as f32),
         "front2back:custom-scaling-resolution-height" => InputEventValue::CustomScalingResolutionHeight(value.as_f64().ok_or("it should be a number")? as f32),
         "front2back:custom-scaling-aspect-ratio-x" => InputEventValue::CustomScalingAspectRatioX(value.as_f64().ok_or("it should be a number")? as f32),

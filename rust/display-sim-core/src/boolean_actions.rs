@@ -14,8 +14,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 use crate::input_types::{Boolean2DAction, BooleanAction, Input, KeyCodeBooleanAction, Pressed};
+use crate::simulation_core_state::{KeyEventKind, Resources};
 
-pub(crate) fn trigger_hotkey_action(input: &mut Input, keycode: &str, pressed: Pressed) -> ActionUsed {
+pub(crate) fn trigger_hotkey_action(input: &mut Input, res: &mut Resources, keycode: &str, pressed: Pressed) -> ActionUsed {
+    if let Some((kind, index)) = res.controller_events.get_mut(keycode) {
+        let controller = &mut res.filters.get_ui_controllers_mut()[*index];
+        let pressed = match pressed {
+            Pressed::Yes => true,
+            Pressed::No => false,
+        };
+        match kind {
+            KeyEventKind::Inc => controller.read_key_inc(pressed),
+            KeyEventKind::Dec => controller.read_key_dec(pressed),
+            KeyEventKind::Set => unreachable!(),
+        }
+    }
     let (maybe_new_keycode, action) = get_contextualized_action(input, keycode);
     let action = match action {
         #[cfg(debug_assertions)]
@@ -229,8 +242,6 @@ fn handle_action(input: &mut Input, action: BooleanAction, pressed: Pressed) {
         BooleanAction::Bright(Boolean2DAction::Decrease) => input.bright.decrease = pressed,
         BooleanAction::ColorGamma(Boolean2DAction::Increase) => input.color_gamma.increase = pressed,
         BooleanAction::ColorGamma(Boolean2DAction::Decrease) => input.color_gamma.decrease = pressed,
-        BooleanAction::ColorNoise(Boolean2DAction::Increase) => input.color_noise.increase = pressed,
-        BooleanAction::ColorNoise(Boolean2DAction::Decrease) => input.color_noise.decrease = pressed,
         BooleanAction::NextColorRepresentationKind(Boolean2DAction::Increase) => input.next_color_representation_kind.increase.input = pressed,
         BooleanAction::NextColorRepresentationKind(Boolean2DAction::Decrease) => input.next_color_representation_kind.decrease.input = pressed,
         BooleanAction::NextPixelGeometryKind(Boolean2DAction::Increase) => input.next_pixel_geometry_kind.increase.input = pressed,
@@ -335,8 +346,6 @@ fn to_boolean_action(boolean_action: &str) -> Option<BooleanAction> {
         "." | "backlight-percent-dec" => Some(BooleanAction::BacklightPercent(Boolean2DAction::Decrease)),
         "color-gamma-inc" => Some(BooleanAction::ColorGamma(Boolean2DAction::Increase)),
         "color-gamma-dec" => Some(BooleanAction::ColorGamma(Boolean2DAction::Decrease)),
-        "color-noise-inc" => Some(BooleanAction::ColorNoise(Boolean2DAction::Increase)),
-        "color-noise-dec" => Some(BooleanAction::ColorNoise(Boolean2DAction::Decrease)),
         "g" | "camera-movement-mode-inc" => Some(BooleanAction::NextCameraMovementMode(Boolean2DAction::Increase)),
         "shift+g" | "camera-movement-mode-dec" => Some(BooleanAction::NextCameraMovementMode(Boolean2DAction::Decrease)),
         _ => None,

@@ -57,6 +57,10 @@ impl AppEventDispatcher for WebEventDispatcher {
         console!(log.msg);
     }
 
+    fn dispatch_string_event(&self, event_id: &'static str, message: String) {
+        self.catch_error(dispatch_event_with(&self.event_bus, event_id, &message.into()));
+    }
+
     fn dispatch_camera_update(&self, position: &glm::Vec3, direction: &glm::Vec3, axis_up: &glm::Vec3) {
         let values_array = Float32Array::new(&wasm_bindgen::JsValue::from(9));
         values_array.fill(position.x, 0, 1);
@@ -245,14 +249,6 @@ impl AppEventDispatcher for WebEventDispatcher {
             &self.event_bus,
             "back2front:color_gamma",
             &(if gam.floor() == gam { format!("{:.00}", gam) } else { format!("{:.03}", gam) }).into(),
-        ));
-    }
-
-    fn dispatch_color_noise(&self, noi: f32) {
-        self.catch_error(dispatch_event_with(
-            &self.event_bus,
-            "back2front:color_noise",
-            &(if noi.floor() == noi { format!("{:.00}", noi) } else { format!("{:.03}", noi) }).into(),
         ));
     }
 

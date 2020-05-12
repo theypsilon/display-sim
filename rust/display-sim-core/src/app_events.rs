@@ -23,6 +23,7 @@ use std::fmt::Display;
 pub trait AppEventDispatcher {
     fn enable_extra_messages(&self, extra_messages_enabled: bool);
     fn dispatch_log(&self, msg: String);
+    fn dispatch_string_event(&self, event_id: &'static str, message: String);
     fn dispatch_camera_update(&self, position: &glm::Vec3, direction: &glm::Vec3, axis_up: &glm::Vec3);
     fn dispatch_change_pixel_horizontal_gap(&self, size: f32);
     fn dispatch_change_pixel_vertical_gap(&self, size: f32);
@@ -55,7 +56,6 @@ pub trait AppEventDispatcher {
     fn dispatch_scaling_aspect_ratio_y(&self, y: f32);
     fn dispatch_custom_scaling_stretch_nearest(&self, stretch: bool);
     fn dispatch_color_gamma(&self, gamma: f32);
-    fn dispatch_color_noise(&self, noise: f32);
     fn dispatch_exiting_session(&self);
     fn dispatch_toggle_info_panel(&self);
     fn dispatch_fps(&self, fps: f32);
@@ -75,6 +75,7 @@ pub struct FakeEventDispatcher {}
 impl AppEventDispatcher for FakeEventDispatcher {
     fn enable_extra_messages(&self, _: bool) {}
     fn dispatch_log(&self, _: String) {}
+    fn dispatch_string_event(&self, _: &'static str, _: String) {}
     fn dispatch_camera_update(&self, _: &glm::Vec3, _: &glm::Vec3, _: &glm::Vec3) {}
     fn dispatch_change_pixel_horizontal_gap(&self, _: f32) {}
     fn dispatch_change_pixel_vertical_gap(&self, _: f32) {}
@@ -107,7 +108,6 @@ impl AppEventDispatcher for FakeEventDispatcher {
     fn dispatch_scaling_aspect_ratio_y(&self, _: f32) {}
     fn dispatch_custom_scaling_stretch_nearest(&self, _: bool) {}
     fn dispatch_color_gamma(&self, _: f32) {}
-    fn dispatch_color_noise(&self, _: f32) {}
     fn dispatch_exiting_session(&self) {}
     fn dispatch_toggle_info_panel(&self) {}
     fn dispatch_fps(&self, fps: f32) {

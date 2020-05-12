@@ -32,3 +32,4 @@ pub mod pixels_shadow;
 pub mod simulation_context;
 pub mod simulation_core_state;
 pub mod simulation_core_ticker;
+pub mod ui_controller;

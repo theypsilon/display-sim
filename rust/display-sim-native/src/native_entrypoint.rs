@@ -295,6 +295,9 @@ impl AppEventDispatcher for NativeEventDispatcher {
     fn dispatch_log(&self, msg: String) {
         println!("log: {}", msg);
     }
+    fn dispatch_string_event(&self, event_id: &'static str, message: String) {
+        println!("{} {}", event_id, message);
+    }
     fn dispatch_camera_update(&self, a: &glm::Vec3, b: &glm::Vec3, c: &glm::Vec3) {
         println!("camera_update {}, {}, {}", a, b, c);
     }
