@@ -127,6 +127,9 @@ impl Resources {
             last_second: now,
         };
         self.video = video_input;
+        for controller in self.filters.get_ui_controllers_mut().iter_mut() {
+            controller.reset_inputs();
+        }
     }
 }
 
