@@ -40,4 +40,12 @@ pub trait EncodedValue {
     fn to_usize(&self) -> AppResult<usize>;
 }
 
+pub mod backlight_percent;
+pub mod color_gamma;
 pub mod color_noise;
+pub mod cur_pixel_horizontal_gap;
+pub mod cur_pixel_spread;
+pub mod cur_pixel_vertical_gap;
+pub mod extra_bright;
+pub mod extra_contrast;
+pub mod pixel_shadow_height;

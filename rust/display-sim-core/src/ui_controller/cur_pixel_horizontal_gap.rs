@@ -21,15 +21,15 @@ use crate::ui_controller::{EncodedValue, UiController};
 use app_error::AppResult;
 
 #[derive(Default, Copy, Clone)]
-pub struct ColorNoise {
+pub struct CurPixelHorizontalGap {
     input: IncDec<bool>,
     event: Option<f32>,
     pub value: f32,
 }
 
-impl From<f32> for ColorNoise {
+impl From<f32> for CurPixelHorizontalGap {
     fn from(value: f32) -> Self {
-        ColorNoise {
+        CurPixelHorizontalGap {
             input: Default::default(),
             event: None,
             value,
@@ -37,22 +37,21 @@ impl From<f32> for ColorNoise {
     }
 }
 
-impl UiController for ColorNoise {
+impl UiController for CurPixelHorizontalGap {
     fn event_tag(&self) -> &'static str {
-        return "front2back:color-noise";
+        return "front2back:pixel-horizontal-gap";
     }
     fn keys_inc(&self) -> &[&'static str] {
-        &["color-noise-inc"]
+        &["u", "pixel-horizontal-gap-inc"]
     }
     fn keys_dec(&self) -> &[&'static str] {
-        &["color-noise-dec"]
+        &["shift+u", "pixel-horizontal-gap-dec"]
     }
     fn update(&mut self, speed: f32, ctx: &dyn SimulationContext) -> bool {
         FieldChanger::new(ctx, &mut self.value, self.input)
-            .set_progression(0.01 * speed)
+            .set_progression(0.00125 * speed)
             .set_event_value(self.event)
             .set_min(0.0)
-            .set_max(1.0)
             .set_trigger_handler(|x| dispatch(x, ctx.dispatcher()))
             .process_with_sums()
     }
@@ -87,7 +86,7 @@ impl UiController for ColorNoise {
 
 fn dispatch(value: f32, dispatcher: &dyn AppEventDispatcher) {
     dispatcher.dispatch_string_event(
-        "back2front:color_noise",
+        "back2front:change_pixel_horizontal_gap",
         if value.floor() == value {
             format!("{:.00}", value)
         } else {

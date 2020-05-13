@@ -23,7 +23,11 @@ use crate::camera::CameraData;
 use crate::general_types::Size2D;
 use crate::internal_resolution::InternalResolution;
 use crate::pixels_shadow::ShadowShape;
-use crate::ui_controller::{color_noise::ColorNoise, UiController};
+use crate::ui_controller::{
+    backlight_percent::BacklightPercent, color_gamma::ColorGamma, color_noise::ColorNoise, cur_pixel_horizontal_gap::CurPixelHorizontalGap,
+    cur_pixel_spread::CurPixelSpread, cur_pixel_vertical_gap::CurPixelVerticalGap, extra_bright::ExtraBright, extra_contrast::ExtraContrast,
+    pixel_shadow_height::PixelShadowHeight, UiController,
+};
 
 pub const PIXEL_MANIPULATION_BASE_SPEED: f32 = 20.0;
 pub const TURNING_BASE_SPEED: f32 = 3.0;
@@ -223,17 +227,31 @@ pub struct Filters {
     pub horizontal_lpp: usize,
     pub light_color: i32,
     pub brightness_color: i32,
-    pub extra_bright: f32,
-    pub extra_contrast: f32,
-    pub cur_pixel_vertical_gap: f32,
-    pub cur_pixel_horizontal_gap: f32,
-    pub cur_pixel_spread: f32,
-    pub pixel_shadow_height: f32,
+    #[in_array(get_ui_controllers)]
+    #[in_array(get_ui_controllers_mut)]
+    pub extra_bright: ExtraBright,
+    #[in_array(get_ui_controllers)]
+    #[in_array(get_ui_controllers_mut)]
+    pub extra_contrast: ExtraContrast,
+    #[in_array(get_ui_controllers)]
+    #[in_array(get_ui_controllers_mut)]
+    pub cur_pixel_vertical_gap: CurPixelVerticalGap,
+    #[in_array(get_ui_controllers)]
+    #[in_array(get_ui_controllers_mut)]
+    pub cur_pixel_horizontal_gap: CurPixelHorizontalGap,
+    #[in_array(get_ui_controllers)]
+    #[in_array(get_ui_controllers_mut)]
+    pub cur_pixel_spread: CurPixelSpread,
+    #[in_array(get_ui_controllers)]
+    #[in_array(get_ui_controllers_mut)]
+    pub pixel_shadow_height: PixelShadowHeight,
     pub pixels_geometry_kind: PixelsGeometryKind,
     pub color_channels: ColorChannels,
     pub screen_curvature_kind: ScreenCurvatureKind,
     pub pixel_shadow_shape_kind: ShadowShape,
-    pub backlight_presence: f32,
+    #[in_array(get_ui_controllers)]
+    #[in_array(get_ui_controllers_mut)]
+    pub backlight_percent: BacklightPercent,
     pub rgb_red_r: f32,
     pub rgb_red_g: f32,
     pub rgb_red_b: f32,
@@ -243,7 +261,9 @@ pub struct Filters {
     pub rgb_blue_r: f32,
     pub rgb_blue_g: f32,
     pub rgb_blue_b: f32,
-    pub color_gamma: f32,
+    #[in_array(get_ui_controllers)]
+    #[in_array(get_ui_controllers_mut)]
+    pub color_gamma: ColorGamma,
     #[in_array(get_ui_controllers)]
     #[in_array(get_ui_controllers_mut)]
     pub color_noise: ColorNoise,
@@ -260,17 +280,17 @@ impl Default for Filters {
             horizontal_lpp: 1,
             light_color: 0x00FF_FFFF,
             brightness_color: 0x00FF_FFFF,
-            extra_bright: 0.0,
-            extra_contrast: 1.0,
-            cur_pixel_vertical_gap: 0.0,
-            cur_pixel_horizontal_gap: 0.0,
-            cur_pixel_spread: 0.0,
-            pixel_shadow_height: 1.0,
+            extra_bright: 0.0.into(),
+            extra_contrast: 1.0.into(),
+            cur_pixel_vertical_gap: 0.0.into(),
+            cur_pixel_horizontal_gap: 0.0.into(),
+            cur_pixel_spread: 0.0.into(),
+            pixel_shadow_height: 1.0.into(),
             pixels_geometry_kind: PixelsGeometryKind::Squares,
             pixel_shadow_shape_kind: ShadowShape { value: 0 },
             color_channels: ColorChannels::Combined,
             screen_curvature_kind: ScreenCurvatureKind::Flat,
-            backlight_presence: 0.0,
+            backlight_percent: 0.0.into(),
             rgb_red_r: 1.0,
             rgb_red_g: 0.0,
             rgb_red_b: 0.0,
@@ -280,8 +300,8 @@ impl Default for Filters {
             rgb_blue_r: 0.0,
             rgb_blue_g: 0.0,
             rgb_blue_b: 1.0,
-            color_gamma: 1.0,
-            color_noise: ColorNoise::default(),
+            color_gamma: 1.0.into(),
+            color_noise: 0.0.into(),
             preset_kind: FiltersPreset::Sharp1,
         };
         filters.preset_crt_aperture_grille_1();
@@ -391,17 +411,17 @@ impl Filters {
         self.horizontal_lpp = 1;
         self.light_color = 0x00FF_FFFF;
         self.brightness_color = 0x00FF_FFFF;
-        self.extra_bright = 0.0;
-        self.extra_contrast = 1.0;
-        self.cur_pixel_vertical_gap = 0.0;
-        self.cur_pixel_horizontal_gap = 0.0;
-        self.cur_pixel_spread = 0.0;
-        self.pixel_shadow_height = 1.0;
+        self.extra_bright = 0.0.into();
+        self.extra_contrast = 1.0.into();
+        self.cur_pixel_vertical_gap = 0.0.into();
+        self.cur_pixel_horizontal_gap = 0.0.into();
+        self.cur_pixel_spread = 0.0.into();
+        self.pixel_shadow_height = 1.0.into();
         self.pixels_geometry_kind = PixelsGeometryKind::Squares;
         self.pixel_shadow_shape_kind = ShadowShape { value: 0 };
         self.color_channels = ColorChannels::Combined;
         self.screen_curvature_kind = ScreenCurvatureKind::Flat;
-        self.backlight_presence = 0.0;
+        self.backlight_percent.value = 0.0;
         self.preset_kind = FiltersPreset::Sharp1;
     }
 
@@ -413,17 +433,17 @@ impl Filters {
         self.horizontal_lpp = 1;
         self.light_color = 0x00FF_FFFF;
         self.brightness_color = 0x00FF_FFFF;
-        self.extra_bright = 0.0;
-        self.extra_contrast = 1.0;
-        self.cur_pixel_vertical_gap = 0.0;
-        self.cur_pixel_horizontal_gap = 0.0;
-        self.cur_pixel_spread = 0.0;
-        self.pixel_shadow_height = 0.0;
+        self.extra_bright = 0.0.into();
+        self.extra_contrast = 1.0.into();
+        self.cur_pixel_vertical_gap = 0.0.into();
+        self.cur_pixel_horizontal_gap = 0.0.into();
+        self.cur_pixel_spread = 0.0.into();
+        self.pixel_shadow_height = 0.0.into();
         self.pixels_geometry_kind = PixelsGeometryKind::Squares;
         self.pixel_shadow_shape_kind = ShadowShape { value: 3 };
         self.color_channels = ColorChannels::Combined;
         self.screen_curvature_kind = ScreenCurvatureKind::Flat;
-        self.backlight_presence = 0.5;
+        self.backlight_percent.value = 0.5;
         self.preset_kind = FiltersPreset::CrtApertureGrille1;
     }
 
@@ -435,17 +455,17 @@ impl Filters {
         self.horizontal_lpp = 2;
         self.light_color = 0x00FF_FFFF;
         self.brightness_color = 0x00FF_FFFF;
-        self.extra_bright = 0.05;
-        self.extra_contrast = 1.2;
-        self.cur_pixel_vertical_gap = 0.5;
-        self.cur_pixel_horizontal_gap = 0.5;
-        self.cur_pixel_spread = 0.0;
-        self.pixel_shadow_height = 1.0;
+        self.extra_bright = 0.05.into();
+        self.extra_contrast = 1.2.into();
+        self.cur_pixel_vertical_gap = 0.5.into();
+        self.cur_pixel_horizontal_gap = 0.5.into();
+        self.cur_pixel_spread = 0.0.into();
+        self.pixel_shadow_height = 1.0.into();
         self.pixels_geometry_kind = PixelsGeometryKind::Squares;
         self.pixel_shadow_shape_kind = ShadowShape { value: 3 };
         self.color_channels = ColorChannels::Combined;
         self.screen_curvature_kind = ScreenCurvatureKind::Flat;
-        self.backlight_presence = 0.25;
+        self.backlight_percent.value = 0.25;
         self.preset_kind = FiltersPreset::CrtShadowMask1;
     }
 
@@ -457,17 +477,17 @@ impl Filters {
         self.horizontal_lpp = 2;
         self.light_color = 0x00FF_FFFF;
         self.brightness_color = 0x00FF_FFFF;
-        self.extra_bright = 0.05;
-        self.extra_contrast = 1.2;
-        self.cur_pixel_vertical_gap = 1.0;
-        self.cur_pixel_horizontal_gap = 0.5;
-        self.cur_pixel_spread = 0.0;
-        self.pixel_shadow_height = 1.0;
+        self.extra_bright = 0.05.into();
+        self.extra_contrast = 1.2.into();
+        self.cur_pixel_vertical_gap = 1.0.into();
+        self.cur_pixel_horizontal_gap = 0.5.into();
+        self.cur_pixel_spread = 0.0.into();
+        self.pixel_shadow_height = 1.0.into();
         self.pixels_geometry_kind = PixelsGeometryKind::Squares;
         self.pixel_shadow_shape_kind = ShadowShape { value: 3 };
         self.color_channels = ColorChannels::Combined;
         self.screen_curvature_kind = ScreenCurvatureKind::Flat;
-        self.backlight_presence = 0.4;
+        self.backlight_percent.value = 0.4;
         self.preset_kind = FiltersPreset::CrtShadowMask2;
     }
 
@@ -479,17 +499,17 @@ impl Filters {
         self.horizontal_lpp = 1;
         self.light_color = self.light_color;
         self.brightness_color = 0x00FF_FFFF;
-        self.extra_bright = 0.0;
-        self.extra_contrast = 1.0;
-        self.cur_pixel_vertical_gap = 0.0;
-        self.cur_pixel_horizontal_gap = 0.0;
-        self.cur_pixel_spread = 1.0;
-        self.pixel_shadow_height = 1.0;
+        self.extra_bright = 0.0.into();
+        self.extra_contrast = 1.0.into();
+        self.cur_pixel_vertical_gap = 0.0.into();
+        self.cur_pixel_horizontal_gap = 0.0.into();
+        self.cur_pixel_spread = 1.0.into();
+        self.pixel_shadow_height = 1.0.into();
         self.pixels_geometry_kind = PixelsGeometryKind::Cubes;
         self.pixel_shadow_shape_kind = ShadowShape { value: 0 };
         self.color_channels = ColorChannels::Combined;
         self.screen_curvature_kind = ScreenCurvatureKind::Pulse;
-        self.backlight_presence = 0.2;
+        self.backlight_percent.value = 0.2;
         self.preset_kind = FiltersPreset::DemoFlight1;
     }
 

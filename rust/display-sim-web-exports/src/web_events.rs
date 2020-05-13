@@ -75,20 +75,12 @@ impl AppEventDispatcher for WebEventDispatcher {
         self.catch_error(dispatch_event_with(&self.event_bus, "back2front:camera_update", &values_array.into()));
     }
 
-    fn dispatch_change_pixel_horizontal_gap(&self, size: f32) {
-        self.catch_error(dispatch_event_with(
-            &self.event_bus,
-            "back2front:change_pixel_horizontal_gap",
-            &format!("{:.03}", size).into(),
-        ));
+    fn dispatch_change_light_color(&self, light_color: i32) {
+        self.dispatch_change_color("back2front:change_light_color", light_color);
     }
 
-    fn dispatch_change_pixel_vertical_gap(&self, size: f32) {
-        self.catch_error(dispatch_event_with(
-            &self.event_bus,
-            "back2front:change_pixel_vertical_gap",
-            &format!("{:.03}", size).into(),
-        ));
+    fn dispatch_change_brightness_color(&self, brightness_color: i32) {
+        self.dispatch_change_color("back2front:change_brightness_color", brightness_color);
     }
 
     fn dispatch_change_pixel_width(&self, size: f32) {
@@ -97,38 +89,6 @@ impl AppEventDispatcher for WebEventDispatcher {
             "back2front:change_pixel_width",
             &format!("{:.03}", size).into(),
         ));
-    }
-
-    fn dispatch_change_pixel_spread(&self, size: f32) {
-        self.catch_error(dispatch_event_with(
-            &self.event_bus,
-            "back2front:change_pixel_spread",
-            &format!("{:.03}", size).into(),
-        ));
-    }
-
-    fn dispatch_change_pixel_brightness(&self, extra_bright: f32) {
-        self.catch_error(dispatch_event_with(
-            &self.event_bus,
-            "back2front:change_pixel_brightness",
-            &format!("{:.02}", extra_bright).into(),
-        ));
-    }
-
-    fn dispatch_change_pixel_contrast(&self, extra_contrast: f32) {
-        self.catch_error(dispatch_event_with(
-            &self.event_bus,
-            "back2front:change_pixel_contrast",
-            &format!("{:.02}", extra_contrast).into(),
-        ));
-    }
-
-    fn dispatch_change_light_color(&self, light_color: i32) {
-        self.dispatch_change_color("back2front:change_light_color", light_color);
-    }
-
-    fn dispatch_change_brightness_color(&self, brightness_color: i32) {
-        self.dispatch_change_color("back2front:change_brightness_color", brightness_color);
     }
 
     fn dispatch_change_camera_zoom(&self, zoom: f32) {
@@ -197,22 +157,6 @@ impl AppEventDispatcher for WebEventDispatcher {
         ));
     }
 
-    fn dispatch_pixel_shadow_height(&self, pixel_shadow_height: f32) {
-        self.catch_error(dispatch_event_with(
-            &self.event_bus,
-            "back2front:pixel_shadow_height",
-            &format!("{:.02}", pixel_shadow_height).into(),
-        ));
-    }
-
-    fn dispatch_backlight_presence(&self, backlight: f32) {
-        self.catch_error(dispatch_event_with(
-            &self.event_bus,
-            "back2front:backlight_percent",
-            &format!("{:.03}", backlight).into(),
-        ));
-    }
-
     fn dispatch_scaling_method(&self, method: ScalingMethod) {
         if self.are_extra_messages_enabled() {
             self.dispatch_top_message(&format!("Scaling method: {}.", method));
@@ -241,14 +185,6 @@ impl AppEventDispatcher for WebEventDispatcher {
             &self.event_bus,
             "back2front:scaling_aspect_ratio_y",
             &(if y.floor() == y { format!("{:.00}", y) } else { format!("{:.03}", y) }).into(),
-        ));
-    }
-
-    fn dispatch_color_gamma(&self, gam: f32) {
-        self.catch_error(dispatch_event_with(
-            &self.event_bus,
-            "back2front:color_gamma",
-            &(if gam.floor() == gam { format!("{:.00}", gam) } else { format!("{:.03}", gam) }).into(),
         ));
     }
 

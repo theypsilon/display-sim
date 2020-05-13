@@ -21,15 +21,15 @@ use crate::ui_controller::{EncodedValue, UiController};
 use app_error::AppResult;
 
 #[derive(Default, Copy, Clone)]
-pub struct ColorNoise {
+pub struct PixelShadowHeight {
     input: IncDec<bool>,
     event: Option<f32>,
     pub value: f32,
 }
 
-impl From<f32> for ColorNoise {
+impl From<f32> for PixelShadowHeight {
     fn from(value: f32) -> Self {
-        ColorNoise {
+        PixelShadowHeight {
             input: Default::default(),
             event: None,
             value,
@@ -37,19 +37,19 @@ impl From<f32> for ColorNoise {
     }
 }
 
-impl UiController for ColorNoise {
+impl UiController for PixelShadowHeight {
     fn event_tag(&self) -> &'static str {
-        return "front2back:color-noise";
+        return "front2back:pixel-shadow-height";
     }
     fn keys_inc(&self) -> &[&'static str] {
-        &["color-noise-inc"]
+        &["m", "pixel-shadow-height-inc"]
     }
     fn keys_dec(&self) -> &[&'static str] {
-        &["color-noise-dec"]
+        &["shift+m", "pixel-shadow-height-dec"]
     }
     fn update(&mut self, speed: f32, ctx: &dyn SimulationContext) -> bool {
         FieldChanger::new(ctx, &mut self.value, self.input)
-            .set_progression(0.01 * speed)
+            .set_progression(0.3 * speed)
             .set_event_value(self.event)
             .set_min(0.0)
             .set_max(1.0)
@@ -87,11 +87,11 @@ impl UiController for ColorNoise {
 
 fn dispatch(value: f32, dispatcher: &dyn AppEventDispatcher) {
     dispatcher.dispatch_string_event(
-        "back2front:color_noise",
+        "back2front:pixel_shadow_height",
         if value.floor() == value {
             format!("{:.00}", value)
         } else {
-            format!("{:.03}", value)
+            format!("{:.02}", value)
         },
     );
 }

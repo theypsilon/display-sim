@@ -367,8 +367,8 @@ impl AppEventDispatcher for NativeEventDispatcher {
     fn dispatch_pixel_shadow_height(&self, res: f32) {
         println!("pixel_shadow_height: {}", res);
     }
-    fn dispatch_backlight_presence(&self, res: f32) {
-        println!("backlight_presence: {}", res);
+    fn dispatch_backlight_percent(&self, res: f32) {
+        println!("backlight_percent: {}", res);
     }
     fn dispatch_screen_curvature(&self, res: ScreenCurvatureKind) {
         println!("screen_curvature: {}", res);

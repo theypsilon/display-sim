@@ -46,22 +46,14 @@ pub enum InputEventValue {
     BlurredWindow,
 
     FilterPreset(String),
-    PixelBrighttness(f32),
-    PixelContrast(f32),
     LightColor(i32),
     BrightnessColor(i32),
     BlurLevel(usize),
     VerticalLpp(usize),
     HorizontalLpp(usize),
-    BacklightPercent(f32),
-    PixelShadowHeight(f32),
-    PixelVerticalGap(f32),
-    PixelHorizontalGap(f32),
     PixelWidth(f32),
-    PixelSpread(f32),
     Camera(CameraChange),
     Rgb(RgbChange),
-    ColorGamma(f32),
     CustomScalingResolutionWidth(f32),
     CustomScalingResolutionHeight(f32),
     CustomScalingAspectRatioX(f32),
@@ -159,14 +151,7 @@ pub struct Input {
     pub(crate) mouse_position_x: i32,
     pub(crate) mouse_position_y: i32,
     pub(crate) mouse_scroll_y: f32,
-    pub(crate) pixel_horizontal_gap: IncDec<bool>,
-    pub(crate) pixel_vertical_gap: IncDec<bool>,
     pub(crate) pixel_width: IncDec<bool>,
-    pub(crate) pixel_spread: IncDec<bool>,
-    pub(crate) bright: IncDec<bool>,
-    pub(crate) contrast: IncDec<bool>,
-    pub(crate) backlight_percent: IncDec<bool>,
-    pub(crate) color_gamma: IncDec<bool>,
     #[in_array(get_tracked_buttons)]
     pub(crate) next_camera_movement_mode: IncDec<BooleanButton>,
     #[in_array(get_tracked_buttons)]
@@ -185,7 +170,6 @@ pub struct Input {
     pub(crate) horizontal_lpp: IncDec<BooleanButton>,
     #[in_array(get_tracked_buttons)]
     pub(crate) next_pixel_shadow_shape_kind: IncDec<BooleanButton>,
-    pub(crate) next_pixels_shadow_height: IncDec<bool>,
     #[in_array(get_tracked_buttons)]
     pub(crate) next_color_representation_kind: IncDec<BooleanButton>,
     #[in_array(get_tracked_buttons)]
@@ -216,10 +200,6 @@ pub struct Input {
     #[in_array(get_options_to_be_noned)]
     pub(crate) event_filter_preset: Option<String>,
     #[in_array(get_options_to_be_noned)]
-    pub(crate) event_pixel_brighttness: Option<f32>,
-    #[in_array(get_options_to_be_noned)]
-    pub(crate) event_pixel_contrast: Option<f32>,
-    #[in_array(get_options_to_be_noned)]
     pub(crate) event_light_color: Option<i32>,
     #[in_array(get_options_to_be_noned)]
     pub(crate) event_brightness_color: Option<i32>,
@@ -240,19 +220,7 @@ pub struct Input {
     #[in_array(get_options_to_be_noned)]
     pub(crate) event_custom_scaling_stretch_nearest: Option<bool>,
     #[in_array(get_options_to_be_noned)]
-    pub(crate) event_backlight_percent: Option<f32>,
-    #[in_array(get_options_to_be_noned)]
-    pub(crate) event_pixel_shadow_height: Option<f32>,
-    #[in_array(get_options_to_be_noned)]
-    pub(crate) event_pixel_vertical_gap: Option<f32>,
-    #[in_array(get_options_to_be_noned)]
-    pub(crate) event_pixel_horizontal_gap: Option<f32>,
-    #[in_array(get_options_to_be_noned)]
     pub(crate) event_pixel_width: Option<f32>,
-    #[in_array(get_options_to_be_noned)]
-    pub(crate) event_pixel_spread: Option<f32>,
-    #[in_array(get_options_to_be_noned)]
-    pub(crate) event_color_gamma: Option<f32>,
     #[in_array(get_options_to_be_noned)]
     pub(crate) event_viewport_resize: Option<Size2D<u32>>,
     #[in_array(get_options_to_be_noned)]
@@ -311,13 +279,7 @@ pub(crate) enum BooleanAction {
     MouseClick,
 
     CameraZoom(Boolean2DAction),
-    PixelHorizontalGap(Boolean2DAction),
-    PixelVerticalGap(Boolean2DAction),
     PixelWidth(Boolean2DAction),
-    PixelSpread(Boolean2DAction),
-    Bright(Boolean2DAction),
-    Contrast(Boolean2DAction),
-    BacklightPercent(Boolean2DAction),
     NextCameraMovementMode(Boolean2DAction),
     TranslationSpeed(Boolean2DAction),
     TurnSpeed(Boolean2DAction),
@@ -326,7 +288,6 @@ pub(crate) enum BooleanAction {
     VerticalLpp(Boolean2DAction),
     HorizontalLpp(Boolean2DAction),
     NextPixelShadowShapeKind(Boolean2DAction),
-    NextPixelsShadowHeight(Boolean2DAction),
     NextColorRepresentationKind(Boolean2DAction),
     NextPixelGeometryKind(Boolean2DAction),
     NextScreenCurvatureType(Boolean2DAction),
@@ -337,5 +298,4 @@ pub(crate) enum BooleanAction {
     ScalingResolutionHeight(Boolean2DAction),
     ScalingAspectRatioX(Boolean2DAction),
     ScalingAspectRatioY(Boolean2DAction),
-    ColorGamma(Boolean2DAction),
 }

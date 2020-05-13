@@ -25,12 +25,7 @@ pub trait AppEventDispatcher {
     fn dispatch_log(&self, msg: String);
     fn dispatch_string_event(&self, event_id: &'static str, message: String);
     fn dispatch_camera_update(&self, position: &glm::Vec3, direction: &glm::Vec3, axis_up: &glm::Vec3);
-    fn dispatch_change_pixel_horizontal_gap(&self, size: f32);
-    fn dispatch_change_pixel_vertical_gap(&self, size: f32);
     fn dispatch_change_pixel_width(&self, size: f32);
-    fn dispatch_change_pixel_spread(&self, size: f32);
-    fn dispatch_change_pixel_brightness(&self, res: f32);
-    fn dispatch_change_pixel_contrast(&self, res: f32);
     fn dispatch_change_light_color(&self, res: i32);
     fn dispatch_change_brightness_color(&self, res: i32);
     fn dispatch_change_camera_zoom(&self, zoom: f32);
@@ -40,8 +35,6 @@ pub trait AppEventDispatcher {
     fn dispatch_color_representation(&self, res: ColorChannels);
     fn dispatch_pixel_geometry(&self, res: PixelsGeometryKind);
     fn dispatch_pixel_shadow_shape(&self, res: ShadowShape);
-    fn dispatch_pixel_shadow_height(&self, res: f32);
-    fn dispatch_backlight_presence(&self, res: f32);
     fn dispatch_screen_curvature(&self, res: ScreenCurvatureKind);
     fn dispatch_internal_resolution(&self, res: &InternalResolution);
     fn dispatch_texture_interpolation(&self, res: TextureInterpolation);
@@ -55,7 +48,6 @@ pub trait AppEventDispatcher {
     fn dispatch_scaling_aspect_ratio_x(&self, x: f32);
     fn dispatch_scaling_aspect_ratio_y(&self, y: f32);
     fn dispatch_custom_scaling_stretch_nearest(&self, stretch: bool);
-    fn dispatch_color_gamma(&self, gamma: f32);
     fn dispatch_exiting_session(&self);
     fn dispatch_toggle_info_panel(&self);
     fn dispatch_fps(&self, fps: f32);
@@ -77,12 +69,7 @@ impl AppEventDispatcher for FakeEventDispatcher {
     fn dispatch_log(&self, _: String) {}
     fn dispatch_string_event(&self, _: &'static str, _: String) {}
     fn dispatch_camera_update(&self, _: &glm::Vec3, _: &glm::Vec3, _: &glm::Vec3) {}
-    fn dispatch_change_pixel_horizontal_gap(&self, _: f32) {}
-    fn dispatch_change_pixel_vertical_gap(&self, _: f32) {}
     fn dispatch_change_pixel_width(&self, _: f32) {}
-    fn dispatch_change_pixel_spread(&self, _: f32) {}
-    fn dispatch_change_pixel_brightness(&self, _: f32) {}
-    fn dispatch_change_pixel_contrast(&self, _: f32) {}
     fn dispatch_change_light_color(&self, _: i32) {}
     fn dispatch_change_brightness_color(&self, _: i32) {}
     fn dispatch_change_camera_zoom(&self, _: f32) {}
@@ -92,8 +79,6 @@ impl AppEventDispatcher for FakeEventDispatcher {
     fn dispatch_color_representation(&self, _: ColorChannels) {}
     fn dispatch_pixel_geometry(&self, _: PixelsGeometryKind) {}
     fn dispatch_pixel_shadow_shape(&self, _: ShadowShape) {}
-    fn dispatch_pixel_shadow_height(&self, _: f32) {}
-    fn dispatch_backlight_presence(&self, _: f32) {}
     fn dispatch_screen_curvature(&self, _: ScreenCurvatureKind) {}
     fn dispatch_internal_resolution(&self, _: &InternalResolution) {}
     fn dispatch_texture_interpolation(&self, _: TextureInterpolation) {}
@@ -107,7 +92,6 @@ impl AppEventDispatcher for FakeEventDispatcher {
     fn dispatch_scaling_aspect_ratio_x(&self, _: f32) {}
     fn dispatch_scaling_aspect_ratio_y(&self, _: f32) {}
     fn dispatch_custom_scaling_stretch_nearest(&self, _: bool) {}
-    fn dispatch_color_gamma(&self, _: f32) {}
     fn dispatch_exiting_session(&self) {}
     fn dispatch_toggle_info_panel(&self) {}
     fn dispatch_fps(&self, fps: f32) {

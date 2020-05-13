@@ -21,15 +21,15 @@ use crate::ui_controller::{EncodedValue, UiController};
 use app_error::AppResult;
 
 #[derive(Default, Copy, Clone)]
-pub struct ColorNoise {
+pub struct ColorGamma {
     input: IncDec<bool>,
     event: Option<f32>,
     pub value: f32,
 }
 
-impl From<f32> for ColorNoise {
+impl From<f32> for ColorGamma {
     fn from(value: f32) -> Self {
-        ColorNoise {
+        ColorGamma {
             input: Default::default(),
             event: None,
             value,
@@ -37,15 +37,15 @@ impl From<f32> for ColorNoise {
     }
 }
 
-impl UiController for ColorNoise {
+impl UiController for ColorGamma {
     fn event_tag(&self) -> &'static str {
-        return "front2back:color-noise";
+        return "front2back:color-gamma";
     }
     fn keys_inc(&self) -> &[&'static str] {
-        &["color-noise-inc"]
+        &["color-gamma-inc"]
     }
     fn keys_dec(&self) -> &[&'static str] {
-        &["color-noise-dec"]
+        &["color-gamma-dec"]
     }
     fn update(&mut self, speed: f32, ctx: &dyn SimulationContext) -> bool {
         FieldChanger::new(ctx, &mut self.value, self.input)
@@ -87,7 +87,7 @@ impl UiController for ColorNoise {
 
 fn dispatch(value: f32, dispatcher: &dyn AppEventDispatcher) {
     dispatcher.dispatch_string_event(
-        "back2front:color_noise",
+        "back2front:color_gamma",
         if value.floor() == value {
             format!("{:.00}", value)
         } else {

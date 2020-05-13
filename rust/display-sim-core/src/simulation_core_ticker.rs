@@ -74,19 +74,12 @@ impl<'a> SimulationCoreTicker<'a> {
                 InputEventValue::BlurredWindow => *self.input = Input::new(now),
 
                 InputEventValue::FilterPreset(preset) => self.input.event_filter_preset = Some(preset),
-                InputEventValue::PixelBrighttness(pixel_brighttness) => self.input.event_pixel_brighttness = Some(pixel_brighttness),
-                InputEventValue::PixelContrast(pixel_contrast) => self.input.event_pixel_contrast = Some(pixel_contrast),
                 InputEventValue::LightColor(light_color) => self.input.event_light_color = Some(light_color),
                 InputEventValue::BrightnessColor(brightness_color) => self.input.event_brightness_color = Some(brightness_color),
                 InputEventValue::BlurLevel(blur_level) => self.input.event_blur_level = Some(blur_level),
                 InputEventValue::VerticalLpp(vertical_lpp) => self.input.event_vertical_lpp = Some(vertical_lpp),
                 InputEventValue::HorizontalLpp(horizontal_lpp) => self.input.event_horizontal_lpp = Some(horizontal_lpp),
-                InputEventValue::BacklightPercent(backlight_percent) => self.input.event_backlight_percent = Some(backlight_percent),
-                InputEventValue::PixelShadowHeight(pixel_shadow_height) => self.input.event_pixel_shadow_height = Some(pixel_shadow_height),
-                InputEventValue::PixelVerticalGap(pixel_vertical_gap) => self.input.event_pixel_vertical_gap = Some(pixel_vertical_gap),
-                InputEventValue::PixelHorizontalGap(pixel_horizontal_gap) => self.input.event_pixel_horizontal_gap = Some(pixel_horizontal_gap),
                 InputEventValue::PixelWidth(pixel_width) => self.input.event_pixel_width = Some(pixel_width),
-                InputEventValue::PixelSpread(pixel_spread) => self.input.event_pixel_spread = Some(pixel_spread),
                 InputEventValue::Camera(camera) => self.input.event_camera = Some(camera),
                 InputEventValue::CustomScalingResolutionWidth(width) => self.input.event_scaling_resolution_width = Some(width),
                 InputEventValue::CustomScalingResolutionHeight(width) => self.input.event_scaling_resolution_height = Some(width),
@@ -95,7 +88,6 @@ impl<'a> SimulationCoreTicker<'a> {
                 InputEventValue::CustomScalingStretchNearest(flag) => self.input.event_custom_scaling_stretch_nearest = Some(flag),
                 InputEventValue::ViewportResize(width, height) => self.input.event_viewport_resize = Some(Size2D { width, height }),
                 InputEventValue::Rgb(rgb) => self.input.event_rgb = Some(rgb),
-                InputEventValue::ColorGamma(gamma) => self.input.event_color_gamma = Some(gamma),
                 InputEventValue::None => {}
             };
         }
@@ -377,30 +369,6 @@ impl<'a> SimulationUpdater<'a> {
             changed = changed || controller.update(self.res.speed.filter_speed * self.dt, *ctx);
         }
         changed = changed
-            || FieldChanger::new(*ctx, &mut filters.color_gamma, input.color_gamma)
-                .set_progression(0.025 * self.dt * self.res.speed.filter_speed)
-                .set_event_value(input.event_color_gamma)
-                .set_min(0.0)
-                .set_max(20.0)
-                .set_trigger_handler(|x| ctx.dispatcher().dispatch_color_gamma(x))
-                .process_with_sums();
-        changed = changed
-            || FieldChanger::new(*ctx, &mut filters.extra_bright, input.bright)
-                .set_progression(0.01 * self.dt * self.res.speed.filter_speed)
-                .set_event_value(input.event_pixel_brighttness)
-                .set_min(-1.0)
-                .set_max(1.0)
-                .set_trigger_handler(|x| ctx.dispatcher().dispatch_change_pixel_brightness(x))
-                .process_with_sums();
-        changed = changed
-            || FieldChanger::new(*ctx, &mut filters.extra_contrast, input.contrast)
-                .set_progression(0.01 * self.dt * self.res.speed.filter_speed)
-                .set_event_value(input.event_pixel_contrast)
-                .set_min(0.0)
-                .set_max(20.0)
-                .set_trigger_handler(|x| ctx.dispatcher().dispatch_change_pixel_contrast(x))
-                .process_with_sums();
-        changed = changed
             || FieldChanger::new(*ctx, &mut filters.blur_passes, input.blur.to_just_pressed())
                 .set_progression(1)
                 .set_event_value(input.event_blur_level)
@@ -416,14 +384,6 @@ impl<'a> SimulationUpdater<'a> {
             || FieldChanger::new(*ctx, &mut filters.screen_curvature_kind, input.next_screen_curvature_type.to_just_pressed())
                 .set_trigger_handler(|x: &ScreenCurvatureKind| ctx.dispatcher().dispatch_screen_curvature(*x))
                 .process_options();
-        changed = changed
-            || FieldChanger::new(*ctx, &mut filters.backlight_presence, input.backlight_percent)
-                .set_progression(0.01 * self.dt * self.res.speed.filter_speed)
-                .set_event_value(input.event_backlight_percent)
-                .set_min(0.0)
-                .set_max(1.0)
-                .set_trigger_handler(|x| ctx.dispatcher().dispatch_backlight_presence(x))
-                .process_with_sums();
         changed = changed
             || FieldChanger::new(*ctx, &mut filters.color_channels, input.next_color_representation_kind.to_just_pressed())
                 .set_trigger_handler(|x: &ColorChannels| ctx.dispatcher().dispatch_color_representation(*x))
@@ -453,8 +413,6 @@ impl<'a> SimulationUpdater<'a> {
                 .set_max(20)
                 .set_trigger_handler(|x| ctx.dispatcher().dispatch_change_horizontal_lpp(x))
                 .process_with_sums();
-
-        let pixel_velocity = self.dt * self.res.speed.filter_speed;
         changed = changed
             || FieldChanger::new(*ctx, &mut filters.pixels_geometry_kind, input.next_pixel_geometry_kind.to_just_pressed())
                 .set_trigger_handler(|x: &PixelsGeometryKind| ctx.dispatcher().dispatch_pixel_geometry(*x))
@@ -463,35 +421,6 @@ impl<'a> SimulationUpdater<'a> {
             || FieldChanger::new(*ctx, &mut filters.pixel_shadow_shape_kind, input.next_pixel_shadow_shape_kind.to_just_pressed())
                 .set_trigger_handler(|x: &ShadowShape| ctx.dispatcher().dispatch_pixel_shadow_shape(*x))
                 .process_options();
-        changed = changed
-            || FieldChanger::new(*ctx, &mut filters.pixel_shadow_height, input.next_pixels_shadow_height)
-                .set_progression(self.dt * 0.3)
-                .set_event_value(input.event_pixel_shadow_height)
-                .set_min(0.0)
-                .set_max(1.0)
-                .set_trigger_handler(|x| ctx.dispatcher().dispatch_pixel_shadow_height(x))
-                .process_with_sums();
-        changed = changed
-            || FieldChanger::new(*ctx, &mut filters.cur_pixel_vertical_gap, input.pixel_vertical_gap)
-                .set_progression(pixel_velocity * 0.00125)
-                .set_event_value(input.event_pixel_vertical_gap)
-                .set_min(0.0)
-                .set_trigger_handler(|x| ctx.dispatcher().dispatch_change_pixel_vertical_gap(x))
-                .process_with_sums();
-        changed = changed
-            || FieldChanger::new(*ctx, &mut filters.cur_pixel_horizontal_gap, input.pixel_horizontal_gap)
-                .set_progression(pixel_velocity * 0.00125)
-                .set_event_value(input.event_pixel_horizontal_gap)
-                .set_min(0.0)
-                .set_trigger_handler(|x| ctx.dispatcher().dispatch_change_pixel_horizontal_gap(x))
-                .process_with_sums();
-        changed = changed
-            || FieldChanger::new(*ctx, &mut filters.cur_pixel_spread, input.pixel_spread)
-                .set_progression(pixel_velocity * 0.005)
-                .set_event_value(input.event_pixel_spread)
-                .set_min(0.0)
-                .set_trigger_handler(|x| ctx.dispatcher().dispatch_change_pixel_spread(x))
-                .process_with_sums();
 
         if changed {
             if self.res.filters.preset_kind != FiltersPreset::Custom && self.res.filters.preset_kind != FiltersPreset::DemoFlight1 {
@@ -635,9 +564,6 @@ impl<'a> SimulationUpdater<'a> {
                 RgbChange::BlueB(value) => self.res.filters.rgb_blue_b = value,
             }
         }
-        if let Some(gamma) = self.input.event_color_gamma {
-            self.res.filters.color_gamma = gamma;
-        }
         for controller in self.res.filters.get_ui_controllers_mut().iter_mut() {
             controller.apply_event();
         }
@@ -646,11 +572,6 @@ impl<'a> SimulationUpdater<'a> {
     fn change_frontend_input_values(&self) {
         let dispatcher = self.ctx.dispatcher();
         dispatcher.enable_extra_messages(false);
-        dispatcher.dispatch_change_pixel_horizontal_gap(self.res.filters.cur_pixel_horizontal_gap);
-        dispatcher.dispatch_change_pixel_vertical_gap(self.res.filters.cur_pixel_vertical_gap);
-        dispatcher.dispatch_change_pixel_spread(self.res.filters.cur_pixel_spread);
-        dispatcher.dispatch_change_pixel_brightness(self.res.filters.extra_bright);
-        dispatcher.dispatch_change_pixel_contrast(self.res.filters.extra_contrast);
         dispatcher.dispatch_change_light_color(self.res.filters.light_color);
         dispatcher.dispatch_change_brightness_color(self.res.filters.brightness_color);
         dispatcher.dispatch_change_camera_zoom(self.res.camera.zoom);
@@ -661,8 +582,6 @@ impl<'a> SimulationUpdater<'a> {
         dispatcher.dispatch_color_representation(self.res.filters.color_channels);
         dispatcher.dispatch_pixel_geometry(self.res.filters.pixels_geometry_kind);
         dispatcher.dispatch_pixel_shadow_shape(self.res.filters.pixel_shadow_shape_kind);
-        dispatcher.dispatch_pixel_shadow_height(self.res.filters.pixel_shadow_height);
-        dispatcher.dispatch_backlight_presence(self.res.filters.backlight_presence);
         dispatcher.dispatch_screen_curvature(self.res.filters.screen_curvature_kind);
         dispatcher.dispatch_internal_resolution(&self.res.filters.internal_resolution);
         dispatcher.dispatch_texture_interpolation(self.res.filters.texture_interpolation);
@@ -676,7 +595,6 @@ impl<'a> SimulationUpdater<'a> {
         dispatcher.dispatch_scaling_aspect_ratio_y(self.res.scaling.custom_aspect_ratio.height);
         dispatcher.dispatch_custom_scaling_stretch_nearest(self.res.scaling.custom_stretch);
         dispatcher.dispatch_change_pixel_width(self.res.scaling.pixel_width);
-        dispatcher.dispatch_color_gamma(self.res.filters.color_gamma);
         for controller in self.res.filters.get_ui_controllers().iter() {
             controller.dispatch_event(dispatcher);
         }
@@ -755,17 +673,17 @@ impl<'a> SimulationUpdater<'a> {
         }
         {
             // spreading
-            let spread_change = self.dt * 0.03 * self.res.filters.cur_pixel_spread * self.res.filters.cur_pixel_spread;
+            let spread_change = self.dt * 0.03 * self.res.filters.cur_pixel_spread.value * self.res.filters.cur_pixel_spread.value;
             if self.res.demo_1.spreading {
-                self.res.filters.cur_pixel_spread += spread_change;
-                if self.res.filters.cur_pixel_spread > 1000.0 {
+                self.res.filters.cur_pixel_spread.value += spread_change;
+                if self.res.filters.cur_pixel_spread.value > 1000.0 {
                     self.res.demo_1.spreading = false;
                 }
             } else {
-                self.res.filters.cur_pixel_spread -= spread_change;
-                if self.res.filters.cur_pixel_spread <= 0.5 {
+                self.res.filters.cur_pixel_spread.value -= spread_change;
+                if self.res.filters.cur_pixel_spread.value <= 0.5 {
                     self.res.demo_1.spreading = true;
-                    self.res.filters.cur_pixel_spread = 0.5;
+                    self.res.filters.cur_pixel_spread.value = 0.5;
                 }
             }
         }
@@ -786,7 +704,7 @@ impl<'a> SimulationUpdater<'a> {
         };
         output.ambient_strength = ambient_strength;
         output.pixel_have_depth = pixel_have_depth;
-        output.height_modifier_factor = 1.0 - filters.pixel_shadow_height;
+        output.height_modifier_factor = 1.0 - filters.pixel_shadow_height.value;
         output.time = self.input.now;
 
         self.update_output_pixel_scale_gap_offset();
@@ -921,7 +839,7 @@ impl<'a> SimulationUpdater<'a> {
         }
         output.extra_light = get_3_f32color_from_int(filters.brightness_color);
         for light in output.extra_light.iter_mut() {
-            *light *= filters.extra_bright;
+            *light *= filters.extra_bright.value;
         }
         output.rgb_red[0] = filters.rgb_red_r;
         output.rgb_red[1] = filters.rgb_red_g;
@@ -932,7 +850,7 @@ impl<'a> SimulationUpdater<'a> {
         output.rgb_blue[0] = filters.rgb_blue_r;
         output.rgb_blue[1] = filters.rgb_blue_g;
         output.rgb_blue[2] = filters.rgb_blue_b;
-        output.color_gamma = filters.color_gamma;
+        output.color_gamma = filters.color_gamma.value;
         output.color_noise = filters.color_noise.value;
     }
 
@@ -958,8 +876,8 @@ impl<'a> SimulationUpdater<'a> {
         let output = &mut self.res.output;
         let filters = &self.res.filters;
 
-        output.showing_background = filters.backlight_presence > 0.0;
-        let solid_color_weight = filters.backlight_presence;
+        output.showing_background = filters.backlight_percent.value > 0.0;
+        let solid_color_weight = filters.backlight_percent.value;
 
         for i in 0..3 {
             output.light_color_background[i] *= solid_color_weight;
@@ -971,11 +889,14 @@ impl<'a> SimulationUpdater<'a> {
         let filters = &self.res.filters;
         let scaling = &self.res.scaling;
 
-        output.pixel_spread = [(1.0 + filters.cur_pixel_spread) * scaling.pixel_width, 1.0 + filters.cur_pixel_spread];
+        output.pixel_spread = [
+            (1.0 + filters.cur_pixel_spread.value) * scaling.pixel_width,
+            1.0 + filters.cur_pixel_spread.value,
+        ];
         output.pixel_scale_base = [
-            (filters.cur_pixel_vertical_gap + 1.0) / scaling.pixel_width,
-            filters.cur_pixel_horizontal_gap + 1.0,
-            (filters.cur_pixel_vertical_gap + filters.cur_pixel_vertical_gap) * 0.5 + 1.0,
+            (filters.cur_pixel_vertical_gap.value + 1.0) / scaling.pixel_width,
+            filters.cur_pixel_horizontal_gap.value + 1.0,
+            (filters.cur_pixel_vertical_gap.value + filters.cur_pixel_vertical_gap.value) * 0.5 + 1.0,
         ];
 
         let by_vertical_lpp = 1.0 / (filters.vertical_lpp as f32);
@@ -1015,9 +936,9 @@ impl<'a> SimulationUpdater<'a> {
                     let pixel_scale = &mut output.pixel_scale_foreground[vl_idx * filters.horizontal_lpp + hl_idx][color_idx];
                     *pixel_offset = [0.0, 0.0, 0.0];
                     *pixel_scale = [
-                        (filters.cur_pixel_vertical_gap + 1.0) / scaling.pixel_width,
-                        filters.cur_pixel_horizontal_gap + 1.0,
-                        (filters.cur_pixel_vertical_gap + filters.cur_pixel_vertical_gap) * 0.5 + 1.0,
+                        (filters.cur_pixel_vertical_gap.value + 1.0) / scaling.pixel_width,
+                        filters.cur_pixel_horizontal_gap.value + 1.0,
+                        (filters.cur_pixel_vertical_gap.value + filters.cur_pixel_vertical_gap.value) * 0.5 + 1.0,
                     ];
                     if filters.vertical_lpp > 1 {
                         let vl_cur_offset = vl_offset_beginning + vl_idx as f32;
@@ -1036,17 +957,17 @@ impl<'a> SimulationUpdater<'a> {
                         ColorChannels::Combined => {}
                         _ => match filters.color_channels {
                             ColorChannels::SplitHorizontal => {
-                                pixel_offset[0] +=
-                                    by_vertical_lpp * (color_idx as f32 - 1.0) * (1.0 / 3.0) * scaling.pixel_width / (filters.cur_pixel_vertical_gap + 1.0);
+                                pixel_offset[0] += by_vertical_lpp * (color_idx as f32 - 1.0) * (1.0 / 3.0) * scaling.pixel_width
+                                    / (filters.cur_pixel_vertical_gap.value + 1.0);
                                 pixel_scale[0] *= output.color_splits as f32;
                             }
                             ColorChannels::Overlapping => {
-                                pixel_offset[0] +=
-                                    by_vertical_lpp * (color_idx as f32 - 1.0) * (1.0 / 3.0) * scaling.pixel_width / (filters.cur_pixel_vertical_gap + 1.0);
+                                pixel_offset[0] += by_vertical_lpp * (color_idx as f32 - 1.0) * (1.0 / 3.0) * scaling.pixel_width
+                                    / (filters.cur_pixel_vertical_gap.value + 1.0);
                                 pixel_scale[0] *= 1.5;
                             }
                             ColorChannels::SplitVertical => {
-                                pixel_offset[1] += by_horizontal_lpp * (color_idx as f32 - 1.0) * (1.0 / 3.0) / (filters.cur_pixel_horizontal_gap + 1.0);
+                                pixel_offset[1] += by_horizontal_lpp * (color_idx as f32 - 1.0) * (1.0 / 3.0) / (filters.cur_pixel_horizontal_gap.value + 1.0);
                                 pixel_scale[1] *= output.color_splits as f32;
                             }
                             _ => unreachable!(),
