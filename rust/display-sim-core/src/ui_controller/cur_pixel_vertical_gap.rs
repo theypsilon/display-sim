@@ -39,7 +39,7 @@ impl From<f32> for CurPixelVerticalGap {
 
 impl UiController for CurPixelVerticalGap {
     fn event_tag(&self) -> &'static str {
-        return "front2back:pixel-vertical-gap";
+        "front2back:pixel-vertical-gap"
     }
     fn keys_inc(&self) -> &[&'static str] {
         &["i", "pixel-vertical-gap-inc"]

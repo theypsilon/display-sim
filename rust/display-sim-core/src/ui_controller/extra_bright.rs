@@ -39,7 +39,7 @@ impl From<f32> for ExtraBright {
 
 impl UiController for ExtraBright {
     fn event_tag(&self) -> &'static str {
-        return "front2back:pixel-brightness";
+        "front2back:pixel-brightness"
     }
     fn keys_inc(&self) -> &[&'static str] {
         &["x", "pixel-brightness-inc"]

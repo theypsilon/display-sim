@@ -39,7 +39,7 @@ impl From<f32> for CurPixelSpread {
 
 impl UiController for CurPixelSpread {
     fn event_tag(&self) -> &'static str {
-        return "front2back:pixel-spread";
+        "front2back:pixel-spread"
     }
     fn keys_inc(&self) -> &[&'static str] {
         &["p"]

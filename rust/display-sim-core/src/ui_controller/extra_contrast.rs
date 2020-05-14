@@ -39,7 +39,7 @@ impl From<f32> for ExtraContrast {
 
 impl UiController for ExtraContrast {
     fn event_tag(&self) -> &'static str {
-        return "front2back:pixel-contrast";
+        "front2back:pixel-contrast"
     }
     fn keys_inc(&self) -> &[&'static str] {
         &["z", "&lt;", "pixel-contrast-inc"]

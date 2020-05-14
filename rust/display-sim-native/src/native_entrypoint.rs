@@ -301,23 +301,8 @@ impl AppEventDispatcher for NativeEventDispatcher {
     fn dispatch_camera_update(&self, a: &glm::Vec3, b: &glm::Vec3, c: &glm::Vec3) {
         println!("camera_update {}, {}, {}", a, b, c);
     }
-    fn dispatch_change_pixel_horizontal_gap(&self, size: f32) {
-        println!("ixel_horizontal_gap: {}", size);
-    }
-    fn dispatch_change_pixel_vertical_gap(&self, size: f32) {
-        println!("change_pixel_vertical_gap: {}", size);
-    }
     fn dispatch_change_pixel_width(&self, size: f32) {
         println!("change_pixel_width: {}", size);
-    }
-    fn dispatch_change_pixel_spread(&self, size: f32) {
-        println!("change_pixel_spread: {}", size);
-    }
-    fn dispatch_change_pixel_brightness(&self, res: f32) {
-        println!("change_pixel_brightness: {}", res);
-    }
-    fn dispatch_change_pixel_contrast(&self, res: f32) {
-        println!("change_pixel_contrast: {}", res);
     }
     fn dispatch_change_light_color(&self, res: i32) {
         println!("change_light_color: {}", res);
@@ -363,12 +348,6 @@ impl AppEventDispatcher for NativeEventDispatcher {
     }
     fn dispatch_pixel_shadow_shape(&self, res: ShadowShape) {
         println!("pixel_shadow_shape: {}", res);
-    }
-    fn dispatch_pixel_shadow_height(&self, res: f32) {
-        println!("pixel_shadow_height: {}", res);
-    }
-    fn dispatch_backlight_percent(&self, res: f32) {
-        println!("backlight_percent: {}", res);
     }
     fn dispatch_screen_curvature(&self, res: ScreenCurvatureKind) {
         println!("screen_curvature: {}", res);

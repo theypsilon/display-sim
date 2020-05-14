@@ -16,19 +16,7 @@
 use crate::input_types::{Boolean2DAction, BooleanAction, Input, KeyCodeBooleanAction, Pressed};
 use crate::simulation_core_state::{KeyEventKind, Resources};
 
-pub(crate) fn trigger_hotkey_action(input: &mut Input, res: &mut Resources, keycode: &str, pressed: Pressed) -> ActionUsed {
-    if let Some((kind, index)) = res.controller_events.get_mut(keycode) {
-        let controller = &mut res.filters.get_ui_controllers_mut()[*index];
-        let pressed = match pressed {
-            Pressed::Yes => true,
-            Pressed::No => false,
-        };
-        match kind {
-            KeyEventKind::Inc => controller.read_key_inc(pressed),
-            KeyEventKind::Dec => controller.read_key_dec(pressed),
-            KeyEventKind::Set => unreachable!(),
-        }
-    }
+pub(crate) fn trigger_hotkey_action_intern(input: &mut Input, keycode: &str, pressed: Pressed) -> ActionUsed {
     let (maybe_new_keycode, action) = get_contextualized_action(input, keycode);
     let action = match action {
         #[cfg(debug_assertions)]
@@ -47,6 +35,21 @@ pub(crate) fn trigger_hotkey_action(input: &mut Input, res: &mut Resources, keyc
         Pressed::No => remove_action(input, action),
     }
     ActionUsed::Yes
+}
+pub(crate) fn trigger_hotkey_action(input: &mut Input, res: &mut Resources, keycode: &str, pressed: Pressed) -> ActionUsed {
+    if let Some((kind, index)) = res.controller_events.get_mut(keycode) {
+        let controller = &mut res.filters.get_ui_controllers_mut()[*index];
+        let pressed = match pressed {
+            Pressed::Yes => true,
+            Pressed::No => false,
+        };
+        match kind {
+            KeyEventKind::Inc => controller.read_key_inc(pressed),
+            KeyEventKind::Dec => controller.read_key_dec(pressed),
+            KeyEventKind::Set => unreachable!(),
+        }
+    }
+    trigger_hotkey_action_intern(input, keycode, pressed)
 }
 
 #[derive(PartialEq, Debug)]
@@ -329,9 +332,9 @@ mod test_trigger_hotkey_action {
     fn test_press__i___release__i() {
         let mut input_owned = Input::default();
         let input = &mut input_owned;
-        trigger_hotkey_action(input, "i", Pressed::Yes);
-        assert_eq!(format!("{:?}", input.active_pressed_actions), "[(\"i\", PixelVerticalGap(Increase))]");
-        trigger_hotkey_action(input, "i", Pressed::No);
+        trigger_hotkey_action_intern(input, "g", Pressed::Yes);
+        assert_eq!(format!("{:?}", input.active_pressed_actions), "[(\"g\", NextCameraMovementMode(Increase))]");
+        trigger_hotkey_action_intern(input, "g", Pressed::No);
         assert_eq!(format!("{:?}", input.active_pressed_actions), "[]");
     }
 
@@ -339,12 +342,12 @@ mod test_trigger_hotkey_action {
     fn test_press__i_shift___done() {
         let mut input_owned = Input::default();
         let input = &mut input_owned;
-        trigger_hotkey_action(input, "i", Pressed::Yes);
-        assert_eq!(format!("{:?}", input.active_pressed_actions), "[(\"i\", PixelVerticalGap(Increase))]");
-        trigger_hotkey_action(input, "shift", Pressed::Yes);
+        trigger_hotkey_action_intern(input, "g", Pressed::Yes);
+        assert_eq!(format!("{:?}", input.active_pressed_actions), "[(\"g\", NextCameraMovementMode(Increase))]");
+        trigger_hotkey_action_intern(input, "shift", Pressed::Yes);
         assert_eq!(
             format!("{:?}", input.active_pressed_actions),
-            "[(\"shift+i\", PixelVerticalGap(Decrease)), (\"shift\", Shift)]"
+            "[(\"shift+g\", NextCameraMovementMode(Decrease)), (\"shift\", Shift)]"
         );
     }
 
@@ -352,12 +355,12 @@ mod test_trigger_hotkey_action {
     fn test_press__shift_i___done() {
         let mut input_owned = Input::default();
         let input = &mut input_owned;
-        trigger_hotkey_action(input, "shift", Pressed::Yes);
+        trigger_hotkey_action_intern(input, "shift", Pressed::Yes);
         assert_eq!(format!("{:?}", input.active_pressed_actions), "[(\"shift\", Shift)]");
-        trigger_hotkey_action(input, "i", Pressed::Yes);
+        trigger_hotkey_action_intern(input, "g", Pressed::Yes);
         assert_eq!(
             format!("{:?}", input.active_pressed_actions),
-            "[(\"shift\", Shift), (\"shift+i\", PixelVerticalGap(Decrease))]"
+            "[(\"shift\", Shift), (\"shift+g\", NextCameraMovementMode(Decrease))]"
         );
     }
 
@@ -365,14 +368,14 @@ mod test_trigger_hotkey_action {
     fn test_press__i_shift___release__i() {
         let mut input_owned = Input::default();
         let input = &mut input_owned;
-        trigger_hotkey_action(input, "i", Pressed::Yes);
-        assert_eq!(format!("{:?}", input.active_pressed_actions), "[(\"i\", PixelVerticalGap(Increase))]");
-        trigger_hotkey_action(input, "shift", Pressed::Yes);
+        trigger_hotkey_action_intern(input, "g", Pressed::Yes);
+        assert_eq!(format!("{:?}", input.active_pressed_actions), "[(\"g\", NextCameraMovementMode(Increase))]");
+        trigger_hotkey_action_intern(input, "shift", Pressed::Yes);
         assert_eq!(
             format!("{:?}", input.active_pressed_actions),
-            "[(\"shift+i\", PixelVerticalGap(Decrease)), (\"shift\", Shift)]"
+            "[(\"shift+g\", NextCameraMovementMode(Decrease)), (\"shift\", Shift)]"
         );
-        trigger_hotkey_action(input, "i", Pressed::No);
+        trigger_hotkey_action_intern(input, "g", Pressed::No);
         assert_eq!(format!("{:?}", input.active_pressed_actions), "[(\"shift\", Shift)]");
     }
 
@@ -380,14 +383,14 @@ mod test_trigger_hotkey_action {
     fn test_press__shift_i___release__shift() {
         let mut input_owned = Input::default();
         let input = &mut input_owned;
-        trigger_hotkey_action(input, "shift", Pressed::Yes);
+        trigger_hotkey_action_intern(input, "shift", Pressed::Yes);
         assert_eq!(format!("{:?}", input.active_pressed_actions), "[(\"shift\", Shift)]");
-        trigger_hotkey_action(input, "i", Pressed::Yes);
+        trigger_hotkey_action_intern(input, "g", Pressed::Yes);
         assert_eq!(
             format!("{:?}", input.active_pressed_actions),
-            "[(\"shift\", Shift), (\"shift+i\", PixelVerticalGap(Decrease))]"
+            "[(\"shift\", Shift), (\"shift+g\", NextCameraMovementMode(Decrease))]"
         );
-        trigger_hotkey_action(input, "shift", Pressed::No);
-        assert_eq!(format!("{:?}", input.active_pressed_actions), "[(\"i\", PixelVerticalGap(Increase))]");
+        trigger_hotkey_action_intern(input, "shift", Pressed::No);
+        assert_eq!(format!("{:?}", input.active_pressed_actions), "[(\"g\", NextCameraMovementMode(Increase))]");
     }
 }

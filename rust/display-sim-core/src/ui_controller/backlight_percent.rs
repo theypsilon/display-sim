@@ -39,7 +39,7 @@ impl From<f32> for BacklightPercent {
 
 impl UiController for BacklightPercent {
     fn event_tag(&self) -> &'static str {
-        return "front2back:backlight-percent";
+        "front2back:backlight-percent"
     }
     fn keys_inc(&self) -> &[&'static str] {
         &["backlight-percent-inc", ","]

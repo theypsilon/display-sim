@@ -39,7 +39,7 @@ impl From<f32> for ColorNoise {
 
 impl UiController for ColorNoise {
     fn event_tag(&self) -> &'static str {
-        return "front2back:color-noise";
+        "front2back:color-noise"
     }
     fn keys_inc(&self) -> &[&'static str] {
         &["color-noise-inc"]

@@ -39,7 +39,7 @@ impl From<f32> for PixelShadowHeight {
 
 impl UiController for PixelShadowHeight {
     fn event_tag(&self) -> &'static str {
-        return "front2back:pixel-shadow-height";
+        "front2back:pixel-shadow-height"
     }
     fn keys_inc(&self) -> &[&'static str] {
         &["m", "pixel-shadow-height-inc"]

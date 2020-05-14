@@ -39,7 +39,7 @@ impl From<f32> for ColorGamma {
 
 impl UiController for ColorGamma {
     fn event_tag(&self) -> &'static str {
-        return "front2back:color-gamma";
+        "front2back:color-gamma"
     }
     fn keys_inc(&self) -> &[&'static str] {
         &["color-gamma-inc"]
