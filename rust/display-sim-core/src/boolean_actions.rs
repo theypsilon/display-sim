@@ -16,7 +16,7 @@
 use crate::input_types::{Boolean2DAction, BooleanAction, Input, KeyCodeBooleanAction, Pressed};
 use crate::simulation_core_state::{KeyEventKind, Resources};
 
-pub(crate) fn trigger_hotkey_action_intern(input: &mut Input, keycode: &str, pressed: Pressed) -> ActionUsed {
+fn trigger_hotkey_action_intern(input: &mut Input, keycode: &str, pressed: Pressed) -> ActionUsed {
     let (maybe_new_keycode, action) = get_contextualized_action(input, keycode);
     let action = match action {
         #[cfg(debug_assertions)]
@@ -37,6 +37,7 @@ pub(crate) fn trigger_hotkey_action_intern(input: &mut Input, keycode: &str, pre
     ActionUsed::Yes
 }
 pub(crate) fn trigger_hotkey_action(input: &mut Input, res: &mut Resources, keycode: &str, pressed: Pressed) -> ActionUsed {
+    // @TODO Fix Shift Ctrl combos
     if let Some((kind, index)) = res.controller_events.get_mut(keycode) {
         let controller = &mut res.filters.get_ui_controllers_mut()[*index];
         let pressed = match pressed {
