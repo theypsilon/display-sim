@@ -76,14 +76,6 @@ impl AppEventDispatcher for WebEventDispatcher {
         self.catch_error(dispatch_event_with(&self.event_bus, "back2front:camera_update", &values_array.into()));
     }
 
-    fn dispatch_change_light_color(&self, light_color: i32) {
-        self.dispatch_change_color("back2front:change_light_color", light_color);
-    }
-
-    fn dispatch_change_brightness_color(&self, brightness_color: i32) {
-        self.dispatch_change_color("back2front:change_brightness_color", brightness_color);
-    }
-
     fn dispatch_change_pixel_width(&self, size: f32) {
         self.catch_error(dispatch_event_with(
             &self.event_bus,
@@ -285,9 +277,6 @@ impl AppEventDispatcher for WebEventDispatcher {
 impl WebEventDispatcher {
     fn format_speed(&self, speed: f32) -> String {
         format!("x{}", (speed * 1000.0).round() / 1000.0)
-    }
-    fn dispatch_change_color(&self, id: &str, color: i32) {
-        self.catch_error(dispatch_event_with(&self.event_bus, id, &format!("#{:X}", color).into()));
     }
 
     pub fn check_error(&self) -> AppResult<()> {

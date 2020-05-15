@@ -46,8 +46,6 @@ pub enum InputEventValue {
     BlurredWindow,
 
     FilterPreset(String),
-    LightColor(i32),
-    BrightnessColor(i32),
     PixelWidth(f32),
     Camera(CameraChange),
     Rgb(RgbChange),
@@ -196,16 +194,6 @@ pub struct Input {
 
     #[in_array(get_options_to_be_noned)]
     pub(crate) event_filter_preset: Option<String>,
-    #[in_array(get_options_to_be_noned)]
-    pub(crate) event_light_color: Option<i32>,
-    #[in_array(get_options_to_be_noned)]
-    pub(crate) event_brightness_color: Option<i32>,
-    #[in_array(get_options_to_be_noned)]
-    pub(crate) event_blur_level: Option<usize>,
-    #[in_array(get_options_to_be_noned)]
-    pub(crate) event_vertical_lpp: Option<usize>,
-    #[in_array(get_options_to_be_noned)]
-    pub(crate) event_horizontal_lpp: Option<usize>,
     #[in_array(get_options_to_be_noned)]
     pub(crate) event_scaling_resolution_width: Option<f32>,
     #[in_array(get_options_to_be_noned)]

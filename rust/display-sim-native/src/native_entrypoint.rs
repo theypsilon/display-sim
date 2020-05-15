@@ -292,6 +292,9 @@ impl NativeEventDispatcher {
 
 impl AppEventDispatcher for NativeEventDispatcher {
     fn enable_extra_messages(&self, _: bool) {}
+    fn are_extra_messages_enabled(&self) -> bool {
+        false
+    }
     fn dispatch_log(&self, msg: String) {
         println!("log: {}", msg);
     }
@@ -303,12 +306,6 @@ impl AppEventDispatcher for NativeEventDispatcher {
     }
     fn dispatch_change_pixel_width(&self, size: f32) {
         println!("change_pixel_width: {}", size);
-    }
-    fn dispatch_change_light_color(&self, res: i32) {
-        println!("change_light_color: {}", res);
-    }
-    fn dispatch_change_brightness_color(&self, res: i32) {
-        println!("change_brightness_color: {}", res);
     }
     fn dispatch_change_camera_zoom(&self, zoom: f32) {
         println!("change_camera_zoom: {}", zoom);

@@ -26,6 +26,7 @@ use crate::simulation_core_state::{
     ColorChannels, Filters, FiltersPreset, InitialParameters, LatestCustomScalingChange, PixelsGeometryKind, Resources, ScalingMethod, ScreenCurvatureKind,
     TextureInterpolation, MOVEMENT_BASE_SPEED, MOVEMENT_SPEED_FACTOR, PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
 };
+use crate::ui_controller::UiController;
 use app_error::AppResult;
 use derive_new::new;
 use std::str::FromStr;
@@ -74,8 +75,6 @@ impl<'a> SimulationCoreTicker<'a> {
                 InputEventValue::BlurredWindow => *self.input = Input::new(now),
 
                 InputEventValue::FilterPreset(preset) => self.input.event_filter_preset = Some(preset),
-                InputEventValue::LightColor(light_color) => self.input.event_light_color = Some(light_color),
-                InputEventValue::BrightnessColor(brightness_color) => self.input.event_brightness_color = Some(brightness_color),
                 InputEventValue::PixelWidth(pixel_width) => self.input.event_pixel_width = Some(pixel_width),
                 InputEventValue::Camera(camera) => self.input.event_camera = Some(camera),
                 InputEventValue::CustomScalingResolutionWidth(width) => self.input.event_scaling_resolution_width = Some(width),
@@ -348,14 +347,6 @@ impl<'a> SimulationUpdater<'a> {
             self.ctx.dispatcher().dispatch_top_message("All filter options have been reset.");
             return Ok(());
         }
-        if let Some(light_color) = self.input.event_light_color {
-            self.res.filters.light_color = light_color;
-            self.ctx.dispatcher().dispatch_top_message("Light Color changed.");
-        }
-        if let Some(brightness_color) = self.input.event_light_color {
-            self.res.filters.brightness_color = brightness_color;
-            self.ctx.dispatcher().dispatch_top_message("Brightness Color changed.");
-        }
 
         let ctx = &self.ctx;
         let filters = &mut self.res.filters;
@@ -546,8 +537,6 @@ impl<'a> SimulationUpdater<'a> {
     fn change_frontend_input_values(&self) {
         let dispatcher = self.ctx.dispatcher();
         dispatcher.enable_extra_messages(false);
-        dispatcher.dispatch_change_light_color(self.res.filters.light_color);
-        dispatcher.dispatch_change_brightness_color(self.res.filters.brightness_color);
         dispatcher.dispatch_change_camera_zoom(self.res.camera.zoom);
         dispatcher.dispatch_change_camera_movement_mode(self.res.camera.locked_mode);
         dispatcher.dispatch_color_representation(self.res.filters.color_channels);
@@ -584,7 +573,7 @@ impl<'a> SimulationUpdater<'a> {
             self.res.camera.set_position(glm::vec3(0.0, 0.0, 0.0));
             self.res.camera.direction = glm::vec3(0.0, 1.0, 0.0);
             self.res.camera.axis_up = glm::vec3(0.0, 0.0, 1.0);
-            self.res.demo_1.color_target = glm::make_vec3(&get_3_f32color_from_int(self.res.filters.light_color));
+            self.res.demo_1.color_target = glm::make_vec3(&get_3_f32color_from_int(self.res.filters.light_color.value));
             self.res.demo_1.color_position = self.res.demo_1.color_target;
         }
         {
@@ -632,8 +621,8 @@ impl<'a> SimulationUpdater<'a> {
             let is_void_route = color_route == glm::vec3(0.0, 0.0, 0.0);
             if !is_void_route {
                 self.res.demo_1.color_position += color_route.normalize() * self.dt * 0.1;
-                self.res.filters.light_color = get_int_from_3_f32color(&self.res.demo_1.color_position.into());
-                self.ctx.dispatcher().dispatch_change_light_color(self.res.filters.light_color);
+                self.res.filters.light_color.value = get_int_from_3_f32color(&self.res.demo_1.color_position.into());
+                self.res.filters.light_color.dispatch_event(self.ctx.dispatcher());
             }
             if is_void_route || glm::length(&color_route).abs() <= 0.15 {
                 let rnd_r = self.ctx.random().next() * 0.6 + 0.4;
@@ -795,7 +784,7 @@ impl<'a> SimulationUpdater<'a> {
             ColorChannels::Combined => 1,
             _ => 3,
         };
-        output.light_color_background = get_3_f32color_from_int(filters.light_color);
+        output.light_color_background = get_3_f32color_from_int(filters.light_color.value);
         for i in 0..output.color_splits {
             let mut light_color = output.light_color_background;
             match filters.color_channels {
@@ -808,7 +797,7 @@ impl<'a> SimulationUpdater<'a> {
             }
             output.light_color[i] = light_color;
         }
-        output.extra_light = get_3_f32color_from_int(filters.brightness_color);
+        output.extra_light = get_3_f32color_from_int(filters.brightness_color.value);
         for light in output.extra_light.iter_mut() {
             *light *= filters.extra_bright.value;
         }

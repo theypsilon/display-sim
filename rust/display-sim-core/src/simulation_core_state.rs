@@ -24,9 +24,10 @@ use crate::general_types::Size2D;
 use crate::internal_resolution::InternalResolution;
 use crate::pixels_shadow::ShadowShape;
 use crate::ui_controller::{
-    backlight_percent::BacklightPercent, blur_passes::BlurPasses, color_gamma::ColorGamma, color_noise::ColorNoise,
+    backlight_percent::BacklightPercent, blur_passes::BlurPasses, brightness_color::BrightnessColor, color_gamma::ColorGamma, color_noise::ColorNoise,
     cur_pixel_horizontal_gap::CurPixelHorizontalGap, cur_pixel_spread::CurPixelSpread, cur_pixel_vertical_gap::CurPixelVerticalGap, extra_bright::ExtraBright,
-    extra_contrast::ExtraContrast, horizontal_lpp::HorizontalLpp, pixel_shadow_height::PixelShadowHeight, vertical_lpp::VerticalLpp, UiController,
+    extra_contrast::ExtraContrast, horizontal_lpp::HorizontalLpp, light_color::LightColor, pixel_shadow_height::PixelShadowHeight, vertical_lpp::VerticalLpp,
+    UiController,
 };
 
 pub const PIXEL_MANIPULATION_BASE_SPEED: f32 = 20.0;
@@ -240,8 +241,12 @@ pub struct Filters {
     #[in_array(get_ui_controllers)]
     #[in_array(get_ui_controllers_mut)]
     pub horizontal_lpp: HorizontalLpp,
-    pub light_color: i32,
-    pub brightness_color: i32,
+    #[in_array(get_ui_controllers)]
+    #[in_array(get_ui_controllers_mut)]
+    pub light_color: LightColor,
+    #[in_array(get_ui_controllers)]
+    #[in_array(get_ui_controllers_mut)]
+    pub brightness_color: BrightnessColor,
     #[in_array(get_ui_controllers)]
     #[in_array(get_ui_controllers_mut)]
     pub extra_bright: ExtraBright,
@@ -293,8 +298,8 @@ impl Default for Filters {
             blur_passes: 0.into(),
             vertical_lpp: 1.into(),
             horizontal_lpp: 1.into(),
-            light_color: 0x00FF_FFFF,
-            brightness_color: 0x00FF_FFFF,
+            light_color: 0x00FF_FFFF.into(),
+            brightness_color: 0x00FF_FFFF.into(),
             extra_bright: 0.0.into(),
             extra_contrast: 1.0.into(),
             cur_pixel_vertical_gap: 0.0.into(),
@@ -424,8 +429,8 @@ impl Filters {
         self.blur_passes = 0.into();
         self.vertical_lpp = 1.into();
         self.horizontal_lpp = 1.into();
-        self.light_color = 0x00FF_FFFF;
-        self.brightness_color = 0x00FF_FFFF;
+        self.light_color = 0x00FF_FFFF.into();
+        self.brightness_color = 0x00FF_FFFF.into();
         self.extra_bright = 0.0.into();
         self.extra_contrast = 1.0.into();
         self.cur_pixel_vertical_gap = 0.0.into();
@@ -446,8 +451,8 @@ impl Filters {
         self.blur_passes = 1.into();
         self.vertical_lpp = 3.into();
         self.horizontal_lpp = 1.into();
-        self.light_color = 0x00FF_FFFF;
-        self.brightness_color = 0x00FF_FFFF;
+        self.light_color = 0x00FF_FFFF.into();
+        self.brightness_color = 0x00FF_FFFF.into();
         self.extra_bright = 0.0.into();
         self.extra_contrast = 1.0.into();
         self.cur_pixel_vertical_gap = 0.0.into();
@@ -468,8 +473,8 @@ impl Filters {
         self.blur_passes = 2.into();
         self.vertical_lpp = 2.into();
         self.horizontal_lpp = 2.into();
-        self.light_color = 0x00FF_FFFF;
-        self.brightness_color = 0x00FF_FFFF;
+        self.light_color = 0x00FF_FFFF.into();
+        self.brightness_color = 0x00FF_FFFF.into();
         self.extra_bright = 0.05.into();
         self.extra_contrast = 1.2.into();
         self.cur_pixel_vertical_gap = 0.5.into();
@@ -490,8 +495,8 @@ impl Filters {
         self.blur_passes = 2.into();
         self.vertical_lpp = 1.into();
         self.horizontal_lpp = 2.into();
-        self.light_color = 0x00FF_FFFF;
-        self.brightness_color = 0x00FF_FFFF;
+        self.light_color = 0x00FF_FFFF.into();
+        self.brightness_color = 0x00FF_FFFF.into();
         self.extra_bright = 0.05.into();
         self.extra_contrast = 1.2.into();
         self.cur_pixel_vertical_gap = 1.0.into();
@@ -513,7 +518,7 @@ impl Filters {
         self.vertical_lpp = 1.into();
         self.horizontal_lpp = 1.into();
         self.light_color = self.light_color;
-        self.brightness_color = 0x00FF_FFFF;
+        self.brightness_color = 0x00FF_FFFF.into();
         self.extra_bright = 0.0.into();
         self.extra_contrast = 1.0.into();
         self.cur_pixel_vertical_gap = 0.0.into();
