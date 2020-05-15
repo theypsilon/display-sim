@@ -229,6 +229,7 @@ pub struct Input {
     pub(crate) event_rgb: Option<RgbChange>,
 
     pub(crate) active_pressed_actions: Vec<KeyCodeBooleanAction>,
+    pub(crate) active_pressed_actions_2: Vec<String>,
 }
 
 impl Input {

@@ -16,6 +16,189 @@
 use crate::input_types::{Boolean2DAction, BooleanAction, Input, KeyCodeBooleanAction, Pressed};
 use crate::simulation_core_state::{KeyEventKind, Resources};
 
+pub(crate) fn trigger_hotkey_action(input: &mut Input, res: &mut Resources, keycode: &str, pressed: Pressed) -> ActionUsed {
+    match trigger_hotkey_action_2(input, res, keycode, pressed) {
+        ActionUsed::Yes => ActionUsed::Yes,
+        #[cfg(debug_assertions)]
+        ActionUsed::No(_) => trigger_hotkey_action_intern(input, keycode, pressed),
+        #[cfg(not(debug_assertions))]
+        ActionUsed::No => trigger_hotkey_action_intern(input, keycode, pressed),
+    }
+}
+
+pub(crate) fn trigger_hotkey_action_2(input: &mut Input, res: &mut Resources, keycode: &str, pressed: Pressed) -> ActionUsed {
+    // @TODO Fix Shift Ctrl combos
+    /*
+    if let Some((kind, index)) = res.controller_events.get_mut(keycode) {
+        let controller = &mut res.filters.get_ui_controllers_mut()[*index];
+        let pressed = match pressed {
+            Pressed::Yes => true,
+            Pressed::No => false,
+        };
+        match kind {
+            KeyEventKind::Inc => controller.read_key_inc(pressed),
+            KeyEventKind::Dec => controller.read_key_dec(pressed),
+            KeyEventKind::Set => unreachable!(),
+        }
+    }*/
+    if let Some(keycode) = get_contextualized_action_2(input, res, keycode) {
+        process_modifiers_2(input, res, keycode.as_ref(), pressed);
+        if pressed == Pressed::Yes && input.active_pressed_actions_2.iter().any(|active_action| *active_action == keycode) {
+            return ActionUsed::Yes;
+        }
+        handle_action_2(input, res, keycode.as_ref(), pressed);
+        match pressed {
+            Pressed::Yes => input.active_pressed_actions_2.push(keycode),
+            Pressed::No => remove_action_2(input, keycode.as_ref()),
+        }
+        ActionUsed::Yes
+    } else {
+        #[cfg(debug_assertions)]
+        {
+            ActionUsed::No(keycode.into())
+        }
+        #[cfg(not(debug_assertions))]
+        {
+            ActionUsed::No
+        }
+    }
+}
+
+fn remove_action_2(input: &mut Input, keycode: &str) {
+    let mut index = None;
+    for (i, active_action) in input.active_pressed_actions_2.iter().enumerate() {
+        if *active_action == keycode {
+            debug_assert_eq!(index, None);
+            index = Some(i);
+            #[cfg(not(debug_assertions))]
+            break;
+        }
+    }
+    if let Some(i) = index {
+        input.active_pressed_actions_2.remove(i);
+    }
+}
+
+fn process_modifiers_2(input: &mut Input, res: &mut Resources, keycode: &str, pressed: Pressed) {
+    if is_shift(keycode) {
+        react_to_modifier_2(input, res, BooleanAction::Shift, pressed)
+    } else if is_ctrl(keycode) {
+        react_to_modifier_2(input, res, BooleanAction::Control, pressed)
+    } else if is_alt(keycode) {
+        react_to_modifier_2(input, res, BooleanAction::Alt, pressed)
+    }
+}
+
+fn react_to_modifier_2(input: &mut Input, res: &mut Resources, modifier: BooleanAction, pressed: Pressed) {
+    let modifier_code = get_modifier_code(modifier);
+    let (to_add, to_delete) = match pressed {
+        Pressed::Yes => modify_active_actions_2(&input.active_pressed_actions_2, modifier_code),
+        Pressed::No => unmodify_active_actions_2(&input.active_pressed_actions_2, modifier_code),
+    };
+    resolve_modifications_2(input, res, to_add, to_delete);
+}
+
+fn modify_active_actions_2(active_actions: &[String], modifier_code: &str) -> (Vec<String>, Vec<(usize, String)>) {
+    let mut to_delete = Vec::new();
+    let mut to_add = Vec::new();
+    for (i, keycode) in active_actions.iter().enumerate() {
+        let modified_keycode = format!("{}{}", modifier_code, keycode);
+        to_delete.push((i, keycode.clone()));
+        to_add.push(modified_keycode);
+    }
+    (to_add, to_delete)
+}
+
+fn unmodify_active_actions_2(active_actions: &[String], modifier_code: &str) -> (Vec<String>, Vec<(usize, String)>) {
+    let mut to_delete = Vec::new();
+    let mut to_add = Vec::new();
+    for (i, keycode) in active_actions.iter().enumerate() {
+        if !keycode.starts_with(modifier_code) {
+            continue;
+        }
+        to_delete.push((i, keycode.clone()));
+        let unmodified_keycode = keycode.replace(modifier_code, "");
+        to_add.push(unmodified_keycode);
+    }
+    (to_add, to_delete)
+}
+
+fn resolve_modifications_2(input: &mut Input, res: &mut Resources, to_add: Vec<String>, to_delete: Vec<(usize, String)>) {
+    for (i, removed_keycode) in to_delete.into_iter() {
+        handle_action_2(input, res, removed_keycode.as_ref(), Pressed::No);
+        input.active_pressed_actions_2.remove(i);
+    }
+    for modified_keycode in to_add.into_iter() {
+        handle_action_2(input, res, modified_keycode.as_ref(), Pressed::Yes);
+        input.active_pressed_actions_2.push(modified_keycode);
+    }
+}
+
+fn handle_action_2(input: &mut Input, res: &mut Resources, keycode: &str, pressed: Pressed) {
+    let pressed = match pressed {
+        Pressed::Yes => true,
+        Pressed::No => false,
+    };
+    if is_shift(keycode) {
+        input.shift = pressed;
+    } else if is_ctrl(keycode) {
+        input.control = pressed;
+    } else if is_alt(keycode) {
+        input.alt = pressed;
+    } else if let Some((kind, index)) = res.controller_events.get_mut(keycode) {
+        let controller = &mut res.filters.get_ui_controllers_mut()[*index];
+        match kind {
+            KeyEventKind::Inc => controller.read_key_inc(pressed),
+            KeyEventKind::Dec => controller.read_key_dec(pressed),
+            KeyEventKind::Set => unreachable!(),
+        }
+    }
+}
+
+fn get_contextualized_action_2(input: &Input, res: &mut Resources, keycode: &str) -> Option<String> {
+    if input.shift && !is_shift(keycode) {
+        let combo = format!("shift+{}", keycode);
+        if res.controller_events.contains_key(keycode) {
+            return Some(combo);
+        }
+    } else if input.control && !is_ctrl(keycode) {
+        let combo = format!("ctrl+{}", keycode);
+        if res.controller_events.contains_key(keycode) {
+            return Some(combo);
+        }
+    } else if input.alt && !is_alt(keycode) {
+        let combo = format!("alt+{}", keycode);
+        if res.controller_events.contains_key(keycode) {
+            return Some(combo);
+        }
+    }
+    match res.controller_events.contains_key(keycode) {
+        false => None,
+        true => Some(keycode.into()),
+    }
+}
+
+fn is_shift(keycode: &str) -> bool {
+    match keycode {
+        "shift" | "left shift" | "right shift" => true,
+        _ => false,
+    }
+}
+
+fn is_ctrl(keycode: &str) -> bool {
+    match keycode {
+        "control" => true,
+        _ => false,
+    }
+}
+
+fn is_alt(keycode: &str) -> bool {
+    match keycode {
+        "alt" => true,
+        _ => false,
+    }
+}
+
 fn trigger_hotkey_action_intern(input: &mut Input, keycode: &str, pressed: Pressed) -> ActionUsed {
     let (maybe_new_keycode, action) = get_contextualized_action(input, keycode);
     let action = match action {
@@ -35,22 +218,6 @@ fn trigger_hotkey_action_intern(input: &mut Input, keycode: &str, pressed: Press
         Pressed::No => remove_action(input, action),
     }
     ActionUsed::Yes
-}
-pub(crate) fn trigger_hotkey_action(input: &mut Input, res: &mut Resources, keycode: &str, pressed: Pressed) -> ActionUsed {
-    // @TODO Fix Shift Ctrl combos
-    if let Some((kind, index)) = res.controller_events.get_mut(keycode) {
-        let controller = &mut res.filters.get_ui_controllers_mut()[*index];
-        let pressed = match pressed {
-            Pressed::Yes => true,
-            Pressed::No => false,
-        };
-        match kind {
-            KeyEventKind::Inc => controller.read_key_inc(pressed),
-            KeyEventKind::Dec => controller.read_key_dec(pressed),
-            KeyEventKind::Set => unreachable!(),
-        }
-    }
-    trigger_hotkey_action_intern(input, keycode, pressed)
 }
 
 #[derive(PartialEq, Debug)]
