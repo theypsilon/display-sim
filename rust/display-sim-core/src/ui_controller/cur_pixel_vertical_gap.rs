@@ -17,6 +17,7 @@ use crate::app_events::AppEventDispatcher;
 use crate::field_changer::FieldChanger;
 use crate::general_types::IncDec;
 use crate::simulation_context::SimulationContext;
+use crate::simulation_core_state::MainState;
 use crate::ui_controller::{EncodedValue, UiController};
 use app_error::AppResult;
 
@@ -47,9 +48,9 @@ impl UiController for CurPixelVerticalGap {
     fn keys_dec(&self) -> &[&'static str] {
         &["shift+i", "pixel-vertical-gap-dec"]
     }
-    fn update(&mut self, speed: f32, ctx: &dyn SimulationContext) -> bool {
+    fn update(&mut self, main: &MainState, ctx: &dyn SimulationContext) -> bool {
         FieldChanger::new(ctx, &mut self.value, self.input)
-            .set_progression(0.00125 * speed)
+            .set_progression(0.00125 * main.dt * main.filter_speed)
             .set_event_value(self.event)
             .set_min(0.0)
             .set_trigger_handler(|x| dispatch(x, ctx.dispatcher()))
@@ -87,7 +88,7 @@ impl UiController for CurPixelVerticalGap {
 fn dispatch(value: f32, dispatcher: &dyn AppEventDispatcher) {
     dispatcher.dispatch_string_event(
         "back2front:change_pixel_vertical_gap",
-        if value.floor() == value {
+        &if value.floor() == value {
             format!("{:.00}", value)
         } else {
             format!("{:.03}", value)

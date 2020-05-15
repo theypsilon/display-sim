@@ -22,16 +22,14 @@ use std::fmt::Display;
 
 pub trait AppEventDispatcher {
     fn enable_extra_messages(&self, extra_messages_enabled: bool);
+    fn are_extra_messages_enabled(&self) -> bool;
     fn dispatch_log(&self, msg: String);
-    fn dispatch_string_event(&self, event_id: &'static str, message: String);
+    fn dispatch_string_event(&self, event_id: &'static str, message: &str);
     fn dispatch_camera_update(&self, position: &glm::Vec3, direction: &glm::Vec3, axis_up: &glm::Vec3);
     fn dispatch_change_pixel_width(&self, size: f32);
     fn dispatch_change_light_color(&self, res: i32);
     fn dispatch_change_brightness_color(&self, res: i32);
     fn dispatch_change_camera_zoom(&self, zoom: f32);
-    fn dispatch_change_blur_level(&self, res: usize);
-    fn dispatch_change_vertical_lpp(&self, res: usize);
-    fn dispatch_change_horizontal_lpp(&self, res: usize);
     fn dispatch_color_representation(&self, res: ColorChannels);
     fn dispatch_pixel_geometry(&self, res: PixelsGeometryKind);
     fn dispatch_pixel_shadow_shape(&self, res: ShadowShape);
@@ -66,16 +64,16 @@ pub struct FakeEventDispatcher {}
 
 impl AppEventDispatcher for FakeEventDispatcher {
     fn enable_extra_messages(&self, _: bool) {}
+    fn are_extra_messages_enabled(&self) -> bool {
+        true
+    }
     fn dispatch_log(&self, _: String) {}
-    fn dispatch_string_event(&self, _: &'static str, _: String) {}
+    fn dispatch_string_event(&self, _: &'static str, _: &str) {}
     fn dispatch_camera_update(&self, _: &glm::Vec3, _: &glm::Vec3, _: &glm::Vec3) {}
     fn dispatch_change_pixel_width(&self, _: f32) {}
     fn dispatch_change_light_color(&self, _: i32) {}
     fn dispatch_change_brightness_color(&self, _: i32) {}
     fn dispatch_change_camera_zoom(&self, _: f32) {}
-    fn dispatch_change_blur_level(&self, _: usize) {}
-    fn dispatch_change_vertical_lpp(&self, _: usize) {}
-    fn dispatch_change_horizontal_lpp(&self, _: usize) {}
     fn dispatch_color_representation(&self, _: ColorChannels) {}
     fn dispatch_pixel_geometry(&self, _: PixelsGeometryKind) {}
     fn dispatch_pixel_shadow_shape(&self, _: ShadowShape) {}

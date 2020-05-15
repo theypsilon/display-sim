@@ -15,13 +15,14 @@
 
 use crate::app_events::AppEventDispatcher;
 use crate::simulation_context::SimulationContext;
+use crate::simulation_core_state::MainState;
 use app_error::AppResult;
 
 pub trait UiController {
     fn event_tag(&self) -> &'static str;
     fn keys_inc(&self) -> &[&'static str];
     fn keys_dec(&self) -> &[&'static str];
-    fn update(&mut self, speed: f32, ctx: &dyn SimulationContext) -> bool;
+    fn update(&mut self, main: &MainState, ctx: &dyn SimulationContext) -> bool;
     fn apply_event(&mut self);
     fn reset_inputs(&mut self);
     fn read_event(&mut self, encoded: &dyn EncodedValue) -> AppResult<()>;
@@ -41,6 +42,7 @@ pub trait EncodedValue {
 }
 
 pub mod backlight_percent;
+pub mod blur_passes;
 pub mod color_gamma;
 pub mod color_noise;
 pub mod cur_pixel_horizontal_gap;
@@ -48,4 +50,6 @@ pub mod cur_pixel_spread;
 pub mod cur_pixel_vertical_gap;
 pub mod extra_bright;
 pub mod extra_contrast;
+pub mod horizontal_lpp;
 pub mod pixel_shadow_height;
+pub mod vertical_lpp;

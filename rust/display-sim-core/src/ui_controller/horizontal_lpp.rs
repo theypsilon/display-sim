@@ -22,15 +22,15 @@ use crate::ui_controller::{EncodedValue, UiController};
 use app_error::AppResult;
 
 #[derive(Default, Copy, Clone)]
-pub struct ExtraBright {
+pub struct HorizontalLpp {
     input: IncDec<bool>,
-    event: Option<f32>,
-    pub value: f32,
+    event: Option<usize>,
+    pub value: usize,
 }
 
-impl From<f32> for ExtraBright {
-    fn from(value: f32) -> Self {
-        ExtraBright {
+impl From<usize> for HorizontalLpp {
+    fn from(value: usize) -> Self {
+        HorizontalLpp {
             input: Default::default(),
             event: None,
             value,
@@ -38,22 +38,22 @@ impl From<f32> for ExtraBright {
     }
 }
 
-impl UiController for ExtraBright {
+impl UiController for HorizontalLpp {
     fn event_tag(&self) -> &'static str {
-        "front2back:pixel-brightness"
+        "front2back:horizontal-lpp"
     }
     fn keys_inc(&self) -> &[&'static str] {
-        &["x", "pixel-brightness-inc"]
+        &["l", "horizontal-lpp-inc"]
     }
     fn keys_dec(&self) -> &[&'static str] {
-        &["shift+x", "pixel-brightness-dec"]
+        &["shift+l", "horizontal-lpp-dec"]
     }
-    fn update(&mut self, main: &MainState, ctx: &dyn SimulationContext) -> bool {
+    fn update(&mut self, _: &MainState, ctx: &dyn SimulationContext) -> bool {
         FieldChanger::new(ctx, &mut self.value, self.input)
-            .set_progression(0.01 * main.dt * main.filter_speed)
+            .set_progression(1)
             .set_event_value(self.event)
-            .set_min(-1.0)
-            .set_max(1.0)
+            .set_min(1)
+            .set_max(20)
             .set_trigger_handler(|x| dispatch(x, ctx.dispatcher()))
             .process_with_sums()
     }
@@ -68,7 +68,7 @@ impl UiController for ExtraBright {
         self.input.decrease = false;
     }
     fn read_event(&mut self, encoded: &dyn EncodedValue) -> AppResult<()> {
-        self.event = Some(encoded.to_f32()?);
+        self.event = Some(encoded.to_usize()?);
         Ok(())
     }
     fn read_key_inc(&mut self, pressed: bool) {
@@ -86,13 +86,9 @@ impl UiController for ExtraBright {
     }
 }
 
-fn dispatch(value: f32, dispatcher: &dyn AppEventDispatcher) {
-    dispatcher.dispatch_string_event(
-        "back2front:change_pixel_brightness",
-        &if value.floor() == value {
-            format!("{:.00}", value)
-        } else {
-            format!("{:.02}", value)
-        },
-    );
+fn dispatch(value: usize, dispatcher: &dyn AppEventDispatcher) {
+    if dispatcher.are_extra_messages_enabled() {
+        dispatcher.dispatch_top_message(&format!("Horizontal lines per pixel: {}", value));
+    }
+    dispatcher.dispatch_string_event("back2front:change_horizontal_lpp", &(value as i32).to_string());
 }

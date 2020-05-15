@@ -78,8 +78,8 @@ impl<'a> SimulationDrawer<'a> {
             self.res.camera.get_projection(viewport_width as f32, viewport_height as f32)
         };
 
-        for hl_idx in 0..filters.horizontal_lpp {
-            for vl_idx in 0..filters.vertical_lpp {
+        for hl_idx in 0..filters.horizontal_lpp.value {
+            for vl_idx in 0..filters.vertical_lpp.value {
                 for color_idx in 0..output.color_splits {
                     if let ColorChannels::Overlapping = filters.color_channels {
                         materials.main_buffer_stack.push()?;
@@ -102,12 +102,12 @@ impl<'a> SimulationDrawer<'a> {
                         pixel_spread: &output.pixel_spread,
                         pixel_scale: &output
                             .pixel_scale_foreground
-                            .get(vl_idx * filters.horizontal_lpp + hl_idx)
+                            .get(vl_idx * filters.horizontal_lpp.value + hl_idx)
                             .expect("Bad pixel_scale_foreground")[color_idx],
                         pixel_pulse: output.pixels_pulse,
                         pixel_offset: &output
                             .pixel_offset_foreground
-                            .get(vl_idx * filters.horizontal_lpp + hl_idx)
+                            .get(vl_idx * filters.horizontal_lpp.value + hl_idx)
                             .expect("Bad pixel_offset_foreground")[color_idx],
                         rgb_red: &output.rgb_red,
                         rgb_green: &output.rgb_green,
@@ -151,8 +151,8 @@ impl<'a> SimulationDrawer<'a> {
             materials.bg_buffer_stack.push()?;
             materials.bg_buffer_stack.bind_current()?;
             gl.clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
-            for hl_idx in 0..filters.horizontal_lpp {
-                for vl_idx in 0..filters.vertical_lpp {
+            for hl_idx in 0..filters.horizontal_lpp.value {
+                for vl_idx in 0..filters.vertical_lpp.value {
                     materials.pixels_render.render(PixelsUniform {
                         shadow_kind: 0,
                         geometry_kind: filters.pixels_geometry_kind,
@@ -164,10 +164,10 @@ impl<'a> SimulationDrawer<'a> {
                         extra_light: &[0.0, 0.0, 0.0],
                         light_pos: &vec_to_3_f32(position),
                         pixel_spread: &output.pixel_spread,
-                        pixel_scale: &output.pixel_scale_background[vl_idx * filters.horizontal_lpp + hl_idx],
+                        pixel_scale: &output.pixel_scale_background[vl_idx * filters.horizontal_lpp.value + hl_idx],
                         screen_curvature: output.screen_curvature_factor,
                         pixel_pulse: output.pixels_pulse,
-                        pixel_offset: &output.pixel_offset_background[vl_idx * filters.horizontal_lpp + hl_idx],
+                        pixel_offset: &output.pixel_offset_background[vl_idx * filters.horizontal_lpp.value + hl_idx],
                         rgb_red: &output.rgb_red,
                         rgb_green: &output.rgb_green,
                         rgb_blue: &output.rgb_blue,
@@ -195,11 +195,11 @@ impl<'a> SimulationDrawer<'a> {
         materials.background_render.render();
         gl.active_texture(glow::TEXTURE0 + 0);
 
-        if filters.blur_passes > 0 {
+        if filters.blur_passes.value > 0 {
             let target = materials.main_buffer_stack.get_current()?.clone();
             materials
                 .blur_render
-                .render(&mut materials.main_buffer_stack, &target, &target, filters.blur_passes)?;
+                .render(&mut materials.main_buffer_stack, &target, &target, filters.blur_passes.value)?;
         }
 
         materials.screenshot_pixels = None;

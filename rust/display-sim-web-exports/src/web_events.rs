@@ -43,9 +43,6 @@ impl WebEventDispatcher {
             event_bus,
         }
     }
-    fn are_extra_messages_enabled(&self) -> bool {
-        *self.extra_messages_enabled.borrow()
-    }
 }
 
 impl AppEventDispatcher for WebEventDispatcher {
@@ -53,11 +50,15 @@ impl AppEventDispatcher for WebEventDispatcher {
         *self.extra_messages_enabled.borrow_mut() = extra_messages;
     }
 
+    fn are_extra_messages_enabled(&self) -> bool {
+        *self.extra_messages_enabled.borrow()
+    }
+
     fn dispatch_log(&self, msg: String) {
         console!(log.msg);
     }
 
-    fn dispatch_string_event(&self, event_id: &'static str, message: String) {
+    fn dispatch_string_event(&self, event_id: &'static str, message: &str) {
         self.catch_error(dispatch_event_with(&self.event_bus, event_id, &message.into()));
     }
 
@@ -97,31 +98,6 @@ impl AppEventDispatcher for WebEventDispatcher {
             "back2front:change_camera_zoom",
             &format!("{:.02}", zoom).into(),
         ));
-    }
-
-    fn dispatch_change_blur_level(&self, blur_passes: usize) {
-        if self.are_extra_messages_enabled() {
-            self.dispatch_top_message(&format!("Blur level: {}", blur_passes));
-        }
-        self.catch_error(dispatch_event_with(
-            &self.event_bus,
-            "back2front:change_blur_level",
-            &(blur_passes as i32).into(),
-        ));
-    }
-
-    fn dispatch_change_vertical_lpp(&self, lpp: usize) {
-        if self.are_extra_messages_enabled() {
-            self.dispatch_top_message(&format!("Vertical lines per pixel: {}", lpp));
-        }
-        self.catch_error(dispatch_event_with(&self.event_bus, "back2front:change_vertical_lpp", &(lpp as i32).into()));
-    }
-
-    fn dispatch_change_horizontal_lpp(&self, lpp: usize) {
-        if self.are_extra_messages_enabled() {
-            self.dispatch_top_message(&format!("Horizontal lines per pixel: {}", lpp));
-        }
-        self.catch_error(dispatch_event_with(&self.event_bus, "back2front:change_horizontal_lpp", &(lpp as i32).into()));
     }
 
     fn dispatch_color_representation(&self, color_channels: ColorChannels) {

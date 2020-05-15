@@ -24,9 +24,9 @@ use crate::general_types::Size2D;
 use crate::internal_resolution::InternalResolution;
 use crate::pixels_shadow::ShadowShape;
 use crate::ui_controller::{
-    backlight_percent::BacklightPercent, color_gamma::ColorGamma, color_noise::ColorNoise, cur_pixel_horizontal_gap::CurPixelHorizontalGap,
-    cur_pixel_spread::CurPixelSpread, cur_pixel_vertical_gap::CurPixelVerticalGap, extra_bright::ExtraBright, extra_contrast::ExtraContrast,
-    pixel_shadow_height::PixelShadowHeight, UiController,
+    backlight_percent::BacklightPercent, blur_passes::BlurPasses, color_gamma::ColorGamma, color_noise::ColorNoise,
+    cur_pixel_horizontal_gap::CurPixelHorizontalGap, cur_pixel_spread::CurPixelSpread, cur_pixel_vertical_gap::CurPixelVerticalGap, extra_bright::ExtraBright,
+    extra_contrast::ExtraContrast, horizontal_lpp::HorizontalLpp, pixel_shadow_height::PixelShadowHeight, vertical_lpp::VerticalLpp, UiController,
 };
 
 pub const PIXEL_MANIPULATION_BASE_SPEED: f32 = 20.0;
@@ -59,6 +59,13 @@ pub enum KeyEventKind {
     Set,
 }
 
+#[derive(Default)]
+pub struct MainState {
+    pub dt: f32,
+    pub filter_speed: f32,
+    pub render: ViewModel,
+}
+
 // Simulation Resources
 pub struct Resources {
     pub video: VideoInputResources,
@@ -69,6 +76,7 @@ pub struct Resources {
     pub speed: Speeds,
     pub saved_filters: Option<Filters>,
     pub custom_is_changed: bool,
+    pub main: MainState,
     pub output: ViewModel,
     pub timers: SimulationTimers,
     pub initial_parameters: InitialParameters,
@@ -112,6 +120,7 @@ impl Default for Resources {
                 }
                 map
             },
+            main: Default::default(),
             filters,
         }
     }
@@ -222,9 +231,15 @@ pub struct Speeds {
 pub struct Filters {
     pub internal_resolution: InternalResolution,
     pub texture_interpolation: TextureInterpolation,
-    pub blur_passes: usize,
-    pub vertical_lpp: usize,
-    pub horizontal_lpp: usize,
+    #[in_array(get_ui_controllers)]
+    #[in_array(get_ui_controllers_mut)]
+    pub blur_passes: BlurPasses,
+    #[in_array(get_ui_controllers)]
+    #[in_array(get_ui_controllers_mut)]
+    pub vertical_lpp: VerticalLpp,
+    #[in_array(get_ui_controllers)]
+    #[in_array(get_ui_controllers_mut)]
+    pub horizontal_lpp: HorizontalLpp,
     pub light_color: i32,
     pub brightness_color: i32,
     #[in_array(get_ui_controllers)]
@@ -275,9 +290,9 @@ impl Default for Filters {
         let mut filters = Filters {
             internal_resolution: InternalResolution::default(),
             texture_interpolation: TextureInterpolation::Linear,
-            blur_passes: 0,
-            vertical_lpp: 1,
-            horizontal_lpp: 1,
+            blur_passes: 0.into(),
+            vertical_lpp: 1.into(),
+            horizontal_lpp: 1.into(),
             light_color: 0x00FF_FFFF,
             brightness_color: 0x00FF_FFFF,
             extra_bright: 0.0.into(),
@@ -406,9 +421,9 @@ impl Filters {
     pub fn preset_sharp_1(&mut self) {
         self.internal_resolution = InternalResolution::default();
         self.texture_interpolation = TextureInterpolation::Linear;
-        self.blur_passes = 0;
-        self.vertical_lpp = 1;
-        self.horizontal_lpp = 1;
+        self.blur_passes = 0.into();
+        self.vertical_lpp = 1.into();
+        self.horizontal_lpp = 1.into();
         self.light_color = 0x00FF_FFFF;
         self.brightness_color = 0x00FF_FFFF;
         self.extra_bright = 0.0.into();
@@ -428,9 +443,9 @@ impl Filters {
     pub fn preset_crt_aperture_grille_1(&mut self) {
         self.internal_resolution = InternalResolution::default();
         self.texture_interpolation = TextureInterpolation::Linear;
-        self.blur_passes = 1;
-        self.vertical_lpp = 3;
-        self.horizontal_lpp = 1;
+        self.blur_passes = 1.into();
+        self.vertical_lpp = 3.into();
+        self.horizontal_lpp = 1.into();
         self.light_color = 0x00FF_FFFF;
         self.brightness_color = 0x00FF_FFFF;
         self.extra_bright = 0.0.into();
@@ -450,9 +465,9 @@ impl Filters {
     pub fn preset_crt_shadow_mask_1(&mut self) {
         self.internal_resolution = InternalResolution::default();
         self.texture_interpolation = TextureInterpolation::Linear;
-        self.blur_passes = 2;
-        self.vertical_lpp = 2;
-        self.horizontal_lpp = 2;
+        self.blur_passes = 2.into();
+        self.vertical_lpp = 2.into();
+        self.horizontal_lpp = 2.into();
         self.light_color = 0x00FF_FFFF;
         self.brightness_color = 0x00FF_FFFF;
         self.extra_bright = 0.05.into();
@@ -472,9 +487,9 @@ impl Filters {
     pub fn preset_crt_shadow_mask_2(&mut self) {
         self.internal_resolution = InternalResolution::default();
         self.texture_interpolation = TextureInterpolation::Linear;
-        self.blur_passes = 2;
-        self.vertical_lpp = 1;
-        self.horizontal_lpp = 2;
+        self.blur_passes = 2.into();
+        self.vertical_lpp = 1.into();
+        self.horizontal_lpp = 2.into();
         self.light_color = 0x00FF_FFFF;
         self.brightness_color = 0x00FF_FFFF;
         self.extra_bright = 0.05.into();
@@ -494,9 +509,9 @@ impl Filters {
     pub fn preset_demo_1(&mut self) {
         self.internal_resolution = InternalResolution::default();
         self.texture_interpolation = TextureInterpolation::Linear;
-        self.blur_passes = 0;
-        self.vertical_lpp = 1;
-        self.horizontal_lpp = 1;
+        self.blur_passes = 0.into();
+        self.vertical_lpp = 1.into();
+        self.horizontal_lpp = 1.into();
         self.light_color = self.light_color;
         self.brightness_color = 0x00FF_FFFF;
         self.extra_bright = 0.0.into();

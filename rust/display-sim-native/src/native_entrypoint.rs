@@ -295,7 +295,7 @@ impl AppEventDispatcher for NativeEventDispatcher {
     fn dispatch_log(&self, msg: String) {
         println!("log: {}", msg);
     }
-    fn dispatch_string_event(&self, event_id: &'static str, message: String) {
+    fn dispatch_string_event(&self, event_id: &'static str, message: &str) {
         println!("{} {}", event_id, message);
     }
     fn dispatch_camera_update(&self, a: &glm::Vec3, b: &glm::Vec3, c: &glm::Vec3) {
@@ -330,9 +330,6 @@ impl AppEventDispatcher for NativeEventDispatcher {
     }
     fn dispatch_custom_scaling_stretch_nearest(&self, value: bool) {
         println!("custom_scaling_stretch_nearest: {}", value);
-    }
-    fn dispatch_change_blur_level(&self, res: usize) {
-        println!("change_blur_level: {}", res);
     }
     fn dispatch_change_vertical_lpp(&self, res: usize) {
         println!("change_vertical_lpp: {}", res);

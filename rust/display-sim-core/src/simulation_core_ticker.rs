@@ -76,9 +76,6 @@ impl<'a> SimulationCoreTicker<'a> {
                 InputEventValue::FilterPreset(preset) => self.input.event_filter_preset = Some(preset),
                 InputEventValue::LightColor(light_color) => self.input.event_light_color = Some(light_color),
                 InputEventValue::BrightnessColor(brightness_color) => self.input.event_brightness_color = Some(brightness_color),
-                InputEventValue::BlurLevel(blur_level) => self.input.event_blur_level = Some(blur_level),
-                InputEventValue::VerticalLpp(vertical_lpp) => self.input.event_vertical_lpp = Some(vertical_lpp),
-                InputEventValue::HorizontalLpp(horizontal_lpp) => self.input.event_horizontal_lpp = Some(horizontal_lpp),
                 InputEventValue::PixelWidth(pixel_width) => self.input.event_pixel_width = Some(pixel_width),
                 InputEventValue::Camera(camera) => self.input.event_camera = Some(camera),
                 InputEventValue::CustomScalingResolutionWidth(width) => self.input.event_scaling_resolution_width = Some(width),
@@ -366,16 +363,9 @@ impl<'a> SimulationUpdater<'a> {
 
         let mut changed = false;
         for controller in filters.get_ui_controllers_mut().iter_mut() {
-            changed = changed || controller.update(self.res.speed.filter_speed * self.dt, *ctx);
+            changed = changed || controller.update(&self.res.main, *ctx);
         }
-        changed = changed
-            || FieldChanger::new(*ctx, &mut filters.blur_passes, input.blur.to_just_pressed())
-                .set_progression(1)
-                .set_event_value(input.event_blur_level)
-                .set_min(0)
-                .set_max(100)
-                .set_trigger_handler(|x| ctx.dispatcher().dispatch_change_blur_level(x))
-                .process_with_sums();
+
         changed = changed
             || FieldChanger::new(*ctx, &mut filters.texture_interpolation, input.next_texture_interpolation.to_just_pressed())
                 .set_trigger_handler(|x: &TextureInterpolation| ctx.dispatcher().dispatch_texture_interpolation(*x))
@@ -397,22 +387,6 @@ impl<'a> SimulationUpdater<'a> {
             self.res.scaling.scaling_initialized = false;
             changed = true;
         }
-        changed = changed
-            || FieldChanger::new(*ctx, &mut filters.vertical_lpp, input.vertical_lpp.to_just_pressed())
-                .set_progression(1)
-                .set_event_value(input.event_vertical_lpp)
-                .set_min(1)
-                .set_max(20)
-                .set_trigger_handler(|x| ctx.dispatcher().dispatch_change_vertical_lpp(x))
-                .process_with_sums();
-        changed = changed
-            || FieldChanger::new(*ctx, &mut filters.horizontal_lpp, input.horizontal_lpp.to_just_pressed())
-                .set_progression(1)
-                .set_event_value(input.event_horizontal_lpp)
-                .set_min(1)
-                .set_max(20)
-                .set_trigger_handler(|x| ctx.dispatcher().dispatch_change_horizontal_lpp(x))
-                .process_with_sums();
         changed = changed
             || FieldChanger::new(*ctx, &mut filters.pixels_geometry_kind, input.next_pixel_geometry_kind.to_just_pressed())
                 .set_trigger_handler(|x: &PixelsGeometryKind| ctx.dispatcher().dispatch_pixel_geometry(*x))
@@ -576,9 +550,6 @@ impl<'a> SimulationUpdater<'a> {
         dispatcher.dispatch_change_brightness_color(self.res.filters.brightness_color);
         dispatcher.dispatch_change_camera_zoom(self.res.camera.zoom);
         dispatcher.dispatch_change_camera_movement_mode(self.res.camera.locked_mode);
-        dispatcher.dispatch_change_blur_level(self.res.filters.blur_passes);
-        dispatcher.dispatch_change_vertical_lpp(self.res.filters.vertical_lpp);
-        dispatcher.dispatch_change_horizontal_lpp(self.res.filters.horizontal_lpp);
         dispatcher.dispatch_color_representation(self.res.filters.color_channels);
         dispatcher.dispatch_pixel_geometry(self.res.filters.pixels_geometry_kind);
         dispatcher.dispatch_pixel_shadow_shape(self.res.filters.pixel_shadow_shape_kind);
@@ -899,57 +870,57 @@ impl<'a> SimulationUpdater<'a> {
             (filters.cur_pixel_vertical_gap.value + filters.cur_pixel_vertical_gap.value) * 0.5 + 1.0,
         ];
 
-        let by_vertical_lpp = 1.0 / (filters.vertical_lpp as f32);
-        let by_horizontal_lpp = 1.0 / (filters.horizontal_lpp as f32);
-        let vl_offset_beginning = -(filters.vertical_lpp as f32 - 1.0) / 2.0;
-        let hl_offset_beginning = -(filters.horizontal_lpp as f32 - 1.0) / 2.0;
+        let by_vertical_lpp = 1.0 / (filters.vertical_lpp.value as f32);
+        let by_horizontal_lpp = 1.0 / (filters.horizontal_lpp.value as f32);
+        let vl_offset_beginning = -(filters.vertical_lpp.value as f32 - 1.0) / 2.0;
+        let hl_offset_beginning = -(filters.horizontal_lpp.value as f32 - 1.0) / 2.0;
 
-        let line_passes = filters.vertical_lpp * filters.horizontal_lpp;
+        let line_passes = filters.vertical_lpp.value * filters.horizontal_lpp.value;
         output.pixel_scale_background.resize_with(line_passes, Default::default);
         output.pixel_offset_background.resize_with(line_passes, Default::default);
-        for hl_idx in 0..filters.horizontal_lpp {
-            for vl_idx in 0..filters.vertical_lpp {
-                let pixel_offset = &mut output.pixel_offset_background[vl_idx * filters.horizontal_lpp + hl_idx];
-                let pixel_scale = &mut output.pixel_scale_background[vl_idx * filters.horizontal_lpp + hl_idx];
+        for hl_idx in 0..filters.horizontal_lpp.value {
+            for vl_idx in 0..filters.vertical_lpp.value {
+                let pixel_offset = &mut output.pixel_offset_background[vl_idx * filters.horizontal_lpp.value + hl_idx];
+                let pixel_scale = &mut output.pixel_scale_background[vl_idx * filters.horizontal_lpp.value + hl_idx];
 
                 *pixel_offset = [0.0, 0.0, 0.0];
                 *pixel_scale = [(0.0 + 1.0) / scaling.pixel_width, 0.0 + 1.0, (0.0 + 0.0) * 0.5 + 1.0];
-                if filters.vertical_lpp > 1 {
+                if filters.vertical_lpp.value > 1 {
                     let vl_cur_offset = vl_offset_beginning + vl_idx as f32;
                     pixel_offset[0] = (pixel_offset[0] + vl_cur_offset * scaling.pixel_width) * by_vertical_lpp;
-                    pixel_scale[0] *= filters.vertical_lpp as f32;
+                    pixel_scale[0] *= filters.vertical_lpp.value as f32;
                 }
-                if filters.horizontal_lpp > 1 {
+                if filters.horizontal_lpp.value > 1 {
                     let hl_cur_offset = hl_offset_beginning + hl_idx as f32;
                     pixel_offset[1] = (pixel_offset[1] + hl_cur_offset) * by_horizontal_lpp;
-                    pixel_scale[1] *= filters.horizontal_lpp as f32;
+                    pixel_scale[1] *= filters.horizontal_lpp.value as f32;
                 }
             }
         }
 
         output.pixel_scale_foreground.resize_with(line_passes, Default::default);
         output.pixel_offset_foreground.resize_with(line_passes, Default::default);
-        for hl_idx in 0..filters.horizontal_lpp {
-            for vl_idx in 0..filters.vertical_lpp {
+        for hl_idx in 0..filters.horizontal_lpp.value {
+            for vl_idx in 0..filters.vertical_lpp.value {
                 for color_idx in 0..output.color_splits {
-                    let pixel_offset = &mut output.pixel_offset_foreground[vl_idx * filters.horizontal_lpp + hl_idx][color_idx];
-                    let pixel_scale = &mut output.pixel_scale_foreground[vl_idx * filters.horizontal_lpp + hl_idx][color_idx];
+                    let pixel_offset = &mut output.pixel_offset_foreground[vl_idx * filters.horizontal_lpp.value + hl_idx][color_idx];
+                    let pixel_scale = &mut output.pixel_scale_foreground[vl_idx * filters.horizontal_lpp.value + hl_idx][color_idx];
                     *pixel_offset = [0.0, 0.0, 0.0];
                     *pixel_scale = [
                         (filters.cur_pixel_vertical_gap.value + 1.0) / scaling.pixel_width,
                         filters.cur_pixel_horizontal_gap.value + 1.0,
                         (filters.cur_pixel_vertical_gap.value + filters.cur_pixel_vertical_gap.value) * 0.5 + 1.0,
                     ];
-                    if filters.vertical_lpp > 1 {
+                    if filters.vertical_lpp.value > 1 {
                         let vl_cur_offset = vl_offset_beginning + vl_idx as f32;
                         pixel_offset[0] = (pixel_offset[0] + vl_cur_offset * scaling.pixel_width) * by_vertical_lpp;
-                        pixel_scale[0] *= filters.vertical_lpp as f32;
+                        pixel_scale[0] *= filters.vertical_lpp.value as f32;
                     }
-                    if filters.horizontal_lpp > 1 {
+                    if filters.horizontal_lpp.value > 1 {
                         let hl_cur_offset = hl_offset_beginning + hl_idx as f32;
                         pixel_offset[1] = (pixel_offset[1] + hl_cur_offset) * by_horizontal_lpp;
-                        pixel_scale[1] *= filters.horizontal_lpp as f32;
-                        if filters.horizontal_lpp % 2 == 0 && hl_idx % 2 == 1 {
+                        pixel_scale[1] *= filters.horizontal_lpp.value as f32;
+                        if filters.horizontal_lpp.value % 2 == 0 && hl_idx % 2 == 1 {
                             pixel_offset[0] += 0.5 * scaling.pixel_width * by_vertical_lpp;
                         }
                     }
