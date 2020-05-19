@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct BooleanButton {
     pub input: bool,
     button: BooleanButtonBasic,
@@ -34,7 +34,7 @@ impl BooleanButton {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 struct BooleanButtonBasic {
     activated: bool,
     just_pressed: bool,

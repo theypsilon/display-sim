@@ -172,8 +172,6 @@ pub struct Input {
     #[in_array(get_tracked_buttons)]
     pub(crate) next_screen_curvature_type: IncDec<BooleanButton>,
     #[in_array(get_tracked_buttons)]
-    pub(crate) next_internal_resolution: IncDec<BooleanButton>,
-    #[in_array(get_tracked_buttons)]
     pub(crate) next_texture_interpolation: IncDec<BooleanButton>,
     #[in_array(get_tracked_buttons)]
     pub(crate) scaling_method: IncDec<BooleanButton>,
@@ -274,7 +272,6 @@ pub(crate) enum BooleanAction {
     NextColorRepresentationKind(Boolean2DAction),
     NextPixelGeometryKind(Boolean2DAction),
     NextScreenCurvatureType(Boolean2DAction),
-    NextInternalResolution(Boolean2DAction),
     NextTextureInterpolation(Boolean2DAction),
     ScalingMethod(Boolean2DAction),
     ScalingResolutionWidth(Boolean2DAction),

@@ -13,7 +13,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-use crate::general_types::{OptionCursor, Size2D};
+use crate::app_events::AppEventDispatcher;
+use crate::field_changer::FieldChanger;
+use crate::general_types::{IncDec, OptionCursor, Size2D};
+
+use crate::boolean_button::BooleanButton;
+use crate::simulation_context::SimulationContext;
+use crate::simulation_core_state::MainState;
+use crate::ui_controller::{EncodedValue, UiController};
+use app_error::AppResult;
 use std::fmt::{Display, Error, Formatter};
 
 #[derive(Clone)]
@@ -22,6 +30,8 @@ pub struct InternalResolution {
     viewport: Size2D<i32>,
     minimum_reached: bool,
     maximium_reached: bool,
+    pub changed: bool,
+    input: IncDec<BooleanButton>,
 }
 
 impl Default for InternalResolution {
@@ -29,9 +39,23 @@ impl Default for InternalResolution {
         InternalResolution {
             max_texture_size: std::i32::MAX,
             viewport: Size2D { width: 3840, height: 2160 },
+            input: Default::default(),
             minimum_reached: false,
             maximium_reached: false,
+            changed: false,
         }
+    }
+}
+
+impl Display for InternalResolution {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        let height = self.height();
+        if height <= 1080 {
+            write!(f, "{}p", height)?;
+        } else {
+            write!(f, "{}K", height / 540)?;
+        }
+        Ok(())
     }
 }
 
@@ -63,18 +87,6 @@ impl InternalResolution {
     }
     pub fn height(&self) -> i32 {
         self.viewport.height as i32
-    }
-}
-
-impl Display for InternalResolution {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        let height = self.height();
-        if height <= 1080 {
-            write!(f, "{}p", height)?;
-        } else {
-            write!(f, "{}K", height / 540)?;
-        }
-        Ok(())
     }
 }
 
@@ -126,4 +138,47 @@ impl OptionCursor for InternalResolution {
     fn has_reached_minimum_limit(&self) -> bool {
         self.minimum_reached
     }
+}
+
+impl UiController for InternalResolution {
+    fn event_tag(&self) -> &'static str {
+        "front2back:blur-level"
+    }
+    fn keys_inc(&self) -> &[&'static str] {
+        &["y", "internal-resolution-inc"]
+    }
+    fn keys_dec(&self) -> &[&'static str] {
+        &["shift+y", "internal-resolution-dec"]
+    }
+    fn update(&mut self, _: &MainState, ctx: &dyn SimulationContext) -> bool {
+        let inputs = self.input.to_just_pressed();
+        self.changed = FieldChanger::new(ctx, self as &mut InternalResolution, inputs)
+            .set_trigger_handler(|x: &InternalResolution| dispatch(x, ctx.dispatcher()))
+            .process_options();
+        self.changed
+    }
+    fn apply_event(&mut self) {}
+    fn reset_inputs(&mut self) {
+        self.input = Default::default();
+    }
+    fn read_event(&mut self, _: &dyn EncodedValue) -> AppResult<()> {
+        Ok(())
+    }
+    fn read_key_inc(&mut self, pressed: bool) {
+        self.input.increase.input = pressed;
+    }
+    fn read_key_dec(&mut self, pressed: bool) {
+        self.input.decrease.input = pressed;
+    }
+    fn dispatch_event(&self, dispatcher: &dyn AppEventDispatcher) {
+        dispatch(self, dispatcher)
+    }
+    fn pre_process_input(&mut self) {
+        self.input.get_buttons().iter_mut().for_each(|button| button.track_input());
+    }
+    fn post_process_input(&mut self) {}
+}
+
+fn dispatch(value: &InternalResolution, dispatcher: &dyn AppEventDispatcher) {
+    dispatcher.dispatch_string_event("back2front:internal_resolution", &value.to_string());
 }

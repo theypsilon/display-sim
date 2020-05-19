@@ -328,12 +328,6 @@ impl AppEventDispatcher for NativeEventDispatcher {
     fn dispatch_custom_scaling_stretch_nearest(&self, value: bool) {
         println!("custom_scaling_stretch_nearest: {}", value);
     }
-    fn dispatch_change_vertical_lpp(&self, res: usize) {
-        println!("change_vertical_lpp: {}", res);
-    }
-    fn dispatch_change_horizontal_lpp(&self, res: usize) {
-        println!("change_horizontal_lpp: {}", res);
-    }
     fn dispatch_color_representation(&self, res: ColorChannels) {
         println!("color_representation: {}", res);
     }
@@ -345,9 +339,6 @@ impl AppEventDispatcher for NativeEventDispatcher {
     }
     fn dispatch_screen_curvature(&self, res: ScreenCurvatureKind) {
         println!("screen_curvature: {}", res);
-    }
-    fn dispatch_internal_resolution(&self, res: &InternalResolution) {
-        println!("internal_resolution: {}", res);
     }
     fn dispatch_texture_interpolation(&self, res: TextureInterpolation) {
         println!("texture_interpolation: {}", res);

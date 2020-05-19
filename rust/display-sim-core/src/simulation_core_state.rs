@@ -21,13 +21,12 @@ use num_derive::{FromPrimitive, ToPrimitive};
 
 use crate::camera::CameraData;
 use crate::general_types::Size2D;
-use crate::internal_resolution::InternalResolution;
 use crate::pixels_shadow::ShadowShape;
 use crate::ui_controller::{
     backlight_percent::BacklightPercent, blur_passes::BlurPasses, brightness_color::BrightnessColor, color_gamma::ColorGamma, color_noise::ColorNoise,
     cur_pixel_horizontal_gap::CurPixelHorizontalGap, cur_pixel_spread::CurPixelSpread, cur_pixel_vertical_gap::CurPixelVerticalGap, extra_bright::ExtraBright,
-    extra_contrast::ExtraContrast, horizontal_lpp::HorizontalLpp, light_color::LightColor, pixel_shadow_height::PixelShadowHeight, vertical_lpp::VerticalLpp,
-    UiController,
+    extra_contrast::ExtraContrast, horizontal_lpp::HorizontalLpp, internal_resolution::InternalResolution, light_color::LightColor,
+    pixel_shadow_height::PixelShadowHeight, vertical_lpp::VerticalLpp, UiController,
 };
 
 pub const PIXEL_MANIPULATION_BASE_SPEED: f32 = 20.0;
@@ -230,6 +229,8 @@ pub struct Speeds {
 #[gen_array(pub fn get_ui_controllers: &dyn UiController)]
 #[gen_array(pub fn get_ui_controllers_mut: &mut dyn UiController)]
 pub struct Filters {
+    #[in_array(get_ui_controllers)]
+    #[in_array(get_ui_controllers_mut)]
     pub internal_resolution: InternalResolution,
     pub texture_interpolation: TextureInterpolation,
     #[in_array(get_ui_controllers)]

@@ -14,7 +14,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 use crate::camera::CameraLockMode;
-use crate::internal_resolution::InternalResolution;
 use crate::pixels_shadow::ShadowShape;
 use crate::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScalingMethod, ScreenCurvatureKind, TextureInterpolation};
 use app_error::AppResult;
@@ -32,7 +31,6 @@ pub trait AppEventDispatcher {
     fn dispatch_pixel_geometry(&self, res: PixelsGeometryKind);
     fn dispatch_pixel_shadow_shape(&self, res: ShadowShape);
     fn dispatch_screen_curvature(&self, res: ScreenCurvatureKind);
-    fn dispatch_internal_resolution(&self, res: &InternalResolution);
     fn dispatch_texture_interpolation(&self, res: TextureInterpolation);
     fn dispatch_change_pixel_speed(&self, speed: f32);
     fn dispatch_change_turning_speed(&self, speed: f32);
@@ -74,7 +72,6 @@ impl AppEventDispatcher for FakeEventDispatcher {
     fn dispatch_pixel_geometry(&self, _: PixelsGeometryKind) {}
     fn dispatch_pixel_shadow_shape(&self, _: ShadowShape) {}
     fn dispatch_screen_curvature(&self, _: ScreenCurvatureKind) {}
-    fn dispatch_internal_resolution(&self, _: &InternalResolution) {}
     fn dispatch_texture_interpolation(&self, _: TextureInterpolation) {}
     fn dispatch_change_pixel_speed(&self, _: f32) {}
     fn dispatch_change_turning_speed(&self, _: f32) {}

@@ -18,7 +18,6 @@ use crate::camera::{CameraData, CameraDirection, CameraLockMode, CameraSystem};
 use crate::field_changer::FieldChanger;
 use crate::general_types::{get_3_f32color_from_int, get_int_from_3_f32color, Size2D};
 use crate::input_types::{Input, InputEventValue, RgbChange};
-use crate::internal_resolution::InternalResolution;
 use crate::math::gcd;
 use crate::pixels_shadow::ShadowShape;
 use crate::simulation_context::SimulationContext;
@@ -26,7 +25,7 @@ use crate::simulation_core_state::{
     ColorChannels, Filters, FiltersPreset, InitialParameters, LatestCustomScalingChange, PixelsGeometryKind, Resources, ScalingMethod, ScreenCurvatureKind,
     TextureInterpolation, MOVEMENT_BASE_SPEED, MOVEMENT_SPEED_FACTOR, PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
 };
-use crate::ui_controller::UiController;
+use crate::ui_controller::{internal_resolution::InternalResolution, UiController};
 use app_error::AppResult;
 use derive_new::new;
 use std::str::FromStr;
@@ -353,8 +352,13 @@ impl<'a> SimulationUpdater<'a> {
         let input = &self.input;
 
         let mut changed = false;
+        filters.internal_resolution.set_max_texture_size(self.res.video.max_texture_size);
         for controller in filters.get_ui_controllers_mut().iter_mut() {
             changed = changed || controller.update(&self.res.main, *ctx);
+        }
+
+        if filters.internal_resolution.changed {
+            self.res.scaling.scaling_initialized = false;
         }
 
         changed = changed
@@ -370,14 +374,6 @@ impl<'a> SimulationUpdater<'a> {
                 .set_trigger_handler(|x: &ColorChannels| ctx.dispatcher().dispatch_color_representation(*x))
                 .process_options();
 
-        filters.internal_resolution.set_max_texture_size(self.res.video.max_texture_size);
-        if FieldChanger::new(*ctx, &mut filters.internal_resolution, input.next_internal_resolution.to_just_pressed())
-            .set_trigger_handler(|x| ctx.dispatcher().dispatch_internal_resolution(x))
-            .process_options()
-        {
-            self.res.scaling.scaling_initialized = false;
-            changed = true;
-        }
         changed = changed
             || FieldChanger::new(*ctx, &mut filters.pixels_geometry_kind, input.next_pixel_geometry_kind.to_just_pressed())
                 .set_trigger_handler(|x: &PixelsGeometryKind| ctx.dispatcher().dispatch_pixel_geometry(*x))
@@ -543,7 +539,6 @@ impl<'a> SimulationUpdater<'a> {
         dispatcher.dispatch_pixel_geometry(self.res.filters.pixels_geometry_kind);
         dispatcher.dispatch_pixel_shadow_shape(self.res.filters.pixel_shadow_shape_kind);
         dispatcher.dispatch_screen_curvature(self.res.filters.screen_curvature_kind);
-        dispatcher.dispatch_internal_resolution(&self.res.filters.internal_resolution);
         dispatcher.dispatch_texture_interpolation(self.res.filters.texture_interpolation);
         dispatcher.dispatch_change_pixel_speed(self.res.speed.filter_speed / PIXEL_MANIPULATION_BASE_SPEED);
         dispatcher.dispatch_change_turning_speed(self.res.camera.turning_speed / TURNING_BASE_SPEED);

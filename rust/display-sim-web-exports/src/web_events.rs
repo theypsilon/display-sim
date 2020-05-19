@@ -18,7 +18,6 @@ use crate::dispatch_event::{dispatch_event, dispatch_event_with};
 use app_error::{AppError, AppResult};
 use core::app_events::AppEventDispatcher;
 use core::camera::CameraLockMode;
-use core::internal_resolution::InternalResolution;
 use core::pixels_shadow::ShadowShape;
 use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScalingMethod, ScreenCurvatureKind, TextureInterpolation};
 use js_sys::Float32Array;
@@ -172,14 +171,6 @@ impl AppEventDispatcher for WebEventDispatcher {
             &self.event_bus,
             "back2front:screen_curvature",
             &(screen_curvature_kind.to_string()).into(),
-        ));
-    }
-
-    fn dispatch_internal_resolution(&self, internal_resolution: &InternalResolution) {
-        self.catch_error(dispatch_event_with(
-            &self.event_bus,
-            "back2front:internal_resolution",
-            &(internal_resolution.to_string()).into(),
         ));
     }
 

@@ -52,6 +52,7 @@ pub mod cur_pixel_vertical_gap;
 pub mod extra_bright;
 pub mod extra_contrast;
 pub mod horizontal_lpp;
+pub mod internal_resolution;
 pub mod light_color;
 pub mod pixel_shadow_height;
 pub mod vertical_lpp;
