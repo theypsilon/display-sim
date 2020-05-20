@@ -160,18 +160,6 @@ pub struct Input {
     #[in_array(get_tracked_buttons)]
     pub(crate) blur: IncDec<BooleanButton>,
     #[in_array(get_tracked_buttons)]
-    pub(crate) vertical_lpp: IncDec<BooleanButton>,
-    #[in_array(get_tracked_buttons)]
-    pub(crate) horizontal_lpp: IncDec<BooleanButton>,
-    #[in_array(get_tracked_buttons)]
-    pub(crate) next_pixel_shadow_shape_kind: IncDec<BooleanButton>,
-    #[in_array(get_tracked_buttons)]
-    pub(crate) next_color_representation_kind: IncDec<BooleanButton>,
-    #[in_array(get_tracked_buttons)]
-    pub(crate) next_pixel_geometry_kind: IncDec<BooleanButton>,
-    #[in_array(get_tracked_buttons)]
-    pub(crate) next_screen_curvature_type: IncDec<BooleanButton>,
-    #[in_array(get_tracked_buttons)]
     pub(crate) scaling_method: IncDec<BooleanButton>,
     #[in_array(get_tracked_buttons)]
     pub(crate) scaling_resolution_width: IncDec<BooleanButton>,
@@ -266,10 +254,6 @@ pub(crate) enum BooleanAction {
     TranslationSpeed(Boolean2DAction),
     TurnSpeed(Boolean2DAction),
     FilterSpeed(Boolean2DAction),
-    NextPixelShadowShapeKind(Boolean2DAction),
-    NextColorRepresentationKind(Boolean2DAction),
-    NextPixelGeometryKind(Boolean2DAction),
-    NextScreenCurvatureType(Boolean2DAction),
     ScalingMethod(Boolean2DAction),
     ScalingResolutionWidth(Boolean2DAction),
     ScalingResolutionHeight(Boolean2DAction),

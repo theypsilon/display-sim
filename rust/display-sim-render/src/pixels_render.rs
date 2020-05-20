@@ -17,8 +17,9 @@ use crate::error::AppResult;
 use crate::shaders::make_shader;
 use crate::simulation_render_state::VideoInputMaterials;
 use core::general_types::f32_to_u8;
-use core::pixels_shadow::{get_shadows, TEXTURE_SIZE};
-use core::simulation_core_state::{PixelsGeometryKind, VideoInputResources};
+use core::simulation_core_state::VideoInputResources;
+use core::ui_controller::pixel_geometry_kind::PixelGeometryKindOptions;
+use core::ui_controller::pixel_shadow_shape_kind::{get_shadows, TEXTURE_SIZE};
 
 use glow::GlowSafeAdapter;
 use glow::HasContext;
@@ -40,7 +41,7 @@ pub struct PixelsRender<GL: HasContext> {
 
 pub struct PixelsUniform<'a> {
     pub shadow_kind: usize,
-    pub geometry_kind: PixelsGeometryKind,
+    pub geometry_kind: PixelGeometryKindOptions,
     pub view: &'a [f32; 16],
     pub projection: &'a [f32; 16],
     pub light_pos: &'a [f32; 3],
@@ -239,8 +240,8 @@ impl<GL: HasContext> PixelsRender<GL> {
             glow::TRIANGLES,
             0,
             match uniforms.geometry_kind {
-                PixelsGeometryKind::Squares => 6,
-                PixelsGeometryKind::Cubes => 36,
+                PixelGeometryKindOptions::Squares => 6,
+                PixelGeometryKindOptions::Cubes => 36,
             },
             (self.width * self.height) as i32,
         );

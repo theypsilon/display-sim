@@ -331,9 +331,6 @@ impl AppEventDispatcher for NativeEventDispatcher {
     fn dispatch_color_representation(&self, res: ColorChannels) {
         println!("color_representation: {}", res);
     }
-    fn dispatch_pixel_geometry(&self, res: PixelsGeometryKind) {
-        println!("pixel_geometry: {}", res);
-    }
     fn dispatch_pixel_shadow_shape(&self, res: ShadowShape) {
         println!("pixel_shadow_shape: {}", res);
     }

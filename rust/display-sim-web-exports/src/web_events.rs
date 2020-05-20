@@ -18,8 +18,7 @@ use crate::dispatch_event::{dispatch_event, dispatch_event_with};
 use app_error::{AppError, AppResult};
 use core::app_events::AppEventDispatcher;
 use core::camera::CameraLockMode;
-use core::pixels_shadow::ShadowShape;
-use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScalingMethod, ScreenCurvatureKind};
+use core::simulation_core_state::ScalingMethod;
 use js_sys::Float32Array;
 use std::cell::RefCell;
 use std::fmt::Display;
@@ -91,39 +90,6 @@ impl AppEventDispatcher for WebEventDispatcher {
         ));
     }
 
-    fn dispatch_color_representation(&self, color_channels: ColorChannels) {
-        if self.are_extra_messages_enabled() {
-            self.dispatch_top_message(&format!("Pixel color representation: {}.", color_channels));
-        }
-        self.catch_error(dispatch_event_with(
-            &self.event_bus,
-            "back2front:color_representation",
-            &(color_channels.to_string()).into(),
-        ));
-    }
-
-    fn dispatch_pixel_geometry(&self, pixels_geometry_kind: PixelsGeometryKind) {
-        if self.are_extra_messages_enabled() {
-            self.dispatch_top_message(&format!("Pixel geometry: {}.", pixels_geometry_kind));
-        }
-        self.catch_error(dispatch_event_with(
-            &self.event_bus,
-            "back2front:pixel_geometry",
-            &(pixels_geometry_kind.to_string()).into(),
-        ));
-    }
-
-    fn dispatch_pixel_shadow_shape(&self, pixel_shadow_shape_kind: ShadowShape) {
-        if self.are_extra_messages_enabled() {
-            self.dispatch_top_message(&format!("Showing next pixel shadow: {}.", pixel_shadow_shape_kind));
-        }
-        self.catch_error(dispatch_event_with(
-            &self.event_bus,
-            "back2front:pixel_shadow_shape",
-            &(pixel_shadow_shape_kind.to_string()).into(),
-        ));
-    }
-
     fn dispatch_scaling_method(&self, method: ScalingMethod) {
         if self.are_extra_messages_enabled() {
             self.dispatch_top_message(&format!("Scaling method: {}.", method));
@@ -160,17 +126,6 @@ impl AppEventDispatcher for WebEventDispatcher {
             &self.event_bus,
             "back2front:custom_scaling_stretch_nearest",
             &(stretch).into(),
-        ));
-    }
-
-    fn dispatch_screen_curvature(&self, screen_curvature_kind: ScreenCurvatureKind) {
-        if self.are_extra_messages_enabled() {
-            self.dispatch_top_message(&format!("Screen curvature: {}.", screen_curvature_kind));
-        }
-        self.catch_error(dispatch_event_with(
-            &self.event_bus,
-            "back2front:screen_curvature",
-            &(screen_curvature_kind.to_string()).into(),
         ));
     }
 

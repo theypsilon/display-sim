@@ -19,13 +19,15 @@ use crate::field_changer::FieldChanger;
 use crate::general_types::{get_3_f32color_from_int, get_int_from_3_f32color, Size2D};
 use crate::input_types::{Input, InputEventValue, RgbChange};
 use crate::math::gcd;
-use crate::pixels_shadow::ShadowShape;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::{
-    ColorChannels, Filters, FiltersPreset, InitialParameters, LatestCustomScalingChange, PixelsGeometryKind, Resources, ScalingMethod, ScreenCurvatureKind,
-    MOVEMENT_BASE_SPEED, MOVEMENT_SPEED_FACTOR, PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
+    Filters, FiltersPreset, InitialParameters, LatestCustomScalingChange, Resources, ScalingMethod, MOVEMENT_BASE_SPEED, MOVEMENT_SPEED_FACTOR,
+    PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
 };
-use crate::ui_controller::{internal_resolution::InternalResolution, UiController};
+use crate::ui_controller::{
+    color_channels::ColorChannelsOptions, internal_resolution::InternalResolution, pixel_geometry_kind::PixelGeometryKindOptions,
+    screen_curvature_kind::ScreenCurvatureKindOptions, UiController,
+};
 use app_error::AppResult;
 use derive_new::new;
 use std::str::FromStr;
@@ -347,41 +349,19 @@ impl<'a> SimulationUpdater<'a> {
             return Ok(());
         }
 
-        let ctx = &self.ctx;
-        let filters = &mut self.res.filters;
-        let input = &self.input;
-
         let mut changed = false;
-        filters.internal_resolution.set_max_texture_size(self.res.video.max_texture_size);
-        for controller in filters.get_ui_controllers_mut().iter_mut() {
-            changed = changed || controller.update(&self.res.main, *ctx);
+        self.res.filters.internal_resolution.set_max_texture_size(self.res.video.max_texture_size);
+        for controller in self.res.filters.get_ui_controllers_mut().iter_mut() {
+            changed = changed || controller.update(&self.res.main, self.ctx);
         }
 
-        if filters.internal_resolution.changed {
+        if self.res.filters.internal_resolution.changed {
             self.res.scaling.scaling_initialized = false;
         }
 
-        changed = changed
-            || FieldChanger::new(*ctx, &mut filters.screen_curvature_kind, input.next_screen_curvature_type.to_just_pressed())
-                .set_trigger_handler(|x: &ScreenCurvatureKind| ctx.dispatcher().dispatch_screen_curvature(*x))
-                .process_options();
-        changed = changed
-            || FieldChanger::new(*ctx, &mut filters.color_channels, input.next_color_representation_kind.to_just_pressed())
-                .set_trigger_handler(|x: &ColorChannels| ctx.dispatcher().dispatch_color_representation(*x))
-                .process_options();
-
-        changed = changed
-            || FieldChanger::new(*ctx, &mut filters.pixels_geometry_kind, input.next_pixel_geometry_kind.to_just_pressed())
-                .set_trigger_handler(|x: &PixelsGeometryKind| ctx.dispatcher().dispatch_pixel_geometry(*x))
-                .process_options();
-        changed = changed
-            || FieldChanger::new(*ctx, &mut filters.pixel_shadow_shape_kind, input.next_pixel_shadow_shape_kind.to_just_pressed())
-                .set_trigger_handler(|x: &ShadowShape| ctx.dispatcher().dispatch_pixel_shadow_shape(*x))
-                .process_options();
-
         if changed {
             if self.res.filters.preset_kind != FiltersPreset::Custom && self.res.filters.preset_kind != FiltersPreset::DemoFlight1 {
-                ctx.dispatcher().dispatch_change_preset_selected(&FiltersPreset::Custom.to_string());
+                self.ctx.dispatcher().dispatch_change_preset_selected(&FiltersPreset::Custom.to_string());
                 self.res.filters.preset_kind = FiltersPreset::Custom;
             } else if self.res.filters.preset_kind == FiltersPreset::Custom {
                 self.res.custom_is_changed = true;
@@ -531,10 +511,6 @@ impl<'a> SimulationUpdater<'a> {
         dispatcher.enable_extra_messages(false);
         dispatcher.dispatch_change_camera_zoom(self.res.camera.zoom);
         dispatcher.dispatch_change_camera_movement_mode(self.res.camera.locked_mode);
-        dispatcher.dispatch_color_representation(self.res.filters.color_channels);
-        dispatcher.dispatch_pixel_geometry(self.res.filters.pixels_geometry_kind);
-        dispatcher.dispatch_pixel_shadow_shape(self.res.filters.pixel_shadow_shape_kind);
-        dispatcher.dispatch_screen_curvature(self.res.filters.screen_curvature_kind);
         dispatcher.dispatch_change_pixel_speed(self.res.speed.filter_speed / PIXEL_MANIPULATION_BASE_SPEED);
         dispatcher.dispatch_change_turning_speed(self.res.camera.turning_speed / TURNING_BASE_SPEED);
         dispatcher.dispatch_change_movement_speed(self.res.camera.movement_speed / self.res.initial_parameters.initial_movement_speed);
@@ -593,14 +569,14 @@ impl<'a> SimulationUpdater<'a> {
                 }
                 self.res.demo_1.movement_max_speed = self.ctx.random().next() * 0.6 + 0.3;
                 if self.ctx.random().next() < 0.33 {
-                    self.res.filters.color_channels = ColorChannels::Overlapping;
+                    self.res.filters.color_channels.value = ColorChannelsOptions::Overlapping;
                 } else {
-                    self.res.filters.color_channels = ColorChannels::Combined;
+                    self.res.filters.color_channels.value = ColorChannelsOptions::Combined;
                 }
                 if self.ctx.random().next() < 0.33 {
-                    self.res.filters.pixels_geometry_kind = PixelsGeometryKind::Squares;
+                    self.res.filters.pixels_geometry_kind.value = PixelGeometryKindOptions::Squares;
                 } else {
-                    self.res.filters.pixels_geometry_kind = PixelsGeometryKind::Cubes;
+                    self.res.filters.pixels_geometry_kind.value = PixelGeometryKindOptions::Cubes;
                 }
             }
             CameraSystem::new(&mut self.res.camera, self.ctx.dispatcher()).look_at(glm::vec3(0.0, 0.0, 0.0));
@@ -648,9 +624,9 @@ impl<'a> SimulationUpdater<'a> {
         let output = &mut self.res.output;
         let filters = &self.res.filters;
 
-        let (ambient_strength, pixel_have_depth) = match filters.pixels_geometry_kind {
-            PixelsGeometryKind::Squares => (1.0, false),
-            PixelsGeometryKind::Cubes => (0.5, true),
+        let (ambient_strength, pixel_have_depth) = match filters.pixels_geometry_kind.value {
+            PixelGeometryKindOptions::Squares => (1.0, false),
+            PixelGeometryKindOptions::Cubes => (0.5, true),
         };
         output.ambient_strength = ambient_strength;
         output.pixel_have_depth = pixel_have_depth;
@@ -770,15 +746,15 @@ impl<'a> SimulationUpdater<'a> {
         let output = &mut self.res.output;
         let filters = &self.res.filters;
 
-        output.color_splits = match filters.color_channels {
-            ColorChannels::Combined => 1,
+        output.color_splits = match filters.color_channels.value {
+            ColorChannelsOptions::Combined => 1,
             _ => 3,
         };
         output.light_color_background = get_3_f32color_from_int(filters.light_color.value);
         for i in 0..output.color_splits {
             let mut light_color = output.light_color_background;
-            match filters.color_channels {
-                ColorChannels::Combined => {}
+            match filters.color_channels.value {
+                ColorChannelsOptions::Combined => {}
                 _ => {
                     light_color[(i + 0) % 3] *= 1.0;
                     light_color[(i + 1) % 3] = 0.0;
@@ -808,14 +784,14 @@ impl<'a> SimulationUpdater<'a> {
         let output = &mut self.res.output;
         let filters = &self.res.filters;
 
-        output.screen_curvature_factor = match filters.screen_curvature_kind {
-            ScreenCurvatureKind::Curved1 => 0.15,
-            ScreenCurvatureKind::Curved2 => 0.3,
-            ScreenCurvatureKind::Curved3 => 0.45,
+        output.screen_curvature_factor = match filters.screen_curvature_kind.value {
+            ScreenCurvatureKindOptions::Curved1 => 0.15,
+            ScreenCurvatureKindOptions::Curved2 => 0.3,
+            ScreenCurvatureKindOptions::Curved3 => 0.45,
             _ => 0.0,
         };
 
-        if let ScreenCurvatureKind::Pulse = filters.screen_curvature_kind {
+        if let ScreenCurvatureKindOptions::Pulse = filters.screen_curvature_kind.value {
             output.pixels_pulse += self.dt * 0.3;
         } else {
             output.pixels_pulse = 0.0;
@@ -903,20 +879,20 @@ impl<'a> SimulationUpdater<'a> {
                             pixel_offset[0] += 0.5 * scaling.pixel_width * by_vertical_lpp;
                         }
                     }
-                    match filters.color_channels {
-                        ColorChannels::Combined => {}
-                        _ => match filters.color_channels {
-                            ColorChannels::SplitHorizontal => {
+                    match filters.color_channels.value {
+                        ColorChannelsOptions::Combined => {}
+                        _ => match filters.color_channels.value {
+                            ColorChannelsOptions::SplitHorizontal => {
                                 pixel_offset[0] += by_vertical_lpp * (color_idx as f32 - 1.0) * (1.0 / 3.0) * scaling.pixel_width
                                     / (filters.cur_pixel_vertical_gap.value + 1.0);
                                 pixel_scale[0] *= output.color_splits as f32;
                             }
-                            ColorChannels::Overlapping => {
+                            ColorChannelsOptions::Overlapping => {
                                 pixel_offset[0] += by_vertical_lpp * (color_idx as f32 - 1.0) * (1.0 / 3.0) * scaling.pixel_width
                                     / (filters.cur_pixel_vertical_gap.value + 1.0);
                                 pixel_scale[0] *= 1.5;
                             }
-                            ColorChannels::SplitVertical => {
+                            ColorChannelsOptions::SplitVertical => {
                                 pixel_offset[1] += by_horizontal_lpp * (color_idx as f32 - 1.0) * (1.0 / 3.0) / (filters.cur_pixel_horizontal_gap.value + 1.0);
                                 pixel_scale[1] *= output.color_splits as f32;
                             }

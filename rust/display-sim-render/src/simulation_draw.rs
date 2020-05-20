@@ -17,8 +17,8 @@ use crate::error::AppResult;
 use crate::pixels_render::PixelsUniform;
 use crate::simulation_render_state::Materials;
 use core::simulation_context::SimulationContext;
-use core::simulation_core_state::{ColorChannels, Resources};
-use core::ui_controller::texture_interpolation::TextureInterpolationOptions;
+use core::simulation_core_state::Resources;
+use core::ui_controller::{color_channels::ColorChannelsOptions, texture_interpolation::TextureInterpolationOptions};
 
 use glow::GlowSafeAdapter;
 
@@ -82,7 +82,7 @@ impl<'a> SimulationDrawer<'a> {
         for hl_idx in 0..filters.horizontal_lpp.value {
             for vl_idx in 0..filters.vertical_lpp.value {
                 for color_idx in 0..output.color_splits {
-                    if let ColorChannels::Overlapping = filters.color_channels {
+                    if let ColorChannelsOptions::Overlapping = filters.color_channels.value {
                         materials.main_buffer_stack.push()?;
                         materials.main_buffer_stack.bind_current()?;
                         if vl_idx == 0 && hl_idx == 0 {
@@ -90,8 +90,8 @@ impl<'a> SimulationDrawer<'a> {
                         }
                     }
                     materials.pixels_render.render(PixelsUniform {
-                        shadow_kind: filters.pixel_shadow_shape_kind.value,
-                        geometry_kind: filters.pixels_geometry_kind,
+                        shadow_kind: filters.pixel_shadow_shape_kind.value.value,
+                        geometry_kind: filters.pixels_geometry_kind.value,
                         view: &matrix_to_16_f32(view),
                         projection: &matrix_to_16_f32(projection),
                         ambient_strength: output.ambient_strength,
@@ -119,7 +119,7 @@ impl<'a> SimulationDrawer<'a> {
                         height_modifier_factor: output.height_modifier_factor,
                     });
                 }
-                if let ColorChannels::Overlapping = filters.color_channels {
+                if let ColorChannelsOptions::Overlapping = filters.color_channels.value {
                     materials.main_buffer_stack.pop()?;
                     materials.main_buffer_stack.pop()?;
                     materials.main_buffer_stack.pop()?;
@@ -127,7 +127,7 @@ impl<'a> SimulationDrawer<'a> {
             }
         }
 
-        if let ColorChannels::Overlapping = filters.color_channels {
+        if let ColorChannelsOptions::Overlapping = filters.color_channels.value {
             materials.main_buffer_stack.bind_current()?;
             gl.active_texture(glow::TEXTURE0 + 0);
             gl.bind_texture(glow::TEXTURE_2D, materials.main_buffer_stack.get_nth(1)?.texture());
@@ -156,7 +156,7 @@ impl<'a> SimulationDrawer<'a> {
                 for vl_idx in 0..filters.vertical_lpp.value {
                     materials.pixels_render.render(PixelsUniform {
                         shadow_kind: 0,
-                        geometry_kind: filters.pixels_geometry_kind,
+                        geometry_kind: filters.pixels_geometry_kind.value,
                         view: &matrix_to_16_f32(view),
                         projection: &matrix_to_16_f32(projection),
                         ambient_strength: output.ambient_strength,

@@ -14,8 +14,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 use crate::camera::CameraLockMode;
-use crate::pixels_shadow::ShadowShape;
-use crate::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScalingMethod, ScreenCurvatureKind};
+use crate::simulation_core_state::ScalingMethod;
 use app_error::AppResult;
 use std::fmt::Display;
 
@@ -27,10 +26,6 @@ pub trait AppEventDispatcher {
     fn dispatch_camera_update(&self, position: &glm::Vec3, direction: &glm::Vec3, axis_up: &glm::Vec3);
     fn dispatch_change_pixel_width(&self, size: f32);
     fn dispatch_change_camera_zoom(&self, zoom: f32);
-    fn dispatch_color_representation(&self, res: ColorChannels);
-    fn dispatch_pixel_geometry(&self, res: PixelsGeometryKind);
-    fn dispatch_pixel_shadow_shape(&self, res: ShadowShape);
-    fn dispatch_screen_curvature(&self, res: ScreenCurvatureKind);
     fn dispatch_change_pixel_speed(&self, speed: f32);
     fn dispatch_change_turning_speed(&self, speed: f32);
     fn dispatch_change_movement_speed(&self, speed: f32);
@@ -67,10 +62,6 @@ impl AppEventDispatcher for FakeEventDispatcher {
     fn dispatch_camera_update(&self, _: &glm::Vec3, _: &glm::Vec3, _: &glm::Vec3) {}
     fn dispatch_change_pixel_width(&self, _: f32) {}
     fn dispatch_change_camera_zoom(&self, _: f32) {}
-    fn dispatch_color_representation(&self, _: ColorChannels) {}
-    fn dispatch_pixel_geometry(&self, _: PixelsGeometryKind) {}
-    fn dispatch_pixel_shadow_shape(&self, _: ShadowShape) {}
-    fn dispatch_screen_curvature(&self, _: ScreenCurvatureKind) {}
     fn dispatch_change_pixel_speed(&self, _: f32) {}
     fn dispatch_change_turning_speed(&self, _: f32) {}
     fn dispatch_change_movement_speed(&self, _: f32) {}

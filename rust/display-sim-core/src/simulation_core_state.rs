@@ -21,11 +21,11 @@ use num_derive::{FromPrimitive, ToPrimitive};
 
 use crate::camera::CameraData;
 use crate::general_types::Size2D;
-use crate::pixels_shadow::ShadowShape;
 use crate::ui_controller::{
     backlight_percent::BacklightPercent,
     blur_passes::BlurPasses,
     brightness_color::BrightnessColor,
+    color_channels::{ColorChannels, ColorChannelsOptions},
     color_gamma::ColorGamma,
     color_noise::ColorNoise,
     cur_pixel_horizontal_gap::CurPixelHorizontalGap,
@@ -36,7 +36,10 @@ use crate::ui_controller::{
     horizontal_lpp::HorizontalLpp,
     internal_resolution::InternalResolution,
     light_color::LightColor,
+    pixel_geometry_kind::{PixelGeometryKind, PixelGeometryKindOptions},
     pixel_shadow_height::PixelShadowHeight,
+    pixel_shadow_shape_kind::{PixelShadowShapeKind, ShadowShape},
+    screen_curvature_kind::{ScreenCurvatureKind, ScreenCurvatureKindOptions},
     texture_interpolation::{TextureInterpolation, TextureInterpolationOptions},
     vertical_lpp::VerticalLpp,
     UiController,
@@ -281,10 +284,18 @@ pub struct Filters {
     #[in_array(get_ui_controllers)]
     #[in_array(get_ui_controllers_mut)]
     pub pixel_shadow_height: PixelShadowHeight,
-    pub pixels_geometry_kind: PixelsGeometryKind,
+    #[in_array(get_ui_controllers)]
+    #[in_array(get_ui_controllers_mut)]
+    pub pixels_geometry_kind: PixelGeometryKind,
+    #[in_array(get_ui_controllers)]
+    #[in_array(get_ui_controllers_mut)]
     pub color_channels: ColorChannels,
+    #[in_array(get_ui_controllers)]
+    #[in_array(get_ui_controllers_mut)]
     pub screen_curvature_kind: ScreenCurvatureKind,
-    pub pixel_shadow_shape_kind: ShadowShape,
+    #[in_array(get_ui_controllers)]
+    #[in_array(get_ui_controllers_mut)]
+    pub pixel_shadow_shape_kind: PixelShadowShapeKind,
     #[in_array(get_ui_controllers)]
     #[in_array(get_ui_controllers_mut)]
     pub backlight_percent: BacklightPercent,
@@ -322,10 +333,10 @@ impl Default for Filters {
             cur_pixel_horizontal_gap: 0.0.into(),
             cur_pixel_spread: 0.0.into(),
             pixel_shadow_height: 1.0.into(),
-            pixels_geometry_kind: PixelsGeometryKind::Squares,
-            pixel_shadow_shape_kind: ShadowShape { value: 0 },
-            color_channels: ColorChannels::Combined,
-            screen_curvature_kind: ScreenCurvatureKind::Flat,
+            pixels_geometry_kind: PixelGeometryKindOptions::Squares.into(),
+            pixel_shadow_shape_kind: ShadowShape { value: 0 }.into(),
+            color_channels: ColorChannelsOptions::Combined.into(),
+            screen_curvature_kind: ScreenCurvatureKindOptions::Flat.into(),
             backlight_percent: 0.0.into(),
             rgb_red_r: 1.0,
             rgb_red_g: 0.0,
@@ -453,10 +464,10 @@ impl Filters {
         self.cur_pixel_horizontal_gap = 0.0.into();
         self.cur_pixel_spread = 0.0.into();
         self.pixel_shadow_height = 1.0.into();
-        self.pixels_geometry_kind = PixelsGeometryKind::Squares;
-        self.pixel_shadow_shape_kind = ShadowShape { value: 0 };
-        self.color_channels = ColorChannels::Combined;
-        self.screen_curvature_kind = ScreenCurvatureKind::Flat;
+        self.pixels_geometry_kind = PixelGeometryKindOptions::Squares.into();
+        self.pixel_shadow_shape_kind = ShadowShape { value: 0 }.into();
+        self.color_channels = ColorChannelsOptions::Combined.into();
+        self.screen_curvature_kind = ScreenCurvatureKindOptions::Flat.into();
         self.backlight_percent.value = 0.0;
         self.preset_kind = FiltersPreset::Sharp1;
     }
@@ -475,10 +486,10 @@ impl Filters {
         self.cur_pixel_horizontal_gap = 0.0.into();
         self.cur_pixel_spread = 0.0.into();
         self.pixel_shadow_height = 0.0.into();
-        self.pixels_geometry_kind = PixelsGeometryKind::Squares;
-        self.pixel_shadow_shape_kind = ShadowShape { value: 3 };
-        self.color_channels = ColorChannels::Combined;
-        self.screen_curvature_kind = ScreenCurvatureKind::Flat;
+        self.pixels_geometry_kind = PixelGeometryKindOptions::Squares.into();
+        self.pixel_shadow_shape_kind = ShadowShape { value: 3 }.into();
+        self.color_channels = ColorChannelsOptions::Combined.into();
+        self.screen_curvature_kind = ScreenCurvatureKindOptions::Flat.into();
         self.backlight_percent.value = 0.5;
         self.preset_kind = FiltersPreset::CrtApertureGrille1;
     }
@@ -497,10 +508,10 @@ impl Filters {
         self.cur_pixel_horizontal_gap = 0.5.into();
         self.cur_pixel_spread = 0.0.into();
         self.pixel_shadow_height = 1.0.into();
-        self.pixels_geometry_kind = PixelsGeometryKind::Squares;
-        self.pixel_shadow_shape_kind = ShadowShape { value: 3 };
-        self.color_channels = ColorChannels::Combined;
-        self.screen_curvature_kind = ScreenCurvatureKind::Flat;
+        self.pixels_geometry_kind = PixelGeometryKindOptions::Squares.into();
+        self.pixel_shadow_shape_kind = ShadowShape { value: 3 }.into();
+        self.color_channels = ColorChannelsOptions::Combined.into();
+        self.screen_curvature_kind = ScreenCurvatureKindOptions::Flat.into();
         self.backlight_percent.value = 0.25;
         self.preset_kind = FiltersPreset::CrtShadowMask1;
     }
@@ -519,10 +530,10 @@ impl Filters {
         self.cur_pixel_horizontal_gap = 0.5.into();
         self.cur_pixel_spread = 0.0.into();
         self.pixel_shadow_height = 1.0.into();
-        self.pixels_geometry_kind = PixelsGeometryKind::Squares;
-        self.pixel_shadow_shape_kind = ShadowShape { value: 3 };
-        self.color_channels = ColorChannels::Combined;
-        self.screen_curvature_kind = ScreenCurvatureKind::Flat;
+        self.pixels_geometry_kind = PixelGeometryKindOptions::Squares.into();
+        self.pixel_shadow_shape_kind = ShadowShape { value: 3 }.into();
+        self.color_channels = ColorChannelsOptions::Combined.into();
+        self.screen_curvature_kind = ScreenCurvatureKindOptions::Flat.into();
         self.backlight_percent.value = 0.4;
         self.preset_kind = FiltersPreset::CrtShadowMask2;
     }
@@ -541,10 +552,10 @@ impl Filters {
         self.cur_pixel_horizontal_gap = 0.0.into();
         self.cur_pixel_spread = 1.0.into();
         self.pixel_shadow_height = 1.0.into();
-        self.pixels_geometry_kind = PixelsGeometryKind::Cubes;
-        self.pixel_shadow_shape_kind = ShadowShape { value: 0 };
-        self.color_channels = ColorChannels::Combined;
-        self.screen_curvature_kind = ScreenCurvatureKind::Pulse;
+        self.pixels_geometry_kind = PixelGeometryKindOptions::Cubes.into();
+        self.pixel_shadow_shape_kind = ShadowShape { value: 0 }.into();
+        self.color_channels = ColorChannelsOptions::Combined.into();
+        self.screen_curvature_kind = ScreenCurvatureKindOptions::Pulse.into();
         self.backlight_percent.value = 0.2;
         self.preset_kind = FiltersPreset::DemoFlight1;
     }
@@ -578,61 +589,6 @@ pub struct ViewModel {
     pub color_noise: f32,
     pub showing_background: bool,
     pub time: f64,
-}
-
-#[derive(FromPrimitive, ToPrimitive, EnumLen, Copy, Clone)]
-pub enum ScreenCurvatureKind {
-    Flat,
-    Curved1,
-    Curved2,
-    Curved3,
-    Pulse,
-}
-
-impl std::fmt::Display for ScreenCurvatureKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match *self {
-            ScreenCurvatureKind::Flat => write!(f, "Flat"),
-            ScreenCurvatureKind::Curved1 => write!(f, "Curved 1"),
-            ScreenCurvatureKind::Curved2 => write!(f, "Curved 2"),
-            ScreenCurvatureKind::Curved3 => write!(f, "Curved 3"),
-            ScreenCurvatureKind::Pulse => write!(f, "Weavy"),
-        }
-    }
-}
-
-#[derive(FromPrimitive, ToPrimitive, EnumLen, Clone, Copy)]
-pub enum PixelsGeometryKind {
-    Squares,
-    Cubes,
-}
-
-impl std::fmt::Display for PixelsGeometryKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match *self {
-            PixelsGeometryKind::Squares => write!(f, "Squares"),
-            PixelsGeometryKind::Cubes => write!(f, "Cubes"),
-        }
-    }
-}
-
-#[derive(FromPrimitive, ToPrimitive, EnumLen, Copy, Clone)]
-pub enum ColorChannels {
-    Combined,
-    Overlapping,
-    SplitHorizontal,
-    SplitVertical,
-}
-
-impl std::fmt::Display for ColorChannels {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match *self {
-            ColorChannels::Combined => write!(f, "Combined"),
-            ColorChannels::Overlapping => write!(f, "Horizontal overlapping"),
-            ColorChannels::SplitHorizontal => write!(f, "Horizontal split"),
-            ColorChannels::SplitVertical => write!(f, "Vertical split"),
-        }
-    }
 }
 
 #[derive(FromPrimitive, ToPrimitive, EnumLen, Copy, Clone)]

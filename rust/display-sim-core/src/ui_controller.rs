@@ -44,6 +44,7 @@ pub trait EncodedValue {
 pub mod backlight_percent;
 pub mod blur_passes;
 pub mod brightness_color;
+pub mod color_channels;
 pub mod color_gamma;
 pub mod color_noise;
 pub mod cur_pixel_horizontal_gap;
@@ -55,6 +56,9 @@ pub mod extra_contrast;
 pub mod horizontal_lpp;
 pub mod internal_resolution;
 pub mod light_color;
+pub mod pixel_geometry_kind;
 pub mod pixel_shadow_height;
+pub mod pixel_shadow_shape_kind;
+pub mod screen_curvature_kind;
 pub mod texture_interpolation;
 pub mod vertical_lpp;
