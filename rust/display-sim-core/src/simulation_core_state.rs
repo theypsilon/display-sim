@@ -23,10 +23,23 @@ use crate::camera::CameraData;
 use crate::general_types::Size2D;
 use crate::pixels_shadow::ShadowShape;
 use crate::ui_controller::{
-    backlight_percent::BacklightPercent, blur_passes::BlurPasses, brightness_color::BrightnessColor, color_gamma::ColorGamma, color_noise::ColorNoise,
-    cur_pixel_horizontal_gap::CurPixelHorizontalGap, cur_pixel_spread::CurPixelSpread, cur_pixel_vertical_gap::CurPixelVerticalGap, extra_bright::ExtraBright,
-    extra_contrast::ExtraContrast, horizontal_lpp::HorizontalLpp, internal_resolution::InternalResolution, light_color::LightColor,
-    pixel_shadow_height::PixelShadowHeight, vertical_lpp::VerticalLpp, UiController,
+    backlight_percent::BacklightPercent,
+    blur_passes::BlurPasses,
+    brightness_color::BrightnessColor,
+    color_gamma::ColorGamma,
+    color_noise::ColorNoise,
+    cur_pixel_horizontal_gap::CurPixelHorizontalGap,
+    cur_pixel_spread::CurPixelSpread,
+    cur_pixel_vertical_gap::CurPixelVerticalGap,
+    extra_bright::ExtraBright,
+    extra_contrast::ExtraContrast,
+    horizontal_lpp::HorizontalLpp,
+    internal_resolution::InternalResolution,
+    light_color::LightColor,
+    pixel_shadow_height::PixelShadowHeight,
+    texture_interpolation::{TextureInterpolation, TextureInterpolationOptions},
+    vertical_lpp::VerticalLpp,
+    UiController,
 };
 
 pub const PIXEL_MANIPULATION_BASE_SPEED: f32 = 20.0;
@@ -232,6 +245,8 @@ pub struct Filters {
     #[in_array(get_ui_controllers)]
     #[in_array(get_ui_controllers_mut)]
     pub internal_resolution: InternalResolution,
+    #[in_array(get_ui_controllers)]
+    #[in_array(get_ui_controllers_mut)]
     pub texture_interpolation: TextureInterpolation,
     #[in_array(get_ui_controllers)]
     #[in_array(get_ui_controllers_mut)]
@@ -295,7 +310,7 @@ impl Default for Filters {
     fn default() -> Self {
         let mut filters = Filters {
             internal_resolution: InternalResolution::default(),
-            texture_interpolation: TextureInterpolation::Linear,
+            texture_interpolation: TextureInterpolationOptions::Linear.into(),
             blur_passes: 0.into(),
             vertical_lpp: 1.into(),
             horizontal_lpp: 1.into(),
@@ -426,7 +441,7 @@ impl Filters {
     }
     pub fn preset_sharp_1(&mut self) {
         self.internal_resolution = InternalResolution::default();
-        self.texture_interpolation = TextureInterpolation::Linear;
+        self.texture_interpolation = TextureInterpolationOptions::Linear.into();
         self.blur_passes = 0.into();
         self.vertical_lpp = 1.into();
         self.horizontal_lpp = 1.into();
@@ -448,7 +463,7 @@ impl Filters {
 
     pub fn preset_crt_aperture_grille_1(&mut self) {
         self.internal_resolution = InternalResolution::default();
-        self.texture_interpolation = TextureInterpolation::Linear;
+        self.texture_interpolation = TextureInterpolationOptions::Linear.into();
         self.blur_passes = 1.into();
         self.vertical_lpp = 3.into();
         self.horizontal_lpp = 1.into();
@@ -470,7 +485,7 @@ impl Filters {
 
     pub fn preset_crt_shadow_mask_1(&mut self) {
         self.internal_resolution = InternalResolution::default();
-        self.texture_interpolation = TextureInterpolation::Linear;
+        self.texture_interpolation = TextureInterpolationOptions::Linear.into();
         self.blur_passes = 2.into();
         self.vertical_lpp = 2.into();
         self.horizontal_lpp = 2.into();
@@ -492,7 +507,7 @@ impl Filters {
 
     pub fn preset_crt_shadow_mask_2(&mut self) {
         self.internal_resolution = InternalResolution::default();
-        self.texture_interpolation = TextureInterpolation::Linear;
+        self.texture_interpolation = TextureInterpolationOptions::Linear.into();
         self.blur_passes = 2.into();
         self.vertical_lpp = 1.into();
         self.horizontal_lpp = 2.into();
@@ -514,7 +529,7 @@ impl Filters {
 
     pub fn preset_demo_1(&mut self) {
         self.internal_resolution = InternalResolution::default();
-        self.texture_interpolation = TextureInterpolation::Linear;
+        self.texture_interpolation = TextureInterpolationOptions::Linear.into();
         self.blur_passes = 0.into();
         self.vertical_lpp = 1.into();
         self.horizontal_lpp = 1.into();
@@ -582,21 +597,6 @@ impl std::fmt::Display for ScreenCurvatureKind {
             ScreenCurvatureKind::Curved2 => write!(f, "Curved 2"),
             ScreenCurvatureKind::Curved3 => write!(f, "Curved 3"),
             ScreenCurvatureKind::Pulse => write!(f, "Weavy"),
-        }
-    }
-}
-
-#[derive(FromPrimitive, ToPrimitive, EnumLen, Copy, Clone)]
-pub enum TextureInterpolation {
-    Nearest,
-    Linear,
-}
-
-impl std::fmt::Display for TextureInterpolation {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match *self {
-            TextureInterpolation::Nearest => write!(f, "Nearest"),
-            TextureInterpolation::Linear => write!(f, "Linear"),
         }
     }
 }

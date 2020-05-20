@@ -340,9 +340,6 @@ impl AppEventDispatcher for NativeEventDispatcher {
     fn dispatch_screen_curvature(&self, res: ScreenCurvatureKind) {
         println!("screen_curvature: {}", res);
     }
-    fn dispatch_texture_interpolation(&self, res: TextureInterpolation) {
-        println!("texture_interpolation: {}", res);
-    }
     fn dispatch_change_pixel_speed(&self, speed: f32) {
         println!("change_pixel_speed: {}", speed);
     }

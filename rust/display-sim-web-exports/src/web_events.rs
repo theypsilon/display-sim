@@ -19,7 +19,7 @@ use app_error::{AppError, AppResult};
 use core::app_events::AppEventDispatcher;
 use core::camera::CameraLockMode;
 use core::pixels_shadow::ShadowShape;
-use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScalingMethod, ScreenCurvatureKind, TextureInterpolation};
+use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScalingMethod, ScreenCurvatureKind};
 use js_sys::Float32Array;
 use std::cell::RefCell;
 use std::fmt::Display;
@@ -171,14 +171,6 @@ impl AppEventDispatcher for WebEventDispatcher {
             &self.event_bus,
             "back2front:screen_curvature",
             &(screen_curvature_kind.to_string()).into(),
-        ));
-    }
-
-    fn dispatch_texture_interpolation(&self, texture_interpolation: TextureInterpolation) {
-        self.catch_error(dispatch_event_with(
-            &self.event_bus,
-            "back2front:texture_interpolation",
-            &(texture_interpolation.to_string()).into(),
         ));
     }
 

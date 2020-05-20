@@ -23,7 +23,7 @@ use crate::pixels_shadow::ShadowShape;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::{
     ColorChannels, Filters, FiltersPreset, InitialParameters, LatestCustomScalingChange, PixelsGeometryKind, Resources, ScalingMethod, ScreenCurvatureKind,
-    TextureInterpolation, MOVEMENT_BASE_SPEED, MOVEMENT_SPEED_FACTOR, PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
+    MOVEMENT_BASE_SPEED, MOVEMENT_SPEED_FACTOR, PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
 };
 use crate::ui_controller::{internal_resolution::InternalResolution, UiController};
 use app_error::AppResult;
@@ -362,10 +362,6 @@ impl<'a> SimulationUpdater<'a> {
         }
 
         changed = changed
-            || FieldChanger::new(*ctx, &mut filters.texture_interpolation, input.next_texture_interpolation.to_just_pressed())
-                .set_trigger_handler(|x: &TextureInterpolation| ctx.dispatcher().dispatch_texture_interpolation(*x))
-                .process_options();
-        changed = changed
             || FieldChanger::new(*ctx, &mut filters.screen_curvature_kind, input.next_screen_curvature_type.to_just_pressed())
                 .set_trigger_handler(|x: &ScreenCurvatureKind| ctx.dispatcher().dispatch_screen_curvature(*x))
                 .process_options();
@@ -539,7 +535,6 @@ impl<'a> SimulationUpdater<'a> {
         dispatcher.dispatch_pixel_geometry(self.res.filters.pixels_geometry_kind);
         dispatcher.dispatch_pixel_shadow_shape(self.res.filters.pixel_shadow_shape_kind);
         dispatcher.dispatch_screen_curvature(self.res.filters.screen_curvature_kind);
-        dispatcher.dispatch_texture_interpolation(self.res.filters.texture_interpolation);
         dispatcher.dispatch_change_pixel_speed(self.res.speed.filter_speed / PIXEL_MANIPULATION_BASE_SPEED);
         dispatcher.dispatch_change_turning_speed(self.res.camera.turning_speed / TURNING_BASE_SPEED);
         dispatcher.dispatch_change_movement_speed(self.res.camera.movement_speed / self.res.initial_parameters.initial_movement_speed);

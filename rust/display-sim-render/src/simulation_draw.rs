@@ -17,7 +17,8 @@ use crate::error::AppResult;
 use crate::pixels_render::PixelsUniform;
 use crate::simulation_render_state::Materials;
 use core::simulation_context::SimulationContext;
-use core::simulation_core_state::{ColorChannels, Resources, TextureInterpolation};
+use core::simulation_core_state::{ColorChannels, Resources};
+use core::ui_controller::texture_interpolation::TextureInterpolationOptions;
 
 use glow::GlowSafeAdapter;
 
@@ -57,9 +58,9 @@ impl<'a> SimulationDrawer<'a> {
 
         materials.main_buffer_stack.set_depthbuffer(output.pixel_have_depth)?;
         materials.main_buffer_stack.set_resolution(resolution_width, resolution_height)?;
-        materials.main_buffer_stack.set_interpolation(match filters.texture_interpolation {
-            TextureInterpolation::Linear => glow::LINEAR,
-            TextureInterpolation::Nearest => glow::NEAREST,
+        materials.main_buffer_stack.set_interpolation(match filters.texture_interpolation.value {
+            TextureInterpolationOptions::Linear => glow::LINEAR,
+            TextureInterpolationOptions::Nearest => glow::NEAREST,
         })?;
 
         materials.main_buffer_stack.push()?;
