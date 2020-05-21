@@ -59,6 +59,7 @@ pub mod light_color;
 pub mod pixel_geometry_kind;
 pub mod pixel_shadow_height;
 pub mod pixel_shadow_shape_kind;
+pub mod rgb_calibration;
 pub mod screen_curvature_kind;
 pub mod texture_interpolation;
 pub mod vertical_lpp;

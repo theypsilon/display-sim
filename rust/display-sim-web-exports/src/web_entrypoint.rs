@@ -23,7 +23,7 @@ use crate::web_events::WebEventDispatcher;
 use crate::web_utils::now;
 use app_error::{AppError, AppResult};
 use core::camera::CameraChange;
-use core::input_types::{Input, InputEventValue, Pressed, RgbChange};
+use core::input_types::{Input, InputEventValue, Pressed};
 use core::simulation_context::{ConcreteSimulationContext, RandomGenerator, SimulationContext};
 use core::simulation_core_state::{KeyEventKind, Resources, VideoInputResources};
 use core::simulation_core_ticker::SimulationCoreTicker;
@@ -193,15 +193,6 @@ fn read_frontend_event(input: &mut Input, res: &mut Resources, event: JsValue) -
         "front2back:camera-dir-x" => InputEventValue::Camera(CameraChange::DirectionX(value.as_f64().ok_or("it should be a number")? as f32)),
         "front2back:camera-dir-y" => InputEventValue::Camera(CameraChange::DirectionY(value.as_f64().ok_or("it should be a number")? as f32)),
         "front2back:camera-dir-z" => InputEventValue::Camera(CameraChange::DirectionZ(value.as_f64().ok_or("it should be a number")? as f32)),
-        "front2back:rgb-red-r" => InputEventValue::Rgb(RgbChange::RedR(value.as_f64().ok_or("it should be a number")? as f32)),
-        "front2back:rgb-red-g" => InputEventValue::Rgb(RgbChange::RedG(value.as_f64().ok_or("it should be a number")? as f32)),
-        "front2back:rgb-red-b" => InputEventValue::Rgb(RgbChange::RedB(value.as_f64().ok_or("it should be a number")? as f32)),
-        "front2back:rgb-green-r" => InputEventValue::Rgb(RgbChange::GreenR(value.as_f64().ok_or("it should be a number")? as f32)),
-        "front2back:rgb-green-g" => InputEventValue::Rgb(RgbChange::GreenG(value.as_f64().ok_or("it should be a number")? as f32)),
-        "front2back:rgb-green-b" => InputEventValue::Rgb(RgbChange::GreenB(value.as_f64().ok_or("it should be a number")? as f32)),
-        "front2back:rgb-blue-r" => InputEventValue::Rgb(RgbChange::BlueR(value.as_f64().ok_or("it should be a number")? as f32)),
-        "front2back:rgb-blue-g" => InputEventValue::Rgb(RgbChange::BlueG(value.as_f64().ok_or("it should be a number")? as f32)),
-        "front2back:rgb-blue-b" => InputEventValue::Rgb(RgbChange::BlueB(value.as_f64().ok_or("it should be a number")? as f32)),
         "front2back:custom-scaling-resolution-width" => InputEventValue::CustomScalingResolutionWidth(value.as_f64().ok_or("it should be a number")? as f32),
         "front2back:custom-scaling-resolution-height" => InputEventValue::CustomScalingResolutionHeight(value.as_f64().ok_or("it should be a number")? as f32),
         "front2back:custom-scaling-aspect-ratio-x" => InputEventValue::CustomScalingAspectRatioX(value.as_f64().ok_or("it should be a number")? as f32),

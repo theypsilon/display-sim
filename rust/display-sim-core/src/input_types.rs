@@ -48,26 +48,12 @@ pub enum InputEventValue {
     FilterPreset(String),
     PixelWidth(f32),
     Camera(CameraChange),
-    Rgb(RgbChange),
     CustomScalingResolutionWidth(f32),
     CustomScalingResolutionHeight(f32),
     CustomScalingAspectRatioX(f32),
     CustomScalingAspectRatioY(f32),
     CustomScalingStretchNearest(bool),
     ViewportResize(u32, u32),
-}
-
-#[derive(Clone, Debug)]
-pub enum RgbChange {
-    RedR(f32),
-    RedG(f32),
-    RedB(f32),
-    GreenR(f32),
-    GreenG(f32),
-    GreenB(f32),
-    BlueR(f32),
-    BlueG(f32),
-    BlueB(f32),
 }
 
 pub(crate) struct CustomInputEvent {
@@ -194,8 +180,6 @@ pub struct Input {
     pub(crate) event_viewport_resize: Option<Size2D<u32>>,
     #[in_array(get_options_to_be_noned)]
     pub(crate) event_camera: Option<CameraChange>,
-    #[in_array(get_options_to_be_noned)]
-    pub(crate) event_rgb: Option<RgbChange>,
 
     pub(crate) active_pressed_actions: Vec<KeyCodeBooleanAction>,
     pub(crate) active_pressed_actions_2: Vec<String>,

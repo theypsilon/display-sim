@@ -39,6 +39,7 @@ use crate::ui_controller::{
     pixel_geometry_kind::{PixelGeometryKind, PixelGeometryKindOptions},
     pixel_shadow_height::PixelShadowHeight,
     pixel_shadow_shape_kind::{PixelShadowShapeKind, ShadowShape},
+    rgb_calibration::{RgbBlueB, RgbBlueG, RgbBlueR, RgbGreenB, RgbGreenG, RgbGreenR, RgbRedB, RgbRedG, RgbRedR},
     screen_curvature_kind::{ScreenCurvatureKind, ScreenCurvatureKindOptions},
     texture_interpolation::{TextureInterpolation, TextureInterpolationOptions},
     vertical_lpp::VerticalLpp,
@@ -299,15 +300,33 @@ pub struct Filters {
     #[in_array(get_ui_controllers)]
     #[in_array(get_ui_controllers_mut)]
     pub backlight_percent: BacklightPercent,
-    pub rgb_red_r: f32,
-    pub rgb_red_g: f32,
-    pub rgb_red_b: f32,
-    pub rgb_green_r: f32,
-    pub rgb_green_g: f32,
-    pub rgb_green_b: f32,
-    pub rgb_blue_r: f32,
-    pub rgb_blue_g: f32,
-    pub rgb_blue_b: f32,
+    #[in_array(get_ui_controllers)]
+    #[in_array(get_ui_controllers_mut)]
+    pub rgb_red_r: RgbRedR,
+    #[in_array(get_ui_controllers)]
+    #[in_array(get_ui_controllers_mut)]
+    pub rgb_red_g: RgbRedG,
+    #[in_array(get_ui_controllers)]
+    #[in_array(get_ui_controllers_mut)]
+    pub rgb_red_b: RgbRedB,
+    #[in_array(get_ui_controllers)]
+    #[in_array(get_ui_controllers_mut)]
+    pub rgb_green_r: RgbGreenR,
+    #[in_array(get_ui_controllers)]
+    #[in_array(get_ui_controllers_mut)]
+    pub rgb_green_g: RgbGreenG,
+    #[in_array(get_ui_controllers)]
+    #[in_array(get_ui_controllers_mut)]
+    pub rgb_green_b: RgbGreenB,
+    #[in_array(get_ui_controllers)]
+    #[in_array(get_ui_controllers_mut)]
+    pub rgb_blue_r: RgbBlueR,
+    #[in_array(get_ui_controllers)]
+    #[in_array(get_ui_controllers_mut)]
+    pub rgb_blue_g: RgbBlueG,
+    #[in_array(get_ui_controllers)]
+    #[in_array(get_ui_controllers_mut)]
+    pub rgb_blue_b: RgbBlueB,
     #[in_array(get_ui_controllers)]
     #[in_array(get_ui_controllers_mut)]
     pub color_gamma: ColorGamma,
@@ -338,15 +357,15 @@ impl Default for Filters {
             color_channels: ColorChannelsOptions::Combined.into(),
             screen_curvature_kind: ScreenCurvatureKindOptions::Flat.into(),
             backlight_percent: 0.0.into(),
-            rgb_red_r: 1.0,
-            rgb_red_g: 0.0,
-            rgb_red_b: 0.0,
-            rgb_green_r: 0.0,
-            rgb_green_g: 1.0,
-            rgb_green_b: 0.0,
-            rgb_blue_r: 0.0,
-            rgb_blue_g: 0.0,
-            rgb_blue_b: 1.0,
+            rgb_red_r: 1.0.into(),
+            rgb_red_g: 0.0.into(),
+            rgb_red_b: 0.0.into(),
+            rgb_green_r: 0.0.into(),
+            rgb_green_g: 1.0.into(),
+            rgb_green_b: 0.0.into(),
+            rgb_blue_r: 0.0.into(),
+            rgb_blue_g: 0.0.into(),
+            rgb_blue_b: 1.0.into(),
             color_gamma: 1.0.into(),
             color_noise: 0.0.into(),
             preset_kind: FiltersPreset::Sharp1,
