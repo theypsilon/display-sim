@@ -41,7 +41,7 @@ impl<'a> SimulationDrawer<'a> {
         }
 
         let filters = &self.res.filters;
-        let output = &self.res.output;
+        let output = &self.res.main.render;
 
         let materials = &mut self.materials;
         let gl = &materials.gl;

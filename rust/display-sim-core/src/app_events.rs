@@ -29,7 +29,6 @@ pub trait AppEventDispatcher {
     fn dispatch_change_pixel_speed(&self, speed: f32);
     fn dispatch_change_turning_speed(&self, speed: f32);
     fn dispatch_change_movement_speed(&self, speed: f32);
-    fn dispatch_change_preset_selected(&self, name: &str);
     fn dispatch_scaling_method(&self, method: ScalingMethod);
     fn dispatch_scaling_resolution_width(&self, width: u32);
     fn dispatch_scaling_resolution_height(&self, height: u32);
@@ -65,7 +64,6 @@ impl AppEventDispatcher for FakeEventDispatcher {
     fn dispatch_change_pixel_speed(&self, _: f32) {}
     fn dispatch_change_turning_speed(&self, _: f32) {}
     fn dispatch_change_movement_speed(&self, _: f32) {}
-    fn dispatch_change_preset_selected(&self, _: &str) {}
     fn dispatch_scaling_method(&self, _: ScalingMethod) {}
     fn dispatch_scaling_resolution_width(&self, _: u32) {}
     fn dispatch_scaling_resolution_height(&self, _: u32) {}

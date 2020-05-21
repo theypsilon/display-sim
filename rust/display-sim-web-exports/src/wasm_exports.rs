@@ -22,7 +22,8 @@ use crate::console;
 use crate::web_entrypoint::{print_error, web_load, web_run_frame, web_unload, InputOutput};
 use app_error::AppResult;
 use core::general_types::Size2D;
-use core::simulation_core_state::{AnimationStep, FiltersPreset, Resources, VideoInputResources};
+use core::simulation_core_state::{AnimationStep, Resources, VideoInputResources};
+use core::ui_controller::filter_preset::FilterPresetOptions;
 use render::simulation_render_state::VideoInputMaterials;
 use std::str::FromStr;
 
@@ -139,7 +140,7 @@ impl VideoInputConfig {
     pub fn set_preset(&mut self, preset: JsValue) {
         match preset.as_string() {
             Some(preset) => {
-                if let Ok(preset) = FiltersPreset::from_str(preset.as_str()) {
+                if let Ok(preset) = FilterPresetOptions::from_str(preset.as_str()) {
                     self.resources.preset = Some(preset);
                 } else {
                     console!(error. "Input preset is not a valid preset.");

@@ -33,6 +33,7 @@ use crate::ui_controller::{
     cur_pixel_vertical_gap::CurPixelVerticalGap,
     extra_bright::ExtraBright,
     extra_contrast::ExtraContrast,
+    filter_preset::{FilterPreset, FilterPresetOptions},
     horizontal_lpp::HorizontalLpp,
     internal_resolution::InternalResolution,
     light_color::LightColor,
@@ -58,7 +59,7 @@ pub struct VideoInputResources {
     pub image_size: Size2D<u32>,
     pub background_size: Size2D<u32>,
     pub viewport_size: Size2D<u32>,
-    pub preset: Option<FiltersPreset>,
+    pub preset: Option<FilterPresetOptions>,
     pub current_frame: usize,
     pub last_frame_change: f64,
     pub needs_buffer_data_load: bool,
@@ -80,6 +81,7 @@ pub enum KeyEventKind {
 pub struct MainState {
     pub dt: f32,
     pub filter_speed: f32,
+    pub current_filter_preset: FilterPresetOptions,
     pub render: ViewModel,
 }
 
@@ -94,7 +96,6 @@ pub struct Resources {
     pub saved_filters: Option<Filters>,
     pub custom_is_changed: bool,
     pub main: MainState,
-    pub output: ViewModel,
     pub timers: SimulationTimers,
     pub initial_parameters: InitialParameters,
     pub screenshot_trigger: ScreenshotTrigger,
@@ -113,7 +114,6 @@ impl Default for Resources {
             video: VideoInputResources::default(),
             camera: CameraData::new(MOVEMENT_BASE_SPEED / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED),
             demo_1: FlightDemoData::default(),
-            output: ViewModel::default(),
             speed: Speeds {
                 filter_speed: PIXEL_MANIPULATION_BASE_SPEED,
             },
@@ -333,7 +333,9 @@ pub struct Filters {
     #[in_array(get_ui_controllers)]
     #[in_array(get_ui_controllers_mut)]
     pub color_noise: ColorNoise,
-    pub preset_kind: FiltersPreset,
+    #[in_array(get_ui_controllers)]
+    #[in_array(get_ui_controllers_mut)]
+    pub preset_kind: FilterPreset,
 }
 
 impl Default for Filters {
@@ -368,102 +370,22 @@ impl Default for Filters {
             rgb_blue_b: 1.0.into(),
             color_gamma: 1.0.into(),
             color_noise: 0.0.into(),
-            preset_kind: FiltersPreset::Sharp1,
+            preset_kind: FilterPresetOptions::Sharp1.into(),
         };
         filters.preset_crt_aperture_grille_1();
         filters
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub enum FiltersPreset {
-    Sharp1,
-    CrtApertureGrille1,
-    CrtShadowMask1,
-    CrtShadowMask2,
-    DemoFlight1,
-    Custom,
-}
-
-impl std::fmt::Display for FiltersPreset {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            FiltersPreset::Sharp1 => write!(f, "sharp-1"),
-            FiltersPreset::CrtApertureGrille1 => write!(f, "crt-aperture-grille-1"),
-            FiltersPreset::CrtShadowMask1 => write!(f, "crt-shadow-mask-1"),
-            FiltersPreset::CrtShadowMask2 => write!(f, "crt-shadow-mask-2"),
-            FiltersPreset::DemoFlight1 => write!(f, "demo-1"),
-            FiltersPreset::Custom => write!(f, "custom"),
-        }
-    }
-}
-
-impl std::str::FromStr for FiltersPreset {
-    type Err = String;
-    fn from_str(name: &str) -> Result<Self, Self::Err> {
-        match name {
-            "sharp-1" => Ok(Self::Sharp1),
-            "crt-aperture-grille-1" => Ok(Self::CrtApertureGrille1),
-            "crt-shadow-mask-1" => Ok(Self::CrtShadowMask1),
-            "crt-shadow-mask-2" => Ok(Self::CrtShadowMask2),
-            "demo-1" => Ok(Self::DemoFlight1),
-            "custom" => Ok(Self::Custom),
-            _ => Err("Unknown name for a preset".into()),
-        }
-    }
-}
-
-impl FiltersPreset {
-    pub fn get_description(&self) -> &str {
-        match self {
-            FiltersPreset::Sharp1 => "Sharp 1",
-            FiltersPreset::CrtApertureGrille1 => "CRT Aperture Grille 1",
-            FiltersPreset::CrtShadowMask1 => "CRT Shadow Mask 1",
-            FiltersPreset::CrtShadowMask2 => "CRT Shadow Mask 2",
-            FiltersPreset::DemoFlight1 => "Flight Demo",
-            FiltersPreset::Custom => "Custom",
-        }
-    }
-}
-
-#[cfg(test)]
-mod filter_presets_tests {
-    use super::FiltersPreset;
-    use app_error::AppResult;
-    use std::str::FromStr;
-    #[test]
-    fn test_from_str_to_str() -> AppResult<()> {
-        // @TODO ensure a way to have this array correctly updated automatically
-        let presets: [FiltersPreset; 6] = [
-            FiltersPreset::Sharp1,
-            FiltersPreset::CrtApertureGrille1,
-            FiltersPreset::CrtShadowMask1,
-            FiltersPreset::CrtShadowMask2,
-            FiltersPreset::DemoFlight1,
-            FiltersPreset::Custom,
-        ];
-        for preset in presets.iter() {
-            assert_eq!(FiltersPreset::from_str(preset.to_string().as_ref())?, *preset);
-        }
-        Ok(())
-    }
-}
-
-impl Default for FiltersPreset {
-    fn default() -> Self {
-        Self::CrtApertureGrille1
-    }
-}
-
 impl Filters {
-    pub fn preset_factory(&mut self, preset: FiltersPreset, previous_custom: &Option<Filters>) {
+    pub fn preset_factory(&mut self, preset: FilterPresetOptions, previous_custom: &Option<Filters>) {
         match preset {
-            FiltersPreset::Sharp1 => self.preset_sharp_1(),
-            FiltersPreset::CrtApertureGrille1 => self.preset_crt_aperture_grille_1(),
-            FiltersPreset::CrtShadowMask1 => self.preset_crt_shadow_mask_1(),
-            FiltersPreset::CrtShadowMask2 => self.preset_crt_shadow_mask_2(),
-            FiltersPreset::DemoFlight1 => self.preset_demo_1(),
-            FiltersPreset::Custom => match previous_custom {
+            FilterPresetOptions::Sharp1 => self.preset_sharp_1(),
+            FilterPresetOptions::CrtApertureGrille1 => self.preset_crt_aperture_grille_1(),
+            FilterPresetOptions::CrtShadowMask1 => self.preset_crt_shadow_mask_1(),
+            FilterPresetOptions::CrtShadowMask2 => self.preset_crt_shadow_mask_2(),
+            FilterPresetOptions::DemoFlight1 => self.preset_demo_1(),
+            FilterPresetOptions::Custom => match previous_custom {
                 Some(_) => {}
                 None => self.preset_custom(),
             },
@@ -488,7 +410,7 @@ impl Filters {
         self.color_channels = ColorChannelsOptions::Combined.into();
         self.screen_curvature_kind = ScreenCurvatureKindOptions::Flat.into();
         self.backlight_percent.value = 0.0;
-        self.preset_kind = FiltersPreset::Sharp1;
+        self.preset_kind = FilterPresetOptions::Sharp1.into();
     }
 
     pub fn preset_crt_aperture_grille_1(&mut self) {
@@ -510,7 +432,7 @@ impl Filters {
         self.color_channels = ColorChannelsOptions::Combined.into();
         self.screen_curvature_kind = ScreenCurvatureKindOptions::Flat.into();
         self.backlight_percent.value = 0.5;
-        self.preset_kind = FiltersPreset::CrtApertureGrille1;
+        self.preset_kind = FilterPresetOptions::CrtApertureGrille1.into();
     }
 
     pub fn preset_crt_shadow_mask_1(&mut self) {
@@ -532,7 +454,7 @@ impl Filters {
         self.color_channels = ColorChannelsOptions::Combined.into();
         self.screen_curvature_kind = ScreenCurvatureKindOptions::Flat.into();
         self.backlight_percent.value = 0.25;
-        self.preset_kind = FiltersPreset::CrtShadowMask1;
+        self.preset_kind = FilterPresetOptions::CrtShadowMask1.into();
     }
 
     pub fn preset_crt_shadow_mask_2(&mut self) {
@@ -554,7 +476,7 @@ impl Filters {
         self.color_channels = ColorChannelsOptions::Combined.into();
         self.screen_curvature_kind = ScreenCurvatureKindOptions::Flat.into();
         self.backlight_percent.value = 0.4;
-        self.preset_kind = FiltersPreset::CrtShadowMask2;
+        self.preset_kind = FilterPresetOptions::CrtShadowMask2.into();
     }
 
     pub fn preset_demo_1(&mut self) {
@@ -576,11 +498,11 @@ impl Filters {
         self.color_channels = ColorChannelsOptions::Combined.into();
         self.screen_curvature_kind = ScreenCurvatureKindOptions::Pulse.into();
         self.backlight_percent.value = 0.2;
-        self.preset_kind = FiltersPreset::DemoFlight1;
+        self.preset_kind = FilterPresetOptions::DemoFlight1.into();
     }
 
     pub fn preset_custom(&mut self) {
-        self.preset_kind = FiltersPreset::Custom;
+        self.preset_kind = FilterPresetOptions::Custom.into();
     }
 }
 

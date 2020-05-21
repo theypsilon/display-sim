@@ -39,6 +39,7 @@ pub trait EncodedValue {
     fn to_u32(&self) -> AppResult<u32>;
     fn to_i32(&self) -> AppResult<i32>;
     fn to_usize(&self) -> AppResult<usize>;
+    fn to_string(&self) -> AppResult<String>;
 }
 
 pub mod backlight_percent;
@@ -53,6 +54,7 @@ pub mod cur_pixel_vertical_gap;
 mod enum_ui;
 pub mod extra_bright;
 pub mod extra_contrast;
+pub mod filter_preset;
 pub mod horizontal_lpp;
 pub mod internal_resolution;
 pub mod light_color;

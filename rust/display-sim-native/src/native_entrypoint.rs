@@ -366,9 +366,6 @@ impl AppEventDispatcher for NativeEventDispatcher {
         println!("exit_pointer_lock");
         self.video_ctx.window().set_cursor_visible(true);
     }
-    fn dispatch_change_preset_selected(&self, preset_name: &str) {
-        println!("dispatch_change_preset_selected: {}", preset_name);
-    }
     fn dispatch_screenshot(&self, _: i32, _: i32, _: &mut [u8]) -> AppResult<()> {
         Ok(())
     }

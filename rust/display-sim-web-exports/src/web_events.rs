@@ -187,10 +187,6 @@ impl AppEventDispatcher for WebEventDispatcher {
         Ok(())
     }
 
-    fn dispatch_change_preset_selected(&self, name: &str) {
-        self.catch_error(dispatch_event_with(&self.event_bus, "back2front:preset_selected_name", &name.into()));
-    }
-
     fn dispatch_change_camera_movement_mode(&self, locked_mode: CameraLockMode) {
         self.catch_error(dispatch_event_with(
             &self.event_bus,

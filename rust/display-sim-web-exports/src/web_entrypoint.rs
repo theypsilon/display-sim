@@ -149,6 +149,9 @@ impl EncodedValue for JsEncodedValue {
     fn to_usize(&self) -> AppResult<usize> {
         Ok(self.to_f64()? as usize)
     }
+    fn to_string(&self) -> AppResult<String> {
+        Ok(self.value.as_string().ok_or("it should be a string")?)
+    }
 }
 
 fn read_frontend_event(input: &mut Input, res: &mut Resources, event: JsValue) -> AppResult<()> {
@@ -181,7 +184,6 @@ fn read_frontend_event(input: &mut Input, res: &mut Resources, event: JsValue) -
         }
         "front2back:mouse-wheel" => InputEventValue::MouseWheel(value.as_f64().ok_or("it should be a number")? as f32),
         "front2back:blurred-window" => InputEventValue::BlurredWindow,
-        "front2back:filter-presets-selected" => InputEventValue::FilterPreset(value.as_string().ok_or("it should be a string")?),
         "front2back:pixel-width" => InputEventValue::PixelWidth(value.as_f64().ok_or("it should be a number")? as f32),
         "front2back:camera_zoom" => InputEventValue::Camera(CameraChange::Zoom(value.as_f64().ok_or("it should be a number")? as f32)),
         "front2back:camera-pos-x" => InputEventValue::Camera(CameraChange::PosX(value.as_f64().ok_or("it should be a number")? as f32)),

@@ -45,7 +45,6 @@ pub enum InputEventValue {
     MouseWheel(f32),
     BlurredWindow,
 
-    FilterPreset(String),
     PixelWidth(f32),
     Camera(CameraChange),
     CustomScalingResolutionWidth(f32),
@@ -162,8 +161,6 @@ pub struct Input {
     #[in_array(get_tracked_buttons)]
     pub(crate) screenshot: BooleanButton,
 
-    #[in_array(get_options_to_be_noned)]
-    pub(crate) event_filter_preset: Option<String>,
     #[in_array(get_options_to_be_noned)]
     pub(crate) event_scaling_resolution_width: Option<f32>,
     #[in_array(get_options_to_be_noned)]

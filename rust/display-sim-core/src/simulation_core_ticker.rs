@@ -21,16 +21,15 @@ use crate::input_types::{Input, InputEventValue};
 use crate::math::gcd;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::{
-    Filters, FiltersPreset, InitialParameters, LatestCustomScalingChange, Resources, ScalingMethod, MOVEMENT_BASE_SPEED, MOVEMENT_SPEED_FACTOR,
-    PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
+    Filters, InitialParameters, LatestCustomScalingChange, Resources, ScalingMethod, MOVEMENT_BASE_SPEED, MOVEMENT_SPEED_FACTOR, PIXEL_MANIPULATION_BASE_SPEED,
+    TURNING_BASE_SPEED,
 };
 use crate::ui_controller::{
-    color_channels::ColorChannelsOptions, internal_resolution::InternalResolution, pixel_geometry_kind::PixelGeometryKindOptions,
-    screen_curvature_kind::ScreenCurvatureKindOptions, UiController,
+    color_channels::ColorChannelsOptions, filter_preset::FilterPresetOptions, internal_resolution::InternalResolution,
+    pixel_geometry_kind::PixelGeometryKindOptions, screen_curvature_kind::ScreenCurvatureKindOptions, UiController,
 };
 use app_error::AppResult;
 use derive_new::new;
-use std::str::FromStr;
 
 #[derive(new)]
 pub struct SimulationCoreTicker<'a> {
@@ -75,7 +74,6 @@ impl<'a> SimulationCoreTicker<'a> {
                 }
                 InputEventValue::BlurredWindow => *self.input = Input::new(now),
 
-                InputEventValue::FilterPreset(preset) => self.input.event_filter_preset = Some(preset),
                 InputEventValue::PixelWidth(pixel_width) => self.input.event_pixel_width = Some(pixel_width),
                 InputEventValue::Camera(camera) => self.input.event_camera = Some(camera),
                 InputEventValue::CustomScalingResolutionWidth(width) => self.input.event_scaling_resolution_width = Some(width),
@@ -154,7 +152,7 @@ impl<'a> SimulationUpdater<'a> {
         self.update_camera();
         self.update_colors();
         self.update_screenshot();
-        if self.res.filters.preset_kind == FiltersPreset::DemoFlight1 {
+        if self.res.filters.preset_kind.value == FilterPresetOptions::DemoFlight1 {
             self.update_demo();
         }
 
@@ -359,10 +357,10 @@ impl<'a> SimulationUpdater<'a> {
         }
 
         if changed {
-            if self.res.filters.preset_kind != FiltersPreset::Custom && self.res.filters.preset_kind != FiltersPreset::DemoFlight1 {
-                self.ctx.dispatcher().dispatch_change_preset_selected(&FiltersPreset::Custom.to_string());
-                self.res.filters.preset_kind = FiltersPreset::Custom;
-            } else if self.res.filters.preset_kind == FiltersPreset::Custom {
+            if self.res.filters.preset_kind.value != FilterPresetOptions::Custom && self.res.filters.preset_kind.value != FilterPresetOptions::DemoFlight1 {
+                self.res.filters.preset_kind.value = FilterPresetOptions::Custom;
+                self.res.filters.preset_kind.dispatch_event(self.ctx.dispatcher());
+            } else if self.res.filters.preset_kind.value == FilterPresetOptions::Custom {
                 self.res.custom_is_changed = true;
             }
         }
@@ -371,26 +369,20 @@ impl<'a> SimulationUpdater<'a> {
     }
 
     fn update_filter_presets_from_event(&mut self) -> AppResult<()> {
-        let preset = if let Some(preset) = &self.input.event_filter_preset {
-            preset
-        } else {
-            return Ok(());
-        };
-        let preset = FromStr::from_str(preset)?;
-        if self.res.filters.preset_kind == preset {
+        if self.res.filters.preset_kind.value == self.res.main.current_filter_preset {
             return Ok(());
         }
-        if self.res.filters.preset_kind == FiltersPreset::Custom && self.res.custom_is_changed {
+        if self.res.filters.preset_kind.value == FilterPresetOptions::Custom && self.res.custom_is_changed {
             self.res.saved_filters = Some(self.res.filters.clone());
         }
-        if self.res.filters.preset_kind == FiltersPreset::DemoFlight1 {
+        if self.res.filters.preset_kind.value == FilterPresetOptions::DemoFlight1 {
             self.res.camera = self.res.demo_1.camera_backup.clone();
         }
-        self.res.filters.preset_factory(preset, &self.res.saved_filters);
-        if self.res.filters.preset_kind == FiltersPreset::DemoFlight1 {
+        self.res.filters.preset_factory(self.res.filters.preset_kind.value, &self.res.saved_filters);
+        if self.res.filters.preset_kind.value == FilterPresetOptions::DemoFlight1 {
             self.res.demo_1.needs_initialization = true;
         }
-        if self.res.filters.preset_kind == FiltersPreset::Custom {
+        if self.res.filters.preset_kind.value == FilterPresetOptions::Custom {
             self.res.custom_is_changed = false;
         }
         self.change_frontend_input_values();
@@ -511,7 +503,7 @@ impl<'a> SimulationUpdater<'a> {
             controller.dispatch_event(dispatcher);
         }
         // This one shouldn't be needed because it's always coming from frontend to backend.
-        //dispatcher.dispatch_change_preset_selected(&self.res.filters.preset_kind.to_string());
+        //dispatcher.dispatch_change_preset_selected(&self.res.filters.preset_kind.value.to_string());
         dispatcher.enable_extra_messages(true);
     }
 
@@ -602,12 +594,14 @@ impl<'a> SimulationUpdater<'a> {
     }
 
     fn update_outputs(&mut self) {
+        self.res.main.current_filter_preset = self.res.filters.preset_kind.value.clone();
+
         self.update_output_scaling();
         self.update_output_filter_source_colors();
         self.update_output_filter_curvature();
         self.update_output_filter_backlight();
 
-        let output = &mut self.res.output;
+        let output = &mut self.res.main.render;
         let filters = &self.res.filters;
 
         let (ambient_strength, pixel_have_depth) = match filters.pixels_geometry_kind.value {
@@ -729,7 +723,7 @@ impl<'a> SimulationUpdater<'a> {
     }
 
     fn update_output_filter_source_colors(&mut self) {
-        let output = &mut self.res.output;
+        let output = &mut self.res.main.render;
         let filters = &self.res.filters;
 
         output.color_splits = match filters.color_channels.value {
@@ -767,7 +761,7 @@ impl<'a> SimulationUpdater<'a> {
     }
 
     fn update_output_filter_curvature(&mut self) {
-        let output = &mut self.res.output;
+        let output = &mut self.res.main.render;
         let filters = &self.res.filters;
 
         output.screen_curvature_factor = match filters.screen_curvature_kind.value {
@@ -785,7 +779,7 @@ impl<'a> SimulationUpdater<'a> {
     }
 
     fn update_output_filter_backlight(&mut self) {
-        let output = &mut self.res.output;
+        let output = &mut self.res.main.render;
         let filters = &self.res.filters;
 
         output.showing_background = filters.backlight_percent.value > 0.0;
@@ -797,7 +791,7 @@ impl<'a> SimulationUpdater<'a> {
     }
 
     fn update_output_pixel_scale_gap_offset(&mut self) {
-        let output = &mut self.res.output;
+        let output = &mut self.res.main.render;
         let filters = &self.res.filters;
         let scaling = &self.res.scaling;
 
