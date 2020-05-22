@@ -30,7 +30,7 @@ pub(crate) fn trigger_hotkey_action_2(input: &mut Input, res: &mut Resources, ke
     // @TODO Fix Shift Ctrl combos
     /*
     if let Some((kind, index)) = res.controller_events.get_mut(keycode) {
-        let controller = &mut res.filters.get_ui_controllers_mut()[*index];
+        let controller = &mut res.controllers.get_ui_controllers_mut()[*index];
         let pressed = match pressed {
             Pressed::Yes => true,
             Pressed::No => false,
@@ -146,7 +146,7 @@ fn handle_action_2(input: &mut Input, res: &mut Resources, keycode: &str, presse
     } else if is_alt(keycode) {
         input.alt = pressed;
     } else if let Some((kind, index)) = res.controller_events.get_mut(keycode) {
-        let controller = &mut res.filters.get_ui_controllers_mut()[*index];
+        let controller = &mut res.controllers.get_ui_controllers_mut()[*index];
         match kind {
             KeyEventKind::Inc => controller.read_key_inc(pressed),
             KeyEventKind::Dec => controller.read_key_dec(pressed),
@@ -172,10 +172,7 @@ fn get_contextualized_action_2(input: &Input, res: &mut Resources, keycode: &str
             return Some(combo);
         }
     }
-    match res.controller_events.contains_key(keycode) {
-        false => None,
-        true => Some(keycode.into()),
-    }
+    if res.controller_events.contains_key(keycode) { Some(keycode.into()) } else { None }
 }
 
 fn is_shift(keycode: &str) -> bool {

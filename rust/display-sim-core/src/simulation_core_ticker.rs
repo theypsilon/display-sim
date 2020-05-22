@@ -21,8 +21,8 @@ use crate::input_types::{Input, InputEventValue};
 use crate::math::gcd;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::{
-    Filters, InitialParameters, LatestCustomScalingChange, Resources, ScalingMethod, MOVEMENT_BASE_SPEED, MOVEMENT_SPEED_FACTOR, PIXEL_MANIPULATION_BASE_SPEED,
-    TURNING_BASE_SPEED,
+    Controllers, InitialParameters, LatestCustomScalingChange, Resources, ScalingMethod, MOVEMENT_BASE_SPEED, MOVEMENT_SPEED_FACTOR,
+    PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
 };
 use crate::ui_controller::{
     color_channels::ColorChannelsOptions, filter_preset::FilterPresetOptions, internal_resolution::InternalResolution,
@@ -87,7 +87,7 @@ impl<'a> SimulationCoreTicker<'a> {
         }
 
         self.input.get_tracked_buttons().iter_mut().for_each(|button| button.track());
-        for controller in self.res.filters.get_ui_controllers_mut().iter_mut() {
+        for controller in self.res.controllers.get_ui_controllers_mut().iter_mut() {
             controller.pre_process_input();
         }
     }
@@ -102,7 +102,7 @@ impl<'a> SimulationCoreTicker<'a> {
         self.input.reset_speeds = false;
 
         self.input.get_options_to_be_noned().iter_mut().for_each(|opt| opt.set_none());
-        for controller in self.res.filters.get_ui_controllers_mut().iter_mut() {
+        for controller in self.res.controllers.get_ui_controllers_mut().iter_mut() {
             controller.post_process_input();
         }
     }
@@ -152,7 +152,7 @@ impl<'a> SimulationUpdater<'a> {
         self.update_camera();
         self.update_colors();
         self.update_screenshot();
-        if self.res.filters.preset_kind.value == FilterPresetOptions::DemoFlight1 {
+        if self.res.controllers.preset_kind.value == FilterPresetOptions::DemoFlight1 {
             self.update_demo();
         }
 
@@ -173,7 +173,7 @@ impl<'a> SimulationUpdater<'a> {
             self.res.screenshot_trigger.delay -= 1;
         } else if self.input.screenshot.is_just_released() {
             self.res.screenshot_trigger.is_triggered = true;
-            //let multiplier = self.res.filters.internal_resolution.multiplier as f32;
+            //let multiplier = self.res.controllers.internal_resolution.multiplier as f32;
             self.res.screenshot_trigger.delay = 120; //(2.0 * multiplier * multiplier * (1.0 / self.dt)) as i32; // 2 seconds aprox.
             if self.res.screenshot_trigger.delay as f32 * self.dt > 2.0 {
                 self.ctx.dispatcher().dispatch_top_message("Screenshot about to be downloaded, please wait.");
@@ -340,27 +340,29 @@ impl<'a> SimulationUpdater<'a> {
     fn update_filters(&mut self) -> AppResult<()> {
         self.update_filter_presets_from_event()?;
         if self.input.reset_filters {
-            self.res.filters = Filters::default();
+            self.res.controllers = Controllers::default();
             self.change_frontend_input_values();
             self.ctx.dispatcher().dispatch_top_message("All filter options have been reset.");
             return Ok(());
         }
 
         let mut changed = false;
-        self.res.filters.internal_resolution.set_max_texture_size(self.res.video.max_texture_size);
-        for controller in self.res.filters.get_ui_controllers_mut().iter_mut() {
+        self.res.controllers.internal_resolution.set_max_texture_size(self.res.video.max_texture_size);
+        for controller in self.res.controllers.get_ui_controllers_mut().iter_mut() {
             changed = changed || controller.update(&self.res.main, self.ctx);
         }
 
-        if self.res.filters.internal_resolution.changed {
+        if self.res.controllers.internal_resolution.changed {
             self.res.scaling.scaling_initialized = false;
         }
 
         if changed {
-            if self.res.filters.preset_kind.value != FilterPresetOptions::Custom && self.res.filters.preset_kind.value != FilterPresetOptions::DemoFlight1 {
-                self.res.filters.preset_kind.value = FilterPresetOptions::Custom;
-                self.res.filters.preset_kind.dispatch_event(self.ctx.dispatcher());
-            } else if self.res.filters.preset_kind.value == FilterPresetOptions::Custom {
+            if self.res.controllers.preset_kind.value != FilterPresetOptions::Custom
+                && self.res.controllers.preset_kind.value != FilterPresetOptions::DemoFlight1
+            {
+                self.res.controllers.preset_kind.value = FilterPresetOptions::Custom;
+                self.res.controllers.preset_kind.dispatch_event(self.ctx.dispatcher());
+            } else if self.res.controllers.preset_kind.value == FilterPresetOptions::Custom {
                 self.res.custom_is_changed = true;
             }
         }
@@ -369,20 +371,22 @@ impl<'a> SimulationUpdater<'a> {
     }
 
     fn update_filter_presets_from_event(&mut self) -> AppResult<()> {
-        if self.res.filters.preset_kind.value == self.res.main.current_filter_preset {
+        if self.res.controllers.preset_kind.value == self.res.main.current_filter_preset {
             return Ok(());
         }
-        if self.res.filters.preset_kind.value == FilterPresetOptions::Custom && self.res.custom_is_changed {
-            self.res.saved_filters = Some(self.res.filters.clone());
+        if self.res.controllers.preset_kind.value == FilterPresetOptions::Custom && self.res.custom_is_changed {
+            self.res.saved_filters = Some(self.res.controllers.clone());
         }
-        if self.res.filters.preset_kind.value == FilterPresetOptions::DemoFlight1 {
+        if self.res.controllers.preset_kind.value == FilterPresetOptions::DemoFlight1 {
             self.res.camera = self.res.demo_1.camera_backup.clone();
         }
-        self.res.filters.preset_factory(self.res.filters.preset_kind.value, &self.res.saved_filters);
-        if self.res.filters.preset_kind.value == FilterPresetOptions::DemoFlight1 {
+        self.res
+            .controllers
+            .preset_factory(self.res.controllers.preset_kind.value, &self.res.saved_filters);
+        if self.res.controllers.preset_kind.value == FilterPresetOptions::DemoFlight1 {
             self.res.demo_1.needs_initialization = true;
         }
-        if self.res.filters.preset_kind.value == FilterPresetOptions::Custom {
+        if self.res.controllers.preset_kind.value == FilterPresetOptions::Custom {
             self.res.custom_is_changed = false;
         }
         self.change_frontend_input_values();
@@ -479,7 +483,7 @@ impl<'a> SimulationUpdater<'a> {
     }
 
     fn update_colors(&mut self) {
-        for controller in self.res.filters.get_ui_controllers_mut().iter_mut() {
+        for controller in self.res.controllers.get_ui_controllers_mut().iter_mut() {
             controller.apply_event();
         }
     }
@@ -499,11 +503,11 @@ impl<'a> SimulationUpdater<'a> {
         dispatcher.dispatch_scaling_aspect_ratio_y(self.res.scaling.custom_aspect_ratio.height);
         dispatcher.dispatch_custom_scaling_stretch_nearest(self.res.scaling.custom_stretch);
         dispatcher.dispatch_change_pixel_width(self.res.scaling.pixel_width);
-        for controller in self.res.filters.get_ui_controllers().iter() {
+        for controller in self.res.controllers.get_ui_controllers().iter() {
             controller.dispatch_event(dispatcher);
         }
         // This one shouldn't be needed because it's always coming from frontend to backend.
-        //dispatcher.dispatch_change_preset_selected(&self.res.filters.preset_kind.value.to_string());
+        //dispatcher.dispatch_change_preset_selected(&self.res.controllers.preset_kind.value.to_string());
         dispatcher.enable_extra_messages(true);
     }
 
@@ -517,7 +521,7 @@ impl<'a> SimulationUpdater<'a> {
             self.res.camera.set_position(glm::vec3(0.0, 0.0, 0.0));
             self.res.camera.direction = glm::vec3(0.0, 1.0, 0.0);
             self.res.camera.axis_up = glm::vec3(0.0, 0.0, 1.0);
-            self.res.demo_1.color_target = glm::make_vec3(&get_3_f32color_from_int(self.res.filters.light_color.value));
+            self.res.demo_1.color_target = glm::make_vec3(&get_3_f32color_from_int(self.res.controllers.light_color.value));
             self.res.demo_1.color_position = self.res.demo_1.color_target;
         }
         {
@@ -547,14 +551,14 @@ impl<'a> SimulationUpdater<'a> {
                 }
                 self.res.demo_1.movement_max_speed = self.ctx.random().next() * 0.6 + 0.3;
                 if self.ctx.random().next() < 0.33 {
-                    self.res.filters.color_channels.value = ColorChannelsOptions::Overlapping;
+                    self.res.controllers.color_channels.value = ColorChannelsOptions::Overlapping;
                 } else {
-                    self.res.filters.color_channels.value = ColorChannelsOptions::Combined;
+                    self.res.controllers.color_channels.value = ColorChannelsOptions::Combined;
                 }
                 if self.ctx.random().next() < 0.33 {
-                    self.res.filters.pixels_geometry_kind.value = PixelGeometryKindOptions::Squares;
+                    self.res.controllers.pixels_geometry_kind.value = PixelGeometryKindOptions::Squares;
                 } else {
-                    self.res.filters.pixels_geometry_kind.value = PixelGeometryKindOptions::Cubes;
+                    self.res.controllers.pixels_geometry_kind.value = PixelGeometryKindOptions::Cubes;
                 }
             }
             CameraSystem::new(&mut self.res.camera, self.ctx.dispatcher()).look_at(glm::vec3(0.0, 0.0, 0.0));
@@ -565,8 +569,8 @@ impl<'a> SimulationUpdater<'a> {
             let is_void_route = color_route == glm::vec3(0.0, 0.0, 0.0);
             if !is_void_route {
                 self.res.demo_1.color_position += color_route.normalize() * self.dt * 0.1;
-                self.res.filters.light_color.value = get_int_from_3_f32color(&self.res.demo_1.color_position.into());
-                self.res.filters.light_color.dispatch_event(self.ctx.dispatcher());
+                self.res.controllers.light_color.value = get_int_from_3_f32color(&self.res.demo_1.color_position.into());
+                self.res.controllers.light_color.dispatch_event(self.ctx.dispatcher());
             }
             if is_void_route || glm::length(&color_route).abs() <= 0.15 {
                 let rnd_r = self.ctx.random().next() * 0.6 + 0.4;
@@ -577,24 +581,24 @@ impl<'a> SimulationUpdater<'a> {
         }
         {
             // spreading
-            let spread_change = self.dt * 0.03 * self.res.filters.cur_pixel_spread.value * self.res.filters.cur_pixel_spread.value;
+            let spread_change = self.dt * 0.03 * self.res.controllers.cur_pixel_spread.value * self.res.controllers.cur_pixel_spread.value;
             if self.res.demo_1.spreading {
-                self.res.filters.cur_pixel_spread.value += spread_change;
-                if self.res.filters.cur_pixel_spread.value > 1000.0 {
+                self.res.controllers.cur_pixel_spread.value += spread_change;
+                if self.res.controllers.cur_pixel_spread.value > 1000.0 {
                     self.res.demo_1.spreading = false;
                 }
             } else {
-                self.res.filters.cur_pixel_spread.value -= spread_change;
-                if self.res.filters.cur_pixel_spread.value <= 0.5 {
+                self.res.controllers.cur_pixel_spread.value -= spread_change;
+                if self.res.controllers.cur_pixel_spread.value <= 0.5 {
                     self.res.demo_1.spreading = true;
-                    self.res.filters.cur_pixel_spread.value = 0.5;
+                    self.res.controllers.cur_pixel_spread.value = 0.5;
                 }
             }
         }
     }
 
     fn update_outputs(&mut self) {
-        self.res.main.current_filter_preset = self.res.filters.preset_kind.value.clone();
+        self.res.main.current_filter_preset = self.res.controllers.preset_kind.value;
 
         self.update_output_scaling();
         self.update_output_filter_source_colors();
@@ -602,15 +606,15 @@ impl<'a> SimulationUpdater<'a> {
         self.update_output_filter_backlight();
 
         let output = &mut self.res.main.render;
-        let filters = &self.res.filters;
+        let controllers = &self.res.controllers;
 
-        let (ambient_strength, pixel_have_depth) = match filters.pixels_geometry_kind.value {
+        let (ambient_strength, pixel_have_depth) = match controllers.pixels_geometry_kind.value {
             PixelGeometryKindOptions::Squares => (1.0, false),
             PixelGeometryKindOptions::Cubes => (0.5, true),
         };
         output.ambient_strength = ambient_strength;
         output.pixel_have_depth = pixel_have_depth;
-        output.height_modifier_factor = 1.0 - filters.pixel_shadow_height.value;
+        output.height_modifier_factor = 1.0 - controllers.pixel_shadow_height.value;
         output.time = self.input.now;
 
         self.update_output_pixel_scale_gap_offset();
@@ -711,7 +715,12 @@ impl<'a> SimulationUpdater<'a> {
                 width: image_width as f32,
                 height: image_height as f32,
             };
-            calculate_far_away_position(background_size, &self.res.filters.internal_resolution, self.res.scaling.pixel_width, stretch)
+            calculate_far_away_position(
+                background_size,
+                &self.res.controllers.internal_resolution,
+                self.res.scaling.pixel_width,
+                stretch,
+            )
         };
         let mut camera = CameraData::new(MOVEMENT_BASE_SPEED * z / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED);
         camera.set_position(glm::vec3(0.0, 0.0, z));
@@ -724,7 +733,7 @@ impl<'a> SimulationUpdater<'a> {
 
     fn update_output_filter_source_colors(&mut self) {
         let output = &mut self.res.main.render;
-        let filters = &self.res.filters;
+        let filters = &self.res.controllers;
 
         output.color_splits = match filters.color_channels.value {
             ColorChannelsOptions::Combined => 1,
@@ -762,7 +771,7 @@ impl<'a> SimulationUpdater<'a> {
 
     fn update_output_filter_curvature(&mut self) {
         let output = &mut self.res.main.render;
-        let filters = &self.res.filters;
+        let filters = &self.res.controllers;
 
         output.screen_curvature_factor = match filters.screen_curvature_kind.value {
             ScreenCurvatureKindOptions::Curved1 => 0.15,
@@ -780,7 +789,7 @@ impl<'a> SimulationUpdater<'a> {
 
     fn update_output_filter_backlight(&mut self) {
         let output = &mut self.res.main.render;
-        let filters = &self.res.filters;
+        let filters = &self.res.controllers;
 
         output.showing_background = filters.backlight_percent.value > 0.0;
         let solid_color_weight = filters.backlight_percent.value;
@@ -792,7 +801,7 @@ impl<'a> SimulationUpdater<'a> {
 
     fn update_output_pixel_scale_gap_offset(&mut self) {
         let output = &mut self.res.main.render;
-        let filters = &self.res.filters;
+        let filters = &self.res.controllers;
         let scaling = &self.res.scaling;
 
         output.pixel_spread = [

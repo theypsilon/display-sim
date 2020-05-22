@@ -90,10 +90,10 @@ pub struct Resources {
     pub video: VideoInputResources,
     pub camera: CameraData,
     pub demo_1: FlightDemoData,
-    pub filters: Filters,
+    pub controllers: Controllers,
     pub scaling: Scaling,
     pub speed: Speeds,
-    pub saved_filters: Option<Filters>,
+    pub saved_filters: Option<Controllers>,
     pub custom_is_changed: bool,
     pub main: MainState,
     pub timers: SimulationTimers,
@@ -107,7 +107,7 @@ pub struct Resources {
 
 impl Default for Resources {
     fn default() -> Self {
-        let mut filters = Filters::default();
+        let mut controllers = Controllers::default();
         Resources {
             initial_parameters: InitialParameters::default(),
             timers: SimulationTimers::default(),
@@ -126,11 +126,11 @@ impl Default for Resources {
             quit: false,
             controller_events: {
                 let mut map: HashMap<&'static str, (KeyEventKind, usize)> = HashMap::new();
-                for (i, controller) in filters.get_ui_controllers_mut().iter().enumerate() {
-                    for key in controller.keys_dec().clone() {
+                for (i, controller) in controllers.get_ui_controllers_mut().iter().enumerate() {
+                    for key in controller.keys_dec() {
                         map.insert(*key, (KeyEventKind::Dec, i));
                     }
-                    for key in controller.keys_inc().clone() {
+                    for key in controller.keys_inc() {
                         map.insert(*key, (KeyEventKind::Inc, i));
                     }
                     map.insert(controller.event_tag(), (KeyEventKind::Set, i));
@@ -138,7 +138,7 @@ impl Default for Resources {
                 map
             },
             main: Default::default(),
-            filters,
+            controllers,
         }
     }
 }
@@ -149,7 +149,7 @@ impl Resources {
         self.resetted = true;
         self.scaling.scaling_initialized = false;
         if let Some(preset) = video_input.preset {
-            self.filters.preset_factory(preset, &None);
+            self.controllers.preset_factory(preset, &None);
         }
         self.timers = SimulationTimers {
             frame_count: 0,
@@ -157,33 +157,8 @@ impl Resources {
             last_second: now,
         };
         self.video = video_input;
-        for controller in self.filters.get_ui_controllers_mut().iter_mut() {
+        for controller in self.controllers.get_ui_controllers_mut().iter_mut() {
             controller.reset_inputs();
-        }
-    }
-}
-
-#[derive(Clone)]
-pub struct Scaling {
-    pub pixel_width: f32,
-    pub custom_resolution: Size2D<f32>,
-    pub custom_aspect_ratio: Size2D<f32>,
-    pub custom_stretch: bool,
-    pub custom_change: LatestCustomScalingChange,
-    pub scaling_initialized: bool,
-    pub scaling_method: ScalingMethod,
-}
-
-impl Default for Scaling {
-    fn default() -> Self {
-        Scaling {
-            scaling_initialized: false,
-            scaling_method: ScalingMethod::AutoDetect,
-            custom_resolution: Size2D { width: 256.0, height: 240.0 },
-            custom_aspect_ratio: Size2D { width: 4.0, height: 3.0 },
-            custom_stretch: false,
-            pixel_width: 1.0,
-            custom_change: LatestCustomScalingChange::AspectRatio,
         }
     }
 }
@@ -242,10 +217,35 @@ pub struct Speeds {
     pub filter_speed: f32,
 }
 
+#[derive(Clone)]
+pub struct Scaling {
+    pub pixel_width: f32,
+    pub custom_resolution: Size2D<f32>,
+    pub custom_aspect_ratio: Size2D<f32>,
+    pub custom_stretch: bool,
+    pub custom_change: LatestCustomScalingChange,
+    pub scaling_initialized: bool,
+    pub scaling_method: ScalingMethod,
+}
+
+impl Default for Scaling {
+    fn default() -> Self {
+        Scaling {
+            scaling_initialized: false,
+            scaling_method: ScalingMethod::AutoDetect,
+            custom_resolution: Size2D { width: 256.0, height: 240.0 },
+            custom_aspect_ratio: Size2D { width: 4.0, height: 3.0 },
+            custom_stretch: false,
+            pixel_width: 1.0,
+            custom_change: LatestCustomScalingChange::AspectRatio,
+        }
+    }
+}
+
 #[derive(Clone, Arraygen)]
 #[gen_array(pub fn get_ui_controllers: &dyn UiController)]
 #[gen_array(pub fn get_ui_controllers_mut: &mut dyn UiController)]
-pub struct Filters {
+pub struct Controllers {
     #[in_array(get_ui_controllers, get_ui_controllers_mut)]
     pub internal_resolution: InternalResolution,
     #[in_array(get_ui_controllers, get_ui_controllers_mut)]
@@ -308,9 +308,9 @@ pub struct Filters {
     pub preset_kind: FilterPreset,
 }
 
-impl Default for Filters {
+impl Default for Controllers {
     fn default() -> Self {
-        let mut filters = Filters {
+        let mut controllers = Controllers {
             internal_resolution: InternalResolution::default(),
             texture_interpolation: TextureInterpolationOptions::Linear.into(),
             blur_passes: 0.into(),
@@ -342,13 +342,13 @@ impl Default for Filters {
             color_noise: 0.0.into(),
             preset_kind: FilterPresetOptions::Sharp1.into(),
         };
-        filters.preset_crt_aperture_grille_1();
-        filters
+        controllers.preset_crt_aperture_grille_1();
+        controllers
     }
 }
 
-impl Filters {
-    pub fn preset_factory(&mut self, preset: FilterPresetOptions, previous_custom: &Option<Filters>) {
+impl Controllers {
+    pub fn preset_factory(&mut self, preset: FilterPresetOptions, previous_custom: &Option<Controllers>) {
         match preset {
             FilterPresetOptions::Sharp1 => self.preset_sharp_1(),
             FilterPresetOptions::CrtApertureGrille1 => self.preset_crt_aperture_grille_1(),

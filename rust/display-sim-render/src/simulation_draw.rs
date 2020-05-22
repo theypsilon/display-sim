@@ -40,7 +40,7 @@ impl<'a> SimulationDrawer<'a> {
             return Ok(());
         }
 
-        let filters = &self.res.filters;
+        let filters = &self.res.controllers;
         let output = &self.res.main.render;
 
         let materials = &mut self.materials;

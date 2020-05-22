@@ -159,7 +159,7 @@ fn read_frontend_event(input: &mut Input, res: &mut Resources, event: JsValue) -
     let frontend_event: AppResult<String> = js_sys::Reflect::get(&event, &"type".into())?.as_string().ok_or("Could not get kind".into());
     let frontend_event = frontend_event?;
     if let Some((KeyEventKind::Set, index)) = res.controller_events.get_mut(frontend_event.as_ref() as &str) {
-        let controller = &mut res.filters.get_ui_controllers_mut()[*index];
+        let controller = &mut res.controllers.get_ui_controllers_mut()[*index];
         controller.read_event(&JsEncodedValue::new(value))?;
         return Ok(());
     }
