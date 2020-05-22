@@ -172,7 +172,11 @@ fn get_contextualized_action_2(input: &Input, res: &mut Resources, keycode: &str
             return Some(combo);
         }
     }
-    if res.controller_events.contains_key(keycode) { Some(keycode.into()) } else { None }
+    if res.controller_events.contains_key(keycode) {
+        Some(keycode.into())
+    } else {
+        None
+    }
 }
 
 fn is_shift(keycode: &str) -> bool {
