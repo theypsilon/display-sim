@@ -17,11 +17,9 @@ use core::app_events::AppEventDispatcher;
 use core::camera::CameraLockMode;
 use core::general_types::Size2D;
 use core::input_types::{Input, InputEventValue, Pressed};
-use core::internal_resolution::InternalResolution;
-use core::pixels_shadow::ShadowShape;
 use core::simulation_context::{ConcreteSimulationContext, RandomGenerator};
 use core::simulation_core_state::{AnimationStep, Resources, VideoInputResources};
-use core::simulation_core_state::{ColorChannels, PixelsGeometryKind, ScalingMethod, ScreenCurvatureKind, TextureInterpolation};
+use core::simulation_core_state::ScalingMethod;
 use core::simulation_core_ticker::SimulationCoreTicker;
 use render::error::AppResult;
 use render::simulation_draw::SimulationDrawer;
@@ -327,15 +325,6 @@ impl AppEventDispatcher for NativeEventDispatcher {
     }
     fn dispatch_custom_scaling_stretch_nearest(&self, value: bool) {
         println!("custom_scaling_stretch_nearest: {}", value);
-    }
-    fn dispatch_color_representation(&self, res: ColorChannels) {
-        println!("color_representation: {}", res);
-    }
-    fn dispatch_pixel_shadow_shape(&self, res: ShadowShape) {
-        println!("pixel_shadow_shape: {}", res);
-    }
-    fn dispatch_screen_curvature(&self, res: ScreenCurvatureKind) {
-        println!("screen_curvature: {}", res);
     }
     fn dispatch_change_pixel_speed(&self, speed: f32) {
         println!("change_pixel_speed: {}", speed);
