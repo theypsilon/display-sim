@@ -84,14 +84,14 @@ macro_rules! rgb_impl {
     };
 }
 
-rgb_impl! {RgbRedR, "front2back:rgb-red-r", "back2front:rgb-red-r"}
-rgb_impl! {RgbRedG, "front2back:rgb-red-g", "back2front:rgb-red-g"}
-rgb_impl! {RgbRedB, "front2back:rgb-red-b", "back2front:rgb-red-b"}
+rgb_impl! {RgbRedR, "front2back:rgb-red-r", "back2front:rgb_red_r"}
+rgb_impl! {RgbRedG, "front2back:rgb-red-g", "back2front:rgb_red_g"}
+rgb_impl! {RgbRedB, "front2back:rgb-red-b", "back2front:rgb_red_b"}
 
-rgb_impl! {RgbGreenR, "front2back:rgb-green-r", "back2front:rgb-green-r"}
-rgb_impl! {RgbGreenG, "front2back:rgb-green-g", "back2front:rgb-green-g"}
-rgb_impl! {RgbGreenB, "front2back:rgb-green-b", "back2front:rgb-green-b"}
+rgb_impl! {RgbGreenR, "front2back:rgb-green-r", "back2front:rgb_green_r"}
+rgb_impl! {RgbGreenG, "front2back:rgb-green-g", "back2front:rgb_green_g"}
+rgb_impl! {RgbGreenB, "front2back:rgb-green-b", "back2front:rgb_green_b"}
 
-rgb_impl! {RgbBlueR, "front2back:rgb-blue-r", "back2front:rgb-blue-r"}
-rgb_impl! {RgbBlueG, "front2back:rgb-blue-g", "back2front:rgb-blue-g"}
-rgb_impl! {RgbBlueB, "front2back:rgb-blue-b", "back2front:rgb-blue-b"}
+rgb_impl! {RgbBlueR, "front2back:rgb-blue-r", "back2front:rgb_blue_r"}
+rgb_impl! {RgbBlueG, "front2back:rgb-blue-g", "back2front:rgb_blue_g"}
+rgb_impl! {RgbBlueB, "front2back:rgb-blue-b", "back2front:rgb_blue_b"}

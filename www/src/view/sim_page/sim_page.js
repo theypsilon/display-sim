@@ -107,6 +107,9 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
     // Listening backend events
     frontendBus.subscribe(async e => {
         const msg = e.message;
+        if (e.type.startsWith('back2front')) {
+            console.log('back2front', e.type, msg);
+        }
         switch (e.type) {
         case 'front2front:dispatchKey': {
             if (msg.key.startsWith('webgl:')) {    
@@ -178,6 +181,15 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
         case 'back2front:screen_curvature': return view.changeScreenCurvature(msg);
         case 'back2front:color_gamma': return view.changeColorGamma(msg);
         case 'back2front:color_noise': return view.changeColorNoise(msg);
+        case 'back2front:rgb_red_r': return view.changeColorRgb(msg, 'red', 'r');
+        case 'back2front:rgb_red_g': return view.changeColorRgb(msg, 'red', 'g');
+        case 'back2front:rgb_red_b': return view.changeColorRgb(msg, 'red', 'b');
+        case 'back2front:rgb_green_r': return view.changeColorRgb(msg, 'green', 'r');
+        case 'back2front:rgb_green_g': return view.changeColorRgb(msg, 'green', 'g');
+        case 'back2front:rgb_green_b': return view.changeColorRgb(msg, 'green', 'b');
+        case 'back2front:rgb_blue_r': return view.changeColorRgb(msg, 'blue', 'r');
+        case 'back2front:rgb_blue_g': return view.changeColorRgb(msg, 'blue', 'g');
+        case 'back2front:rgb_blue_b': return view.changeColorRgb(msg, 'blue', 'b');
         case 'front2front:clickPreset': {
             view.clickPreset(msg);
             model.setPreset(msg);

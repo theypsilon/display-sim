@@ -142,7 +142,7 @@ impl OptionCursor for InternalResolution {
 
 impl UiController for InternalResolution {
     fn event_tag(&self) -> &'static str {
-        "front2back:blur-level"
+        ""
     }
     fn keys_inc(&self) -> &[&'static str] {
         &["y", "internal-resolution-inc"]

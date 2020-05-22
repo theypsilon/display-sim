@@ -14,8 +14,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 use crate::app_events::AppEventDispatcher;
-use crate::field_changer::FieldChanger;
-use crate::general_types::IncDec;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::MainState;
 use crate::ui_controller::{EncodedValue, UiController};
@@ -23,18 +21,13 @@ use app_error::AppResult;
 
 #[derive(Default, Copy, Clone)]
 pub struct LightColor {
-    input: IncDec<bool>,
     event: Option<i32>,
     pub value: i32,
 }
 
 impl From<i32> for LightColor {
     fn from(value: i32) -> Self {
-        LightColor {
-            input: Default::default(),
-            event: None,
-            value,
-        }
+        LightColor { event: None, value }
     }
 }
 
@@ -43,19 +36,13 @@ impl UiController for LightColor {
         "front2back:light-color"
     }
     fn keys_inc(&self) -> &[&'static str] {
-        &["j", "blur-level-inc"]
+        &[]
     }
     fn keys_dec(&self) -> &[&'static str] {
-        &["shift+j", "blur-level-dec"]
+        &[]
     }
-    fn update(&mut self, _: &MainState, ctx: &dyn SimulationContext) -> bool {
-        FieldChanger::new(ctx, &mut self.value, self.input)
-            .set_progression(1)
-            .set_event_value(self.event)
-            .set_min(0)
-            .set_max(100)
-            .set_trigger_handler(|x| dispatch(x, ctx.dispatcher()))
-            .process_with_sums()
+    fn update(&mut self, _: &MainState, _: &dyn SimulationContext) -> bool {
+        false
     }
     fn apply_event(&mut self) {
         if let Some(v) = self.event {
@@ -65,19 +52,13 @@ impl UiController for LightColor {
     }
     fn reset_inputs(&mut self) {
         self.event = None;
-        self.input.increase = false;
-        self.input.decrease = false;
     }
     fn read_event(&mut self, encoded: &dyn EncodedValue) -> AppResult<()> {
         self.event = Some(encoded.to_i32()?);
         Ok(())
     }
-    fn read_key_inc(&mut self, pressed: bool) {
-        self.input.increase = pressed;
-    }
-    fn read_key_dec(&mut self, pressed: bool) {
-        self.input.decrease = pressed;
-    }
+    fn read_key_inc(&mut self, _: bool) {}
+    fn read_key_dec(&mut self, _: bool) {}
     fn dispatch_event(&self, dispatcher: &dyn AppEventDispatcher) {
         dispatch(self.value, dispatcher)
     }

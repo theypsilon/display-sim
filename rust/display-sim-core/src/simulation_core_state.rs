@@ -128,12 +128,25 @@ impl Default for Resources {
                 let mut map: HashMap<&'static str, (KeyEventKind, usize)> = HashMap::new();
                 for (i, controller) in controllers.get_ui_controllers_mut().iter().enumerate() {
                     for key in controller.keys_dec() {
+                        if map.contains_key(key) {
+                            panic!("controller_events panic! key_dec already included '{}'.", key);
+                        }
                         map.insert(*key, (KeyEventKind::Dec, i));
                     }
                     for key in controller.keys_inc() {
+                        if map.contains_key(key) {
+                            panic!("controller_events panic! keys_inc already included '{}'.", key);
+                        }
                         map.insert(*key, (KeyEventKind::Inc, i));
                     }
-                    map.insert(controller.event_tag(), (KeyEventKind::Set, i));
+                    let event_tag = controller.event_tag();
+                    if event_tag == "" {
+                        continue;
+                    }
+                    if map.contains_key(event_tag) {
+                        panic!("controller_events panic! event_tag already included '{}'.", event_tag);
+                    }
+                    map.insert(event_tag, (KeyEventKind::Set, i));
                 }
                 map
             },

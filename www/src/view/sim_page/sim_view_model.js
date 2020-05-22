@@ -487,4 +487,8 @@ export class View {
         this._state.options.color_noise.value = noise;
         this._isDirty = true;
     }
+    changeColorRgb (value, rgb_row, rgb_column) {
+        this._state.options.rgb_values[rgb_row][rgb_column].value = value;
+        this._isDirty = true;
+    }
 }
