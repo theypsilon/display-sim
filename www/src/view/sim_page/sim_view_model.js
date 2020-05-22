@@ -63,7 +63,7 @@ export function data () {
         rgb_values: {
             red: { r: { eventKind: 'rgb-red-r', value: 1 }, g: { eventKind: 'rgb-red-g', value: 0 }, b: { eventKind: 'rgb-red-b', value: 0 } },
             green: { r: { eventKind: 'rgb-green-r', value: 0 }, g: { eventKind: 'rgb-green-g', value: 1 }, b: { eventKind: 'rgb-green-b', value: 0 } },
-            blue: { r: { eventKind: 'rgb-blue-r', value: 0 }, g: { eventKind: 'rgb-blue-g', value: 0 }, b: { eventKind: 'rgb-blue-b', value: 1 } },
+            blue: { r: { eventKind: 'rgb-blue-r', value: 0 }, g: { eventKind: 'rgb-blue-g', value: 0 }, b: { eventKind: 'rgb-blue-b', value: 1 } }
         },
         camera_zoom: { value: null, eventKind: 'camera_zoom' },
         move_speed: { value: null, eventKind: 'move-speed' },
@@ -151,7 +151,7 @@ export function data () {
                         { type: 'color-input', class: 'menu-2 menu-blc-blue', text: 'Source light color', value: '#ffffff', ref: options.light_color },
                         { type: 'number-input', class: 'menu-2 menu-blc-white', text: 'Brightness', hk: { inc: 'X', dec: 'Shift + X' }, step: 0.001, min: -1, max: 1, value: 0, placeholder: 0, ref: options.pixel_brightness },
                         { type: 'number-input', class: 'menu-2 menu-blc-white', text: 'Contrast', hk: { inc: 'Z', dec: 'Shift + Z' }, step: 0.001, min: 0, max: 20, value: 1, placeholder: 0, ref: options.pixel_contrast },
-                        { type: 'color-input', class: 'display-none', text: 'Brightness color', value: '#ffffff', ref: options.brightness_color },
+                        { type: 'color-input', class: 'display-none', text: 'Brightness color', value: '#ffffff', ref: options.brightness_color }
                     ]
                 },
                 {
