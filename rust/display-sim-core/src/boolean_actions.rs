@@ -180,24 +180,15 @@ fn get_contextualized_action_2(input: &Input, res: &mut Resources, keycode: &str
 }
 
 fn is_shift(keycode: &str) -> bool {
-    match keycode {
-        "shift" | "left shift" | "right shift" => true,
-        _ => false,
-    }
+    matches!(keycode, "shift" | "left shift" | "right shift")
 }
 
 fn is_ctrl(keycode: &str) -> bool {
-    match keycode {
-        "control" => true,
-        _ => false,
-    }
+    matches!(keycode, "control")
 }
 
 fn is_alt(keycode: &str) -> bool {
-    match keycode {
-        "alt" => true,
-        _ => false,
-    }
+    matches!(keycode, "alt")
 }
 
 fn trigger_hotkey_action_intern(input: &mut Input, keycode: &str, pressed: Pressed) -> ActionUsed {

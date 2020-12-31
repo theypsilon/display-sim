@@ -468,7 +468,6 @@ impl Controllers {
         self.blur_passes = 0.into();
         self.vertical_lpp = 1.into();
         self.horizontal_lpp = 1.into();
-        self.light_color = self.light_color;
         self.brightness_color = 0x00FF_FFFF.into();
         self.extra_bright = 0.0.into();
         self.extra_contrast = 1.0.into();

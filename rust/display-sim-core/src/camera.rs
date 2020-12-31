@@ -283,10 +283,7 @@ impl<'a> CameraSystem<'a> {
 
         let new_direction = glm::quat_cross_vec(&temp, &self.data.direction);
 
-        if match self.data.locked_mode {
-            CameraLockMode::ThreeDimensional => true,
-            _ => false,
-        } || new_direction.z <= -0.01
+        if matches!(self.data.locked_mode, CameraLockMode::ThreeDimensional) || new_direction.z <= -0.01
         {
             self.data.direction = new_direction;
             self.data.axis_up = glm::quat_cross_vec(&temp, &self.data.axis_up);
