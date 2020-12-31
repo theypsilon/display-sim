@@ -15,7 +15,7 @@
 
 import { html, render } from 'lit-html';
 
-const css = require('!css-loader!./css/landing_page.css').toString();
+const css = require('!css-loader!./css/landing_page.css').default.toString();
 
 export function renderTemplate (state, fire, root) {
     render(generateLandingTemplate(state, fire), root);
@@ -29,7 +29,7 @@ function generateLandingTemplate (state, fire) {
 
     <section id="ui" class="${state.visible ? '' : 'display-none'}">
         <a href="https://github.com/theypsilon/display-sim">
-            <img id="fork-me" src="${require('../../../assets/pics/forkme.png')}" alt="Fork me on GitHub">
+            <img id="fork-me" src="${require('../../../assets/pics/forkme.png').default}" alt="Fork me on GitHub">
         </a>
         <header class="container bg-white jumbotron page-header">
             <h1 class="margin-sm-bottom">Display Sim</h1>

@@ -13,8 +13,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import Logger from '../../services/logger';
-import Constants from '../../services/constants';
+import { Logger } from '../../services/logger';
+import { Constants } from '../../services/constants';
 
 import { Navigator } from '../../services/navigator';
 import { Mailbox } from '../../services/mailbox';
@@ -62,6 +62,8 @@ export async function playQuerystring (querystring) {
 
     const imageWidth = animations[0].raw.width;
     const imageHeight = animations[0].raw.height;
+
+    console.log('IM HERE!!! 1');
 
     mailbox.placeMessage('sim-page', {
         topic: 'load-app',

@@ -15,7 +15,7 @@
 
 import * as fastgif from 'fastgif/fastgif';
 
-import Logger from './logger';
+import { Logger } from './logger';
 
 export class AnimationsGateway {
     constructor (config) {

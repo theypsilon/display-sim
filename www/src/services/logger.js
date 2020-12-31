@@ -31,7 +31,7 @@ if (enabled()) {
     window.Error = Error;
 }
 
-export default {
+export const Logger = {
     log: function () {
         if (!enabled()) return;
         console.log(new Date().toISOString(), ...arguments);

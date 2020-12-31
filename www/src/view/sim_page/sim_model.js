@@ -13,8 +13,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import Constants from '../../services/constants';
-import Logger from '../../services/logger';
+import { Constants } from '../../services/constants';
+import { Logger } from '../../services/logger';
 import { Mailbox } from '../../services/mailbox';
 import { LocalStorage } from '../../services/local_storage';
 import { WasmApp } from './sim_wasm_app';
@@ -60,6 +60,9 @@ export class Model {
         await new Promise(resolve => window.requestAnimationFrame(resolve));
         this.resizeCanvas();
         this.state.loaded = true;
+
+        console.log('IM HERE!!! 2');
+
         const result = await this.wasmApp.load(this.state.canvas, this.eventBus, Object.assign({
             ctxOptions: {
                 alpha: false,

@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-export default {
+export const Constants = {
     // general
     TOP_MESSAGE_ID: 'top-message',
     loadingDeo: document.getElementById('loading'),

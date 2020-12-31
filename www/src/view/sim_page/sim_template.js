@@ -16,7 +16,7 @@
 import { html, render } from 'lit-html';
 import { ifDefined } from 'lit-html/directives/if-defined';
 
-const css = require('!css-loader!./css/sim_page.css').toString();
+const css = require('!css-loader!./css/sim_page.css').default.toString();
 
 export function renderTemplate (state, fire, root) {
     render(generateSimTemplate(state, fire), root);

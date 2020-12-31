@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import Constants from '../../services/constants';
+import { Constants } from '../../services/constants';
 import { mobileAndTabletCheck } from '../../services/utils';
 import { Navigator } from '../../services/navigator';
 import { Visibility } from '../../services/visibility';
@@ -21,12 +21,12 @@ import { Visibility } from '../../services/visibility';
 export function data () {
     return {
         images: [
-            { src: require('../../../assets/pics/opt-frames/wwix.gif'), hq: require('../../../assets/pics/frames/wwix.gif'), width: 256, height: 224, id: Constants.FIRST_PREVIEW_IMAGE_ID },
-            { src: require('../../../assets/pics/opt-frames/seiken.png'), hq: require('../../../assets/pics/frames/seiken.png'), width: 256, height: 224 },
-            { src: require('../../../assets/pics/opt-frames/sonicscroll.gif'), hq: require('../../../assets/pics/frames/sonicscroll.gif'), width: 320, height: 224 },
-            { src: require('../../../assets/pics/opt-frames/metroid.gif'), hq: require('../../../assets/pics/frames/metroid.gif'), width: 256, height: 224 },
-            { src: require('../../../assets/pics/opt-frames/tf4.gif'), hq: require('../../../assets/pics/frames/tf4.gif'), width: 320, height: 224 },
-            { src: require('../../../assets/pics/opt-frames/dkc2.png'), hq: require('../../../assets/pics/frames/dkc2.png'), width: 256, height: 224 }
+            { src: require('../../../assets/pics/opt-frames/wwix.gif').default, hq: require('../../../assets/pics/frames/wwix.gif').default, width: 256, height: 224, id: Constants.FIRST_PREVIEW_IMAGE_ID },
+            { src: require('../../../assets/pics/opt-frames/seiken.png').default, hq: require('../../../assets/pics/frames/seiken.png').default, width: 256, height: 224 },
+            { src: require('../../../assets/pics/opt-frames/sonicscroll.gif').default, hq: require('../../../assets/pics/frames/sonicscroll.gif').default, width: 320, height: 224 },
+            { src: require('../../../assets/pics/opt-frames/metroid.gif').default, hq: require('../../../assets/pics/frames/metroid.gif').default, width: 256, height: 224 },
+            { src: require('../../../assets/pics/opt-frames/tf4.gif').default, hq: require('../../../assets/pics/frames/tf4.gif').default, width: 320, height: 224 },
+            { src: require('../../../assets/pics/opt-frames/dkc2.png').default, hq: require('../../../assets/pics/frames/dkc2.png').default, width: 256, height: 224 }
         ],
         imageSelection: 0,
         visible: false,

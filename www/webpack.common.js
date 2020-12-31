@@ -7,18 +7,19 @@ module.exports = {
     output: {
         path: path.resolve(__dirname, 'dist'),
         filename: '[name].[contenthash].js',
+        publicPath: ''
     },
     target: 'web',
     plugins: [
+        new MiniCssExtractPlugin({
+            filename: "style.[contenthash].css",
+        }),
         new HtmlWebpackPlugin({
             inject: false,
             hash: true,
             favicon: "assets/favicon.ico",
             template: "src/index.html",
             filename: "index.html"
-        }),
-        new MiniCssExtractPlugin({
-            filename: "style.[contenthash].css",
         })
     ],
     module: {
@@ -34,11 +35,16 @@ module.exports = {
             },
             {
                 test: /\.(jpg|jpeg|gif|png|woff|woff2|eot|ttf|svg|ico)$/,
-                loader: 'url-loader',
-                options: {
-                    limit: 1024
-                }
+                loader: 'file-loader'
             }
         ]
+    },
+    experiments: {
+        syncWebAssembly: true
+    },
+    resolve: {
+        fallback: {
+            util: require.resolve("util/")
+        }
     }
 };
