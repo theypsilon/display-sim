@@ -35,7 +35,7 @@ export class AnimationsGateway {
         await new Promise((resolve, reject) => {
             img.onload = resolve;
             img.onerror = reject;
-            img.src = require('../../assets/pics/wwix_spritesheet.png');
+            img.src = require('../../assets/pics/wwix_spritesheet.png').default;
         });
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');

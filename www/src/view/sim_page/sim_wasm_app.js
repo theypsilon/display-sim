@@ -26,16 +26,7 @@ export class WasmApp {
     }
 
     async load (canvas, eventBus, params) {
-        console.log('IM HERE!!! 3');
-
         const exports = await import('../../wasm/display_sim');
-
-        console.log('IM HERE!!! 4');
-
-        console.log(exports);
-        console.log(exports.default);
-        console.log(exports.WasmApp);
-        console.log(exports.default.WasmApp);
 
         if (!this.app) {
             Logger.log('calling new WasmApp');

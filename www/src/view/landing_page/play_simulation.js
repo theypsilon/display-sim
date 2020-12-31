@@ -63,8 +63,6 @@ export async function playQuerystring (querystring) {
     const imageWidth = animations[0].raw.width;
     const imageHeight = animations[0].raw.height;
 
-    console.log('IM HERE!!! 1');
-
     mailbox.placeMessage('sim-page', {
         topic: 'load-app',
         loadAppParams: {

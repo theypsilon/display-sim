@@ -61,8 +61,6 @@ export class Model {
         this.resizeCanvas();
         this.state.loaded = true;
 
-        console.log('IM HERE!!! 2');
-
         const result = await this.wasmApp.load(this.state.canvas, this.eventBus, Object.assign({
             ctxOptions: {
                 alpha: false,
