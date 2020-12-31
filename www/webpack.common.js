@@ -35,7 +35,11 @@ module.exports = {
             },
             {
                 test: /\.(jpg|jpeg|gif|png|woff|woff2|eot|ttf|svg|ico)$/,
-                loader: 'file-loader'
+                loader: 'url-loader',
+                options: {
+                    limit: 8192,
+                    fallback: require.resolve('file-loader'),
+                }
             }
         ]
     },
