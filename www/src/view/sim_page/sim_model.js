@@ -17,7 +17,7 @@ import { Constants } from '../../services/constants';
 import { Logger } from '../../services/logger';
 import { Mailbox } from '../../services/mailbox';
 import { LocalStorage } from '../../services/local_storage';
-import { WasmApp } from './sim_wasm_app';
+import { WasmApplication } from './sim_wasm_application';
 
 const STORE_KEY_WEBGL_POWER_PREFERENCE = 'option-powerPreference';
 const STORE_KEY_WEBGL_ANTIALIAS = 'option-antialias';
@@ -25,10 +25,10 @@ const POWER_PREFERENCE_DEFAULT = 'default';
 const FILTERS_PRESET_STORE_KEY = 'FiltersPreset';
 
 export class Model {
-    constructor (canvas, eventBus, mailbox, wasmApp, store) {
+    constructor (canvas, eventBus, mailbox, wasmApplication, store) {
         this.eventBus = eventBus;
         this.mailbox = mailbox;
-        this.wasmApp = wasmApp;
+        this.wasmApplication = wasmApplication;
         this.store = store;
         this.state = {
             canvas,
@@ -42,8 +42,14 @@ export class Model {
         };
     }
 
-    static make (canvas, eventBus, mailbox, wasmApp, store) {
-        return new Model(canvas, eventBus, mailbox || Mailbox.getInstance(), wasmApp || WasmApp.getInstance(), store || LocalStorage.make('sim-page'));
+    static make (canvas, eventBus, mailbox, wasmApplication, store) {
+        return new Model(
+            canvas,
+            eventBus,
+            mailbox || Mailbox.getInstance(),
+            wasmApplication || WasmApplication.getInstance(),
+            store || LocalStorage.make('sim-page')
+        );
     }
 
     load () {
@@ -61,7 +67,7 @@ export class Model {
         this.resizeCanvas();
         this.state.loaded = true;
 
-        const result = await this.wasmApp.load(this.state.canvas, this.eventBus, Object.assign({
+        const result = await this.wasmApplication.load(this.state.canvas, this.eventBus, Object.assign({
             ctxOptions: {
                 alpha: false,
                 antialias: this.state.storedValues.antialias,
@@ -80,7 +86,7 @@ export class Model {
         if (!this.state.loaded) {
             return false;
         }
-        if (this.wasmApp.runFrame()) {
+        if (this.wasmApplication.runFrame()) {
             return true;
         } else {
             this.unloadSimulation();
@@ -125,7 +131,7 @@ export class Model {
 
     unloadSimulation () {
         this.state.loaded = false;
-        this.wasmApp.unload();
+        this.wasmApplication.unload();
         const newCanvas = document.createElement('canvas');
         newCanvas.setAttribute('tabindex', 0);
         this.state.canvas.parentNode.replaceChild(newCanvas, this.state.canvas);

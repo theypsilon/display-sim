@@ -17,7 +17,7 @@ import { Logger } from '../../services/logger';
 
 let instance;
 
-export class WasmApp {
+export class WasmApplication {
     constructor () {
         this.app = null;
     }
@@ -26,17 +26,17 @@ export class WasmApp {
     }
 
     async load (canvas, eventBus, params) {
-        const exports = await import('../../wasm/display_sim');
+        const { WasmApp, VideoInputConfig } = await import('../../wasm/display_sim');
 
         if (!this.app) {
             Logger.log('calling new WasmApp');
-            this.app = new exports.WasmApp();
+            this.app = new WasmApp();
             Logger.log('new WasmApp done');
         }
 
         Logger.log('resolutions:', canvas.width, canvas.height, params.imageWidth, params.imageHeight);
 
-        const config = new exports.VideoInputConfig(
+        const config = new VideoInputConfig(
             params.imageWidth, params.imageHeight, // to read the image pixels
             canvas.width, canvas.height // gl.viewport
         );
@@ -84,4 +84,4 @@ export class WasmApp {
     }
 }
 
-instance = new WasmApp();
+instance = new WasmApplication();
