@@ -4,7 +4,7 @@
   "repository": "github:theypsilon/display-sim",
   "scripts": {
     "build": "webpack --config webpack.prod.js",
-    "start": "webpack-dev-server --open --config webpack.dev.js",
+    "start": "webpack serve --open --config webpack.dev.js",
     "test": "mocha",
     "lint": "eslint src test",
     "lintfix": "eslint --fix src test"
