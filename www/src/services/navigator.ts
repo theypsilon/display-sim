@@ -14,21 +14,25 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 import { Constants } from './constants';
-import { Logger } from '../services/logger';
+import { Logger } from './logger';
 import { Visibility } from './visibility';
+import { Lazy } from './lazy';
 
-let instance;
 let visibility = Visibility.make();
 const getTopMessageDeo = () => document.getElementById(Constants.TOP_MESSAGE_ID);
+
 export class Navigator {
-    static make () { return instance; }
-    goToLandingPage () {
+    private static _instance: Lazy<Navigator> = Lazy.from(() => new Navigator());
+    static make (): Navigator { return this._instance.get(); }
+    private constructor() {}
+
+    goToLandingPage (): void {
         this._goToPageTagged('landing-page');
     }
-    goToSimPage () {
+    goToSimPage (): void {
         this._goToPageTagged('sim-page');
     }
-    _goToPageTagged (tag) {
+    _goToPageTagged (tag: string): void {
         visibility.showLoading();
         setTimeout(() => {
             Constants.pageDeo.children[0].remove();
@@ -36,7 +40,7 @@ export class Navigator {
             Constants.pageDeo.appendChild(page);
         }, 0);
     }
-    openTopMessage (msg) {
+    openTopMessage (msg: string): void {
         const existingTopMessage = getTopMessageDeo();
         if (existingTopMessage) {
             existingTopMessage.remove();
@@ -49,12 +53,12 @@ export class Navigator {
         div.appendChild(span);
         document.body.appendChild(div);
         let opacity = 0.75;
-        div.style.opacity = opacity;
+        div.style.opacity = opacity.toString();
         setTimeout(() => {
             function fade () {
                 if (opacity >= 0.01) {
                     opacity -= 0.01;
-                    div.style.opacity = opacity;
+                    div.style.opacity = opacity.toString();
                     setTimeout(fade, 16);
                 } else {
                     div.remove();
@@ -64,5 +68,3 @@ export class Navigator {
         }, msg.length * 100);
     }
 }
-
-instance = new Navigator();

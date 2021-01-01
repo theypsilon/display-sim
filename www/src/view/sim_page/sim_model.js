@@ -17,7 +17,7 @@ import { Constants } from '../../services/constants';
 import { Logger } from '../../services/logger';
 import { Mailbox } from '../../services/mailbox';
 import { LocalStorage } from '../../services/local_storage';
-import { WasmApplication } from './sim_wasm_application';
+import { WasmBackend } from './sim_wasm_backend';
 
 const STORE_KEY_WEBGL_POWER_PREFERENCE = 'option-powerPreference';
 const STORE_KEY_WEBGL_ANTIALIAS = 'option-antialias';
@@ -47,7 +47,7 @@ export class Model {
             canvas,
             eventBus,
             mailbox || Mailbox.getInstance(),
-            wasmApplication || WasmApplication.getInstance(),
+            wasmApplication || WasmBackend.getInstance(),
             store || LocalStorage.make('sim-page')
         );
     }

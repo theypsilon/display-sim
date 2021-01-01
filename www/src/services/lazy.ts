@@ -13,24 +13,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-let instance;
+export class Lazy<T> {
+    private _callback: (() => T) | null;
+    private _value: T | null = null;
 
-export class Mailbox {
-    constructor () {
-        this._dict = {};
+    constructor(callback: () => T) {
+        this._callback = callback;
     }
-    static getInstance () { return instance; }
-    placeMessage (address, content) {
-        if (!this._dict[address]) {
-            this._dict[address] = [];
+
+    static from<T>(callback: () => T): Lazy<T> {
+        return new Lazy(callback);
+    }
+
+    get(): T {
+        if (this._value === null) {
+            if (this._callback == null) {
+                throw new Error("this._callback shouldn't be null");
+            }
+            this._value = this._callback();
+            this._callback = null;
         }
-        this._dict[address].push(content);
-    }
-    consumeMessages (address) {
-        const inbox = this._dict[address];
-        this._dict[address] = [];
-        return inbox;
+        return this._value;
     }
 }
-
-instance = new Mailbox();

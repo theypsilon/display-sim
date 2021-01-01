@@ -14,28 +14,27 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 import { Constants } from './constants';
-
-let instance;
+import { Lazy } from './lazy';
 
 const DISPLAY_NONE_CLASS = 'display-none';
 
 export class Visibility {
-    static make () { return instance; }
-    showLoading () { showElement(Constants.loadingDeo); }
-    hideLoading () { hideElement(Constants.loadingDeo); }
-    showDeo (deo) { showElement(deo); }
-    hideDeo (deo) { hideElement(deo); }
-    canSee (deo) { return isVisible(deo); }
+    private static _instance: Lazy<Visibility> = Lazy.from(() => new Visibility());
+    static make (): Visibility { return this._instance.get(); }
+    private constructor() {}
+    showLoading (): void { showElement(Constants.loadingDeo); }
+    hideLoading (): void { hideElement(Constants.loadingDeo); }
+    showDeo (deo: Element): void { showElement(deo); }
+    hideDeo (deo: Element): void { hideElement(deo); }
+    canSee (deo: Element): boolean { return isVisible(deo); }
 }
 
-instance = new Visibility();
-
-function showElement (element) {
+function showElement (element: Element): void {
     element.classList.remove(DISPLAY_NONE_CLASS);
 }
-function hideElement (element) {
+function hideElement (element: Element): void {
     element.classList.add(DISPLAY_NONE_CLASS);
 }
-function isVisible (element) {
-    return element.classList.contains(DISPLAY_NONE_CLASS) === false;
+function isVisible (element: Element): boolean {
+    return !element.classList.contains(DISPLAY_NONE_CLASS);
 }

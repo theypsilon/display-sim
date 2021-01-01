@@ -13,17 +13,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-export const Constants = {
-    // general
-    TOP_MESSAGE_ID: 'top-message',
-    loadingDeo: document.getElementById('loading'),
-    pageDeo: document.getElementById('page'),
+import { Lazy } from './lazy';
 
-    // landing page
-    FIRST_PREVIEW_IMAGE_ID: 'first-preview-image',
+export class Mailbox {
+    private readonly _dict: { [id: string]: any; } = {};
 
-    // sim page
-    FILTER_PRESETS_SELECTED_EVENT_KIND: 'filter-presets-selected',
-    PRESET_KIND_CUSTOM: 'custom',
-    PRESET_KIND_APERTURE_GRILLE_1: 'crt-aperture-grille-1'
-};
+    private static _instance: Lazy<Mailbox> = Lazy.from(() => new Mailbox());
+    static getInstance (): Mailbox { return this._instance.get(); }
+    private constructor() {}
+
+    placeMessage (address: string, content: any): void {
+        if (!this._dict[address]) {
+            this._dict[address] = [];
+        }
+        this._dict[address].push(content);
+    }
+    consumeMessages (address: string): any {
+        const inbox = this._dict[address];
+        this._dict[address] = [];
+        return inbox;
+    }
+}

@@ -13,21 +13,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-export class LocalStorage {
-    constructor (prefix, root) {
-        this.root = root || window;
-        this.prefix = prefix;
+export class Observer<T> {
+    private _callbacks: ((arg: T) => {})[] = [];
+
+    static make<T>(): Observer<T> {
+        return new Observer<T>();
     }
-    static make (prefix, root) {
-        return new LocalStorage(prefix, root);
+
+    subscribe (cb: (arg: T) => {}): void {
+        this._callbacks.push(cb);
     }
-    getItem (key) {
-        return localStorage.getItem('DISPLAY_SIM.' + this.prefix + '.' + key);
+
+    unsubscribe (unsubscribedCb: (arg: T) => {}): void {
+        this._callbacks = this._callbacks.filter(cb => cb !== unsubscribedCb);
     }
-    setItem (key, value) {
-        localStorage.setItem('DISPLAY_SIM.' + this.prefix + '.' + key, value);
-    }
-    removeItem (key) {
-        localStorage.removeItem('DISPLAY_SIM.' + this.prefix + '.' + key);
+
+    async fire (event: T): Promise<void> {
+        for (const cb of this._callbacks) {
+            await cb(event);
+        }
     }
 }

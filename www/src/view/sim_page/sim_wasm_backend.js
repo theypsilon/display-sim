@@ -17,7 +17,7 @@ import { Logger } from '../../services/logger';
 
 let instance;
 
-export class WasmApplication {
+export class WasmBackend {
     constructor () {
         this.app = null;
     }
@@ -84,4 +84,4 @@ export class WasmApplication {
     }
 }
 
-instance = new WasmApplication();
+instance = new WasmBackend();

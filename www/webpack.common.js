@@ -10,6 +10,7 @@ module.exports = {
         publicPath: ''
     },
     target: 'web',
+    devtool: "source-map",
     plugins: [
         new MiniCssExtractPlugin({
             filename: "style.[contenthash].css",
@@ -24,6 +25,7 @@ module.exports = {
     ],
     module: {
         rules: [
+            { test: /\.ts$/, loader: "ts-loader" },
             {
                 test: /\.css$/,
                 use: [
@@ -47,6 +49,7 @@ module.exports = {
         syncWebAssembly: true
     },
     resolve: {
+        extensions: [".webpack.js", ".web.js", ".ts", ".js"],
         fallback: {
             util: require.resolve("util/")
         }

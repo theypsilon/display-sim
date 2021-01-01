@@ -13,24 +13,57 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import * as fastgif from 'fastgif/fastgif';
+// @ts-ignore
+import { Decoder } from 'fastgif/fastgif';
 
 import { Logger } from './logger';
 
+declare global {
+    interface Window {
+        saveCanvas: HTMLCanvasElement; saveImageData: ImageData
+    }
+}
+
+declare interface Decoder {
+    decode(buffer: ArrayBuffer): Promise<RawDecodedFrame[]>;
+}
+
+interface RawDecodedFrame {
+    imageData: ImageData, delay: Number
+}
+
+interface TransformedDecodedFrame {
+    raw: ImageData, delay: Number
+}
+
+interface AnimationsGatewayConfig {
+    gifCaching: boolean
+}
+
+function throwOnNull<T>(value: T | null): T {
+    if (value === null) {
+        throw new Error('Can not be null!');
+    }
+    return value;
+}
+
 export class AnimationsGateway {
-    constructor (config) {
-        this.gifCaching = {
-            enabled: config.gifCaching === true,
+    private readonly _gifCaching: { dict: { [id: string]: TransformedDecodedFrame[]; }; enabled: boolean };
+    private readonly _decoder: Decoder;
+
+    constructor (config: AnimationsGatewayConfig) {
+        this._gifCaching = {
+            enabled: config.gifCaching,
             dict: {}
         };
-        this.decoder = new fastgif.Decoder();
+        this._decoder = new Decoder();
     }
 
-    static make (config) {
+    static make (config: AnimationsGatewayConfig): AnimationsGateway {
         return new AnimationsGateway(config);
     }
 
-    async getFromHardcodedTileset () {
+    async getFromHardcodedTileset (): Promise<TransformedDecodedFrame[]> {
         const img = new Image();
         await new Promise((resolve, reject) => {
             img.onload = resolve;
@@ -38,7 +71,7 @@ export class AnimationsGateway {
             img.src = require('../../assets/pics/wwix_spritesheet.png').default;
         });
         const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
+        const ctx = throwOnNull(canvas.getContext('2d'));
         canvas.width = img.width;
         canvas.height = img.height;
         ctx.drawImage(img, 0, 0);
@@ -52,7 +85,7 @@ export class AnimationsGateway {
         return animations;
     }
 
-    async getFromImage (img) {
+    async getFromImage (img: HTMLImageElement & {isGif: boolean}): Promise<TransformedDecodedFrame[]> {
         const isGif = img.isGif || img.src.endsWith('.gif');
         if (isGif) {
             return this.extractDataFromGifUrl(img.src);
@@ -61,8 +94,8 @@ export class AnimationsGateway {
         }
     }
 
-    async getFromPath (path, forceGif) {
-        const isGif = forceGif === true || path.endsWith('.gif');
+    async getFromPath (path: string, forceGif: boolean): Promise<TransformedDecodedFrame[]> {
+        const isGif = forceGif || path.endsWith('.gif');
         if (isGif) {
             return this.extractDataFromGifUrl(path);
         } else {
@@ -77,36 +110,36 @@ export class AnimationsGateway {
         }
     }
 
-    async extractDataFromGifUrl (gifUrl) {
+    async extractDataFromGifUrl (gifUrl: string): Promise<TransformedDecodedFrame[]> {
         Logger.log('loading gif');
 
-        if (!this.gifCaching.enabled) {
+        if (!this._gifCaching.enabled) {
             return this.privateFetchGif(gifUrl);
         }
 
-        if (!this.gifCaching.dict[gifUrl]) {
+        if (!this._gifCaching.dict[gifUrl]) {
             Logger.log('decoding...');
-            this.gifCaching.dict[gifUrl] = await this.privateFetchGif(gifUrl);
+            this._gifCaching.dict[gifUrl] = await this.privateFetchGif(gifUrl);
         }
 
         Logger.log('gif loaded');
-        return this.gifCaching.dict[gifUrl];
+        return this._gifCaching.dict[gifUrl];
     }
 
-    async privateFetchGif (url) {
+    async privateFetchGif (url: string): Promise<TransformedDecodedFrame[]> {
         const response = await window.fetch(url, { mode: 'no-cors' });
         const buffer = await response.arrayBuffer();
-        const gif = await this.decoder.decode(buffer);
-        return gif.map(frame => ({
+        const gif = await this._decoder.decode(buffer);
+        return gif.map((frame: RawDecodedFrame) => ({
             raw: frame.imageData,
             delay: frame.delay
         }));
     }
 
-    extractDataFromImg (img) {
+    extractDataFromImg (img: HTMLImageElement): TransformedDecodedFrame[] {
         img.setAttribute('crossOrigin', '');
         const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
+        const ctx = throwOnNull(canvas.getContext('2d'));
         canvas.width = img.width;
         canvas.height = img.height;
         ctx.drawImage(img, 0, 0);
