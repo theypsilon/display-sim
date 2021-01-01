@@ -48,7 +48,7 @@ module.exports = {
         syncWebAssembly: true
     },
     resolve: {
-        extensions: [".webpack.js", ".web.js", ".ts", ".js"],
+        extensions: [".webpack.js", ".web.js", ".ts", ".js", ".tsx", ".jsx"],
         fallback: {
             util: require.resolve("util/")
         }

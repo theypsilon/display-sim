@@ -1,0 +1,12 @@
+{
+  "diff": true,
+  "extension": ["js", "ts"],
+  "package": "./package.json",
+  "reporter": "spec",
+  "slow": 75,
+  "timeout": 2000,
+  "recursive": true,
+  "ui": "bdd",
+  "watch-files": ["src/**/*.js", "src/**/*.ts", "src/**/*.jsx", "src/**/*.tsx", "test/**/*.js", "test/**/*.ts", "test/**/*.jsx", "test/**/*.tsx"],
+  "watch-ignore": ["src/vendor"]
+}
