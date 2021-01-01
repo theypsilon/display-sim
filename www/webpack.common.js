@@ -10,7 +10,6 @@ module.exports = {
         publicPath: ''
     },
     target: 'web',
-    devtool: "source-map",
     plugins: [
         new MiniCssExtractPlugin({
             filename: "style.[contenthash].css",
