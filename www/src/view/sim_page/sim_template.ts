@@ -27,27 +27,43 @@ import {
     SimViewData
 } from "./sim_view_model";
 import {throwOnNull} from "../../services/guards";
+import {PubSubImpl} from "../../services/pubsub";
 
 const css = require('!css-loader!./css/sim_page.css').default.toString();
 
-interface Fire {
-    (key: string, arg?: any): void;
+export interface DispatchKeyMessage {
+    action: 'keyup' | 'keydown' | 'keyboth';
+    key: string;
+    current?: string;
 }
+
+export function actions() {
+    return {
+        dispatchKey: PubSubImpl.make<DispatchKeyMessage>(),
+        toggleCheckbox: PubSubImpl.make<{kind: string, value: boolean}>(),
+        changeSyncedInput: PubSubImpl.make<{kind: string, value: number}>(),
+        toggleControls: PubSubImpl.make<void>(),
+        toggleMenu: PubSubImpl.make<MenuEntry>(),
+        clickPreset: PubSubImpl.make<string>()
+    };
+}
+
+export type SimTemplateEvents = ReturnType<typeof actions>;
 
 export class SimTemplate
 {
     private readonly _root: ShadowRoot;
-    private readonly _fire: Fire;
+    private readonly _actions: SimTemplateEvents;
     private _rendered: boolean;
 
-    private constructor(root: ShadowRoot, fire: Fire) {
+    private constructor(root: ShadowRoot, actions: SimTemplateEvents) {
         this._root = root;
-        this._fire = fire;
+        this._actions = actions;
         this._rendered = false;
     }
 
-    static make(root: ShadowRoot, fire: Fire) {
-        return new SimTemplate(root, fire);
+    static make(root: ShadowRoot, actions: SimTemplateEvents) {
+        return new SimTemplate(root, actions);
     }
 
     getCanvas(state: SimViewData): HTMLCanvasElement {
@@ -62,28 +78,29 @@ export class SimTemplate
         render(this.generateSimTemplate(state), this._root);
     }
 
-    private toggleControls() {
-        this._fire('toggleControls');
+    private async toggleControls() {
+        await this._actions.toggleControls.fire();
     }
 
-    private toggleMenu(menu: MenuEntry) {
-        this._fire('toggleMenu', menu);
+    private async toggleMenu(menu: MenuEntry) {
+        await this._actions.toggleMenu.fire(menu);
     }
 
-    private dispatchKey(action: 'keyup' | 'keydown' | 'keyboth', key: string, current?: string) {
-        this._fire('dispatchKey', {action, key, current});
+    private async dispatchKey(e: Event, action: 'keyup' | 'keydown' | 'keyboth', key: string, current?: string) {
+        e.preventDefault();
+        await this._actions.dispatchKey.fire({action, key, current});
     }
 
-    private changeSyncedInput(kind: string, value: number ) {
-        this._fire('changeSyncedInput', {kind, value});
+    private async changeSyncedInput(kind: string, value: number ) {
+        await this._actions.changeSyncedInput.fire({kind, value});
     }
 
-    private clickPreset(preset: string) {
-        this._fire('clickPreset', preset);
+    private async clickPreset(preset: string) {
+        await this._actions.clickPreset.fire(preset);
     }
 
-    private toggleCheckbox(kind: string, value: boolean ) {
-        this._fire('toggleCheckbox', {kind, value});
+    private async toggleCheckbox(kind: string, value: boolean ) {
+        await this._actions.toggleCheckbox.fire({kind, value});
     }
 
     private generateSimTemplate (state: SimViewData) {
@@ -160,18 +177,18 @@ export class SimTemplate
             <div class="half-numeric-container">
                 <input class="number-input feature-modificable-input half-numeric-input" type="number" 
                     placeholder="${halfPair.placeholder}" step="${halfPair.step}" min="${halfPair.min}" max="${halfPair.max}" .value="${halfPair.ref.value}"
-                    @focus="${() => this.dispatchKey('keydown', 'input_focused' )}"
-                    @blur="${() => this.dispatchKey('keyup', 'input_focused' )}"
+                    @focus="${(e: Event) => this.dispatchKey(e,'keydown', 'input_focused' )}"
+                    @blur="${(e: Event) => this.dispatchKey(e,'keyup', 'input_focused' )}"
                     @keypress="${(e: KeyboardEvent) => e.charCode === 13 /* ENTER */ && (<HTMLInputElement>e.target).blur()}"
                     @change="${(e: KeyboardEvent) => this.changeSyncedInput(halfPair.ref.eventKind, +(<HTMLInputElement>e.target).value)}"
                     >
                 <button class="button-inc-dec"
-                    @mouseup="${() => this.dispatchKey('keyup', halfPair.ref.eventKind + '-inc' )}"
-                    @mousedown="${() => this.dispatchKey('keydown', halfPair.ref.eventKind + '-inc' )}"
+                    @mouseup="${(e: Event) => this.dispatchKey(e,'keyup', halfPair.ref.eventKind + '-inc' )}"
+                    @mousedown="${(e: Event) => this.dispatchKey(e,'keydown', halfPair.ref.eventKind + '-inc' )}"
                     >+</button>
                 <button class="button-inc-dec"
-                    @mouseup="${() => this.dispatchKey('keyup', halfPair.ref.eventKind + '-dec' )}"
-                    @mousedown="${() => this.dispatchKey('keydown', halfPair.ref.eventKind + '-dec' )}"
+                    @mouseup="${(e: Event) => this.dispatchKey(e,'keyup', halfPair.ref.eventKind + '-dec' )}"
+                    @mousedown="${(e: Event) => this.dispatchKey(e,'keydown', halfPair.ref.eventKind + '-dec' )}"
                     >-</button>
             </div>
         `;
@@ -203,7 +220,7 @@ export class SimTemplate
 
     private generateTemplateFromButtonInput (buttonInput: ButtonInputEntry) {
         return html`
-            <div class="menu-entry menu-button ${buttonInput.class}" @click="${() => this.dispatchKey('keyboth', buttonInput.ref.eventKind )}">
+            <div class="menu-entry menu-button ${buttonInput.class}" @click="${(e: Event) => this.dispatchKey(e,'keyboth', buttonInput.ref.eventKind )}">
                 <div class="feature-pack">
                     <div class="feature-name">${buttonInput.text}</div>
                 </div>
@@ -224,8 +241,8 @@ export class SimTemplate
                 </div>
                 <div class="feature-value input-holder">
                     <div class="selector-inc"
-                        @mouseup="${(e: Event) => { e.preventDefault(); this.dispatchKey('keyup', selectorInput.ref.eventKind + '-inc', selectorInput.ref.value ); }}"
-                        @mousedown="${(e: Event) => { e.preventDefault(); this.dispatchKey('keydown', selectorInput.ref.eventKind + '-inc', selectorInput.ref.value ); }}"
+                        @mouseup="${(e: Event) => this.dispatchKey(e,'keyup', selectorInput.ref.eventKind + '-inc', selectorInput.ref.value )}}"
+                        @mousedown="${(e: Event) => this.dispatchKey(e,'keydown', selectorInput.ref.eventKind + '-inc', selectorInput.ref.value )}}"
                         >
                         <input class="number-input feature-readonly-input" type="text"
                             title="${ifDefined(selectorInput.ref.title)}"
@@ -235,8 +252,8 @@ export class SimTemplate
                             >+</button>
                     </div>
                     <button class="button-inc-dec"
-                        @mouseup="${() => this.dispatchKey('keyup', selectorInput.ref.eventKind + '-dec', selectorInput.ref.value )}"
-                        @mousedown="${() => this.dispatchKey('keydown', selectorInput.ref.eventKind + '-dec', selectorInput.ref.value )}"
+                        @mouseup="${(e: Event) => this.dispatchKey(e,'keyup', selectorInput.ref.eventKind + '-dec', selectorInput.ref.value )}"
+                        @mousedown="${(e: Event) => this.dispatchKey(e,'keydown', selectorInput.ref.eventKind + '-dec', selectorInput.ref.value )}"
                         >-</button>
                 </div>
             </div>
@@ -256,18 +273,18 @@ export class SimTemplate
                 <div class="feature-value input-holder">
                     <input class="number-input feature-modificable-input" type="number" 
                         placeholder="${numberInput.placeholder}" step="${numberInput.step}" min="${numberInput.min}" max="${numberInput.max}" .value="${numberInput.ref.value}"
-                        @focus="${() => this.dispatchKey('keydown', 'input_focused' )}"
-                        @blur="${() => this.dispatchKey('keyup', 'input_focused' )}"
+                        @focus="${(e: Event) => this.dispatchKey(e,'keydown', 'input_focused' )}"
+                        @blur="${(e: Event) => this.dispatchKey(e,'keyup', 'input_focused' )}"
                         @keypress="${(e: KeyboardEvent) => e.charCode === 13 /* ENTER */ && (<HTMLInputElement>e.target).blur()}"
                         @change="${(e: Event) => this.changeSyncedInput(numberInput.ref.eventKind, +(<HTMLInputElement>e.target).value)}"
                         >
                     <button class="button-inc-dec"
-                        @mouseup="${() => this.dispatchKey('keyup', numberInput.ref.eventKind + '-inc' )}"
-                        @mousedown="${() => this.dispatchKey('keydown', numberInput.ref.eventKind + '-inc' )}"
+                        @mouseup="${(e: Event) => this.dispatchKey(e,'keyup', numberInput.ref.eventKind + '-inc' )}"
+                        @mousedown="${(e: Event) => this.dispatchKey(e,'keydown', numberInput.ref.eventKind + '-inc' )}"
                         >+</button>
                     <button class="button-inc-dec"
-                        @mouseup="${() => this.dispatchKey('keyup', numberInput.ref.eventKind + '-dec' )}"
-                        @mousedown="${() => this.dispatchKey('keydown', numberInput.ref.eventKind + '-dec' )}"
+                        @mouseup="${(e: Event) => this.dispatchKey(e,'keyup', numberInput.ref.eventKind + '-dec' )}"
+                        @mousedown="${(e: Event) => this.dispatchKey(e,'keydown', numberInput.ref.eventKind + '-dec' )}"
                         >-</button>
                 </div>
             </div>
@@ -336,8 +353,8 @@ export class SimTemplate
     private generateTemplateArrowKey (key: string) {
         return html`
             <input type="button" class="activate-button feature-modificable-input" value="${key}"
-                @mousedown="${() => this.dispatchKey('keydown', key.toLowerCase() )}"
-                @mouseup="${() => this.dispatchKey('keyup', key.toLowerCase() )}"
+                @mousedown="${(e: Event) => this.dispatchKey(e,'keydown', key.toLowerCase() )}"
+                @mouseup="${(e: Event) => this.dispatchKey(e,'keyup', key.toLowerCase() )}"
             >
         `;
     }
@@ -347,8 +364,8 @@ export class SimTemplate
             <div class="input-cell">
                 <input class="feature-modificable-input" type="number" step="0.01" .value="${ref.value}"
                     @change="${(e: KeyboardEvent) => this.changeSyncedInput(ref.eventKind, +(<HTMLInputElement>e.target).value)}"
-                    @focus="${() => this.dispatchKey('keydown', 'input_focused' )}"
-                    @blur="${() => this.dispatchKey('keyup', 'input_focused' )}"
+                    @focus="${(e: Event) => this.dispatchKey(e,'keydown', 'input_focused' )}"
+                    @blur="${(e: Event) => this.dispatchKey(e,'keyup', 'input_focused' )}"
                     @keypress="${(e: KeyboardEvent) => e.charCode === 13 /* ENTER */ && (<HTMLInputElement>e.target).blur()}"
                     >
             </div>

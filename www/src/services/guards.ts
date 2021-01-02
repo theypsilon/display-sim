@@ -13,8 +13,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-export function throwOnNull<T>(value: T | null): T {
-    if (value === null) {
+export function throwOnNull<T>(value: T | null | undefined): T {
+    if (value === null || value === undefined) {
         throw new Error('Can not be null!');
     }
     return value;

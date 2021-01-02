@@ -385,7 +385,7 @@ export class SimViewModel {
         this._isDirty = true;
     }
 
-    toggleMenu (menu: SimViewData['menu']) {
+    toggleMenu (menu: MenuEntry) {
         menu.open = !menu.open;
         this._isDirty = true;
     }
@@ -419,7 +419,7 @@ export class SimViewModel {
         this._state.options.presets.selected = msg;
         this._isDirty = true;
     }
-    updateCameraMatrix (msg: Array<number>) {
+    updateCameraMatrix (msg: [number, number, number, number, number, number, number, number, number]) {
         this._state.options.camera_matrix.pos.x.value = Math.round(msg[0] * 100) / 100;
         this._state.options.camera_matrix.pos.y.value = Math.round(msg[1] * 100) / 100;
         this._state.options.camera_matrix.pos.z.value = Math.round(msg[2] * 100) / 100;
@@ -593,10 +593,8 @@ export class SimViewModel {
         this._state.options.color_noise.value = noise;
         this._isDirty = true;
     }
-    changeColorRgb (value: number, rgbRow: string, rgbColumn: string) {
-        const rgb_values = this._state.options.rgb_values as { [id: string]: { r: { eventKind: 'rgb-red-r', value: 1 }, g: { eventKind: 'rgb-red-g', value: 0 }, b: { eventKind: 'rgb-red-b', value: 0 } }};
-        const rgb_row = rgb_values[rgbRow] as { [id: string]: {eventKind: string, value: number}};
-        rgb_row[rgbColumn].value = value;
+    changeColorRgb (value: number, rgbRow: 'red' | 'green' | 'blue', rgbColumn: 'r' | 'g' | 'b') {
+        this._state.options.rgb_values[rgbRow][rgbColumn].value = value;
         this._isDirty = true;
     }
 }

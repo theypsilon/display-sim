@@ -114,13 +114,13 @@ export class SimModel {
         this._store.setItem(STORE_KEY_WEBGL_ANTIALIAS, this._state.storedValues.antialias ? 'true' : 'false');
     }
 
-    async changePerformance (performance: string, direction: string) {
+    async changePerformance (performance: string, direction: string): Promise<string> {
         const options = [POWER_PREFERENCE_DEFAULT, 'high-performance', 'low-power'];
         let index = options.indexOf(performance);
         switch (direction) {
-        case 'inc': index = index + 1; break;
-        case 'dec': index = index - 1; break;
-        default: throw new Error('Unreachable!');
+            case 'inc': index = index + 1; break;
+            case 'dec': index = index - 1; break;
+            default: throw new Error('Unreachable!');
         }
         const newPerformance = options[index % options.length];
         this._state.storedValues.performance = newPerformance;

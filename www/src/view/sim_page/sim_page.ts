@@ -17,22 +17,22 @@ import { Constants } from '../../services/constants';
 import { Logger } from '../../services/logger';
 import {PubSub, PubSubImpl} from '../../services/pubsub';
 
-import {SimTemplate} from './sim_template';
+import {actions, DispatchKeyMessage, SimTemplate, SimTemplateEvents} from './sim_template';
 import {data, SimViewModel, SimViewData} from './sim_view_model';
 import { SimModel } from './sim_model';
 import {throwOnNull} from "../../services/guards";
-import {ObserverCb} from "../../services/observable";
+import {Observable, ObserverCb} from "../../services/observable";
 import {BackendEvent} from "../../services/event_types";
-
-const state = data();
+import {Action} from "../../services/action";
+import {Disposable} from "../../services/disposable";
 
 interface Observers {
-    front: PubSub<any>;
-    back: PubSub<any>;
+    front: PubSub<BackendMessage>;
+    back: PubSub<BackendMessage>;
 }
 
 class SimPage extends HTMLElement {
-    private _future: Promise<any>;
+    private _future: Promise<Disposable>;
 
     constructor () {
         super();
@@ -40,7 +40,10 @@ class SimPage extends HTMLElement {
         this._future = setupPage(this.attachShadow({ mode: 'open' }), state, {
             front: PubSubImpl.make(),
             back: PubSubImpl.make()
-        }).catch(e => console.error(e));
+        }).catch(e => {
+            console.error(e);
+            return Disposable.make(() => {})
+        });
 
         document.body.style.setProperty('overflow', 'hidden');
         document.body.style.setProperty('background-color', 'black');
@@ -50,59 +53,54 @@ class SimPage extends HTMLElement {
         document.body.style.removeProperty('overflow');
         document.body.style.removeProperty('background-color');
 
-        this._future.then(mess => mess.clean());
+        this._future.then(mess => mess.dispose());
     }
 }
 
 window.customElements.define('sim-page', SimPage);
 
-async function setupPage (root: ShadowRoot, state: SimViewData, observers: Observers) {
-    const [view, canvas] = setupView(state, root, observers.front);
+const state = data();
+const events = actions();
+
+async function setupPage (root: ShadowRoot, state: SimViewData, observers: Observers): Promise<Disposable> {
+    const [view, canvas] = setupView(state, root, events);
     const model = await setupModel(canvas, view, {
-        subscribe: (cb: ObserverCb<any>) => observers.back.subscribe(cb),
-        fire: async (msg: any) => await observers.front.fire(msg).catch(e => console.error(e))
+        subscribe: (cb: ObserverCb<BackendMessage>) => observers.back.subscribe(cb),
+        fire: async (msg: BackendMessage) => await observers.front.fire(msg).catch(e => console.error(e))
     });
-    return setupEventHandling(throwOnNull(canvas.parentNode), view, model, {
-        subscribe: cb => observers.front.subscribe(cb),
-        fire: msg => observers.back.fire(msg)
-    });
+    return setupEventHandling(throwOnNull(canvas.parentNode), view, model, events, observers.front as Observable<BackendMessage>, observers.back as Action<BackendMessage>);
 }
 
-function setupView (state: SimViewData, root: ShadowRoot, frontendObserver: PubSub<any>): [SimViewModel, HTMLCanvasElement] {
-    const template = SimTemplate.make(root, fireEventOn(frontendObserver));
+function setupView (state: SimViewData, root: ShadowRoot, events: SimTemplateEvents): [SimViewModel, HTMLCanvasElement] {
+    const template = SimTemplate.make(root, events);
     const view_model = SimViewModel.make(state, template);
 
     return [view_model, template.getCanvas(state)];
 }
 
-async function setupModel (canvas: HTMLCanvasElement, view_model: SimViewModel, backendBus: PubSub<any>) {
+async function setupModel (canvas: HTMLCanvasElement, view_model: SimViewModel, backendBus: PubSub<BackendMessage>) {
     const model = SimModel.make(canvas, backendBus);
     view_model.init(await model.load());
     return model;
 }
 
-function fireEventOn (observer: PubSub<any>) {
-    return (topic: string, message: any) => {
-        const event = {
-            message,
-            type: 'front2front:' + topic
-        };
-        observer.fire(event).catch(e => console.error(e));
-    };
+interface BackendMessage {
+    type: string;
+    message: any;
 }
 
-function setupEventHandling (canvasParent: Node & ParentNode, view_model: SimViewModel, model: SimModel, frontendBus: PubSub<any>) {
-    function fireBackendEvent (kind: string, msg?: any) {
+function setupEventHandling (canvasParent: Node & ParentNode, view_model: SimViewModel, model: SimModel, events: SimTemplateEvents, backendObservable: Observable<BackendMessage>, backendEmitter: Action<BackendMessage>): Disposable {
+    async function fireBackendEvent (kind: string, msg?: any) {
         const event = {
             message: msg,
             type: 'front2back:' + kind
         };
-        frontendBus.fire(event);
+        await backendEmitter.fire(event);
         console.log('front2back', kind, msg);
     }
 
-    function fireKeyboardEvent ({ pressed, key, timeout }: {pressed: boolean, key: string, timeout?: number}) {
-        fireBackendEvent('keyboard', { pressed, key });
+    async function fireKeyboardEvent ({ pressed, key, timeout }: {pressed: boolean, key: string, timeout?: number}) {
+        await fireBackendEvent('keyboard', { pressed, key });
         if (pressed && timeout) {
             setTimeout(() => {
                 Logger.log('Expired keydown for: ' + key);
@@ -111,41 +109,42 @@ function setupEventHandling (canvasParent: Node & ParentNode, view_model: SimVie
         }
     }
 
-    // Listening backend events
-    frontendBus.subscribe(async e => {
-        const msg = e.message;
-        if (e.type.startsWith('back2front')) {
-            console.log('back2front', e.type, msg);
+    events.toggleControls.subscribe(() => view_model.toggleControls());
+    events.toggleMenu.subscribe(m => view_model.toggleMenu(m));
+    events.changeSyncedInput.subscribe(msg => fireBackendEvent(msg.kind, msg.value));
+    events.clickPreset.subscribe(async preset => {
+        view_model.clickPreset(preset);
+        model.setPreset(preset);
+        await fireBackendEvent(Constants.FILTER_PRESETS_SELECTED_EVENT_KIND, preset);
+    });
+    events.toggleCheckbox.subscribe(async (msg) => {
+        if (msg.kind === 'webgl:antialias') {
+            view_model.showLoading();
+            await model.changeAntialiasing(msg.value);
+            view_model.changeAntialias(msg.value);
+        } else {
+            return fireBackendEvent(msg.kind, msg.value);
         }
-        switch (e.type) {
-        case 'front2front:dispatchKey': {
-            if (msg.key.startsWith('webgl:')) {    
-                return handleWebGLKeys(msg, model, view_model);
-            }
-            let pressed;
-            let timeout;
-            switch (msg.action) {
-            case 'keyboth': timeout = 250; // fall through 
+    });
+    events.dispatchKey.subscribe(msg => {
+        if (msg.key.startsWith('webgl:')) {
+            return handleWebGLKeys(msg, model, view_model);
+        }
+        let pressed;
+        let timeout;
+        switch (msg.action) {
+            case 'keyboth': timeout = 250; // fall through
             case 'keydown': pressed = true; break;
             case 'keyup': pressed = false; break;
-            default: throw new Error('Incorrect action for dispatchKey ' + msg.action);
-            }
-            fireKeyboardEvent({ pressed, key: msg.key, timeout });
-            break;
         }
-        case 'front2front:toggleCheckbox': {
-            if (msg.kind === 'webgl:antialias') {
-                view_model.showLoading();
-                await model.changeAntialiasing(msg.value);
-                view_model.changeAntialias(msg.value);
-            } else {
-                return fireBackendEvent(msg.kind, msg.value);
-            }
-            break;
-        }
-        case 'front2front:changeSyncedInput': return fireBackendEvent(msg.kind, msg.value);
-        case 'front2front:toggleControls': return view_model.toggleControls();
-        case 'front2front:toggleMenu': return view_model.toggleMenu(msg);
+        return fireKeyboardEvent({ pressed, key: msg.key, timeout });
+    });
+
+    // Listening backend events
+    backendObservable.subscribe(async e => {
+        const msg = e.message;
+        console.log('back2front', e.type, msg);
+        switch (e.type) {
         case 'back2front:top_message': return view_model.openTopMessage(msg);
         case 'back2front:request_fullscreen': return view_model.setFullscreen();
         case 'back2front:request_pointer_lock': return view_model.requestPointerLock();
@@ -197,13 +196,7 @@ function setupEventHandling (canvasParent: Node & ParentNode, view_model: SimVie
         case 'back2front:rgb_blue_r': return view_model.changeColorRgb(msg, 'blue', 'r');
         case 'back2front:rgb_blue_g': return view_model.changeColorRgb(msg, 'blue', 'g');
         case 'back2front:rgb_blue_b': return view_model.changeColorRgb(msg, 'blue', 'b');
-        case 'front2front:clickPreset': {
-            view_model.clickPreset(msg);
-            model.setPreset(msg);
-            fireBackendEvent(Constants.FILTER_PRESETS_SELECTED_EVENT_KIND, msg);
-            break;
-        }
-        default: throw new Error('Not covered following event: ' + e.toString());
+        default: throw new Error('Not covered following event: ' + e.type + ' ' + e.toString());
         }
     });
 
@@ -216,7 +209,7 @@ function setupEventHandling (canvasParent: Node & ParentNode, view_model: SimVie
     })();
 
     const listeners: {eventBus: Node | Window, type: string, callback: EventListenerOrEventListenerObject, options: EventListenerOptions | boolean}[] = [];
-    function addDomListener (eventBus: Node | Window, type: string, cb: BackendEvent, options?: any) {
+    function addDomListener (eventBus: Node | Window, type: string, cb: BackendEvent, options?: (EventListenerOptions | boolean)) {
         options = options || false;
         const callback = cb as EventListenerOrEventListenerObject;
         eventBus.addEventListener(type, callback, options);
@@ -226,9 +219,9 @@ function setupEventHandling (canvasParent: Node & ParentNode, view_model: SimVie
     // Forwarding other events so they can be readed by the backend
     addDomListener(window, 'keydown', e => fireKeyboardEvent({ pressed: true, key: e.key }));
     addDomListener(window, 'keyup', e => fireKeyboardEvent({ pressed: false, key: e.key }));
-    addDomListener(canvasParent, 'mousedown', e => {
+    addDomListener(canvasParent, 'mousedown', async e => {
         if (e.buttons === 1) {
-            fireBackendEvent('mouse-click', true);
+            await fireBackendEvent('mouse-click', true);
             model.runFrame(); // Needed so Firefox can go fullscreen during the scope of this event handler, otherwise the request is rejected.
         }
     });
@@ -240,16 +233,14 @@ function setupEventHandling (canvasParent: Node & ParentNode, view_model: SimVie
     addDomListener(canvasParent, 'mouseout', () => fireKeyboardEvent({ pressed: false, key: 'canvas_focused' }));
     addDomListener(window, 'resize', () => fireBackendEvent('viewport-resize', model.resizeCanvas()));
 
-    return {
-        clean: () => {
-            window.cancelAnimationFrame(newFrameId);
-            model.unloadSimulation();
-            listeners.forEach(({ eventBus, type, callback, options }) => eventBus.removeEventListener(type, callback, options));
-        }
-    };
+    return Disposable.make(() => {
+        window.cancelAnimationFrame(newFrameId);
+        model.unloadSimulation();
+        listeners.forEach(({ eventBus, type, callback, options }) => eventBus.removeEventListener(type, callback, options));
+    });
 }
 
-async function handleWebGLKeys (msg: {key: string, action: string, current: string}, model: SimModel, view_model: SimViewModel) {
+async function handleWebGLKeys (msg: DispatchKeyMessage, model: SimModel, view_model: SimViewModel) {
     let direction;
     if (msg.key.endsWith('-dec')) {
         direction = 'dec';
@@ -263,7 +254,7 @@ async function handleWebGLKeys (msg: {key: string, action: string, current: stri
     case 'webgl:performance-dec': {
         if (msg.action === 'keydown') {
             view_model.showLoading();
-            const performance = await model.changePerformance(msg.current, direction);
+            const performance = await model.changePerformance(throwOnNull(msg.current), direction);
             view_model.changePerformance(performance);
         }
         break;

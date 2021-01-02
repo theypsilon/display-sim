@@ -52,7 +52,7 @@ async function show (state: LandingViewData, events: LandingTemplateEvents, view
         })
     );
 
-    events.selectImage.subscribe(view_model.selectImage);
+    events.selectImage.subscribe(n => view_model.selectImage(n));
 
     events.clickPlaySimulation.subscribe(async () => {
         view_model.turnVisibilityOff();
