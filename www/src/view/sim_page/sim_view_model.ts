@@ -18,10 +18,100 @@ import { Logger } from '../../services/logger';
 import { Navigator } from '../../services/navigator';
 import { Visibility } from '../../services/visibility';
 
+declare global {
+    interface Document {
+        mozRequestPointerLock: () => void;
+        mozExitPointerLock: () => void;
+    }
+
+    interface HTMLElement {
+        webkitRequestFullScreen: () => void;
+        mozRequestFullScreen: () => void;
+        msRequestFullscreen: () => void;
+        mozRequestPointerLock: () => void;
+    }
+}
+
+export type SimViewEntry =
+    MenuEntry |
+    PresetButtonsEntry |
+    ScalingInputEntry |
+    CheckboxInputEntry |
+    ButtonInputEntry |
+    SelectorsInput |
+    NumericPairEntry |
+    NumberInputEntry |
+    ColorInputEntry |
+    CameraInputEntry |
+    RgbInputEntry;
+
+interface CssEntry { class: string; text: string; }
+interface RefEntry<T> { ref: Ref<T>; }
+interface PlaceholderEntry { placeholder: number; step: number; min: number; max: number; }
+
+export interface MenuEntry { type: 'menu'; open: boolean; text: string; entries: SimViewEntry[]; }
+export interface PresetButtonsEntry { type: 'preset-buttons'; class: string; ref: PresetRef; }
+export interface ScalingInputEntry extends RefEntry<string> { type: 'scaling-input'; entries: SimViewEntry[]; }
+export interface CheckboxInputEntry extends CssEntry, RefEntry<number> { type: 'checkbox-input'; }
+export interface ButtonInputEntry extends CssEntry, RefEntry<string> { type: 'button-input'; }
+export interface SelectorsInput extends CssEntry, RefEntry<string> { type: 'selectors-input'; hk?: HotKey, }
+export interface NumericPairEntry extends CssEntry { type: 'numeric-pair'; separator: string; pair: [HalfPair, HalfPair]; }
+export interface NumberInputEntry extends CssEntry, RefEntry<number>, PlaceholderEntry { type: 'number-input'; hk: HotKey }
+export interface ColorInputEntry extends CssEntry, RefEntry<string> { type: 'color-input'; }
+
+export interface HotKey {
+    inc: string;
+    dec: string;
+}
+
+export interface HalfPair extends PlaceholderEntry, RefEntry<number> {}
+
+export interface Ref<T> {
+    value: T;
+    eventKind: string;
+    title?: string;
+}
+
+export interface PresetChoice {
+    text: string;
+    preset: string;
+}
+
+export interface PresetRef {
+    selected: string;
+    choices: PresetChoice[];
+}
+
+export interface CameraInputEntry { type: 'camera-input'; class: string; ref: CameraRef }
+export interface CameraRef {
+    lockMode: boolean;
+    pos: Camera3DVector;
+    dir: Camera3DVector;
+    axis_up: Camera3DVector;
+}
+export interface Camera3DVector {
+    x: Ref<number>;
+    y: Ref<number>;
+    z: Ref<number>;
+}
+
+export interface RgbInputEntry { type: 'rgb-input'; class: string; ref: RgbRef }
+export interface RgbRef {
+    red: RgbComponent;
+    green: RgbComponent;
+    blue: RgbComponent;
+}
+
+export interface RgbComponent {
+    r: Ref<number>;
+    g: Ref<number>;
+    b: Ref<number>;
+}
+
 export function data () {
     const options = {
         presets: {
-            selected: null,
+            selected: null as string | null,
             eventKind: Constants.FILTER_PRESETS_SELECTED_EVENT_KIND,
             choices: [
                 { preset: Constants.PRESET_KIND_APERTURE_GRILLE_1, text: 'CRT Aperture Grille 1' },
@@ -32,26 +122,26 @@ export function data () {
                 { preset: Constants.PRESET_KIND_CUSTOM, text: 'Custom' }
             ]
         },
-        internal_resolution: { value: null, eventKind: 'internal-resolution' },
-        screen_curvature: { value: null, eventKind: 'screen-curvature' },
-        blur_level: { value: null, eventKind: 'blur-level' },
-        horizontal_gap: { value: null, eventKind: 'pixel-horizontal-gap' },
-        vertical_gap: { value: null, eventKind: 'pixel-vertical-gap' },
-        pixel_width: { value: null, eventKind: 'pixel-width' },
-        vertical_lpp: { value: null, eventKind: 'vertical-lpp' },
-        horizontal_lpp: { value: null, eventKind: 'horizontal-lpp' },
+        internal_resolution: { value: null as number | null, eventKind: 'internal-resolution' },
+        screen_curvature: { value: null as number | null, eventKind: 'screen-curvature' },
+        blur_level: { value: null as number | null, eventKind: 'blur-level' },
+        horizontal_gap: { value: null as number | null, eventKind: 'pixel-horizontal-gap' },
+        vertical_gap: { value: null as number | null, eventKind: 'pixel-vertical-gap' },
+        pixel_width: { value: null as number | null, eventKind: 'pixel-width' },
+        vertical_lpp: { value: null as number | null, eventKind: 'vertical-lpp' },
+        horizontal_lpp: { value: null as number | null, eventKind: 'horizontal-lpp' },
         color_gamma: { value: 1.0, eventKind: 'color-gamma' },
         color_noise: { value: 0.0, eventKind: 'color-noise' },
         light_color: { value: '#FFFFFF', eventKind: 'light-color' },
-        pixel_brightness: { value: null, eventKind: 'pixel-brightness' },
-        pixel_contrast: { value: null, eventKind: 'pixel-contrast' },
-        color_representation: { value: null, eventKind: 'color-representation' },
-        pixel_geometry: { value: null, eventKind: 'pixel-geometry' },
-        pixel_shadow_shape: { value: null, eventKind: 'pixel-shadow-shape' },
-        pixel_shadow_height: { value: null, eventKind: 'pixel-shadow-height' },
-        texture_interpolation: { value: null, eventKind: 'texture-interpolation' },
-        backlight_percent: { value: null, eventKind: 'backlight-percent' },
-        pixel_spread: { value: null, eventKind: 'pixel-spread' },
+        pixel_brightness: { value: null as number | null, eventKind: 'pixel-brightness' },
+        pixel_contrast: { value: null as number | null, eventKind: 'pixel-contrast' },
+        color_representation: { value: null as number | null, eventKind: 'color-representation' },
+        pixel_geometry: { value: null as number | null, eventKind: 'pixel-geometry' },
+        pixel_shadow_shape: { value: null as number | null, eventKind: 'pixel-shadow-shape' },
+        pixel_shadow_height: { value: null as number | null, eventKind: 'pixel-shadow-height' },
+        texture_interpolation: { value: null as number | null, eventKind: 'texture-interpolation' },
+        backlight_percent: { value: null as number | null, eventKind: 'backlight-percent' },
+        pixel_spread: { value: null as number | null, eventKind: 'pixel-spread' },
         brightness_color: { value: '#FFFFFF', eventKind: 'brightness-color' },
         camera_movement_mode: { value: '', title: '', eventKind: 'camera-movement-mode' },
         camera_matrix: {
@@ -65,22 +155,22 @@ export function data () {
             green: { r: { eventKind: 'rgb-green-r', value: 0 }, g: { eventKind: 'rgb-green-g', value: 1 }, b: { eventKind: 'rgb-green-b', value: 0 } },
             blue: { r: { eventKind: 'rgb-blue-r', value: 0 }, g: { eventKind: 'rgb-blue-g', value: 0 }, b: { eventKind: 'rgb-blue-b', value: 1 } }
         },
-        camera_zoom: { value: null, eventKind: 'camera_zoom' },
-        move_speed: { value: null, eventKind: 'move-speed' },
-        pixel_speed: { value: null, eventKind: 'pixel-speed' },
-        turn_speed: { value: null, eventKind: 'turn-speed' },
+        camera_zoom: { value: null as number | null, eventKind: 'camera_zoom' },
+        move_speed: { value: null as number | null, eventKind: 'move-speed' },
+        pixel_speed: { value: null as number | null, eventKind: 'pixel-speed' },
+        turn_speed: { value: null as number | null, eventKind: 'turn-speed' },
         reset_filters: { eventKind: 'reset-filters' },
         reset_camera: { eventKind: 'reset-camera' },
         reset_speeds: { eventKind: 'reset-speeds' },
         capture_framebuffer: { eventKind: 'capture-framebuffer' },
-        webgl_performance: { value: null, eventKind: 'webgl:performance' },
-        webgl_antialias: { value: null, eventKind: 'webgl:antialias' },
-        scaling_method: { value: null, eventKind: 'scaling-method' },
-        custom_resolution_width: { value: null, eventKind: 'custom-scaling-resolution-width' },
-        custom_resolution_height: { value: null, eventKind: 'custom-scaling-resolution-height' },
-        custom_aspect_ratio_x: { value: null, eventKind: 'custom-scaling-aspect-ratio-x' },
-        custom_aspect_ratio_y: { value: null, eventKind: 'custom-scaling-aspect-ratio-y' },
-        custom_scaling_stretch_nearest: { value: null, eventKind: 'custom-scaling-stretch-nearest' },
+        webgl_performance: { value: null as string | null, eventKind: 'webgl:performance' },
+        webgl_antialias: { value: null as boolean | null, eventKind: 'webgl:antialias' },
+        scaling_method: { value: null as string | null, eventKind: 'scaling-method' },
+        custom_resolution_width: { value: null as number | null, eventKind: 'custom-scaling-resolution-width' },
+        custom_resolution_height: { value: null as number | null, eventKind: 'custom-scaling-resolution-height' },
+        custom_aspect_ratio_x: { value: null as number | null, eventKind: 'custom-scaling-aspect-ratio-x' },
+        custom_aspect_ratio_y: { value: null as number | null, eventKind: 'custom-scaling-aspect-ratio-y' },
+        custom_scaling_stretch_nearest: { value: null as number | null, eventKind: 'custom-scaling-stretch-nearest' },
         quit_simulation: { eventKind: 'quit-simulation' }
     };
     
@@ -98,15 +188,15 @@ export function data () {
                     text: 'Presets',
                     open: true,
                     entries: [
-                        { type: 'preset-buttons', class: 'menu-2 menu-blc-grey', ref: options.presets }
+                        { type: 'preset-buttons', class: 'menu-2 menu-blc-grey', ref: options.presets } as PresetButtonsEntry
                     ]
-                },
+                } as MenuEntry,
                 {
                     type: 'menu',
                     text: 'Image Scaling',
                     open: false,
                     entries: [
-                        { type: 'selectors-input', class: 'menu-2 menu-blc-blue', text: 'Scaling Method', ref: options.scaling_method },
+                        { type: 'selectors-input', class: 'menu-2 menu-blc-blue', text: 'Scaling Method', ref: options.scaling_method } as SelectorsInput,
                         { type: 'scaling-input',
                             ref: options.scaling_method,
                             entries: [
@@ -115,9 +205,9 @@ export function data () {
                                     separator: '✕',
                                     class: 'menu-blc-lila',
                                     pair: [
-                                        { min: 1, max: 10000, step: 1, placeholder: 256, ref: options.custom_resolution_width },
-                                        { min: 1, max: 10000, step: 1, placeholder: 240, ref: options.custom_resolution_height }
-                                    ] },
+                                        { min: 1, max: 10000, step: 1, placeholder: 256, ref: options.custom_resolution_width } as HalfPair,
+                                        { min: 1, max: 10000, step: 1, placeholder: 240, ref: options.custom_resolution_height } as HalfPair
+                                    ] } as NumericPairEntry,
                                 { type: 'numeric-pair',
                                     text: 'Aspect Ratio',
                                     separator: ':',
@@ -125,21 +215,21 @@ export function data () {
                                     pair: [
                                         { min: 1, max: 1920 * 4, step: 1, placeholder: 4, ref: options.custom_aspect_ratio_x },
                                         { min: 1, max: 1080 * 4, step: 1, placeholder: 3, ref: options.custom_aspect_ratio_y }
-                                    ] },
-                                { type: 'checkbox-input', class: 'menu-2 menu-blc-lila', text: 'Stretch to nearest border', ref: options.custom_scaling_stretch_nearest },
-                                { type: 'number-input', class: 'menu-2 menu-blc-yellow', text: 'Pixel width', hk: { inc: 'O', dec: 'Shift + O' }, step: 0.001, min: 0, max: 10, value: 0, placeholder: 0, ref: options.pixel_width }
-                            ] }
+                                    ] } as NumericPairEntry,
+                                { type: 'checkbox-input', class: 'menu-2 menu-blc-lila', text: 'Stretch to nearest border', ref: options.custom_scaling_stretch_nearest } as CheckboxInputEntry,
+                                { type: 'number-input', class: 'menu-2 menu-blc-yellow', text: 'Pixel width', hk: { inc: 'O', dec: 'Shift + O' }, step: 0.001, min: 0, max: 10, value: 0, placeholder: 0, ref: options.pixel_width } as NumberInputEntry
+                            ] } as ScalingInputEntry
                     ]
-                },
+                } as MenuEntry,
                 {
                     type: 'menu',
                     text: 'Performance',
                     open: true,
                     entries: [
                         { type: 'selectors-input', class: 'menu-2 menu-blc-white', text: 'Internal Resolution', hk: { inc: 'Y', dec: 'Shift + Y' }, ref: options.internal_resolution },
-                        { type: 'number-input', class: 'menu-2 menu-blc-blue', text: 'Blur passes', hk: { inc: 'J', dec: 'Shift + J' }, step: 1, min: 0, max: 100, value: 0, placeholder: 0, ref: options.blur_level }
+                        { type: 'number-input', class: 'menu-2 menu-blc-blue', text: 'Blur passes', hk: { inc: 'J', dec: 'Shift + J' }, step: 1, min: 0, max: 100, value: 0, placeholder: 0, ref: options.blur_level } as NumberInputEntry
                     ]
-                },
+                } as MenuEntry,
                 {
                     type: 'menu',
                     text: 'Colors',
@@ -153,7 +243,7 @@ export function data () {
                         { type: 'number-input', class: 'menu-2 menu-blc-white', text: 'Contrast', hk: { inc: 'Z', dec: 'Shift + Z' }, step: 0.001, min: 0, max: 20, value: 1, placeholder: 0, ref: options.pixel_contrast },
                         { type: 'color-input', class: 'display-none', text: 'Brightness color', value: '#ffffff', ref: options.brightness_color }
                     ]
-                },
+                } as MenuEntry,
                 {
                     type: 'menu',
                     text: 'Geometry & Textures',
@@ -173,7 +263,7 @@ export function data () {
                         { type: 'number-input', class: 'display-none', text: 'Pixel spread', hk: { inc: 'P', dec: 'Shift + P' }, step: 0.001, min: 0, max: 10, value: 0, placeholder: 0, ref: options.pixel_spread },
                         { type: 'button-input', class: 'menu-2 menu-blc-grey', text: 'Reset Filter Values', ref: options.reset_filters }
                     ]
-                },
+                } as MenuEntry,
                 {
                     type: 'menu',
                     text: 'Camera',
@@ -184,7 +274,7 @@ export function data () {
                         { type: 'number-input', class: 'menu-2 menu-blc-blue', text: 'Zoom', hk: { inc: 'Mouse Wheel Up', dec: 'Mouse Wheel Down' }, step: 1, min: 1, max: 45, value: 0, placeholder: 0, ref: options.camera_zoom },
                         { type: 'button-input', class: 'menu-2 menu-blc-grey', text: 'Reset Position', ref: options.reset_camera }
                     ]
-                },
+                } as MenuEntry,
                 {
                     type: 'menu',
                     text: 'Command Modifiers',
@@ -195,7 +285,7 @@ export function data () {
                         { type: 'selectors-input', class: 'display-none', text: 'Turn speed', hk: { inc: 'Alt + F', dec: 'Alt + R' }, ref: options.turn_speed },
                         { type: 'button-input', class: 'menu-2 menu-blc-grey', text: 'Reset Modifiers', ref: options.reset_speeds }
                     ]
-                },
+                } as MenuEntry,
                 {
                     type: 'menu',
                     text: 'WebGL Settings',
@@ -204,7 +294,7 @@ export function data () {
                         { type: 'selectors-input', class: 'menu-2 menu-blc-red', text: 'Performance', ref: options.webgl_performance },
                         { type: 'checkbox-input', class: 'menu-2 menu-blc-red', text: 'Antialias', ref: options.webgl_antialias }
                     ]
-                },
+                } as MenuEntry,
                 {
                     type: 'menu',
                     text: 'Extra',
@@ -212,15 +302,30 @@ export function data () {
                     entries: [
                         { type: 'button-input', class: 'menu-2 menu-blc-yellow', text: 'Take Screenshot', ref: options.capture_framebuffer }
                     ]
-                },
-                { type: 'button-input', class: 'menu-1 menu-blc-grey favicon', text: 'Go to Landing Page', ref: options.quit_simulation }
+                } as MenuEntry,
+                { type: 'button-input', class: 'menu-1 menu-blc-grey favicon', text: 'Go to Landing Page', ref: options.quit_simulation } as ButtonInputEntry
             ]
         }
     };        
 }
 
+export type ViewData = ReturnType<typeof data>;
+
+export interface InitDto {
+    glError: boolean;
+    skipControllerUi: boolean;
+    fullscreen: boolean;
+    storedValues: {selectedPreset: string, powerPreference: string, antialias: boolean};
+}
+
 export class View {
-    constructor (state, refresh, navigator, visibility) {
+    private readonly _state: ViewData;
+    private readonly _refresh: (() => void);
+    private readonly _navigator: Navigator;
+    private readonly _visibility: Visibility;
+    private _isDirty: boolean;
+
+    constructor (state: ViewData, refresh: (() => void), navigator: Navigator, visibility: Visibility) {
         this._state = state;
         this._refresh = refresh;
         this._navigator = navigator;
@@ -228,11 +333,11 @@ export class View {
         this._isDirty = true;
     }
 
-    static make (state, refresh, navigator, visibility) {
+    static make (state: ViewData, refresh: (() => void), navigator?: Navigator, visibility?: Visibility) {
         return new View(state, refresh, navigator || Navigator.make(), visibility || Visibility.make());
     }
 
-    init (dto) {
+    init (dto: InitDto) {
         if (dto.glError) {
             return this.showFatalError('WebGL2 is not working on your browser, try restarting it! And remember, this works only on a PC with updated browser and graphics drivers.');
         }
@@ -256,7 +361,7 @@ export class View {
         this._visibility.showLoading();
     }
 
-    showFatalError (msg) {
+    showFatalError (msg: string) {
         this._visibility.showLoading();
         this._navigator.openTopMessage(msg);
         this._navigator.goToLandingPage();
@@ -279,16 +384,16 @@ export class View {
         this._isDirty = true;
     }
 
-    toggleMenu (menu) {
+    toggleMenu (menu: ViewData['menu']) {
         menu.open = !menu.open;
         this._isDirty = true;
     }
-    clickPreset (preset) {
+    clickPreset (preset: string) {
         this._state.options.presets.selected = preset;
         this._isDirty = true;
     }
 
-    openTopMessage (msg) {
+    openTopMessage (msg: string) {
         this._navigator.openTopMessage(msg);
     }
     setFullscreen () {
@@ -306,14 +411,14 @@ export class View {
         document.exitPointerLock();
     }
 
-    presetSelectedName (msg) {
+    presetSelectedName (msg: string) {
         if (msg === Constants.PRESET_KIND_CUSTOM) {
             this._navigator.openTopMessage('Now you are in the Custom mode, you may change any filter value you want.');
         }
         this._state.options.presets.selected = msg;
         this._isDirty = true;
     }
-    updateCameraMatrix (msg) {
+    updateCameraMatrix (msg: Array<number>) {
         this._state.options.camera_matrix.pos.x.value = Math.round(msg[0] * 100) / 100;
         this._state.options.camera_matrix.pos.y.value = Math.round(msg[1] * 100) / 100;
         this._state.options.camera_matrix.pos.z.value = Math.round(msg[2] * 100) / 100;
@@ -329,7 +434,7 @@ export class View {
         this._state.menu.open = !this._state.menu.open;
         this._isDirty = true;
     }
-    changeFps (msg) {
+    changeFps (msg: number) {
         this._state.fps = Math.round(msg);
         this._isDirty = true;
     }
@@ -338,7 +443,7 @@ export class View {
         window.location.hash = '';
         this._navigator.goToLandingPage();
     }
-    changeCameraMovementMode (msg) {
+    changeCameraMovementMode (msg: string) {
         switch (msg) {
         case '2D':
             this._state.options.camera_movement_mode.title = 'The camera can move up down left right, facing the picture';
@@ -353,142 +458,144 @@ export class View {
         this._state.options.camera_movement_mode.value = msg;
         this._isDirty = true;
     }
-    changeCameraZoom (msg) {
+    changeCameraZoom (msg: number) {
         this._state.options.camera_zoom.value = msg;
         this._isDirty = true;
     }
-    changePixelWidth (msg) {
+    changePixelWidth (msg: number) {
         this._state.options.pixel_width.value = msg;
         this._isDirty = true;
     }
-    changePixelHorizontalGap (msg) {
+    changePixelHorizontalGap (msg: number) {
         this._state.options.horizontal_gap.value = msg;
         this._isDirty = true;
     }
-    changePixelVerticalGap (msg) {
+    changePixelVerticalGap (msg: number) {
         this._state.options.vertical_gap.value = msg;
         this._isDirty = true;
     }
-    changePixelSpread (msg) {
+    changePixelSpread (msg: number) {
         this._state.options.pixel_spread.value = msg;
         this._isDirty = true;
     }
-    changePixelBrightness (msg) {
+    changePixelBrightness (msg: number) {
         this._state.options.pixel_brightness.value = msg;
         this._isDirty = true;
     }
-    changePixelContrast (msg) {
+    changePixelContrast (msg: number) {
         this._state.options.pixel_contrast.value = msg;
         this._isDirty = true;
     }
-    changeBlurLevel (msg) {
+    changeBlurLevel (msg: number) {
         this._state.options.blur_level.value = msg;
         this._isDirty = true;
     }
-    changeVerticalLpp (msg) {
+    changeVerticalLpp (msg: number) {
         this._state.options.vertical_lpp.value = msg;
         this._isDirty = true;
     }
-    changeHorizontalLpp (msg) {
+    changeHorizontalLpp (msg: number) {
         this._state.options.horizontal_lpp.value = msg;
         this._isDirty = true;
     }
-    changeLightColor (msg) {
+    changeLightColor (msg: string) {
         this._state.options.light_color.value = msg;
         this._isDirty = true;
     }
-    changeBrightnessColor (msg) {
+    changeBrightnessColor (msg: string) {
         this._state.options.brightness_color.value = msg;
         this._isDirty = true;
     }
-    changeMovementSpeed (msg) {
+    changeMovementSpeed (msg: number) {
         this._state.options.move_speed.value = msg;
         this._isDirty = true;
     }
-    changePixelSpeed (msg) {
+    changePixelSpeed (msg: number) {
         this._state.options.pixel_speed.value = msg;
         this._isDirty = true;
     }
-    changeTurningSpeed (msg) {
+    changeTurningSpeed (msg: number) {
         this._state.options.turn_speed.value = msg;
         this._isDirty = true;
     }
-    changeColorRepresentation (msg) {
+    changeColorRepresentation (msg: number) {
         this._state.options.color_representation.value = msg;
         this._isDirty = true;
     }
-    changePixelGeometry (msg) {
+    changePixelGeometry (msg: number) {
         this._state.options.pixel_geometry.value = msg;
         this._isDirty = true;
     }
-    changePixelShadowShape (msg) {
+    changePixelShadowShape (msg: number) {
         this._state.options.pixel_shadow_shape.value = msg;
         this._isDirty = true;
     }
-    changePixelShadowHeight (msg) {
+    changePixelShadowHeight (msg: number) {
         this._state.options.pixel_shadow_height.value = msg;
         this._isDirty = true;
     }
-    changeBacklightPercent (msg) {
+    changeBacklightPercent (msg: number) {
         this._state.options.backlight_percent.value = msg;
         this._isDirty = true;
     }
-    changeInternalResolution (msg) {
+    changeInternalResolution (msg: number) {
         this._state.options.internal_resolution.value = msg;
         this._isDirty = true;
     }
-    changeTextureInterpolation (msg) {
+    changeTextureInterpolation (msg: number) {
         this._state.options.texture_interpolation.value = msg;
         this._isDirty = true;
     }
-    changeScreenCurvature (msg) {
+    changeScreenCurvature (msg: number) {
         this._state.options.screen_curvature.value = msg;
         this._isDirty = true;
     }
-    changeScalingMethod (msg) {
+    changeScalingMethod (msg: string) {
         this._state.options.scaling_method.value = msg;
         this._isDirty = true;
     }
-    changeCustomScalingResWidth (width) {
+    changeCustomScalingResWidth (width: number) {
         this._state.options.custom_resolution_width.value = width;
         this._isDirty = true;
     }
-    changeCustomScalingResHeight (height) {
+    changeCustomScalingResHeight (height: number) {
         this._state.options.custom_resolution_height.value = height;
         this._isDirty = true;
     }
-    changeCustomScalingArX (x) {
+    changeCustomScalingArX (x: number) {
         this._state.options.custom_aspect_ratio_x.value = x;
         this._isDirty = true;
     }
-    changeCustomScalingArY (y) {
+    changeCustomScalingArY (y: number) {
         this._state.options.custom_aspect_ratio_y.value = y;
         this._isDirty = true;
     }
-    changeCustomScalingStretchNearest (stretch) {
+    changeCustomScalingStretchNearest (stretch: number) {
         this._state.options.custom_scaling_stretch_nearest.value = stretch;
         this._isDirty = true;
     }
-    changePerformance (performance) {
+    changePerformance (performance: string) {
         this._state.options.webgl_performance.value = performance;
         this._isDirty = true;
         this._visibility.hideLoading();
     }
-    changeAntialias (antialias) {
+    changeAntialias (antialias: boolean) {
         this._state.options.webgl_antialias.value = antialias;
         this._isDirty = true;
         this._visibility.hideLoading();
     }
-    changeColorGamma (gamma) {
+    changeColorGamma (gamma: number) {
         this._state.options.color_gamma.value = gamma;
         this._isDirty = true;
     }
-    changeColorNoise (noise) {
+    changeColorNoise (noise: number) {
         this._state.options.color_noise.value = noise;
         this._isDirty = true;
     }
-    changeColorRgb (value, rgbRow, rgbColumn) {
-        this._state.options.rgb_values[rgbRow][rgbColumn].value = value;
+    changeColorRgb (value: number, rgbRow: string, rgbColumn: string) {
+        const rgb_values = this._state.options.rgb_values as { [id: string]: { r: { eventKind: 'rgb-red-r', value: 1 }, g: { eventKind: 'rgb-red-g', value: 0 }, b: { eventKind: 'rgb-red-b', value: 0 } }};
+        const rgb_row = rgb_values[rgbRow] as { [id: string]: {eventKind: string, value: number}};
+        rgb_row[rgbColumn].value = value;
         this._isDirty = true;
     }
 }

@@ -13,16 +13,31 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import { html, render } from 'lit-html';
+import {html, render, TemplateResult} from 'lit-html';
 import { ifDefined } from 'lit-html/directives/if-defined';
+import {
+    ButtonInputEntry, CameraInputEntry,
+    CheckboxInputEntry, ColorInputEntry,
+    SimViewEntry,
+    HalfPair,
+    MenuEntry, NumberInputEntry,
+    NumericPairEntry,
+    PresetButtonsEntry, Ref, RgbInputEntry,
+    ScalingInputEntry, SelectorsInput,
+    ViewData
+} from "./sim_view_model";
 
 const css = require('!css-loader!./css/sim_page.css').default.toString();
 
-export function renderTemplate (state, fire, root) {
+interface Fire {
+    (key: string, arg?: any): void;
+}
+
+export function renderTemplate (state: ViewData, fire: Fire, root: ShadowRoot) {
     render(generateSimTemplate(state, fire), root);
 }
 
-function generateSimTemplate (state, fire) {
+function generateSimTemplate (state: ViewData, fire: Fire) {
     return html`
         <style>
             ${css}
@@ -42,7 +57,7 @@ function generateSimTemplate (state, fire) {
     `;
 }
 
-function generateTemplateFromGenericEntry (fire, entry) {
+function generateTemplateFromGenericEntry (fire: Fire, entry: SimViewEntry) {
     switch (entry.type) {
     case 'menu': return generateTemplateFromMenu(fire, entry);
     case 'preset-buttons': return generateTemplateFromPresetButtons(fire, entry);
@@ -55,11 +70,10 @@ function generateTemplateFromGenericEntry (fire, entry) {
     case 'color-input': return generateTemplateFromColorInput(fire, entry);
     case 'camera-input': return generateTemplateFromCameraInput(fire, entry);
     case 'rgb-input': return generateTemplateFromRgbInput(fire, entry);
-    default: throw new Error('Entry type ' + entry.type + ' not handled.');
     }
 }
 
-function generateTemplateFromMenu (fire, menu) {
+function generateTemplateFromMenu (fire: Fire, menu: MenuEntry): TemplateResult {
     return html`
         <div class="collapse-button collapse-top-menu ${menu.open ? 'not-collapsed' : 'collapsed'}" @click="${() => fire('toggleMenu', menu)}">${menu.text}</div>
         <div class="info-category ${menu.open ? '' : 'display-none'}">
@@ -68,7 +82,7 @@ function generateTemplateFromMenu (fire, menu) {
     `;
 }
 
-function generateTemplateFromScalingInput (fire, scalingInput) {
+function generateTemplateFromScalingInput (fire: Fire, scalingInput: ScalingInputEntry): TemplateResult {
     return html`
         <div class="scaling-input-opaque ${scalingInput.ref.value !== 'Custom' ? '' : 'display-none'}"
             title="For manually changing these values, select Custom as scaling method."
@@ -79,7 +93,7 @@ function generateTemplateFromScalingInput (fire, scalingInput) {
     `;
 }
 
-function generateTemplateFromNumericPair (fire, numericPair) {
+function generateTemplateFromNumericPair (fire: Fire, numericPair: NumericPairEntry) {
     return html`
         <div class="menu-entry ${numericPair.class}">
             <div class="feature-pack"><div class="feature-name">${numericPair.text}</div></div>
@@ -92,15 +106,15 @@ function generateTemplateFromNumericPair (fire, numericPair) {
     `;
 }
 
-function generateTemplateFromHalfPair (fire, halfPair) {
+function generateTemplateFromHalfPair (fire: Fire, halfPair: HalfPair) {
     return html`
         <div class="half-numeric-container">
             <input class="number-input feature-modificable-input half-numeric-input" type="number" 
                 placeholder="${halfPair.placeholder}" step="${halfPair.step}" min="${halfPair.min}" max="${halfPair.max}" .value="${halfPair.ref.value}"
                 @focus="${() => fire('dispatchKey', { action: 'keydown', key: 'input_focused' })}"
                 @blur="${() => fire('dispatchKey', { action: 'keyup', key: 'input_focused' })}"
-                @keypress="${e => e.charCode === 13 /* ENTER */ && e.target.blur()}"
-                @change="${e => fire('changeSyncedInput', { value: +e.target.value, kind: halfPair.ref.eventKind })}"
+                @keypress="${(e: KeyboardEvent) => e.charCode === 13 /* ENTER */ && (<HTMLInputElement>e.target).blur()}"
+                @change="${(e: KeyboardEvent) => fire('changeSyncedInput', { value: +(<HTMLInputElement>e.target).value, kind: halfPair.ref.eventKind })}"
                 >
             <button class="button-inc-dec"
                 @mouseup="${() => fire('dispatchKey', { action: 'keyup', key: halfPair.ref.eventKind + '-inc' })}"
@@ -114,7 +128,7 @@ function generateTemplateFromHalfPair (fire, halfPair) {
     `;
 }
 
-function generateTemplateFromPresetButtons (fire, presetButtons) {
+function generateTemplateFromPresetButtons (fire: Fire, presetButtons: PresetButtonsEntry) {
     return html`
         <div class="preset-list ${presetButtons.class}">
             ${presetButtons.ref.choices.map(choices => html`
@@ -126,7 +140,7 @@ function generateTemplateFromPresetButtons (fire, presetButtons) {
     `;
 }
 
-function generateTemplateFromCheckboxInput (fire, checkboxInput) {
+function generateTemplateFromCheckboxInput (fire: Fire, checkboxInput: CheckboxInputEntry) {
     return html`
         <div class="menu-entry menu-button ${checkboxInput.class}"
             @click="${() => fire('toggleCheckbox', { value: !checkboxInput.ref.value, kind: checkboxInput.ref.eventKind })}">
@@ -138,7 +152,7 @@ function generateTemplateFromCheckboxInput (fire, checkboxInput) {
     `;    
 }
 
-function generateTemplateFromButtonInput (fire, buttonInput) {
+function generateTemplateFromButtonInput (fire: Fire, buttonInput: ButtonInputEntry) {
     return html`
         <div class="menu-entry menu-button ${buttonInput.class}" @click="${() => fire('dispatchKey', { action: 'keyboth', key: buttonInput.ref.eventKind })}">
             <div class="feature-pack">
@@ -149,7 +163,7 @@ function generateTemplateFromButtonInput (fire, buttonInput) {
     `;
 }
 
-function generateTemplateFromSelectorsInput (fire, selectorInput) {
+function generateTemplateFromSelectorsInput (fire: Fire, selectorInput: SelectorsInput) {
     return html`
         <div class="menu-entry ${selectorInput.class}">
             <div class="feature-pack">
@@ -161,8 +175,8 @@ function generateTemplateFromSelectorsInput (fire, selectorInput) {
             </div>
             <div class="feature-value input-holder">
                 <div class="selector-inc"
-                    @mouseup="${e => { e.preventDefault(); fire('dispatchKey', { action: 'keyup', key: selectorInput.ref.eventKind + '-inc', current: selectorInput.ref.value }); }}"
-                    @mousedown="${e => { e.preventDefault(); fire('dispatchKey', { action: 'keydown', key: selectorInput.ref.eventKind + '-inc', current: selectorInput.ref.value }); }}"
+                    @mouseup="${(e: Event) => { e.preventDefault(); fire('dispatchKey', { action: 'keyup', key: selectorInput.ref.eventKind + '-inc', current: selectorInput.ref.value }); }}"
+                    @mousedown="${(e: Event) => { e.preventDefault(); fire('dispatchKey', { action: 'keydown', key: selectorInput.ref.eventKind + '-inc', current: selectorInput.ref.value }); }}"
                     >
                     <input class="number-input feature-readonly-input" type="text"
                         title="${ifDefined(selectorInput.ref.title)}"
@@ -180,7 +194,7 @@ function generateTemplateFromSelectorsInput (fire, selectorInput) {
     `;
 }
 
-function generateTemplateFromNumberInput (fire, numberInput) {
+function generateTemplateFromNumberInput (fire: Fire, numberInput: NumberInputEntry) {
     return html`
         <div class="menu-entry ${numberInput.class}">
             <div class="feature-pack">
@@ -195,8 +209,8 @@ function generateTemplateFromNumberInput (fire, numberInput) {
                     placeholder="${numberInput.placeholder}" step="${numberInput.step}" min="${numberInput.min}" max="${numberInput.max}" .value="${numberInput.ref.value}"
                     @focus="${() => fire('dispatchKey', { action: 'keydown', key: 'input_focused' })}"
                     @blur="${() => fire('dispatchKey', { action: 'keyup', key: 'input_focused' })}"
-                    @keypress="${e => e.charCode === 13 /* ENTER */ && e.target.blur()}"
-                    @change="${e => fire('changeSyncedInput', { value: +e.target.value, kind: numberInput.ref.eventKind })}"
+                    @keypress="${(e: KeyboardEvent) => e.charCode === 13 /* ENTER */ && (<HTMLInputElement>e.target).blur()}"
+                    @change="${(e: Event) => fire('changeSyncedInput', { value: +(<HTMLInputElement>e.target).value, kind: numberInput.ref.eventKind })}"
                     >
                 <button class="button-inc-dec"
                     @mouseup="${() => fire('dispatchKey', { action: 'keyup', key: numberInput.ref.eventKind + '-inc' })}"
@@ -211,7 +225,7 @@ function generateTemplateFromNumberInput (fire, numberInput) {
     `;
 }
 
-function generateTemplateFromColorInput (fire, colorInput) {
+function generateTemplateFromColorInput (fire: Fire, colorInput: ColorInputEntry) {
     return html`
         <div class="menu-entry ${colorInput.class}">
             <div class="feature-pack">
@@ -219,14 +233,14 @@ function generateTemplateFromColorInput (fire, colorInput) {
             </div>
             <div class="feature-value input-holder">
                 <input class="feature-button" type="color" .value="${colorInput.ref.value}"
-                    @change="${e => fire('changeSyncedInput', { value: parseInt('0x' + e.target.value.substring(1)), kind: colorInput.ref.eventKind })}"
+                    @change="${(e: Event) => fire('changeSyncedInput', { value: parseInt('0x' + (<HTMLInputElement>e.target).value.substring(1)), kind: colorInput.ref.eventKind })}"
                     >
             </div>
         </div>
     `;
 }
 
-function generateTemplateFromCameraInput (fire, cameraInput) {
+function generateTemplateFromCameraInput (fire: Fire, cameraInput: CameraInputEntry) {
     return html`
         <div class="menu-dual-entry-container">
             <div class="menu-dual-entry-item menu-dual-entry-1 ${cameraInput.class}">
@@ -256,7 +270,7 @@ function generateTemplateFromCameraInput (fire, cameraInput) {
     `;
 }
 
-function generateTemplateFromRgbInput (fire, rgb) {
+function generateTemplateFromRgbInput (fire: Fire, rgb: RgbInputEntry) {
     return html`
         <div class="camera-matrix input-holder">
             <div class="matrix-row ${rgb.class}"></div><div class="matrix-top-row"><label class="text-center">R</label></div><div class="matrix-top-row"><label class="text-center">G</label></div><div class="matrix-top-row"><label class="text-center">B</label></div>
@@ -270,7 +284,7 @@ function generateTemplateFromRgbInput (fire, rgb) {
     `;
 }
 
-function generateTemplateArrowKey (fire, key) {
+function generateTemplateArrowKey (fire: Fire, key: string) {
     return html`
         <input type="button" class="activate-button feature-modificable-input" value="${key}"
             @mousedown="${() => fire('dispatchKey', { action: 'keydown', key: key.toLowerCase() })}"
@@ -279,14 +293,14 @@ function generateTemplateArrowKey (fire, key) {
     `;
 }
 
-function generateTemplateForCameraMatrixInput (fire, ref) {
+function generateTemplateForCameraMatrixInput (fire: Fire, ref: Ref<number>) {
     return html`
         <div class="input-cell">
             <input class="feature-modificable-input" type="number" step="0.01" .value="${ref.value}"
-                @change="${e => fire('changeSyncedInput', { value: +e.target.value, kind: ref.eventKind })}"
+                @change="${(e: KeyboardEvent) => fire('changeSyncedInput', { value: +(<HTMLInputElement>e.target).value, kind: ref.eventKind })}"
                 @focus="${() => fire('dispatchKey', { action: 'keydown', key: 'input_focused' })}"
                 @blur="${() => fire('dispatchKey', { action: 'keyup', key: 'input_focused' })}"
-                @keypress="${e => e.charCode === 13 /* ENTER */ && e.target.blur()}"
+                @keypress="${(e: KeyboardEvent) => e.charCode === 13 /* ENTER */ && (<HTMLInputElement>e.target).blur()}"
                 >
         </div>
     `;

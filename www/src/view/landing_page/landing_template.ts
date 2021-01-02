@@ -16,7 +16,7 @@
 import { html, render } from 'lit-html';
 import { LandingViewData } from './landing_view_model';
 import {DataEvent, FileEvent} from '../../services/event_types';
-import {PubSub} from "../../services/pubsub";
+import {PubSubImpl} from "../../services/pubsub";
 import {Images} from "../../services/images";
 
 const css = require('!css-loader!./css/landing_page.css').default.toString();
@@ -25,9 +25,9 @@ export type LandingTemplateEvents = ReturnType<typeof actions>;
 
 export function actions() {
     return {
-        addImage: PubSub.make<File>(),
-        selectImage: PubSub.make<number>(),
-        clickPlaySimulation: PubSub.make<void>()
+        addImage: PubSubImpl.make<File>(),
+        selectImage: PubSubImpl.make<number>(),
+        clickPlaySimulation: PubSubImpl.make<void>()
     };
 }
 

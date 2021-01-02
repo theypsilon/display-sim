@@ -15,3 +15,8 @@
 
 export type FileEvent = Event & {target: EventTarget & { files: FileList }};
 export type DataEvent = Event & {dataTransfer: DataTransfer};
+export type KeyboardEvent = Event & {key: string};
+export type MouseMovementEvent = Event & {movementX: number, movementY: number};
+export type MouseDownEvent = Event & {buttons: number};
+export type MouseWheelEvent = Event & {deltaY: number};
+export type BackendEvent = ((e: KeyboardEvent & MouseMovementEvent & MouseWheelEvent & MouseDownEvent) => void);

@@ -14,23 +14,24 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 import { Logger } from '../../services/logger';
-
-let instance;
+import { Lazy } from '../../services/lazy';
 
 export class WasmBackend {
-    constructor () {
-        this.app = null;
-    }
-    static getInstance () {
-        return instance;
+    private _app: any;
+
+    private static _instance: Lazy<WasmBackend> = Lazy.from(() => new WasmBackend());
+    static getInstance (): WasmBackend { return this._instance.get(); }
+    private constructor () {
+        this._app = null;
     }
 
-    async load (canvas, eventBus, params) {
+    async load (canvas: HTMLCanvasElement, eventBus: any, params: any) {
+        // @ts-ignore
         const { WasmApp, VideoInputConfig } = await import('../../wasm/display_sim');
 
-        if (!this.app) {
+        if (!this._app) {
             Logger.log('calling new WasmApp');
-            this.app = new WasmApp();
+            this._app = new WasmApp();
             Logger.log('new WasmApp done');
         }
 
@@ -59,13 +60,13 @@ export class WasmBackend {
         }
 
         Logger.log('gl context form', params.ctxOptions);
-        const gl = canvas.getContext('webgl2', params.ctxOptions);
+        const gl = canvas.getContext('webgl2', params.ctxOptions) as WebGL2RenderingContext | null;
 
         if (gl) {
             config.set_max_texture_size(gl.getParameter(gl.MAX_TEXTURE_SIZE));
 
             Logger.log('calling wasmApp.load');
-            this.app.load(gl, eventBus, config);
+            this._app.load(gl, eventBus, config);
             Logger.log('wasmApp.load done');
     
             return { success: true };   
@@ -76,12 +77,10 @@ export class WasmBackend {
     }
 
     runFrame () {
-        return this.app.run_frame();
+        return this._app.run_frame();
     }
 
     unload () {
-        return this.app.unload();
+        return this._app.unload();
     }
 }
-
-instance = new WasmBackend();

@@ -17,11 +17,13 @@ import {Disposable} from "./disposable";
 import {Observable, ObserverCb} from "./observable";
 import {Action} from "./action";
 
-export class PubSub<T> implements Observable<T>, Action<T> {
+export interface PubSub<T> extends Observable<T>, Action<T> {}
+
+export class PubSubImpl<T> implements PubSub<T> {
     private _callbacks: ObserverCb<T>[] = [];
 
     static make<T>(): PubSub<T> {
-        return new PubSub<T>();
+        return new PubSubImpl<T>();
     }
 
     subscribe (cb: ObserverCb<T>): Disposable {

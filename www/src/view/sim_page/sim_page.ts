@@ -15,21 +15,32 @@
 
 import { Constants } from '../../services/constants';
 import { Logger } from '../../services/logger';
-import { PubSub } from '../../services/pubsub';
+import {PubSub, PubSubImpl} from '../../services/pubsub';
 
 import { renderTemplate } from './sim_template';
-import { data, View } from './sim_view_model';
+import {data, View, ViewData} from './sim_view_model';
 import { Model } from './sim_model';
+import {throwOnNull} from "../../services/guards";
+import {Disposable} from "../../services/disposable";
+import {ObserverCb} from "../../services/observable";
+import {BackendEvent} from "../../services/event_types";
 
 const state = data();
 
+interface Observers {
+    front: PubSub<any>;
+    back: PubSub<any>;
+}
+
 class SimPage extends HTMLElement {
+    private _future: Promise<any>;
+
     constructor () {
         super();
 
-        this.future = setupPage(this.attachShadow({ mode: 'open' }), state, {
-            front: PubSub.make(),
-            back: PubSub.make()
+        this._future = setupPage(this.attachShadow({ mode: 'open' }), state, {
+            front: PubSubImpl.make(),
+            back: PubSubImpl.make()
         }).catch(e => console.error(e));
 
         document.body.style.setProperty('overflow', 'hidden');
@@ -40,42 +51,41 @@ class SimPage extends HTMLElement {
         document.body.style.removeProperty('overflow');
         document.body.style.removeProperty('background-color');
 
-        this.future.then(mess => mess.clean());
+        this._future.then(mess => mess.clean());
     }
 }
 
 window.customElements.define('sim-page', SimPage);
 
-async function setupPage (root, state, observers) {
+async function setupPage (root: ShadowRoot, state: ViewData, observers: Observers) {
     const [view, canvas] = setupView(state, root, observers.front);
     const model = await setupModel(canvas, view, {
-        subscribe: cb => observers.back.subscribe(cb),
-        unsubscribe: cb => observers.back.unsubscribe(cb),
-        fire: msg => observers.front.fire(msg).catch(e => console.error(e))
+        subscribe: (cb: ObserverCb<any>) => observers.back.subscribe(cb),
+        fire: async (msg: any) => await observers.front.fire(msg).catch(e => console.error(e))
     });
-    return setupEventHandling(canvas.parentNode, view, model, {
+    return setupEventHandling(throwOnNull(canvas.parentNode), view, model, {
         subscribe: cb => observers.front.subscribe(cb),
         fire: msg => observers.back.fire(msg)
     });
 }
 
-function setupView (state, root, frontendObserver) {
+function setupView (state: ViewData, root: ShadowRoot, frontendObserver: PubSub<any>): [View, HTMLCanvasElement] {
     const view = View.make(state, () => renderTemplate(state, fireEventOn(frontendObserver), root));
 
     // first frame, so there can be a canvas element rendered. We will need it in the following line.
     view.newFrame();
 
-    return [view, root.getElementById('gl-canvas-id')];
+    return [view, throwOnNull(root.getElementById('gl-canvas-id') as HTMLCanvasElement | null)];
 }
 
-async function setupModel (canvas, view, backendBus) {
+async function setupModel (canvas: HTMLCanvasElement, view: View, backendBus: PubSub<any>) {
     const model = Model.make(canvas, backendBus);
     view.init(await model.load());
     return model;
 }
 
-function fireEventOn (observer) {
-    return (topic, message) => {
+function fireEventOn (observer: PubSub<any>) {
+    return (topic: string, message: any) => {
         const event = {
             message,
             type: 'front2front:' + topic
@@ -84,8 +94,8 @@ function fireEventOn (observer) {
     };
 }
 
-function setupEventHandling (canvasParent, view, model, frontendBus) {
-    function fireBackendEvent (kind, msg) {
+function setupEventHandling (canvasParent: Node & ParentNode, view: View, model: Model, frontendBus: PubSub<any>) {
+    function fireBackendEvent (kind: string, msg?: any) {
         const event = {
             message: msg,
             type: 'front2back:' + kind
@@ -94,7 +104,7 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
         console.log('front2back', kind, msg);
     }
 
-    function fireKeyboardEvent ({ pressed, key, timeout }) {
+    function fireKeyboardEvent ({ pressed, key, timeout }: {pressed: boolean, key: string, timeout?: number}) {
         fireBackendEvent('keyboard', { pressed, key });
         if (pressed && timeout) {
             setTimeout(() => {
@@ -113,7 +123,7 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
         switch (e.type) {
         case 'front2front:dispatchKey': {
             if (msg.key.startsWith('webgl:')) {    
-                return handleWebGLKeys(msg, model, view, frontendBus);
+                return handleWebGLKeys(msg, model, view);
             }
             let pressed;
             let timeout;
@@ -121,7 +131,7 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
             case 'keyboth': timeout = 250; // fall through 
             case 'keydown': pressed = true; break;
             case 'keyup': pressed = false; break;
-            default: throw new Error('Incorrect action for dispatchKey', msg.action);
+            default: throw new Error('Incorrect action for dispatchKey ' + msg.action);
             }
             fireKeyboardEvent({ pressed, key: msg.key, timeout });
             break;
@@ -140,15 +150,15 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
         case 'front2front:toggleControls': return view.toggleControls();
         case 'front2front:toggleMenu': return view.toggleMenu(msg);
         case 'back2front:top_message': return view.openTopMessage(msg);
-        case 'back2front:request_fullscreen': return view.setFullscreen(msg);
-        case 'back2front:request_pointer_lock': return view.requestPointerLock(msg);
+        case 'back2front:request_fullscreen': return view.setFullscreen();
+        case 'back2front:request_pointer_lock': return view.requestPointerLock();
         case 'back2front:preset_selected_name': return view.presetSelectedName(msg);
         case 'back2front:screenshot': return model.fireScreenshot(msg);
         case 'back2front:camera_update': return view.updateCameraMatrix(msg);
-        case 'back2front:toggle_info_panel': return view.toggleInfoPanel(msg);
+        case 'back2front:toggle_info_panel': return view.toggleInfoPanel();
         case 'back2front:fps': return view.changeFps(msg);
-        case 'back2front:exit_pointer_lock': return view.exitPointerLock(msg);
-        case 'back2front:exiting_session': return view.exitingSession(msg);
+        case 'back2front:exit_pointer_lock': return view.exitPointerLock();
+        case 'back2front:exiting_session': return view.exitingSession();
         case 'back2front:change_camera_movement_mode': return view.changeCameraMovementMode(msg);
         case 'back2front:change_camera_zoom': return view.changeCameraZoom(msg);
         case 'back2front:change_pixel_width': return view.changePixelWidth(msg);
@@ -196,21 +206,22 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
             fireBackendEvent(Constants.FILTER_PRESETS_SELECTED_EVENT_KIND, msg);
             break;
         }
-        default: throw new Error('Not covered following event: ', e.type, e);
+        default: throw new Error('Not covered following event: ' + e.toString());
         }
     });
 
     // frame loop on frontend
-    let newFrameId;
+    let newFrameId: number;
     (function requestNewFrame () {
         model.runFrame();
         view.newFrame();
         newFrameId = window.requestAnimationFrame(requestNewFrame);
     })();
 
-    const listeners = [];
-    function addDomListener (eventBus, type, callback, options) {
+    const listeners: {eventBus: Node | Window, type: string, callback: EventListenerOrEventListenerObject, options: EventListenerOptions | boolean}[] = [];
+    function addDomListener (eventBus: Node | Window, type: string, cb: BackendEvent, options?: any) {
         options = options || false;
+        const callback = cb as EventListenerOrEventListenerObject;
         eventBus.addEventListener(type, callback, options);
         listeners.push({ eventBus, type, callback, options });
     }
@@ -241,7 +252,7 @@ function setupEventHandling (canvasParent, view, model, frontendBus) {
     };
 }
 
-async function handleWebGLKeys (msg, model, view) {
+async function handleWebGLKeys (msg: {key: string, action: string, current: string}, model: Model, view: View) {
     let direction;
     if (msg.key.endsWith('-dec')) {
         direction = 'dec';
@@ -260,6 +271,6 @@ async function handleWebGLKeys (msg, model, view) {
         }
         break;
     }
-    default: throw new Error('WebGL key not handled.', msg.key);
+    default: throw new Error('WebGL key not handled. ' + msg.key);
     }
 }
