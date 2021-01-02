@@ -309,23 +309,23 @@ export function data () {
     };        
 }
 
-export type ViewData = ReturnType<typeof data>;
+export type SimViewData = ReturnType<typeof data>;
 
-export interface InitDto {
+export interface SimViewInitDto {
     glError: boolean;
     skipControllerUi: boolean;
     fullscreen: boolean;
     storedValues: {selectedPreset: string, powerPreference: string, antialias: boolean};
 }
 
-export class View {
-    private readonly _state: ViewData;
+export class SimViewModel {
+    private readonly _state: SimViewData;
     private readonly _refresh: (() => void);
     private readonly _navigator: Navigator;
     private readonly _visibility: Visibility;
     private _isDirty: boolean;
 
-    constructor (state: ViewData, refresh: (() => void), navigator: Navigator, visibility: Visibility) {
+    constructor (state: SimViewData, refresh: (() => void), navigator: Navigator, visibility: Visibility) {
         this._state = state;
         this._refresh = refresh;
         this._navigator = navigator;
@@ -333,11 +333,11 @@ export class View {
         this._isDirty = true;
     }
 
-    static make (state: ViewData, refresh: (() => void), navigator?: Navigator, visibility?: Visibility) {
-        return new View(state, refresh, navigator || Navigator.make(), visibility || Visibility.make());
+    static make (state: SimViewData, refresh: (() => void), navigator?: Navigator, visibility?: Visibility) {
+        return new SimViewModel(state, refresh, navigator || Navigator.make(), visibility || Visibility.make());
     }
 
-    init (dto: InitDto) {
+    init (dto: SimViewInitDto) {
         if (dto.glError) {
             return this.showFatalError('WebGL2 is not working on your browser, try restarting it! And remember, this works only on a PC with updated browser and graphics drivers.');
         }
@@ -384,7 +384,7 @@ export class View {
         this._isDirty = true;
     }
 
-    toggleMenu (menu: ViewData['menu']) {
+    toggleMenu (menu: SimViewData['menu']) {
         menu.open = !menu.open;
         this._isDirty = true;
     }

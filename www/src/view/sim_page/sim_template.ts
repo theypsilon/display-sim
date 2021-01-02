@@ -24,7 +24,7 @@ import {
     NumericPairEntry,
     PresetButtonsEntry, Ref, RgbInputEntry,
     ScalingInputEntry, SelectorsInput,
-    ViewData
+    SimViewData
 } from "./sim_view_model";
 
 const css = require('!css-loader!./css/sim_page.css').default.toString();
@@ -33,11 +33,11 @@ interface Fire {
     (key: string, arg?: any): void;
 }
 
-export function renderTemplate (state: ViewData, fire: Fire, root: ShadowRoot) {
+export function renderTemplate (state: SimViewData, fire: Fire, root: ShadowRoot) {
     render(generateSimTemplate(state, fire), root);
 }
 
-function generateSimTemplate (state: ViewData, fire: Fire) {
+function generateSimTemplate (state: SimViewData, fire: Fire) {
     return html`
         <style>
             ${css}

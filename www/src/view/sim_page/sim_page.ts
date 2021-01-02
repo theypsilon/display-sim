@@ -18,7 +18,7 @@ import { Logger } from '../../services/logger';
 import {PubSub, PubSubImpl} from '../../services/pubsub';
 
 import { renderTemplate } from './sim_template';
-import {data, View, ViewData} from './sim_view_model';
+import {data, SimViewModel, SimViewData} from './sim_view_model';
 import { Model } from './sim_model';
 import {throwOnNull} from "../../services/guards";
 import {Disposable} from "../../services/disposable";
@@ -57,7 +57,7 @@ class SimPage extends HTMLElement {
 
 window.customElements.define('sim-page', SimPage);
 
-async function setupPage (root: ShadowRoot, state: ViewData, observers: Observers) {
+async function setupPage (root: ShadowRoot, state: SimViewData, observers: Observers) {
     const [view, canvas] = setupView(state, root, observers.front);
     const model = await setupModel(canvas, view, {
         subscribe: (cb: ObserverCb<any>) => observers.back.subscribe(cb),
@@ -69,8 +69,8 @@ async function setupPage (root: ShadowRoot, state: ViewData, observers: Observer
     });
 }
 
-function setupView (state: ViewData, root: ShadowRoot, frontendObserver: PubSub<any>): [View, HTMLCanvasElement] {
-    const view = View.make(state, () => renderTemplate(state, fireEventOn(frontendObserver), root));
+function setupView (state: SimViewData, root: ShadowRoot, frontendObserver: PubSub<any>): [SimViewModel, HTMLCanvasElement] {
+    const view = SimViewModel.make(state, () => renderTemplate(state, fireEventOn(frontendObserver), root));
 
     // first frame, so there can be a canvas element rendered. We will need it in the following line.
     view.newFrame();
@@ -78,7 +78,7 @@ function setupView (state: ViewData, root: ShadowRoot, frontendObserver: PubSub<
     return [view, throwOnNull(root.getElementById('gl-canvas-id') as HTMLCanvasElement | null)];
 }
 
-async function setupModel (canvas: HTMLCanvasElement, view: View, backendBus: PubSub<any>) {
+async function setupModel (canvas: HTMLCanvasElement, view: SimViewModel, backendBus: PubSub<any>) {
     const model = Model.make(canvas, backendBus);
     view.init(await model.load());
     return model;
@@ -94,7 +94,7 @@ function fireEventOn (observer: PubSub<any>) {
     };
 }
 
-function setupEventHandling (canvasParent: Node & ParentNode, view: View, model: Model, frontendBus: PubSub<any>) {
+function setupEventHandling (canvasParent: Node & ParentNode, view: SimViewModel, model: Model, frontendBus: PubSub<any>) {
     function fireBackendEvent (kind: string, msg?: any) {
         const event = {
             message: msg,
@@ -252,7 +252,7 @@ function setupEventHandling (canvasParent: Node & ParentNode, view: View, model:
     };
 }
 
-async function handleWebGLKeys (msg: {key: string, action: string, current: string}, model: Model, view: View) {
+async function handleWebGLKeys (msg: {key: string, action: string, current: string}, model: Model, view: SimViewModel) {
     let direction;
     if (msg.key.endsWith('-dec')) {
         direction = 'dec';
