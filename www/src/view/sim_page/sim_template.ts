@@ -73,6 +73,14 @@ export class SimTemplate
         return throwOnNull(this._root.getElementById('gl-canvas-id') as HTMLCanvasElement | null);
     }
 
+    getCanvasListener(state: SimViewData) {
+        return throwOnNull(this.getCanvas(state).parentNode);
+    }
+
+    getWindowListener() {
+        return window;
+    }
+
     refresh(state: SimViewData): void {
         this._rendered = true;
         render(this.generateSimTemplate(state), this._root);

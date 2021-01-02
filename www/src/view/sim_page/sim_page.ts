@@ -26,24 +26,19 @@ import {BackendEvent} from "../../services/event_types";
 import {Action} from "../../services/action";
 import {Disposable} from "../../services/disposable";
 
-interface Observers {
+interface Channels {
     front: PubSub<BackendMessage>;
     back: PubSub<BackendMessage>;
 }
 
 class SimPage extends HTMLElement {
-    private _future: Promise<Disposable>;
+    private _future: Promise<Disposable | void>;
 
     constructor () {
         super();
 
-        this._future = setupPage(this.attachShadow({ mode: 'open' }), state, {
-            front: PubSubImpl.make(),
-            back: PubSubImpl.make()
-        }).catch(e => {
-            console.error(e);
-            return Disposable.make(() => {})
-        });
+        this._future = setupPage(this.attachShadow({ mode: 'open' }), state)
+            .catch(e => console.error(e));
 
         document.body.style.setProperty('overflow', 'hidden');
         document.body.style.setProperty('background-color', 'black');
@@ -53,43 +48,39 @@ class SimPage extends HTMLElement {
         document.body.style.removeProperty('overflow');
         document.body.style.removeProperty('background-color');
 
-        this._future.then(mess => mess.dispose());
+        this._future.then(mess => mess && mess.dispose());
     }
 }
 
 window.customElements.define('sim-page', SimPage);
-
-const state = data();
-const events = actions();
-
-async function setupPage (root: ShadowRoot, state: SimViewData, observers: Observers): Promise<Disposable> {
-    const [view, canvas] = setupView(state, root, events);
-    const model = await setupModel(canvas, view, {
-        subscribe: (cb: ObserverCb<BackendMessage>) => observers.back.subscribe(cb),
-        fire: async (msg: BackendMessage) => await observers.front.fire(msg).catch(e => console.error(e))
-    });
-    return setupEventHandling(throwOnNull(canvas.parentNode), view, model, events, observers.front as Observable<BackendMessage>, observers.back as Action<BackendMessage>);
-}
-
-function setupView (state: SimViewData, root: ShadowRoot, events: SimTemplateEvents): [SimViewModel, HTMLCanvasElement] {
-    const template = SimTemplate.make(root, events);
-    const view_model = SimViewModel.make(state, template);
-
-    return [view_model, template.getCanvas(state)];
-}
-
-async function setupModel (canvas: HTMLCanvasElement, view_model: SimViewModel, backendBus: PubSub<BackendMessage>) {
-    const model = SimModel.make(canvas, backendBus);
-    view_model.init(await model.load());
-    return model;
-}
 
 interface BackendMessage {
     type: string;
     message: any;
 }
 
-function setupEventHandling (canvasParent: Node & ParentNode, view_model: SimViewModel, model: SimModel, events: SimTemplateEvents, backendObservable: Observable<BackendMessage>, backendEmitter: Action<BackendMessage>): Disposable {
+const state = data();
+const events = actions();
+const channels: Channels = {
+    front: PubSubImpl.make<BackendMessage>(),
+    back: PubSubImpl.make<BackendMessage>()
+};
+
+async function setupPage (root: ShadowRoot, state: SimViewData): Promise<Disposable> {
+    const template = SimTemplate.make(root, events);
+    const view_model = SimViewModel.make(state, template);
+    const backendBus = {
+        subscribe: (cb: ObserverCb<BackendMessage>) => channels.back.subscribe(cb),
+        fire: async (msg: BackendMessage) => await channels.front.fire(msg).catch(e => console.error(e))
+    };
+    const model = SimModel.make(template.getCanvas(state), backendBus);
+    return show(template, view_model, model, events, channels.front as Observable<BackendMessage>, channels.back as Action<BackendMessage>)
+}
+
+async function show (template: SimTemplate, view_model: SimViewModel, model: SimModel, events: SimTemplateEvents, backendObservable: Observable<BackendMessage>, backendEmitter: Action<BackendMessage>): Promise<Disposable> {
+
+    view_model.init(await model.load());
+
     async function fireBackendEvent (kind: string, msg?: any) {
         const event = {
             message: msg,
@@ -200,12 +191,15 @@ function setupEventHandling (canvasParent: Node & ParentNode, view_model: SimVie
         }
     });
 
+    const canvasListener = template.getCanvasListener(state);
+    const windowListener = template.getWindowListener();
+
     // frame loop on frontend
     let newFrameId: number;
     (function requestNewFrame () {
         model.runFrame();
         view_model.newFrame();
-        newFrameId = window.requestAnimationFrame(requestNewFrame);
+        newFrameId = windowListener.requestAnimationFrame(requestNewFrame);
     })();
 
     const listeners: {eventBus: Node | Window, type: string, callback: EventListenerOrEventListenerObject, options: EventListenerOptions | boolean}[] = [];
@@ -217,24 +211,24 @@ function setupEventHandling (canvasParent: Node & ParentNode, view_model: SimVie
     }
 
     // Forwarding other events so they can be readed by the backend
-    addDomListener(window, 'keydown', e => fireKeyboardEvent({ pressed: true, key: e.key }));
-    addDomListener(window, 'keyup', e => fireKeyboardEvent({ pressed: false, key: e.key }));
-    addDomListener(canvasParent, 'mousedown', async e => {
+    addDomListener(windowListener, 'keydown', e => fireKeyboardEvent({ pressed: true, key: e.key }));
+    addDomListener(windowListener, 'keyup', e => fireKeyboardEvent({ pressed: false, key: e.key }));
+    addDomListener(canvasListener, 'mousedown', async e => {
         if (e.buttons === 1) {
             await fireBackendEvent('mouse-click', true);
             model.runFrame(); // Needed so Firefox can go fullscreen during the scope of this event handler, otherwise the request is rejected.
         }
     });
-    addDomListener(window, 'mouseup', () => fireBackendEvent('mouse-click', false)); // note this one goes to 'window'. It doesn't work with 'canvas' because of some obscure bug I didn't figure out yet.
-    addDomListener(window, 'mousemove', e => fireBackendEvent('mouse-move', { x: e.movementX, y: e.movementY }));
-    addDomListener(canvasParent, 'mousewheel', e => fireBackendEvent('mouse-wheel', e.deltaY));
-    addDomListener(canvasParent, 'blur', () => fireBackendEvent('blurred-window'));
-    addDomListener(canvasParent, 'mouseover', () => fireKeyboardEvent({ pressed: true, key: 'canvas_focused' }));
-    addDomListener(canvasParent, 'mouseout', () => fireKeyboardEvent({ pressed: false, key: 'canvas_focused' }));
-    addDomListener(window, 'resize', () => fireBackendEvent('viewport-resize', model.resizeCanvas()));
+    addDomListener(windowListener, 'mouseup', () => fireBackendEvent('mouse-click', false)); // note this one goes to 'window'. It doesn't work with 'canvas' because of some obscure bug I didn't figure out yet.
+    addDomListener(windowListener, 'mousemove', e => fireBackendEvent('mouse-move', { x: e.movementX, y: e.movementY }));
+    addDomListener(canvasListener, 'mousewheel', e => fireBackendEvent('mouse-wheel', e.deltaY));
+    addDomListener(canvasListener, 'blur', () => fireBackendEvent('blurred-window'));
+    addDomListener(canvasListener, 'mouseover', () => fireKeyboardEvent({ pressed: true, key: 'canvas_focused' }));
+    addDomListener(canvasListener, 'mouseout', () => fireKeyboardEvent({ pressed: false, key: 'canvas_focused' }));
+    addDomListener(windowListener, 'resize', () => fireBackendEvent('viewport-resize', model.resizeCanvas()));
 
     return Disposable.make(() => {
-        window.cancelAnimationFrame(newFrameId);
+        windowListener.cancelAnimationFrame(newFrameId);
         model.unloadSimulation();
         listeners.forEach(({ eventBus, type, callback, options }) => eventBus.removeEventListener(type, callback, options));
     });
