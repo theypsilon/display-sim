@@ -13,24 +13,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-export class Observer<T> {
-    private _callbacks: ((arg: T) => {})[] = [];
-
-    static make<T>(): Observer<T> {
-        return new Observer<T>();
+export function throwOnNull<T>(value: T | null): T {
+    if (value === null) {
+        throw new Error('Can not be null!');
     }
-
-    subscribe (cb: (arg: T) => {}): void {
-        this._callbacks.push(cb);
-    }
-
-    unsubscribe (unsubscribedCb: (arg: T) => {}): void {
-        this._callbacks = this._callbacks.filter(cb => cb !== unsubscribedCb);
-    }
-
-    async fire (event: T): Promise<void> {
-        for (const cb of this._callbacks) {
-            await cb(event);
-        }
-    }
+    return value;
 }

@@ -14,14 +14,30 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 import { html, render } from 'lit-html';
+import { ViewData } from './landing_view_model';
+import {DataEvent, FileEvent} from '../../services/event_types';
+import {PubSub} from "../../services/pubsub";
 
 const css = require('!css-loader!./css/landing_page.css').default.toString();
 
-export function renderTemplate (state, fire, root) {
-    render(generateLandingTemplate(state, fire), root);
+export type TemplateEvents = ReturnType<typeof actions>;
+
+export function actions() {
+    return {
+        changedFileInput: PubSub.make<FileEvent>(),
+        selectImage: PubSub.make<number>(),
+        clickOnDropZone: PubSub.make<void>(),
+        dropOnDropZone: PubSub.make<DataEvent>(),
+        dragOverDropZone: PubSub.make<DataEvent>(),
+        clickPlaySimulation: PubSub.make<void>()
+    };
 }
 
-function generateLandingTemplate (state, fire) {
+export function renderTemplate (state: ViewData, actions: TemplateEvents, root: ShadowRoot) {
+    render(generateLandingTemplate(state, actions), root);
+}
+
+function generateLandingTemplate (state: ViewData, actions: TemplateEvents) {
     return html`
     <style>
         ${css}
@@ -60,19 +76,19 @@ function generateLandingTemplate (state, fire) {
                 <div class="col-sm-12 render-tests row">
                     <div class="margin-sm-bottom">
                         <h3>Select Image</h3>
-                        <input type="file" id="file" class="display-none" accept="image/*" @change="${e => fire('changed-file-input', e)}">
+                        <input type="file" id="file" class="display-none" accept="image/*" @change="${(e: FileEvent) => actions.changedFileInput.fire(e)}">
                         <ul id="select-image-list" class="well select-image col-sm-12">
                             ${state.images.map((image, idx) => html`
-                                <li id="${image.id}" @click="${() => fire('select-image', idx)}" class="selectable-image ${idx === state.imageSelection ? 'selected-image' : ''}">
+                                <li id="${image.id}" @click="${() => actions.selectImage.fire(idx)}" class="selectable-image ${idx === state.imageSelection ? 'selected-image' : ''}">
                                     <div><img src=${image.src} data-hq=${image.hq}><span>${image.width} ✕
                                             ${image.height}</span>
                                     </div>
                                 </li>                                    
                             `)}
                             <li id="drop-zone" 
-                                @click="${e => fire('click-drop-zone', e)}" 
-                                @drop="${e => fire('drop-on-drop-zone', e)}" 
-                                @dragover="${e => fire('drag-over-drop-zone', e)}"
+                                @click="${(_: Event) => actions.clickOnDropZone.fire()}" 
+                                @drop="${(e: DataEvent) => actions.dropOnDropZone.fire(e)}" 
+                                @dragover="${(e: DataEvent) => actions.dragOverDropZone.fire(e)}"
                                 ><span>Add your image here</span>
                             </li>
                         </ul>
@@ -82,7 +98,7 @@ function generateLandingTemplate (state, fire) {
                         class="start btn-crt btn-white" 
                         type="button" 
                         value="Play Simulation" 
-                        @click="${e => fire('click-play-simulation', e)}" 
+                        @click="${(_: Event) => actions.clickPlaySimulation.fire()}" 
                         ?disabled="${state.isRunningOnMobileDevice}"
                         title="${state.isRunningOnMobileDevice ? 'You need a PC with NVIDIA or ATI graphics card with updated drivers and a WebGL2 compatible browser (Firefox, Opera or Chrome) in order to run this without problems.' : ''}"
                     >

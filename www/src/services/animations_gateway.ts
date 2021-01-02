@@ -17,6 +17,7 @@
 import { Decoder } from 'fastgif/fastgif';
 
 import { Logger } from './logger';
+import {throwOnNull} from "./guards";
 
 declare global {
     interface Window {
@@ -38,13 +39,6 @@ interface TransformedDecodedFrame {
 
 interface AnimationsGatewayConfig {
     gifCaching: boolean
-}
-
-function throwOnNull<T>(value: T | null): T {
-    if (value === null) {
-        throw new Error('Can not be null!');
-    }
-    return value;
 }
 
 export class AnimationsGateway {

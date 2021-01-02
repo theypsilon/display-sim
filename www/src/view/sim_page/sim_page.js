@@ -15,7 +15,7 @@
 
 import { Constants } from '../../services/constants';
 import { Logger } from '../../services/logger';
-import { Observer } from '../../services/observer';
+import { PubSub } from '../../services/pubsub';
 
 import { renderTemplate } from './sim_template';
 import { data, View } from './sim_view_model';
@@ -28,8 +28,8 @@ class SimPage extends HTMLElement {
         super();
 
         this.future = setupPage(this.attachShadow({ mode: 'open' }), state, {
-            front: Observer.make(),
-            back: Observer.make()
+            front: PubSub.make(),
+            back: PubSub.make()
         }).catch(e => console.error(e));
 
         document.body.style.setProperty('overflow', 'hidden');

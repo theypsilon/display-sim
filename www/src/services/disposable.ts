@@ -13,19 +13,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import {throwOnNull} from "./guards";
-
-export const Constants = {
-    // general
-    TOP_MESSAGE_ID: 'top-message',
-    loadingDeo: throwOnNull(document.getElementById('loading')),
-    pageDeo: throwOnNull(document.getElementById('page')),
-
-    // landing page
-    FIRST_PREVIEW_IMAGE_ID: 'first-preview-image',
-
-    // sim page
-    FILTER_PRESETS_SELECTED_EVENT_KIND: 'filter-presets-selected',
-    PRESET_KIND_CUSTOM: 'custom',
-    PRESET_KIND_APERTURE_GRILLE_1: 'crt-aperture-grille-1'
-};
+export class Disposable {
+    private _cb: (() => void) | null;
+    private constructor(cb: () => void) {
+        this._cb = cb;
+    }
+    static make (cb: () => void): Disposable {
+        return new Disposable(cb);
+    }
+    dispose (): void {
+        if (this._cb === null) {
+            return;
+        }
+        this._cb();
+        this._cb = null;
+    }
+}

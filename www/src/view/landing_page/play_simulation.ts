@@ -19,12 +19,14 @@ import { Constants } from '../../services/constants';
 import { Navigator } from '../../services/navigator';
 import { Mailbox } from '../../services/mailbox';
 import { AnimationsGateway } from '../../services/animations_gateway';
+import { ViewData } from './landing_view_model';
+import {throwOnNull} from "../../services/guards";
 
 const navigator = Navigator.make();
 const mailbox = Mailbox.getInstance();
 const animationsGateway = AnimationsGateway.make({ gifCaching: true });
 
-export async function playHtmlSelection (state) {
+export async function playHtmlSelection (state: ViewData) {
     const animations = await getAnimations(state);
 
     Logger.log('image readed');
@@ -48,14 +50,14 @@ export async function playHtmlSelection (state) {
     navigator.goToSimPage();
 }
 
-export async function playQuerystring (querystring) {
+export async function playQuerystring (querystring: string) {
     Logger.log('Loading querystring: ' + querystring);
 
     const searchParams = new URLSearchParams(querystring);
 
     const selectedPreset = searchParams.get('preset');
     const hasGif = searchParams.has('gif');
-    const animations = searchParams.has('file') ? await animationsGateway.getFromPath(searchParams.get('file'), hasGif) : await animationsGateway.getFromHardcodedTileset();
+    const animations = searchParams.has('file') ? await animationsGateway.getFromPath(throwOnNull(searchParams.get('file')), hasGif) : await animationsGateway.getFromHardcodedTileset();
     const skipControllerUi = searchParams.has('skip-ui');
     const skipDrawing = searchParams.has('skip-drawing');
     const fullscreen = searchParams.has('fullscreen');
@@ -81,13 +83,13 @@ export async function playQuerystring (querystring) {
     navigator.goToSimPage();
 }
 
-async function getAnimations (state) {
+async function getAnimations (state: ViewData) {
     const selectedImage = state.images[state.imageSelection];
     if (selectedImage.id === Constants.FIRST_PREVIEW_IMAGE_ID) {
         return animationsGateway.getFromHardcodedTileset();
     } else if (selectedImage.img) {
         return animationsGateway.getFromImage(selectedImage.img);
     } else {
-        return animationsGateway.getFromPath(selectedImage.hq, selectedImage.isGif);
+        return animationsGateway.getFromPath(selectedImage.hq, !!selectedImage.isGif);
     }
 }
