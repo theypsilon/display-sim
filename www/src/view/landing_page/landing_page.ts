@@ -36,7 +36,7 @@ async function setupPage (root: ShadowRoot) {
     if (window.location.hash.length > 1) {
         return playQuerystring(window.location.hash.substr(1));
     }
-    const template = new LandingTemplate(root, events);
+    const template = LandingTemplate.make(root, events);
     const view_model = LandingViewModel.make(state, template);
     await show(state, events, view_model);
 }

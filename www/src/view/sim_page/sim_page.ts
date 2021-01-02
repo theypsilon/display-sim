@@ -17,11 +17,10 @@ import { Constants } from '../../services/constants';
 import { Logger } from '../../services/logger';
 import {PubSub, PubSubImpl} from '../../services/pubsub';
 
-import { renderTemplate } from './sim_template';
+import {SimTemplate} from './sim_template';
 import {data, SimViewModel, SimViewData} from './sim_view_model';
 import { SimModel } from './sim_model';
 import {throwOnNull} from "../../services/guards";
-import {Disposable} from "../../services/disposable";
 import {ObserverCb} from "../../services/observable";
 import {BackendEvent} from "../../services/event_types";
 
@@ -70,12 +69,10 @@ async function setupPage (root: ShadowRoot, state: SimViewData, observers: Obser
 }
 
 function setupView (state: SimViewData, root: ShadowRoot, frontendObserver: PubSub<any>): [SimViewModel, HTMLCanvasElement] {
-    const view_model = SimViewModel.make(state, () => renderTemplate(state, fireEventOn(frontendObserver), root));
+    const template = SimTemplate.make(root, fireEventOn(frontendObserver));
+    const view_model = SimViewModel.make(state, template);
 
-    // first frame, so there can be a canvas element rendered. We will need it in the following line.
-    view_model.newFrame();
-
-    return [view_model, throwOnNull(root.getElementById('gl-canvas-id') as HTMLCanvasElement | null)];
+    return [view_model, template.getCanvas(state)];
 }
 
 async function setupModel (canvas: HTMLCanvasElement, view_model: SimViewModel, backendBus: PubSub<any>) {

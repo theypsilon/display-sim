@@ -35,9 +35,13 @@ export class LandingTemplate {
     private readonly _root: ShadowRoot;
     private readonly _actions: LandingTemplateEvents;
 
-    constructor(root: ShadowRoot, actions: LandingTemplateEvents) {
+    private constructor(root: ShadowRoot, actions: LandingTemplateEvents) {
         this._actions = actions;
         this._root = root;
+    }
+
+    static make(root: ShadowRoot, actions: LandingTemplateEvents) {
+        return new LandingTemplate(root, actions);
     }
 
     refresh(state: LandingViewData): void {
@@ -48,11 +52,11 @@ export class LandingTemplate {
         this._actions.addImage.fire(e.target.files[0]);
     }
 
-    private selectImage(idx: number): void {
+    private selectImage(_: Event, idx: number): void {
         this._actions.selectImage.fire(idx);
     }
 
-    private clickOnDropZone(): void {
+    private clickOnDropZone(_: Event): void {
         this._root.getElementById('file')?.click()
     }
 
@@ -68,7 +72,7 @@ export class LandingTemplate {
         e.dataTransfer.dropEffect = 'copy';
     }
 
-    private clickPlaySimulation(): void {
+    private clickPlaySimulation(_: Event): void {
         this._actions.clickPlaySimulation.fire();
     }
 
@@ -111,19 +115,19 @@ export class LandingTemplate {
                 <div class="col-sm-12 render-tests row">
                     <div class="margin-sm-bottom">
                         <h3>Select Image</h3>
-                        <input type="file" id="file" class="display-none" accept="image/*" @change="${(e: FileEvent) => this.changedFileInput(e)}">
+                        <input type="file" id="file" class="display-none" accept="image/*" @change="${this.changedFileInput}">
                         <ul id="select-image-list" class="well select-image col-sm-12">
                             ${state.images.map((image, idx) => html`
-                                <li id="${image.id}" @click="${() => this.selectImage(idx)}" class="selectable-image ${idx === state.imageSelection ? 'selected-image' : ''}">
+                                <li id="${image.id}" @click="${(e: Event) => this.selectImage(e, idx)}" class="selectable-image ${idx === state.imageSelection ? 'selected-image' : ''}">
                                     <div><img src=${image.src} data-hq=${image.hq}><span>${image.width} ✕
                                             ${image.height}</span>
                                     </div>
                                 </li>                                    
                             `)}
                             <li id="drop-zone" 
-                                @click="${(_: Event) => this.clickOnDropZone()}" 
-                                @drop="${(e: DataEvent) => this.dropOnDropZone(e)}" 
-                                @dragover="${(e: DataEvent) => this.dragOverDropZone(e)}"
+                                @click="${this.clickOnDropZone}" 
+                                @drop="${this.dropOnDropZone}" 
+                                @dragover="${this.dragOverDropZone}"
                                 ><span>Add your image here</span>
                             </li>
                         </ul>
@@ -133,7 +137,7 @@ export class LandingTemplate {
                         class="start btn-crt btn-white" 
                         type="button" 
                         value="Play Simulation" 
-                        @click="${(_: Event) => this.clickPlaySimulation()}" 
+                        @click="${this.clickPlaySimulation}" 
                         ?disabled="${state.isRunningOnMobileDevice}"
                         title="${state.isRunningOnMobileDevice ? 'You need a PC with NVIDIA or ATI graphics card with updated drivers and a WebGL2 compatible browser (Firefox, Opera or Chrome) in order to run this without problems.' : ''}"
                     >

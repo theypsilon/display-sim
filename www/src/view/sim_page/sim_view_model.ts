@@ -17,6 +17,7 @@ import { Constants } from '../../services/constants';
 import { Logger } from '../../services/logger';
 import { Navigator } from '../../services/navigator';
 import { Visibility } from '../../services/visibility';
+import { SimTemplate } from "./sim_template";
 
 declare global {
     interface Document {
@@ -320,21 +321,21 @@ export interface SimViewInitDto {
 
 export class SimViewModel {
     private readonly _state: SimViewData;
-    private readonly _refresh: (() => void);
+    private readonly _template: SimTemplate;
     private readonly _navigator: Navigator;
     private readonly _visibility: Visibility;
     private _isDirty: boolean;
 
-    constructor (state: SimViewData, refresh: (() => void), navigator: Navigator, visibility: Visibility) {
+    constructor (state: SimViewData, template: SimTemplate, navigator: Navigator, visibility: Visibility) {
         this._state = state;
-        this._refresh = refresh;
+        this._template = template;
         this._navigator = navigator;
         this._visibility = visibility;
         this._isDirty = true;
     }
 
-    static make (state: SimViewData, refresh: (() => void), navigator?: Navigator, visibility?: Visibility) {
-        return new SimViewModel(state, refresh, navigator || Navigator.make(), visibility || Visibility.make());
+    static make (state: SimViewData, template: SimTemplate, navigator?: Navigator, visibility?: Visibility) {
+        return new SimViewModel(state, template, navigator || Navigator.make(), visibility || Visibility.make());
     }
 
     init (dto: SimViewInitDto) {
@@ -375,7 +376,7 @@ export class SimViewModel {
     newFrame () {
         if (!this._isDirty) return;
         this._isDirty = false;
-        this._refresh();
+        this._template.refresh(this._state);
     }
 
     toggleControls () {
