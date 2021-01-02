@@ -44,14 +44,14 @@ async function show (state: LandingViewData, events: LandingTemplateEvents, view
     view_model.turnVisibilityOn();
 
     events.addImage.subscribe(async file => await uploadFile(file)
-        .then(image => view_model.addImage(image))
+        .then(view_model.addImage)
         .catch(e => {
             view_model.showError('That file could not be loaded, try again with a picture.');
             console.error(e);
         })
     );
 
-    events.selectImage.subscribe((idx: number) => view_model.selectImage(idx));
+    events.selectImage.subscribe(view_model.selectImage);
 
     events.clickPlaySimulation.subscribe(async () => {
         view_model.turnVisibilityOff();
