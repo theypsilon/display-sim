@@ -17,6 +17,7 @@ import { Constants } from '../../services/constants';
 import { mobileAndTabletCheck } from '../../services/utils';
 import { Navigator } from '../../services/navigator';
 import { Visibility } from '../../services/visibility';
+import {LandingTemplate} from "./landing_template";
 
 export interface SimImage {
     src: string,
@@ -44,35 +45,35 @@ export function data () {
     };
 }
 
-export type ViewData = ReturnType<typeof data>;
+export type LandingViewData = ReturnType<typeof data>;
 
-export class View {
-    private readonly _refresh: () => void;
-    private readonly _state: ViewData;
+export class LandingViewModel {
+    private readonly _template: LandingTemplate;
+    private readonly _state: LandingViewData;
     private readonly _navigator: Navigator;
     private readonly _visibility: Visibility;
 
-    constructor (state: ViewData, refresh: (() => void), navigator: Navigator, visibility: Visibility) {
+    constructor (state: LandingViewData, template: LandingTemplate, navigator: Navigator, visibility: Visibility) {
         this._state = state;
-        this._refresh = refresh;
+        this._template = template;
         this._navigator = navigator;
         this._visibility = visibility;
     }
 
-    static make (state: ViewData, refresh: (() => void), navigator?: Navigator, visibility?: Visibility): View {
-        return new View(state, refresh, navigator || Navigator.make(), visibility || Visibility.make());
+    static make (state: LandingViewData, template: LandingTemplate, navigator?: Navigator, visibility?: Visibility): LandingViewModel {
+        return new LandingViewModel(state, template, navigator || Navigator.make(), visibility || Visibility.make());
     }
 
     turnVisibilityOn (): void {
         this._state.visible = true;
-        this._refresh();
+        this._template.refresh(this._state);
         this._visibility.hideLoading();
     }
 
     turnVisibilityOff (): void {
         this._visibility.showLoading();
         this._state.visible = false;
-        this._refresh();
+        this._template.refresh(this._state);
     }
 
     showError (message: string): void {
@@ -81,7 +82,7 @@ export class View {
 
     selectImage (idx: number): void {
         this._state.imageSelection = idx;
-        this._refresh();
+        this._template.refresh(this._state);
     }
 
     addImage (image: SimImage): void {

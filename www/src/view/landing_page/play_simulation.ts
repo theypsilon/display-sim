@@ -19,14 +19,14 @@ import { Constants } from '../../services/constants';
 import { Navigator } from '../../services/navigator';
 import { Mailbox } from '../../services/mailbox';
 import { AnimationsGateway } from '../../services/animations_gateway';
-import { ViewData } from './landing_view_model';
+import { LandingViewData } from './landing_view_model';
 import {throwOnNull} from "../../services/guards";
 
 const navigator = Navigator.make();
 const mailbox = Mailbox.getInstance();
 const animationsGateway = AnimationsGateway.make({ gifCaching: true });
 
-export async function playHtmlSelection (state: ViewData) {
+export async function playHtmlSelection (state: LandingViewData) {
     const animations = await getAnimations(state);
 
     Logger.log('image readed');
@@ -83,7 +83,7 @@ export async function playQuerystring (querystring: string) {
     navigator.goToSimPage();
 }
 
-async function getAnimations (state: ViewData) {
+async function getAnimations (state: LandingViewData) {
     const selectedImage = state.images[state.imageSelection];
     if (selectedImage.id === Constants.FIRST_PREVIEW_IMAGE_ID) {
         return animationsGateway.getFromHardcodedTileset();

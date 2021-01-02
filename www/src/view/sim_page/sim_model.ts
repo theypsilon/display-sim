@@ -13,11 +13,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import { Constants } from '../../services/constants';
-import { Logger } from '../../services/logger';
-import { Mailbox } from '../../services/mailbox';
-import { LocalStorage } from '../../services/local_storage';
-import { WasmBackend } from './sim_wasm_backend';
+import {Constants} from '../../services/constants';
+import {Logger} from '../../services/logger';
+import {Mailbox} from '../../services/mailbox';
+import {LocalStorage} from '../../services/local_storage';
+import {WasmBackend} from './sim_wasm_backend';
+import {throwOnNull} from "../../services/guards";
 
 const STORE_KEY_WEBGL_POWER_PREFERENCE = 'option-powerPreference';
 const STORE_KEY_WEBGL_ANTIALIAS = 'option-antialias';
@@ -25,68 +26,74 @@ const POWER_PREFERENCE_DEFAULT = 'default';
 const FILTERS_PRESET_STORE_KEY = 'FiltersPreset';
 
 export class Model {
-    constructor (canvas, eventBus, mailbox, wasmApplication, store) {
-        this.eventBus = eventBus;
-        this.mailbox = mailbox;
-        this.wasmApplication = wasmApplication;
-        this.store = store;
-        this.state = {
+    private readonly _eventBus: any;
+    private readonly _mailbox: Mailbox;
+    private readonly _wasmBackend: WasmBackend;
+    private readonly _store: LocalStorage;
+    private readonly _state: any;
+
+    constructor (canvas: HTMLCanvasElement, eventBus: any, mailbox: Mailbox, wasmBackend: WasmBackend, store: LocalStorage) {
+        this._eventBus = eventBus;
+        this._mailbox = mailbox;
+        this._wasmBackend = wasmBackend;
+        this._store = store;
+        this._state = {
             canvas,
             msg: null,
             loaded: false,
             storedValues: {
-                selectedPreset: this.store.getItem(FILTERS_PRESET_STORE_KEY) || Constants.PRESET_KIND_APERTURE_GRILLE_1,
-                powerPreference: this.store.getItem(STORE_KEY_WEBGL_POWER_PREFERENCE) || POWER_PREFERENCE_DEFAULT,
-                antialias: this.store.getItem(STORE_KEY_WEBGL_ANTIALIAS) !== 'false'
+                selectedPreset: this._store.getItem(FILTERS_PRESET_STORE_KEY) || Constants.PRESET_KIND_APERTURE_GRILLE_1,
+                powerPreference: this._store.getItem(STORE_KEY_WEBGL_POWER_PREFERENCE) || POWER_PREFERENCE_DEFAULT,
+                antialias: this._store.getItem(STORE_KEY_WEBGL_ANTIALIAS) !== 'false'
             }
         };
     }
 
-    static make (canvas, eventBus, mailbox, wasmApplication, store) {
+    static make (canvas: HTMLCanvasElement, eventBus: any, mailbox?: Mailbox, wasmBackend?: WasmBackend, store?: any) {
         return new Model(
             canvas,
             eventBus,
             mailbox || Mailbox.getInstance(),
-            wasmApplication || WasmBackend.getInstance(),
+            wasmBackend || WasmBackend.getInstance(),
             store || LocalStorage.make('sim-page')
         );
     }
 
     load () {
-        const messages = this.mailbox.consumeMessages('sim-page');
+        const messages = this._mailbox.consumeMessages('sim-page');
         if (messages.length !== 1) {
-            throw new Error('Can not handle these messages.', messages);
+            throw new Error('Can not handle these messages. ' + messages.toString());
         }
 
-        this.state.msg = messages.filter(msg => msg.topic === 'load-app')[0];
+        this._state.msg = messages.filter((msg: any) => msg.topic === 'load-app')[0];
         return this._launchSimulation();
     }
 
     async _launchSimulation () {
         await new Promise(resolve => window.requestAnimationFrame(resolve));
         this.resizeCanvas();
-        this.state.loaded = true;
+        this._state.loaded = true;
 
-        const result = await this.wasmApplication.load(this.state.canvas, this.eventBus, Object.assign({
+        const result = await this._wasmBackend.load(this._state.canvas, this._eventBus, Object.assign({
             ctxOptions: {
                 alpha: false,
-                antialias: this.state.storedValues.antialias,
+                antialias: this._state.storedValues.antialias,
                 depth: true,
                 failIfMajorPerformanceCaveat: false,
-                powerPreference: this.state.storedValues.powerPreference,
+                powerPreference: this._state.storedValues.powerPreference,
                 premultipliedAlpha: false,
                 preserveDrawingBuffer: false,
                 stencil: false
             }
-        }, this.state.msg.loadAppParams));
-        return Object.assign({ storedValues: this.state.storedValues }, this.state.msg, result);
+        }, this._state.msg.loadAppParams));
+        return Object.assign({ storedValues: this._state.storedValues }, this._state.msg, result);
     }
 
     runFrame () {
-        if (!this.state.loaded) {
+        if (!this._state.loaded) {
             return false;
         }
-        if (this.wasmApplication.runFrame()) {
+        if (this._wasmBackend.runFrame()) {
             return true;
         } else {
             this.unloadSimulation();
@@ -94,20 +101,20 @@ export class Model {
         }
     }
 
-    setPreset (preset) {
+    setPreset (preset: string) {
         if (preset !== Constants.PRESET_KIND_CUSTOM) {
-            this.state.storedValues.selectedPreset = preset;
+            this._state.storedValues.selectedPreset = preset;
             this._saveStoredValues();
         }
     }
 
     _saveStoredValues () {
-        this.store.setItem(FILTERS_PRESET_STORE_KEY, this.state.storedValues.selectedPreset);
-        this.store.setItem(STORE_KEY_WEBGL_POWER_PREFERENCE, this.state.storedValues.powerPreference);
-        this.store.setItem(STORE_KEY_WEBGL_ANTIALIAS, this.state.storedValues.antialias ? 'true' : 'false');
+        this._store.setItem(FILTERS_PRESET_STORE_KEY, this._state.storedValues.selectedPreset);
+        this._store.setItem(STORE_KEY_WEBGL_POWER_PREFERENCE, this._state.storedValues.powerPreference);
+        this._store.setItem(STORE_KEY_WEBGL_ANTIALIAS, this._state.storedValues.antialias ? 'true' : 'false');
     }
 
-    async changePerformance (performance, direction) {
+    async changePerformance (performance: string, direction: string) {
         const options = [POWER_PREFERENCE_DEFAULT, 'high-performance', 'low-power'];
         let index = options.indexOf(performance);
         switch (direction) {
@@ -116,27 +123,26 @@ export class Model {
         default: throw new Error('Unreachable!');
         }
         const newPerformance = options[index % options.length];
-        this.state.storedValues.performance = newPerformance;
+        this._state.storedValues.performance = newPerformance;
         this._saveStoredValues();
         await this._reloadSimulation();
         return newPerformance;
     }
 
-    async changeAntialiasing (currentAntialias) {
-        const newAntialias = !currentAntialias;
-        this.state.storedValues.antialias = newAntialias;
+    async changeAntialiasing (currentAntialias: boolean) {
+        this._state.storedValues.antialias = !currentAntialias;
         this._saveStoredValues();
         await this._reloadSimulation();
     }
 
     unloadSimulation () {
-        this.state.loaded = false;
-        this.wasmApplication.unload();
+        this._state.loaded = false;
+        this._wasmBackend.unload();
         const newCanvas = document.createElement('canvas');
-        newCanvas.setAttribute('tabindex', 0);
-        this.state.canvas.parentNode.replaceChild(newCanvas, this.state.canvas);
-        this.state.canvas.remove();
-        this.state.canvas = newCanvas;
+        newCanvas.setAttribute('tabindex', '0');
+        this._state.canvas.parentNode.replaceChild(newCanvas, this._state.canvas);
+        this._state.canvas.remove();
+        this._state.canvas = newCanvas;
     }
 
     async _reloadSimulation () {
@@ -147,22 +153,22 @@ export class Model {
 
     resizeCanvas () {
         const dpi = window.devicePixelRatio;
-        const canvas = this.state.canvas;
+        const canvas = this._state.canvas;
         const width = canvas.width = canvas.offsetWidth * dpi;
         const height = canvas.height = canvas.offsetHeight * dpi;    
         return { width, height };
     }
 
-    async fireScreenshot ({ buffer, width, height }) {
+    async fireScreenshot ({ buffer, width, height }: { buffer: ArrayLike<number>, width: number, height: number}) {
         Logger.log('starting screenshot');
         Logger.log('width', width, 'height', height);
 
-        var canvas = document.createElement('canvas');
+        const canvas = document.createElement('canvas');
         canvas.width = width;
         canvas.height = height;
-        var ctx = canvas.getContext('2d');
+        const ctx = throwOnNull(canvas.getContext('2d'));
     
-        var imageData = ctx.createImageData(width, height);
+        const imageData = ctx.createImageData(width, height);
         imageData.data.set(buffer);
         ctx.putImageData(imageData, 0, 0);
         ctx.globalCompositeOperation = 'copy';

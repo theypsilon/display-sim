@@ -14,31 +14,65 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 import { html, render } from 'lit-html';
-import { ViewData } from './landing_view_model';
+import { LandingViewData } from './landing_view_model';
 import {DataEvent, FileEvent} from '../../services/event_types';
 import {PubSub} from "../../services/pubsub";
 
 const css = require('!css-loader!./css/landing_page.css').default.toString();
 
-export type TemplateEvents = ReturnType<typeof actions>;
+export type LandingTemplateEvents = ReturnType<typeof actions>;
 
 export function actions() {
     return {
-        changedFileInput: PubSub.make<FileEvent>(),
+        addImage: PubSub.make<File>(),
         selectImage: PubSub.make<number>(),
-        clickOnDropZone: PubSub.make<void>(),
-        dropOnDropZone: PubSub.make<DataEvent>(),
-        dragOverDropZone: PubSub.make<DataEvent>(),
         clickPlaySimulation: PubSub.make<void>()
     };
 }
 
-export function renderTemplate (state: ViewData, actions: TemplateEvents, root: ShadowRoot) {
-    render(generateLandingTemplate(state, actions), root);
-}
+export class LandingTemplate {
+    private readonly _root: ShadowRoot;
+    private readonly _actions: LandingTemplateEvents;
 
-function generateLandingTemplate (state: ViewData, actions: TemplateEvents) {
-    return html`
+    constructor(root: ShadowRoot, actions: LandingTemplateEvents) {
+        this._actions = actions;
+        this._root = root;
+    }
+
+    refresh(state: LandingViewData): void {
+        render(this.generateLandingTemplate(state), this._root);
+    }
+
+    private changedFileInput(e: FileEvent): void {
+        this._actions.addImage.fire(e.target.files[0]);
+    }
+
+    private selectImage(idx: number): void {
+        this._actions.selectImage.fire(idx);
+    }
+
+    private clickOnDropZone(): void {
+        this._root.getElementById('file')?.click()
+    }
+
+    private dropOnDropZone(e: DataEvent): void {
+        e.stopPropagation();
+        e.preventDefault();
+        this._actions.addImage.fire(e.dataTransfer.files[0]);
+    }
+
+    private dragOverDropZone(e: DataEvent): void {
+        e.stopPropagation();
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+    }
+
+    private clickPlaySimulation(): void {
+        this._actions.clickPlaySimulation.fire();
+    }
+
+    private generateLandingTemplate (state: LandingViewData) {
+        return html`
     <style>
         ${css}
     </style>
@@ -76,19 +110,19 @@ function generateLandingTemplate (state: ViewData, actions: TemplateEvents) {
                 <div class="col-sm-12 render-tests row">
                     <div class="margin-sm-bottom">
                         <h3>Select Image</h3>
-                        <input type="file" id="file" class="display-none" accept="image/*" @change="${(e: FileEvent) => actions.changedFileInput.fire(e)}">
+                        <input type="file" id="file" class="display-none" accept="image/*" @change="${(e: FileEvent) => this.changedFileInput(e)}">
                         <ul id="select-image-list" class="well select-image col-sm-12">
                             ${state.images.map((image, idx) => html`
-                                <li id="${image.id}" @click="${() => actions.selectImage.fire(idx)}" class="selectable-image ${idx === state.imageSelection ? 'selected-image' : ''}">
+                                <li id="${image.id}" @click="${() => this.selectImage(idx)}" class="selectable-image ${idx === state.imageSelection ? 'selected-image' : ''}">
                                     <div><img src=${image.src} data-hq=${image.hq}><span>${image.width} ✕
                                             ${image.height}</span>
                                     </div>
                                 </li>                                    
                             `)}
                             <li id="drop-zone" 
-                                @click="${(_: Event) => actions.clickOnDropZone.fire()}" 
-                                @drop="${(e: DataEvent) => actions.dropOnDropZone.fire(e)}" 
-                                @dragover="${(e: DataEvent) => actions.dragOverDropZone.fire(e)}"
+                                @click="${(_: Event) => this.clickOnDropZone()}" 
+                                @drop="${(e: DataEvent) => this.dropOnDropZone(e)}" 
+                                @dragover="${(e: DataEvent) => this.dragOverDropZone(e)}"
                                 ><span>Add your image here</span>
                             </li>
                         </ul>
@@ -98,7 +132,7 @@ function generateLandingTemplate (state: ViewData, actions: TemplateEvents) {
                         class="start btn-crt btn-white" 
                         type="button" 
                         value="Play Simulation" 
-                        @click="${(_: Event) => actions.clickPlaySimulation.fire()}" 
+                        @click="${(_: Event) => this.clickPlaySimulation()}" 
                         ?disabled="${state.isRunningOnMobileDevice}"
                         title="${state.isRunningOnMobileDevice ? 'You need a PC with NVIDIA or ATI graphics card with updated drivers and a WebGL2 compatible browser (Firefox, Opera or Chrome) in order to run this without problems.' : ''}"
                     >
@@ -178,4 +212,5 @@ function generateLandingTemplate (state: ViewData, actions: TemplateEvents) {
         </footer>
     </section>
 `;
+    }
 }

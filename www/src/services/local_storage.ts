@@ -18,11 +18,11 @@ export class LocalStorage {
     private readonly _prefix: string;
 
     constructor (prefix: string, root: any) {
-        this._root = root || window;
+        this._root = root;
         this._prefix = prefix;
     }
-    static make (prefix: string, root: any): LocalStorage {
-        return new LocalStorage(prefix, root);
+    static make (prefix: string, root?: any): LocalStorage {
+        return new LocalStorage(prefix, root || window);
     }
     getItem (key: string): string | null {
         return localStorage.getItem('DISPLAY_SIM.' + this._prefix + '.' + key);

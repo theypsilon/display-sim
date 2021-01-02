@@ -31,11 +31,7 @@ export class PubSub<T> implements Observable<T>, Action<T> {
 
     async fire (event: T): Promise<void> {
         for (const cb of this._callbacks) {
-            try {
-                await cb(event);
-            } catch (e) {
-                console.error(e);
-            }
+            await cb(event);
         }
     }
 

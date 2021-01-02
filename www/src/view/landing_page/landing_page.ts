@@ -13,11 +13,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-import { renderTemplate, actions } from './landing_template';
+import { LandingTemplate, actions, LandingTemplateEvents} from './landing_template';
 import { playHtmlSelection, playQuerystring } from './play_simulation';
 
-import {data, View, SimImage } from './landing_view_model';
-import {DataEvent, FileEvent} from '../../services/event_types';
+import {data, LandingViewModel, SimImage, LandingViewData} from './landing_view_model';
 
 class LandingPage extends HTMLElement {
     constructor () {
@@ -36,40 +35,26 @@ async function setupPage (root: ShadowRoot) {
     if (window.location.hash.length > 1) {
         return playQuerystring(window.location.hash.substr(1));
     }
+    const template = new LandingTemplate(root, events);
+    const view_model = LandingViewModel.make(state, template);
+    await show(state, events, view_model);
+}
 
-    const view = View.make(state, () => renderTemplate(state, events, root));
-    view.turnVisibilityOn();
+async function show (state: LandingViewData, events: LandingTemplateEvents, view_model: LandingViewModel) {
+    view_model.turnVisibilityOn();
 
-    events.changedFileInput.subscribe(async (e: FileEvent) => {
-        const image = await uploadFile(e.target.files[0]).catch(e => {
-            view.showError('That file could not be loaded, try again with a picture.');
-            throw e;
-        });
-        view.addImage(image);
-    });
+    events.addImage.subscribe(async file => await uploadFile(file)
+        .then(image => view_model.addImage(image))
+        .catch(e => {
+            view_model.showError('That file could not be loaded, try again with a picture.');
+            console.error(e);
+        })
+    );
 
-    events.selectImage.subscribe((e: number) => view.selectImage(e));
-
-    events.clickOnDropZone.subscribe(_ => root.getElementById('file')?.click())
-
-    events.dropOnDropZone.subscribe(async (e: DataEvent) => {
-        e.stopPropagation();
-        e.preventDefault();
-        const image = await uploadFile(e.dataTransfer.files[0]).catch(e => {
-            view.showError('That file could not be loaded, try again with a picture.');
-            throw e;
-        });
-        view.addImage(image);
-    });
-
-    events.dragOverDropZone.subscribe((e: DataEvent) => {
-        e.stopPropagation();
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'copy';
-    })
+    events.selectImage.subscribe((idx: number) => view_model.selectImage(idx));
 
     events.clickPlaySimulation.subscribe(async () => {
-        view.turnVisibilityOff();
+        view_model.turnVisibilityOff();
         await playHtmlSelection(state);
     })
 }
