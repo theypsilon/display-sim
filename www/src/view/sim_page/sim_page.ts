@@ -19,7 +19,7 @@ import {PubSub, PubSubImpl} from '../../services/pubsub';
 
 import { renderTemplate } from './sim_template';
 import {data, SimViewModel, SimViewData} from './sim_view_model';
-import { Model } from './sim_model';
+import { SimModel } from './sim_model';
 import {throwOnNull} from "../../services/guards";
 import {Disposable} from "../../services/disposable";
 import {ObserverCb} from "../../services/observable";
@@ -70,17 +70,17 @@ async function setupPage (root: ShadowRoot, state: SimViewData, observers: Obser
 }
 
 function setupView (state: SimViewData, root: ShadowRoot, frontendObserver: PubSub<any>): [SimViewModel, HTMLCanvasElement] {
-    const view = SimViewModel.make(state, () => renderTemplate(state, fireEventOn(frontendObserver), root));
+    const view_model = SimViewModel.make(state, () => renderTemplate(state, fireEventOn(frontendObserver), root));
 
     // first frame, so there can be a canvas element rendered. We will need it in the following line.
-    view.newFrame();
+    view_model.newFrame();
 
-    return [view, throwOnNull(root.getElementById('gl-canvas-id') as HTMLCanvasElement | null)];
+    return [view_model, throwOnNull(root.getElementById('gl-canvas-id') as HTMLCanvasElement | null)];
 }
 
-async function setupModel (canvas: HTMLCanvasElement, view: SimViewModel, backendBus: PubSub<any>) {
-    const model = Model.make(canvas, backendBus);
-    view.init(await model.load());
+async function setupModel (canvas: HTMLCanvasElement, view_model: SimViewModel, backendBus: PubSub<any>) {
+    const model = SimModel.make(canvas, backendBus);
+    view_model.init(await model.load());
     return model;
 }
 
@@ -94,7 +94,7 @@ function fireEventOn (observer: PubSub<any>) {
     };
 }
 
-function setupEventHandling (canvasParent: Node & ParentNode, view: SimViewModel, model: Model, frontendBus: PubSub<any>) {
+function setupEventHandling (canvasParent: Node & ParentNode, view_model: SimViewModel, model: SimModel, frontendBus: PubSub<any>) {
     function fireBackendEvent (kind: string, msg?: any) {
         const event = {
             message: msg,
@@ -123,7 +123,7 @@ function setupEventHandling (canvasParent: Node & ParentNode, view: SimViewModel
         switch (e.type) {
         case 'front2front:dispatchKey': {
             if (msg.key.startsWith('webgl:')) {    
-                return handleWebGLKeys(msg, model, view);
+                return handleWebGLKeys(msg, model, view_model);
             }
             let pressed;
             let timeout;
@@ -138,70 +138,70 @@ function setupEventHandling (canvasParent: Node & ParentNode, view: SimViewModel
         }
         case 'front2front:toggleCheckbox': {
             if (msg.kind === 'webgl:antialias') {
-                view.showLoading();
+                view_model.showLoading();
                 await model.changeAntialiasing(msg.value);
-                view.changeAntialias(msg.value);
+                view_model.changeAntialias(msg.value);
             } else {
                 return fireBackendEvent(msg.kind, msg.value);
             }
             break;
         }
         case 'front2front:changeSyncedInput': return fireBackendEvent(msg.kind, msg.value);
-        case 'front2front:toggleControls': return view.toggleControls();
-        case 'front2front:toggleMenu': return view.toggleMenu(msg);
-        case 'back2front:top_message': return view.openTopMessage(msg);
-        case 'back2front:request_fullscreen': return view.setFullscreen();
-        case 'back2front:request_pointer_lock': return view.requestPointerLock();
-        case 'back2front:preset_selected_name': return view.presetSelectedName(msg);
+        case 'front2front:toggleControls': return view_model.toggleControls();
+        case 'front2front:toggleMenu': return view_model.toggleMenu(msg);
+        case 'back2front:top_message': return view_model.openTopMessage(msg);
+        case 'back2front:request_fullscreen': return view_model.setFullscreen();
+        case 'back2front:request_pointer_lock': return view_model.requestPointerLock();
+        case 'back2front:preset_selected_name': return view_model.presetSelectedName(msg);
         case 'back2front:screenshot': return model.fireScreenshot(msg);
-        case 'back2front:camera_update': return view.updateCameraMatrix(msg);
-        case 'back2front:toggle_info_panel': return view.toggleInfoPanel();
-        case 'back2front:fps': return view.changeFps(msg);
-        case 'back2front:exit_pointer_lock': return view.exitPointerLock();
-        case 'back2front:exiting_session': return view.exitingSession();
-        case 'back2front:change_camera_movement_mode': return view.changeCameraMovementMode(msg);
-        case 'back2front:change_camera_zoom': return view.changeCameraZoom(msg);
-        case 'back2front:change_pixel_width': return view.changePixelWidth(msg);
-        case 'back2front:change_pixel_horizontal_gap': return view.changePixelHorizontalGap(msg);
-        case 'back2front:change_pixel_vertical_gap': return view.changePixelVerticalGap(msg);
-        case 'back2front:change_pixel_spread': return view.changePixelSpread(msg);
-        case 'back2front:change_pixel_brightness': return view.changePixelBrightness(msg);
-        case 'back2front:change_pixel_contrast': return view.changePixelContrast(msg);
-        case 'back2front:change_blur_level': return view.changeBlurLevel(msg);
-        case 'back2front:change_vertical_lpp': return view.changeVerticalLpp(msg);
-        case 'back2front:change_horizontal_lpp': return view.changeHorizontalLpp(msg);
-        case 'back2front:change_light_color': return view.changeLightColor(msg);
-        case 'back2front:change_brightness_color': return view.changeBrightnessColor(msg);
-        case 'back2front:change_movement_speed': return view.changeMovementSpeed(msg);
-        case 'back2front:change_pixel_speed': return view.changePixelSpeed(msg);
-        case 'back2front:change_turning_speed': return view.changeTurningSpeed(msg);
-        case 'back2front:color_representation': return view.changeColorRepresentation(msg);
-        case 'back2front:scaling_method': return view.changeScalingMethod(msg);
-        case 'back2front:scaling_resolution_width': return view.changeCustomScalingResWidth(msg);
-        case 'back2front:scaling_resolution_height': return view.changeCustomScalingResHeight(msg);
-        case 'back2front:scaling_aspect_ratio_x': return view.changeCustomScalingArX(msg);
-        case 'back2front:scaling_aspect_ratio_y': return view.changeCustomScalingArY(msg);
-        case 'back2front:custom_scaling_stretch_nearest': return view.changeCustomScalingStretchNearest(msg);
-        case 'back2front:pixel_geometry': return view.changePixelGeometry(msg);
-        case 'back2front:pixel_shadow_shape': return view.changePixelShadowShape(msg);
-        case 'back2front:pixel_shadow_height': return view.changePixelShadowHeight(msg);
-        case 'back2front:backlight_percent': return view.changeBacklightPercent(msg);
-        case 'back2front:internal_resolution': return view.changeInternalResolution(msg);
-        case 'back2front:texture_interpolation': return view.changeTextureInterpolation(msg);
-        case 'back2front:screen_curvature': return view.changeScreenCurvature(msg);
-        case 'back2front:color_gamma': return view.changeColorGamma(msg);
-        case 'back2front:color_noise': return view.changeColorNoise(msg);
-        case 'back2front:rgb_red_r': return view.changeColorRgb(msg, 'red', 'r');
-        case 'back2front:rgb_red_g': return view.changeColorRgb(msg, 'red', 'g');
-        case 'back2front:rgb_red_b': return view.changeColorRgb(msg, 'red', 'b');
-        case 'back2front:rgb_green_r': return view.changeColorRgb(msg, 'green', 'r');
-        case 'back2front:rgb_green_g': return view.changeColorRgb(msg, 'green', 'g');
-        case 'back2front:rgb_green_b': return view.changeColorRgb(msg, 'green', 'b');
-        case 'back2front:rgb_blue_r': return view.changeColorRgb(msg, 'blue', 'r');
-        case 'back2front:rgb_blue_g': return view.changeColorRgb(msg, 'blue', 'g');
-        case 'back2front:rgb_blue_b': return view.changeColorRgb(msg, 'blue', 'b');
+        case 'back2front:camera_update': return view_model.updateCameraMatrix(msg);
+        case 'back2front:toggle_info_panel': return view_model.toggleInfoPanel();
+        case 'back2front:fps': return view_model.changeFps(msg);
+        case 'back2front:exit_pointer_lock': return view_model.exitPointerLock();
+        case 'back2front:exiting_session': return view_model.exitingSession();
+        case 'back2front:change_camera_movement_mode': return view_model.changeCameraMovementMode(msg);
+        case 'back2front:change_camera_zoom': return view_model.changeCameraZoom(msg);
+        case 'back2front:change_pixel_width': return view_model.changePixelWidth(msg);
+        case 'back2front:change_pixel_horizontal_gap': return view_model.changePixelHorizontalGap(msg);
+        case 'back2front:change_pixel_vertical_gap': return view_model.changePixelVerticalGap(msg);
+        case 'back2front:change_pixel_spread': return view_model.changePixelSpread(msg);
+        case 'back2front:change_pixel_brightness': return view_model.changePixelBrightness(msg);
+        case 'back2front:change_pixel_contrast': return view_model.changePixelContrast(msg);
+        case 'back2front:change_blur_level': return view_model.changeBlurLevel(msg);
+        case 'back2front:change_vertical_lpp': return view_model.changeVerticalLpp(msg);
+        case 'back2front:change_horizontal_lpp': return view_model.changeHorizontalLpp(msg);
+        case 'back2front:change_light_color': return view_model.changeLightColor(msg);
+        case 'back2front:change_brightness_color': return view_model.changeBrightnessColor(msg);
+        case 'back2front:change_movement_speed': return view_model.changeMovementSpeed(msg);
+        case 'back2front:change_pixel_speed': return view_model.changePixelSpeed(msg);
+        case 'back2front:change_turning_speed': return view_model.changeTurningSpeed(msg);
+        case 'back2front:color_representation': return view_model.changeColorRepresentation(msg);
+        case 'back2front:scaling_method': return view_model.changeScalingMethod(msg);
+        case 'back2front:scaling_resolution_width': return view_model.changeCustomScalingResWidth(msg);
+        case 'back2front:scaling_resolution_height': return view_model.changeCustomScalingResHeight(msg);
+        case 'back2front:scaling_aspect_ratio_x': return view_model.changeCustomScalingArX(msg);
+        case 'back2front:scaling_aspect_ratio_y': return view_model.changeCustomScalingArY(msg);
+        case 'back2front:custom_scaling_stretch_nearest': return view_model.changeCustomScalingStretchNearest(msg);
+        case 'back2front:pixel_geometry': return view_model.changePixelGeometry(msg);
+        case 'back2front:pixel_shadow_shape': return view_model.changePixelShadowShape(msg);
+        case 'back2front:pixel_shadow_height': return view_model.changePixelShadowHeight(msg);
+        case 'back2front:backlight_percent': return view_model.changeBacklightPercent(msg);
+        case 'back2front:internal_resolution': return view_model.changeInternalResolution(msg);
+        case 'back2front:texture_interpolation': return view_model.changeTextureInterpolation(msg);
+        case 'back2front:screen_curvature': return view_model.changeScreenCurvature(msg);
+        case 'back2front:color_gamma': return view_model.changeColorGamma(msg);
+        case 'back2front:color_noise': return view_model.changeColorNoise(msg);
+        case 'back2front:rgb_red_r': return view_model.changeColorRgb(msg, 'red', 'r');
+        case 'back2front:rgb_red_g': return view_model.changeColorRgb(msg, 'red', 'g');
+        case 'back2front:rgb_red_b': return view_model.changeColorRgb(msg, 'red', 'b');
+        case 'back2front:rgb_green_r': return view_model.changeColorRgb(msg, 'green', 'r');
+        case 'back2front:rgb_green_g': return view_model.changeColorRgb(msg, 'green', 'g');
+        case 'back2front:rgb_green_b': return view_model.changeColorRgb(msg, 'green', 'b');
+        case 'back2front:rgb_blue_r': return view_model.changeColorRgb(msg, 'blue', 'r');
+        case 'back2front:rgb_blue_g': return view_model.changeColorRgb(msg, 'blue', 'g');
+        case 'back2front:rgb_blue_b': return view_model.changeColorRgb(msg, 'blue', 'b');
         case 'front2front:clickPreset': {
-            view.clickPreset(msg);
+            view_model.clickPreset(msg);
             model.setPreset(msg);
             fireBackendEvent(Constants.FILTER_PRESETS_SELECTED_EVENT_KIND, msg);
             break;
@@ -214,7 +214,7 @@ function setupEventHandling (canvasParent: Node & ParentNode, view: SimViewModel
     let newFrameId: number;
     (function requestNewFrame () {
         model.runFrame();
-        view.newFrame();
+        view_model.newFrame();
         newFrameId = window.requestAnimationFrame(requestNewFrame);
     })();
 
@@ -252,7 +252,7 @@ function setupEventHandling (canvasParent: Node & ParentNode, view: SimViewModel
     };
 }
 
-async function handleWebGLKeys (msg: {key: string, action: string, current: string}, model: Model, view: SimViewModel) {
+async function handleWebGLKeys (msg: {key: string, action: string, current: string}, model: SimModel, view_model: SimViewModel) {
     let direction;
     if (msg.key.endsWith('-dec')) {
         direction = 'dec';
@@ -265,9 +265,9 @@ async function handleWebGLKeys (msg: {key: string, action: string, current: stri
     case 'webgl:performance-inc':
     case 'webgl:performance-dec': {
         if (msg.action === 'keydown') {
-            view.showLoading();
+            view_model.showLoading();
             const performance = await model.changePerformance(msg.current, direction);
-            view.changePerformance(performance);
+            view_model.changePerformance(performance);
         }
         break;
     }

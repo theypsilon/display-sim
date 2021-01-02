@@ -17,7 +17,7 @@ import {Constants} from '../../services/constants';
 import {Logger} from '../../services/logger';
 import {Mailbox} from '../../services/mailbox';
 import {LocalStorage} from '../../services/local_storage';
-import {WasmBackend} from './sim_wasm_backend';
+import {SimWasmBackend} from './sim_wasm_backend';
 import {throwOnNull} from "../../services/guards";
 
 const STORE_KEY_WEBGL_POWER_PREFERENCE = 'option-powerPreference';
@@ -25,14 +25,14 @@ const STORE_KEY_WEBGL_ANTIALIAS = 'option-antialias';
 const POWER_PREFERENCE_DEFAULT = 'default';
 const FILTERS_PRESET_STORE_KEY = 'FiltersPreset';
 
-export class Model {
+export class SimModel {
     private readonly _eventBus: any;
     private readonly _mailbox: Mailbox;
-    private readonly _wasmBackend: WasmBackend;
+    private readonly _wasmBackend: SimWasmBackend;
     private readonly _store: LocalStorage;
     private readonly _state: any;
 
-    constructor (canvas: HTMLCanvasElement, eventBus: any, mailbox: Mailbox, wasmBackend: WasmBackend, store: LocalStorage) {
+    constructor (canvas: HTMLCanvasElement, eventBus: any, mailbox: Mailbox, wasmBackend: SimWasmBackend, store: LocalStorage) {
         this._eventBus = eventBus;
         this._mailbox = mailbox;
         this._wasmBackend = wasmBackend;
@@ -49,12 +49,12 @@ export class Model {
         };
     }
 
-    static make (canvas: HTMLCanvasElement, eventBus: any, mailbox?: Mailbox, wasmBackend?: WasmBackend, store?: any) {
-        return new Model(
+    static make (canvas: HTMLCanvasElement, eventBus: any, mailbox?: Mailbox, wasmBackend?: SimWasmBackend, store?: any) {
+        return new SimModel(
             canvas,
             eventBus,
             mailbox || Mailbox.getInstance(),
-            wasmBackend || WasmBackend.getInstance(),
+            wasmBackend || SimWasmBackend.getInstance(),
             store || LocalStorage.make('sim-page')
         );
     }

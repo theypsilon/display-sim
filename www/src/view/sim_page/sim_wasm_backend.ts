@@ -16,11 +16,11 @@
 import { Logger } from '../../services/logger';
 import { Lazy } from '../../services/lazy';
 
-export class WasmBackend {
+export class SimWasmBackend {
     private _app: any;
 
-    private static _instance: Lazy<WasmBackend> = Lazy.from(() => new WasmBackend());
-    static getInstance (): WasmBackend { return this._instance.get(); }
+    private static _instance: Lazy<SimWasmBackend> = Lazy.from(() => new SimWasmBackend());
+    static getInstance (): SimWasmBackend { return this._instance.get(); }
     private constructor () {
         this._app = null;
     }
