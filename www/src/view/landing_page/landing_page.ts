@@ -16,7 +16,8 @@
 import { LandingTemplate, actions, LandingTemplateEvents} from './landing_template';
 import { playHtmlSelection, playQuerystring } from './play_simulation';
 
-import {data, LandingViewModel, SimImage, LandingViewData} from './landing_view_model';
+import {data, LandingViewModel, LandingViewData} from './landing_view_model';
+import {SimImage} from "../../services/images";
 
 class LandingPage extends HTMLElement {
     constructor () {

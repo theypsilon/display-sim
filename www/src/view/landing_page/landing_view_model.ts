@@ -18,26 +18,17 @@ import { mobileAndTabletCheck } from '../../services/utils';
 import { Navigator } from '../../services/navigator';
 import { Visibility } from '../../services/visibility';
 import {LandingTemplate} from "./landing_template";
-
-export interface SimImage {
-    src: string,
-    hq: string,
-    width: number,
-    height: number,
-    id?: string,
-    img?: HTMLImageElement & {isGif: boolean},
-    isGif?: boolean
-}
+import {SimImage, Images} from "../../services/images";
 
 export function data () {
     return {
         images: [
-            { src: require('../../../assets/pics/opt-frames/wwix.gif').default, hq: require('../../../assets/pics/frames/wwix.gif').default, width: 256, height: 224, id: Constants.FIRST_PREVIEW_IMAGE_ID } as SimImage,
-            { src: require('../../../assets/pics/opt-frames/seiken.png').default, hq: require('../../../assets/pics/frames/seiken.png').default, width: 256, height: 224 } as SimImage,
-            { src: require('../../../assets/pics/opt-frames/sonicscroll.gif').default, hq: require('../../../assets/pics/frames/sonicscroll.gif').default, width: 320, height: 224 } as SimImage,
-            { src: require('../../../assets/pics/opt-frames/metroid.gif').default, hq: require('../../../assets/pics/frames/metroid.gif').default, width: 256, height: 224 } as SimImage,
-            { src: require('../../../assets/pics/opt-frames/tf4.gif').default, hq: require('../../../assets/pics/frames/tf4.gif').default, width: 320, height: 224 } as SimImage,
-            { src: require('../../../assets/pics/opt-frames/dkc2.png').default, hq: require('../../../assets/pics/frames/dkc2.png').default, width: 256, height: 224 } as SimImage
+            { src: Images.wwix.src, hq: Images.wwix.hq, width: 256, height: 224, id: Constants.FIRST_PREVIEW_IMAGE_ID } as SimImage,
+            { src: Images.seiken.src, hq: Images.seiken.hq, width: 256, height: 224 } as SimImage,
+            { src: Images.sonicscroll.src, hq: Images.sonicscroll.hq, width: 320, height: 224 } as SimImage,
+            { src: Images.metroid.src, hq: Images.metroid.hq, width: 256, height: 224 } as SimImage,
+            { src: Images.tf4.src, hq: Images.tf4.hq, width: 320, height: 224 } as SimImage,
+            { src: Images.dkc2.src, hq: Images.dkc2.hq, width: 256, height: 224 } as SimImage
         ],
         imageSelection: 0,
         visible: false,

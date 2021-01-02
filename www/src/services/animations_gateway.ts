@@ -18,6 +18,7 @@ import { Decoder } from 'fastgif/fastgif';
 
 import { Logger } from './logger';
 import {throwOnNull} from "./guards";
+import {Images} from "./images";
 
 declare global {
     interface Window {
@@ -62,7 +63,7 @@ export class AnimationsGateway {
         await new Promise((resolve, reject) => {
             img.onload = resolve;
             img.onerror = reject;
-            img.src = require('../../assets/pics/wwix_spritesheet.png').default;
+            img.src = Images.wwix_spritesheet;
         });
         const canvas = document.createElement('canvas');
         const ctx = throwOnNull(canvas.getContext('2d'));

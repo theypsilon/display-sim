@@ -17,6 +17,7 @@ import { html, render } from 'lit-html';
 import { LandingViewData } from './landing_view_model';
 import {DataEvent, FileEvent} from '../../services/event_types';
 import {PubSub} from "../../services/pubsub";
+import {Images} from "../../services/images";
 
 const css = require('!css-loader!./css/landing_page.css').default.toString();
 
@@ -79,7 +80,7 @@ export class LandingTemplate {
 
     <section id="ui" class="${state.visible ? '' : 'display-none'}">
         <a href="https://github.com/theypsilon/display-sim">
-            <img id="fork-me" src="${require('../../../assets/pics/forkme.png').default}" alt="Fork me on GitHub">
+            <img id="fork-me" src="${Images.forkme}" alt="Fork me on GitHub">
         </a>
         <header class="container bg-white jumbotron page-header">
             <h1 class="margin-sm-bottom">Display Sim</h1>
