@@ -1,11 +1,11 @@
 import { assert } from 'chai';
 import * as sinon from 'sinon';
-import { Observable } from '../../src/services/observable';
+import { PubSubImpl } from '../../src/services/pubsub';
 
-describe('Observer', () => {
+describe('PubSub', () => {
     let sut, spy;
     beforeEach(() => {
-        sut = Observable.make();
+        sut = PubSubImpl.make();
         spy = sinon.spy();
     });
 
