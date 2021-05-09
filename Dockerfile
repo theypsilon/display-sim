@@ -57,7 +57,7 @@ RUN ./scripts/test.sh --rust-only \
     && cp -r /app/www/src/wasm /wasm \
     && rm -rf /app
 
-FROM node:14.15-alpine3.11 as webpack-artifact
+FROM node:16.1.0-alpine3.12 as webpack-artifact
 WORKDIR /www
 ADD www/package*.json ./
 RUN npm install
@@ -67,9 +67,8 @@ RUN npm test \
     && npm run lint \
     && npm run build
 
-FROM nginx:1.15.10-alpine
-RUN addgroup -g 82 -S www-data \
-    && adduser -u 82 -D -S -G www-data www-data
+FROM nginx:1.20.0-alpine
+RUN adduser -u 82 -D -S -G www-data www-data
 ADD nginx/h5bp/ /etc/nginx/h5bp/
 ADD nginx/* /etc/nginx/
 COPY --from=webpack-artifact /www/dist/* /var/www/html/
