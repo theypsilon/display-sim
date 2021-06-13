@@ -256,68 +256,38 @@ impl Default for Scaling {
 }
 
 #[derive(Clone, Arraygen)]
-#[gen_array(pub fn get_ui_controllers: &dyn UiController)]
-#[gen_array(pub fn get_ui_controllers_mut: &mut dyn UiController)]
+#[gen_array(pub fn get_ui_controllers: &dyn UiController, implicit_select_all: _)]
+#[gen_array(pub fn get_ui_controllers_mut: &mut dyn UiController, implicit_select_all: _)]
 pub struct Controllers {
-    #[in_array(get_ui_controllers, get_ui_controllers_mut)]
     pub internal_resolution: InternalResolution,
-    #[in_array(get_ui_controllers, get_ui_controllers_mut)]
     pub texture_interpolation: TextureInterpolation,
-    #[in_array(get_ui_controllers, get_ui_controllers_mut)]
     pub blur_passes: BlurPasses,
-    #[in_array(get_ui_controllers, get_ui_controllers_mut)]
     pub vertical_lpp: VerticalLpp,
-    #[in_array(get_ui_controllers, get_ui_controllers_mut)]
     pub horizontal_lpp: HorizontalLpp,
-    #[in_array(get_ui_controllers, get_ui_controllers_mut)]
     pub light_color: LightColor,
-    #[in_array(get_ui_controllers, get_ui_controllers_mut)]
     pub brightness_color: BrightnessColor,
-    #[in_array(get_ui_controllers, get_ui_controllers_mut)]
     pub extra_bright: ExtraBright,
-    #[in_array(get_ui_controllers, get_ui_controllers_mut)]
     pub extra_contrast: ExtraContrast,
-    #[in_array(get_ui_controllers, get_ui_controllers_mut)]
     pub cur_pixel_vertical_gap: CurPixelVerticalGap,
-    #[in_array(get_ui_controllers, get_ui_controllers_mut)]
     pub cur_pixel_horizontal_gap: CurPixelHorizontalGap,
-    #[in_array(get_ui_controllers, get_ui_controllers_mut)]
     pub cur_pixel_spread: CurPixelSpread,
-    #[in_array(get_ui_controllers, get_ui_controllers_mut)]
     pub pixel_shadow_height: PixelShadowHeight,
-    #[in_array(get_ui_controllers, get_ui_controllers_mut)]
     pub pixels_geometry_kind: PixelGeometryKind,
-    #[in_array(get_ui_controllers, get_ui_controllers_mut)]
     pub color_channels: ColorChannels,
-    #[in_array(get_ui_controllers, get_ui_controllers_mut)]
     pub screen_curvature_kind: ScreenCurvatureKind,
-    #[in_array(get_ui_controllers, get_ui_controllers_mut)]
     pub pixel_shadow_shape_kind: PixelShadowShapeKind,
-    #[in_array(get_ui_controllers, get_ui_controllers_mut)]
     pub backlight_percent: BacklightPercent,
-    #[in_array(get_ui_controllers, get_ui_controllers_mut)]
     pub rgb_red_r: RgbRedR,
-    #[in_array(get_ui_controllers, get_ui_controllers_mut)]
     pub rgb_red_g: RgbRedG,
-    #[in_array(get_ui_controllers, get_ui_controllers_mut)]
     pub rgb_red_b: RgbRedB,
-    #[in_array(get_ui_controllers, get_ui_controllers_mut)]
     pub rgb_green_r: RgbGreenR,
-    #[in_array(get_ui_controllers, get_ui_controllers_mut)]
     pub rgb_green_g: RgbGreenG,
-    #[in_array(get_ui_controllers, get_ui_controllers_mut)]
     pub rgb_green_b: RgbGreenB,
-    #[in_array(get_ui_controllers, get_ui_controllers_mut)]
     pub rgb_blue_r: RgbBlueR,
-    #[in_array(get_ui_controllers, get_ui_controllers_mut)]
     pub rgb_blue_g: RgbBlueG,
-    #[in_array(get_ui_controllers, get_ui_controllers_mut)]
     pub rgb_blue_b: RgbBlueB,
-    #[in_array(get_ui_controllers, get_ui_controllers_mut)]
     pub color_gamma: ColorGamma,
-    #[in_array(get_ui_controllers, get_ui_controllers_mut)]
     pub color_noise: ColorNoise,
-    #[in_array(get_ui_controllers, get_ui_controllers_mut)]
     pub preset_kind: FilterPreset,
 }
 

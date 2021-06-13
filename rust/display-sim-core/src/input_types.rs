@@ -102,8 +102,8 @@ impl TrackedButton for IncDec<BooleanButton> {
 }
 
 #[derive(Default, Arraygen)]
-#[gen_array(pub(crate) fn get_options_to_be_noned: &mut dyn SetOptionNone)]
-#[gen_array(pub(crate) fn get_tracked_buttons: &mut dyn TrackedButton)]
+#[gen_array(pub(crate) fn get_options_to_be_noned: &mut dyn SetOptionNone, implicit_select_all: Option<_>)]
+#[gen_array(pub(crate) fn get_tracked_buttons: &mut dyn TrackedButton, implicit_select_all: BooleanButton, IncDec<BooleanButton>)]
 pub struct Input {
     pub(crate) custom_event: CustomInputEvent,
     pub(crate) now: f64,
@@ -132,54 +132,35 @@ pub struct Input {
     pub(crate) mouse_position_y: i32,
     pub(crate) mouse_scroll_y: f32,
     pub(crate) pixel_width: IncDec<bool>,
-    #[in_array(get_tracked_buttons)]
-    pub(crate) next_camera_movement_mode: IncDec<BooleanButton>,
-    #[in_array(get_tracked_buttons)]
-    pub(crate) translation_speed: IncDec<BooleanButton>,
-    #[in_array(get_tracked_buttons)]
-    pub(crate) turn_speed: IncDec<BooleanButton>,
-    #[in_array(get_tracked_buttons)]
-    pub(crate) filter_speed: IncDec<BooleanButton>,
-    #[in_array(get_tracked_buttons)]
-    pub(crate) mouse_click: BooleanButton,
-    #[in_array(get_tracked_buttons)]
-    pub(crate) blur: IncDec<BooleanButton>,
-    #[in_array(get_tracked_buttons)]
-    pub(crate) scaling_method: IncDec<BooleanButton>,
-    #[in_array(get_tracked_buttons)]
-    pub(crate) scaling_resolution_width: IncDec<BooleanButton>,
-    #[in_array(get_tracked_buttons)]
-    pub(crate) scaling_resolution_height: IncDec<BooleanButton>,
-    #[in_array(get_tracked_buttons)]
-    pub(crate) scaling_aspect_ratio_x: IncDec<BooleanButton>,
-    #[in_array(get_tracked_buttons)]
-    pub(crate) scaling_aspect_ratio_y: IncDec<BooleanButton>,
-    #[in_array(get_tracked_buttons)]
-    pub(crate) esc: BooleanButton,
-    #[in_array(get_tracked_buttons)]
-    pub(crate) space: BooleanButton,
-    #[in_array(get_tracked_buttons)]
-    pub(crate) screenshot: BooleanButton,
-
-    #[in_array(get_options_to_be_noned)]
-    pub(crate) event_scaling_resolution_width: Option<f32>,
-    #[in_array(get_options_to_be_noned)]
-    pub(crate) event_scaling_resolution_height: Option<f32>,
-    #[in_array(get_options_to_be_noned)]
-    pub(crate) event_scaling_aspect_ratio_x: Option<f32>,
-    #[in_array(get_options_to_be_noned)]
-    pub(crate) event_scaling_aspect_ratio_y: Option<f32>,
-    #[in_array(get_options_to_be_noned)]
-    pub(crate) event_custom_scaling_stretch_nearest: Option<bool>,
-    #[in_array(get_options_to_be_noned)]
-    pub(crate) event_pixel_width: Option<f32>,
-    #[in_array(get_options_to_be_noned)]
-    pub(crate) event_viewport_resize: Option<Size2D<u32>>,
-    #[in_array(get_options_to_be_noned)]
-    pub(crate) event_camera: Option<CameraChange>,
 
     pub(crate) active_pressed_actions: Vec<KeyCodeBooleanAction>,
     pub(crate) active_pressed_actions_2: Vec<String>,
+
+    // get_tracked_buttons
+    pub(crate) next_camera_movement_mode: IncDec<BooleanButton>,
+    pub(crate) translation_speed: IncDec<BooleanButton>,
+    pub(crate) turn_speed: IncDec<BooleanButton>,
+    pub(crate) filter_speed: IncDec<BooleanButton>,
+    pub(crate) mouse_click: BooleanButton,
+    pub(crate) blur: IncDec<BooleanButton>,
+    pub(crate) scaling_method: IncDec<BooleanButton>,
+    pub(crate) scaling_resolution_width: IncDec<BooleanButton>,
+    pub(crate) scaling_resolution_height: IncDec<BooleanButton>,
+    pub(crate) scaling_aspect_ratio_x: IncDec<BooleanButton>,
+    pub(crate) scaling_aspect_ratio_y: IncDec<BooleanButton>,
+    pub(crate) esc: BooleanButton,
+    pub(crate) space: BooleanButton,
+    pub(crate) screenshot: BooleanButton,
+
+    // get_options_to_be_noned
+    pub(crate) event_scaling_resolution_width: Option<f32>,
+    pub(crate) event_scaling_resolution_height: Option<f32>,
+    pub(crate) event_scaling_aspect_ratio_x: Option<f32>,
+    pub(crate) event_scaling_aspect_ratio_y: Option<f32>,
+    pub(crate) event_custom_scaling_stretch_nearest: Option<bool>,
+    pub(crate) event_pixel_width: Option<f32>,
+    pub(crate) event_viewport_resize: Option<Size2D<u32>>,
+    pub(crate) event_camera: Option<CameraChange>,
 }
 
 impl Input {

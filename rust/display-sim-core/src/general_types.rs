@@ -19,11 +19,9 @@ use enum_len_trait::EnumLen;
 use num_traits::{FromPrimitive, ToPrimitive};
 
 #[derive(Clone, Default, Arraygen)]
-#[gen_array(pub fn get_buttons: &mut T)]
+#[gen_array(pub fn get_buttons: &mut T, implicit_select_all: _)]
 pub struct IncDec<T> {
-    #[in_array(get_buttons)]
     pub increase: T,
-    #[in_array(get_buttons)]
     pub decrease: T,
 }
 
