@@ -61,9 +61,9 @@ dependencies = [
 
 [[package]]
 name = "arraygen"
-version = "0.3.0-RC1"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3701504173fec3e210868283dc76fcd2e9a106b78f4697b6f85937a5673d2056"
+checksum = "3f29999f9aefaa8e5f4093388a71ed46e52cf0a1c10cc064b202fd744d6ffc56"
 dependencies = [
  "proc-macro2 1.0.26",
  "quote 1.0.9",
