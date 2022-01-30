@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-#[cfg(target_arch = "x86_64")]
+#[cfg(any(target_arch = "x86_64", target_arch = "aarch64"))]
 fn main() {
     display_sim_native::main()
 }
