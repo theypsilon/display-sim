@@ -5,9 +5,9 @@ ENV RUSTUP_HOME=/usr/local/rustup \
     PATH=/usr/local/cargo/bin:$PATH
 ARG RUST_TOOLCHAIN="1.58.1" \
     RUSTUP_VER="1.24.3" \
-    BINARYEN_VER="version_101" \
+    BINARYEN_VER="version_105" \
     BINARYEN_ARCH="x86_64-linux" \
-    BINARYEN_SHA="20d0b19ca716c51d927f181802125f04d5685250c8a22ec3022ac28bf4f20c57"
+    BINARYEN_SHA="5fbd3b04129bd8230301953f05f917331f348e3861022b32e40217df91cf45b9"
 RUN set -eux; \
     dpkgArch="$(dpkg --print-architecture)"; \
     case "${dpkgArch##*-}" in \
@@ -63,7 +63,7 @@ RUN ./scripts/test.sh --rust-only \
     && cp -r /app/www/src/wasm /wasm \
     && rm -rf /app
 
-FROM node:16.1.0-alpine3.12 as webpack-artifact
+FROM node:16.13.2-alpine3.15 as webpack-artifact
 WORKDIR /www
 ADD www/package*.json ./
 RUN npm install
@@ -73,7 +73,7 @@ RUN npm test \
     && npm run lint \
     && npm run build
 
-FROM nginx:1.20.0-alpine
+FROM nginx:1.20.2-alpine
 RUN adduser -u 82 -D -S -G www-data www-data
 ADD nginx/h5bp/ /etc/nginx/h5bp/
 ADD nginx/* /etc/nginx/
