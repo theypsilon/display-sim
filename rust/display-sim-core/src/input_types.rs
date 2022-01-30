@@ -55,6 +55,7 @@ pub enum InputEventValue {
     ViewportResize(u32, u32),
 }
 
+#[derive(Default)]
 pub(crate) struct CustomInputEvent {
     values: Vec<InputEventValue>,
 }
@@ -69,13 +70,7 @@ impl CustomInputEvent {
     }
 
     pub(crate) fn consume_values(&mut self) -> Vec<InputEventValue> {
-        std::mem::replace(&mut self.values, vec![])
-    }
-}
-
-impl Default for CustomInputEvent {
-    fn default() -> Self {
-        CustomInputEvent { values: vec![] }
+        std::mem::take(&mut self.values)
     }
 }
 
@@ -165,9 +160,7 @@ pub struct Input {
 
 impl Input {
     pub fn new(now: f64) -> Input {
-        let mut input: Input = Input::default();
-        input.now = now;
-        input
+        Input {now, ..Default::default()}
     }
 
     pub fn push_event(&mut self, event: InputEventValue) {

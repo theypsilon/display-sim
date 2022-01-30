@@ -220,11 +220,7 @@ impl NativeSimulationState {
                             ElementState::Released => Pressed::No,
                         };
                         self.input.push_event(InputEventValue::MouseClick(pressed));
-                        if pressed == Pressed::Yes
-                            && match self.windowed_ctx.window().fullscreen() {
-                                None => true,
-                                _ => false,
-                            }
+                        if pressed == Pressed::Yes && matches!(self.windowed_ctx.window().fullscreen(), None)
                         {
                             self.windowed_ctx.window().set_fullscreen(Some(Fullscreen::Borderless(Some(self.monitor.clone()))));
                         }

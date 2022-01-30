@@ -181,7 +181,7 @@ impl<'a> SimulationDrawer<'a> {
             }
             let source = (*materials.bg_buffer_stack.get_current()?).clone();
             let target = materials.main_buffer_stack.get_current()?;
-            materials.blur_render.render(&mut materials.bg_buffer_stack, &source, &target, 6)?;
+            materials.blur_render.render(&mut materials.bg_buffer_stack, &source, target, 6)?;
             materials.bg_buffer_stack.pop()?;
         }
         materials.main_buffer_stack.pop()?;
@@ -226,7 +226,7 @@ impl<'a> SimulationDrawer<'a> {
             materials.internal_resolution_render.render(materials.main_buffer_stack.get_nth(1)?.texture());
         }
 
-        check_error(&gl, line!())?;
+        check_error(gl, line!())?;
 
         Ok(())
     }

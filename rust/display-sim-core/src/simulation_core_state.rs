@@ -140,7 +140,7 @@ impl Default for Resources {
                         map.insert(*key, (KeyEventKind::Inc, i));
                     }
                     let event_tag = controller.event_tag();
-                    if event_tag == "" {
+                    if event_tag.is_empty() {
                         continue;
                     }
                     if map.contains_key(event_tag) {

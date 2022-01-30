@@ -51,7 +51,7 @@ impl<'a> SimulationCoreTicker<'a> {
         for value in self.input.custom_event.consume_values() {
             match value {
                 InputEventValue::Keyboard { pressed, key } => {
-                    let result = trigger_hotkey_action(&mut self.input, &mut self.res, key.to_lowercase().as_ref(), pressed);
+                    let result = trigger_hotkey_action(self.input, self.res, key.to_lowercase().as_ref(), pressed);
                     #[cfg(debug_assertions)]
                     {
                         if let ActionUsed::No(not_used) = result {
@@ -60,7 +60,7 @@ impl<'a> SimulationCoreTicker<'a> {
                     }
                 }
                 InputEventValue::MouseClick(pressed) => {
-                    let result = trigger_hotkey_action(&mut self.input, &mut self.res, "mouse_click", pressed);
+                    let result = trigger_hotkey_action(self.input, self.res, "mouse_click", pressed);
                     debug_assert_eq!(result, ActionUsed::Yes)
                 }
                 InputEventValue::MouseMove { x, y } => {

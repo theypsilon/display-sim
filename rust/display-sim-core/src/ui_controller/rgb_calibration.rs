@@ -33,9 +33,9 @@ macro_rules! rgb_impl {
             }
         }
 
-        impl Into<f32> for $ty {
-            fn into(self) -> f32 {
-                self.value
+        impl From<$ty> for f32 {
+            fn from(component: $ty) -> Self {
+                component.value
             }
         }
 
