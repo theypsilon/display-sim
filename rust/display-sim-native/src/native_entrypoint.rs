@@ -57,9 +57,9 @@ impl RandomGenerator for NativeRnd {
 fn program() -> AppResult<()> {
     println!("Initializing Window.");
     let winit_loop = EventLoop::new();
-    let monitor = winit_loop.primary_monitor();
-    let hidpi = monitor.hidpi_factor();
-    let mut window_size = monitor.size().to_logical(hidpi);
+    let monitor = winit_loop.primary_monitor().unwrap();
+    let hidpi = monitor.scale_factor();
+    let mut window_size = monitor.size().to_logical::<f64>(hidpi);
     window_size.width *= 0.8;
     window_size.height *= 0.8;
 
@@ -105,8 +105,8 @@ fn program() -> AppResult<()> {
             height: img_size.1,
         },
         viewport_size: Size2D {
-            width: (monitor.size().width * 0.8) as u32,
-            height: (monitor.size().height * 0.8) as u32,
+            width: (monitor.size().width as f64 * 0.8) as u32,
+            height: (monitor.size().height as f64 * 0.8) as u32,
         },
         current_frame: 0,
         preset: None,
@@ -194,16 +194,13 @@ impl NativeSimulationState {
             Event::LoopDestroyed => return Ok(()),
             Event::WindowEvent { ref event, .. } => match event {
                 WindowEvent::Resized(size) => {
-                    let dpi_factor = self.windowed_ctx.window().hidpi_factor();
-                    self.windowed_ctx.resize(size.to_physical(dpi_factor));
+                    let dpi_factor = self.windowed_ctx.window().scale_factor();
+                    //self.windowed_ctx.resize(size.to_physical::<f64>(dpi_factor));
+                    self.windowed_ctx.resize(*size);
 
                     println!("Size changed: ({}, {})", size.width, size.height);
-                    self.res.video.viewport_size.width = (size.width * dpi_factor) as u32;
-                    self.res.video.viewport_size.height = (size.height * dpi_factor) as u32;
-                }
-                WindowEvent::RedrawRequested => {
-                    println!("Redraw Requested!!");
-                    self.windowed_ctx.swap_buffers()?;
+                    self.res.video.viewport_size.width = (size.width as f64 * dpi_factor) as u32;
+                    self.res.video.viewport_size.height = (size.height as f64 * dpi_factor) as u32;
                 }
                 WindowEvent::KeyboardInput { input: keyevent, .. } => {
                     if let Some(key) = keyevent.virtual_keycode {
@@ -229,7 +226,7 @@ impl NativeSimulationState {
                                 _ => false,
                             }
                         {
-                            self.windowed_ctx.window().set_fullscreen(Some(Fullscreen::Borderless(self.monitor.clone())));
+                            self.windowed_ctx.window().set_fullscreen(Some(Fullscreen::Borderless(Some(self.monitor.clone()))));
                         }
                     }
                 }
