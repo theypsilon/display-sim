@@ -89,7 +89,7 @@ fn program() -> AppResult<()> {
 
     let img_path = "www/assets/pics/frames/seiken.png";
     println!("Loading image: {}", img_path);
-    let img = image::open(img_path).map_err(|e| format!("{}", e))?.to_rgba();
+    let img = image::open(img_path).map_err(|e| format!("{}", e))?.to_rgba8();
     let img_size = img.dimensions();
     let pixels = img.into_vec().into_boxed_slice();
 
