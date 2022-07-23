@@ -10,7 +10,7 @@ render = { path = "../display-sim-stub-render", package = "display-sim-stub-rend
 core = { path = "../display-sim-core", package = "display-sim-core" }
 
 [dev-dependencies]
-criterion = "0.2.11"
+criterion = "0.3.6"
 
 [[bench]]
 name = "whole_sim_bench"
