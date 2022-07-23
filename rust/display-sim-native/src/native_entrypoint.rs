@@ -50,7 +50,7 @@ impl RandomGenerator for NativeRnd {
     fn next(&self) -> f32 {
         use rand::Rng;
         let mut rng = rand::thread_rng();
-        rng.gen_range(0.0, 1.0)
+        rng.gen_range(0.0..=1.0)
     }
 }
 

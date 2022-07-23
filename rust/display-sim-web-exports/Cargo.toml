@@ -17,6 +17,7 @@ core = { path = "../display-sim-core", package = "display-sim-core" }
 app-error = { path = "../display-sim-app-error", package = "display-sim-app-error" }
 derive-new = "0.5.9"
 glow = { path = "../glow-safe-adapter", package = "glow-safe-adapter" }
+rand = "0.8.5"
 
 [dependencies.render]
 path = "../display-sim-render"
@@ -32,6 +33,6 @@ features = [
   'Element',
 ]
 
-[dependencies.rand]
-version = "0.7.2"
-features = ["wasm-bindgen"]
+[dependencies.getrandom]
+version = "0.2.0"
+features = ["js"]

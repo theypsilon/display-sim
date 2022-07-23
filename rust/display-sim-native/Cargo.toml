@@ -12,6 +12,6 @@ image = "0.24.3"
 glm = { version = "0.17", package = "nalgebra-glm" }
 render = { path = "../display-sim-render", package = "display-sim-render" }
 core = { path = "../display-sim-core", package = "display-sim-core" }
-rand = "0.7.2"
+rand = "0.8.5"
 glutin = "0.28.0"
 glow = { path = "../glow-safe-adapter", package = "glow-safe-adapter" }
