@@ -29,7 +29,7 @@ pub trait HasContext {
 pub struct Context {}
 #[derive(Copy, Clone)]
 pub struct GlowSafeAdapter<GL: HasContext> {
-    ctx: GL,
+    _ctx: GL,
 }
 pub type ActiveAttribute = u32;
 
@@ -47,7 +47,7 @@ impl HasContext for Context {
 }
 
 pub fn new_glow_stub() -> GlowSafeAdapter<Context> {
-    GlowSafeAdapter { ctx: Context {} }
+    GlowSafeAdapter { _ctx: Context {} }
 }
 
 impl<GL: HasContext> GlowSafeAdapter<GL> {

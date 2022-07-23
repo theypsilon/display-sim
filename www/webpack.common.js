@@ -1,6 +1,6 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const IgnoreDynamicRequire = require('webpack-ignore-dynamic-require');
 
 module.exports = {
@@ -13,25 +13,25 @@ module.exports = {
     target: 'web',
     plugins: [
         new MiniCssExtractPlugin({
-            filename: "style.[contenthash].css",
+            filename: 'style.[contenthash].css'
         }),
         new HtmlWebpackPlugin({
             inject: false,
             hash: true,
-            favicon: "assets/favicon.ico",
-            template: "src/index.html",
-            filename: "index.html"
+            favicon: 'assets/favicon.ico',
+            template: 'src/index.html',
+            filename: 'index.html'
         }),
         new IgnoreDynamicRequire()
     ],
     module: {
         rules: [
-            { test: /\.ts$/, loader: "ts-loader" },
+            { test: /\.ts$/, loader: 'ts-loader' },
             {
                 test: /\.css$/,
                 use: [
                     {
-                        loader: MiniCssExtractPlugin.loader,
+                        loader: MiniCssExtractPlugin.loader
                     },
                     'css-loader'
                 ]
@@ -41,7 +41,7 @@ module.exports = {
                 loader: 'url-loader',
                 options: {
                     limit: 8192,
-                    fallback: require.resolve('file-loader'),
+                    fallback: require.resolve('file-loader')
                 }
             }
         ]
@@ -50,9 +50,9 @@ module.exports = {
         syncWebAssembly: true
     },
     resolve: {
-        extensions: [".webpack.js", ".web.js", ".ts", ".js", ".tsx", ".jsx"],
+        extensions: ['.webpack.js', '.web.js', '.ts', '.js', '.tsx', '.jsx'],
         fallback: {
-            util: require.resolve("util/")
+            util: require.resolve('util/')
         }
     }
 };
