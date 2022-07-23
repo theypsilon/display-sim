@@ -8,13 +8,7 @@ export REGISTRY_IMAGE="${REGISTRY_IMAGE:-display-sim}"
 export TAG="${TAG:-latest}"
 export IMAGE_NAME="${REGISTRY_IMAGE}:${TAG}"
 
-build_wasm_params="--release-wasm"
-
-if [[ $@ =~ .*--extract-dist.* ]] ; then
-    build_wasm_params="--release-wasm-no-opt"
-fi
-
-DOCKER_SCAN_SUGGEST=false docker build --build-arg BUILD_WASM_PARAMS="${build_wasm_params}" -t ${IMAGE_NAME} .
+DOCKER_SCAN_SUGGEST=false docker build --build-arg BUILD_WASM_PARAMS="--release-wasm" -t ${IMAGE_NAME} .
 
 if [[ $@ =~ .*--extract-dist.* ]] ; then
     rm -rf dist || true && mkdir -p dist
