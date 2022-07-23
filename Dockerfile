@@ -33,9 +33,9 @@ FROM rust-wasm as wasm-artifact
 ENV RUST_BACKTRACE=1
 ADD rust/ /app/rust/
 ADD Cargo.* /app/
-ADD scripts/ /app/scripts/
+ADD scripts/build.sh /app/scripts/build.sh
 ARG BUILD_WASM_PARAMS="--release-wasm"
-RUN ./scripts/test.sh --rust-only \
+RUN cargo test --all \
     && ./scripts/build.sh ${BUILD_WASM_PARAMS} \
     && cargo clean \
     && cp -r /app/www/src/wasm /wasm \
@@ -47,12 +47,11 @@ ADD www/package*.json ./
 RUN npm install
 ADD www .
 COPY --from=wasm-artifact /wasm ./src/wasm
-RUN npm test \
-    && npm run lint \
-    && npm run build
+RUN npm test && npm run build
 
 FROM nginx:1.22.0-alpine
 RUN adduser -u 82 -D -S -G www-data www-data
+ENV NGINX_ENTRYPOINT_QUIET_LOGS=1
 ADD nginx/h5bp/ /etc/nginx/h5bp/
 ADD nginx/* /etc/nginx/
 COPY --from=webpack-artifact /www/dist/* /var/www/html/
