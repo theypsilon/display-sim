@@ -1,0 +1,43 @@
+name: CI / CD
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Docker Build
+      run: |
+        set -euo pipefail
+        ./scripts/docker-build.sh --extract-dist 2>&1
+        git rev-parse HEAD > dist/commit.txt
+      env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: dist
+        path: ./dist
+
+  deploy:
+    needs: [build]
+    runs-on: ubuntu-20.04
+    steps:
+      -
+        name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: dist
+          path: .
+      - name: Serve
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
