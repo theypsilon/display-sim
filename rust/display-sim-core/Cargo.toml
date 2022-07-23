@@ -5,7 +5,7 @@ authors = ["José manuel Barroso Galindo <theypsilon@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-glm = { version = "0.5", package = "nalgebra-glm" }
+glm = { version = "0.17", package = "nalgebra-glm" }
 num-traits = "0.2.14"
 num-derive = "0.3.3"
 arraygen = "0.3.0"
