@@ -42,4 +42,6 @@ Promise.all([
 ]).then(() => {
     const navigator = Navigator.make();
     navigator.goToLandingPage();
+}).catch((e) => {
+    console.error(e);
 });

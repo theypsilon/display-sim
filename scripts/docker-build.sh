@@ -14,7 +14,7 @@ if [[ $@ =~ .*--extract-dist.* ]] ; then
     build_wasm_params="--release-wasm-no-opt"
 fi
 
-docker build --build-arg BUILD_WASM_PARAMS="${build_wasm_params}" -t ${IMAGE_NAME} .
+docker build --progress plain --build-arg BUILD_WASM_PARAMS="${build_wasm_params}" -t ${IMAGE_NAME} .
 
 if [[ $@ =~ .*--extract-dist.* ]] ; then
     rm -rf dist || true && mkdir -p dist
