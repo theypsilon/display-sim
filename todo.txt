@@ -1,3 +1,3 @@
 · Check if we really need canvas_focused at all.
 · Figure out how can I get the numbers 0.68 and 1.2076 from the perspective parameters instead of hardcoding them.
-· Improve readme.
+· Put screenshots in readme.
