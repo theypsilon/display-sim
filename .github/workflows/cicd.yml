@@ -33,7 +33,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: dist
-          path: .
+          path: ./dist
       - name: List Public Files
         run: ls -ltrca ./dist/ 
       - name: Serve
