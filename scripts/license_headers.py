@@ -4,29 +4,33 @@
 # parent directory, old copyright text content, new copyright text content
 
 import os
+import string
+
+def remove_whites(text):
+    return text.translate({ord(c): None for c in string.whitespace})
 
 def update_source(filename, license_text, older_license):
     utfstr = chr(0xef)+chr(0xbb)+chr(0xbf)
-    fdata = file(filename,"r+").read()
+    fdata = open(filename,"r+").read()
     isUTF = False
     if (fdata.startswith(utfstr)):
         isUTF = True
         fdata = fdata[3:]
     if (isinstance(older_license, str) and fdata.startswith(older_license)):
         fdata = fdata[len(older_license):]
-    if not (fdata.startswith(license_text)):
-        print "updating "+filename
+    if not (remove_whites(fdata).startswith(remove_whites(license_text))):
+        print("updating " + filename)
         fdata = license_text + fdata
         if (isUTF):
-            file(filename,"w").write(utfstr+fdata)
+            open(filename,"w").write(utfstr+fdata)
         else:
-            file(filename,"w").write(fdata)
+            open(filename,"w").write(fdata)
 
-def recursive_traversal(dir, extension, license_text, older_license):
-    fns = os.listdir(dir)
-    print "listing "+dir
+def recursive_traversal(directory, extension, license_text, older_license):
+    fns = os.listdir(directory)
+    print("listing " + directory)
     for fn in fns:
-        fullfn = os.path.join(dir,fn)
+        fullfn = os.path.join(directory,fn)
         if (os.path.isdir(fullfn)):
             recursive_traversal(fullfn, extension, license_text, older_license)
         else:
