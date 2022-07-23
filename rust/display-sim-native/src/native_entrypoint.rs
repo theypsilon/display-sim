@@ -84,7 +84,7 @@ fn program() -> AppResult<()> {
 
     let windowed_ctx = unsafe { windowed_ctx.make_current().map_err(|e| format!("Context Error: {:?}", e))? };
     let windowed_ctx = Rc::new(windowed_ctx);
-    let gl_ctx = glow::Context::from_loader_function(|ptr| windowed_ctx.context().get_proc_address(ptr) as *const _);
+    let gl_ctx = unsafe { glow::Context::from_loader_function(|ptr| windowed_ctx.context().get_proc_address(ptr) as *const _) };
     println!("Pixel format of the window's GL context: {:?}", windowed_ctx.get_pixel_format());
 
     let img_path = "www/assets/pics/frames/seiken.png";

@@ -166,7 +166,7 @@ impl<GL: HasContext> GlowSafeAdapter<GL> {
     }
 
     pub fn buffer_storage(&self, target: u32, size: i32, data: Option<&mut [u8]>, flags: u32) {
-        unsafe { self.gl.buffer_storage(target, size, data, flags) }
+        unsafe { self.gl.buffer_storage(target, size, data.as_deref(), flags) }
     }
 
     pub fn delete_framebuffer(&self, framebuffer: GL::Framebuffer) {
@@ -241,31 +241,31 @@ impl<GL: HasContext> GlowSafeAdapter<GL> {
     }
 
     pub fn uniform_1_i32(&self, location: Option<GL::UniformLocation>, x: i32) {
-        unsafe { self.gl.uniform_1_i32(location, x) }
+        unsafe { self.gl.uniform_1_i32(location.as_ref(), x) }
     }
 
     pub fn uniform_2_i32(&self, location: Option<GL::UniformLocation>, x: i32, y: i32) {
-        unsafe { self.gl.uniform_2_i32(location, x, y) }
+        unsafe { self.gl.uniform_2_i32(location.as_ref(), x, y) }
     }
 
     pub fn uniform_3_i32(&self, location: Option<GL::UniformLocation>, x: i32, y: i32, z: i32) {
-        unsafe { self.gl.uniform_3_i32(location, x, y, z) }
+        unsafe { self.gl.uniform_3_i32(location.as_ref(), x, y, z) }
     }
 
     pub fn uniform_1_f32(&self, location: Option<GL::UniformLocation>, x: f32) {
-        unsafe { self.gl.uniform_1_f32(location, x) }
+        unsafe { self.gl.uniform_1_f32(location.as_ref(), x) }
     }
 
     pub fn uniform_2_f32_slice(&self, location: Option<GL::UniformLocation>, v: &[f32; 2]) {
-        unsafe { self.gl.uniform_2_f32_slice(location, v) }
+        unsafe { self.gl.uniform_2_f32_slice(location.as_ref(), v) }
     }
 
     pub fn uniform_3_f32_slice(&self, location: Option<GL::UniformLocation>, v: &[f32; 3]) {
-        unsafe { self.gl.uniform_3_f32_slice(location, v) }
+        unsafe { self.gl.uniform_3_f32_slice(location.as_ref(), v) }
     }
 
     pub fn uniform_matrix_4_f32_slice(&self, location: Option<GL::UniformLocation>, transpose: bool, v: &[f32; 16]) {
-        unsafe { self.gl.uniform_matrix_4_f32_slice(location, transpose, v) }
+        unsafe { self.gl.uniform_matrix_4_f32_slice(location.as_ref(), transpose, v) }
     }
 
     pub fn finish(&self) {
