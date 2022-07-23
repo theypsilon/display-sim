@@ -27,7 +27,7 @@ pub fn make_shader<GL: HasContext>(gl: &GlowSafeAdapter<GL>, vertex_shader: &str
 
 fn compile_shader<GL: HasContext>(gl: &GlowSafeAdapter<GL>, shader_type: u32, source: &str) -> AppResult<GL::Shader> {
     let shader = gl.create_shader(shader_type)?;
-    gl.shader_source(shader, source);
+    gl_shader_source(gl, shader, source);
     gl.compile_shader(shader);
 
     if gl.get_shader_compile_status(shader) {
@@ -35,6 +35,17 @@ fn compile_shader<GL: HasContext>(gl: &GlowSafeAdapter<GL>, shader_type: u32, so
     } else {
         Err(gl.get_shader_info_log(shader).into())
     }
+}
+
+#[cfg(target_arch = "wasm32")]
+fn gl_shader_source<GL: HasContext>(gl: &GlowSafeAdapter<GL>, shader: GL::Shader, source: &str) {
+    gl.shader_source(shader, source);
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn gl_shader_source<GL: HasContext>(gl: &GlowSafeAdapter<GL>, shader: GL::Shader, source: &str) {
+    let replaced = source.replace("#version 300 es", "#version 330");
+    gl.shader_source(shader, &replaced);
 }
 
 fn link_shader<'a, GL: HasContext + 'a, T: IntoIterator<Item = &'a GL::Shader>>(gl: &GlowSafeAdapter<GL>, shaders: T) -> AppResult<GL::Program> {
