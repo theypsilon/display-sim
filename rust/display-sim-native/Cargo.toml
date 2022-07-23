@@ -8,7 +8,7 @@ edition = "2018"
 test = false
 
 [dependencies]
-image = "0.23.14"
+image = "0.24.3"
 glm = { version = "0.17", package = "nalgebra-glm" }
 render = { path = "../display-sim-render", package = "display-sim-render" }
 core = { path = "../display-sim-core", package = "display-sim-core" }

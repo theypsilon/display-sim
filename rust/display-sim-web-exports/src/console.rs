@@ -16,7 +16,7 @@
 #[macro_export]
 macro_rules! console {
     ( $x:ident. $a:expr ) => {
-        paste::expr! { web_sys::console::[<$x _1>](&($a).into()); }
+        paste::expr! { web_sys::console::[<$x _1>](&($a).into()) }
     };
     ( $x:ident. $a:expr, $b:expr ) => {
         paste::expr! { web_sys::console::[<$x _2>](&($a).into(), &($b).into()); }

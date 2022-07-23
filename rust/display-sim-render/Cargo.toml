@@ -5,7 +5,7 @@ authors = ["José manuel Barroso Galindo <theypsilon@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-derive-new = "0.5.6"
+derive-new = "0.5.9"
 glm = { version = "0.17", package = "nalgebra-glm" }
 core = { path = "../display-sim-core", package = "display-sim-core" }
 app-error = { path = "../display-sim-app-error", package = "display-sim-app-error" }
