@@ -9,7 +9,7 @@ test = false
 
 [dependencies]
 image = "0.23.14"
-glm = { version = "0.5", package = "nalgebra-glm" }
+glm = { version = "0.17", package = "nalgebra-glm" }
 render = { path = "../display-sim-render", package = "display-sim-render" }
 core = { path = "../display-sim-core", package = "display-sim-core" }
 rand = "0.7.2"

@@ -11,7 +11,7 @@ test = false
 console_error_panic_hook = "0.1"
 wasm-bindgen = "0.2.55"
 js-sys = "0.3.32"
-glm = { version = "0.5", package = "nalgebra-glm" }
+glm = { version = "0.17", package = "nalgebra-glm" }
 paste = "0.1.4"
 core = { path = "../display-sim-core", package = "display-sim-core" }
 app-error = { path = "../display-sim-app-error", package = "display-sim-app-error" }
