@@ -255,8 +255,7 @@ fn try_modify_action(action: BooleanAction, keycode: &str, modifier: BooleanActi
         return None;
     }
     let modified_keycode = format!("{}{}", get_modifier_code(modifier), keycode);
-    to_boolean_action(&modified_keycode)
-        .map(|modified_action| (modified_keycode, modified_action))
+    to_boolean_action(&modified_keycode).map(|modified_action| (modified_keycode, modified_action))
 }
 
 fn get_modifier_code(modifier: BooleanAction) -> &'static str {

@@ -160,7 +160,7 @@ pub struct Input {
 
 impl Input {
     pub fn new(now: f64) -> Input {
-        Input {now, ..Default::default()}
+        Input { now, ..Default::default() }
     }
 
     pub fn push_event(&mut self, event: InputEventValue) {
