@@ -182,7 +182,7 @@ export class SimModel {
         document.body.appendChild(a);
         a.classList.add('no-display');
         const blob = await new Promise(resolve => canvas.toBlob(resolve));
-        const url = URL.createObjectURL(blob);
+        const url = URL.createObjectURL(blob as Blob);
         a.href = url;
         a.download = 'Display-Sim_' + new Date().toISOString() + '.png';
         a.click();

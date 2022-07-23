@@ -26,6 +26,7 @@ export class SimWasmBackend {
     }
 
     async load (canvas: HTMLCanvasElement, eventBus: any, params: any) {
+
         // @ts-ignore
         const { WasmApp, VideoInputConfig } = await import('../../wasm/display_sim');
 

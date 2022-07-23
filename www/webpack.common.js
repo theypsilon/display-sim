@@ -1,6 +1,7 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const IgnoreDynamicRequire = require('webpack-ignore-dynamic-require');
 
 module.exports = {
     entry: { bundle: './src/entrypoint.js' },
@@ -20,7 +21,8 @@ module.exports = {
             favicon: "assets/favicon.ico",
             template: "src/index.html",
             filename: "index.html"
-        })
+        }),
+        new IgnoreDynamicRequire()
     ],
     module: {
         rules: [
