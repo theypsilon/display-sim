@@ -23,6 +23,7 @@ pub(crate) struct FieldChanger<'a, T, U, TriggerHandler: FnOnce(U)> {
     ctx: &'a dyn SimulationContext,
     var: &'a mut T,
     incdec: IncDec<bool>,
+    skip_process: bool,
     trigger_handler: Option<TriggerHandler>,
     event_value: Option<T>,
     velocity: Option<T>,
@@ -37,6 +38,7 @@ impl<'a, T, U, TriggerHandler: FnOnce(U)> FieldChanger<'a, T, U, TriggerHandler>
             ctx,
             var,
             incdec,
+            skip_process: false,
             trigger_handler: None,
             event_value: None,
             velocity: None,
@@ -51,6 +53,15 @@ impl<'a, T, U, TriggerHandler: FnOnce(U)> FieldChanger<'a, T, U, TriggerHandler>
     }
     pub(crate) fn set_trigger_handler(mut self, trigger_handler: TriggerHandler) -> Self {
         self.trigger_handler = Some(trigger_handler);
+        self
+    }
+    pub(crate) fn skip_if_input_is_not_changing(mut self, previous_input: &mut IncDec<bool>) -> Self {
+        if self.incdec == *previous_input {
+            self.skip_process = true
+        } else {
+            self.skip_process = false;
+            *previous_input = self.incdec.clone()
+        }
         self
     }
 }
@@ -78,17 +89,18 @@ where
     #[allow(clippy::useless_let_if_seq)]
     pub(crate) fn process_options(self) -> bool {
         let mut changed = false;
-        if self.incdec.increase {
-            self.var.next_option();
-            changed = true;
-        }
-        if self.incdec.decrease {
-            self.var.previous_option();
-            changed = true;
-        }
         if let Some(val) = self.event_value {
             *self.var = val;
             changed = true;
+        } else if self.skip_process == false {
+            if self.incdec.increase {
+                self.var.next_option();
+                changed = true;
+            }
+            if self.incdec.decrease {
+                self.var.previous_option();
+                changed = true;
+            }
         }
         if changed {
             if self.var.has_reached_minimum_limit() {
@@ -133,14 +145,15 @@ where
     let is_min = if let Some(min) = params.min { *params.var <= min } else { false };
     let is_max = if let Some(max) = params.max { *params.var >= max } else { false };
     let velocity = if let Some(velocity) = params.velocity { velocity } else { Default::default() };
-    if !is_max && params.incdec.increase {
-        inc_op(params.var, velocity);
-    }
-    if !is_min && params.incdec.decrease {
-        dec_op(params.var, velocity);
-    }
     if let Some(val) = params.event_value {
         *params.var = val;
+    } else if params.skip_process == false {
+        if !is_max && params.incdec.increase {
+            inc_op(params.var, velocity);
+        }
+        if !is_min && params.incdec.decrease {
+            dec_op(params.var, velocity);
+        }
     }
     if let Some(min) = params.min {
         if *params.var < min || (is_min && params.incdec.decrease) {

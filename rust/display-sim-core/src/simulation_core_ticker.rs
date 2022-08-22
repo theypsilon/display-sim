@@ -28,7 +28,7 @@ use crate::ui_controller::{
     color_channels::ColorChannelsOptions, filter_preset::FilterPresetOptions, internal_resolution::InternalResolution,
     pixel_geometry_kind::PixelGeometryKindOptions, screen_curvature_kind::ScreenCurvatureKindOptions, UiController,
 };
-use app_error::AppResult;
+use app_util::AppResult;
 use derive_new::new;
 
 #[derive(new)]
@@ -112,20 +112,16 @@ pub struct SimulationUpdater<'a> {
     ctx: &'a dyn SimulationContext,
     res: &'a mut Resources,
     input: &'a Input,
-    dt: f32,
 }
 
 impl<'a> SimulationUpdater<'a> {
     pub fn new(ctx: &'a dyn SimulationContext, res: &'a mut Resources, input: &'a Input) -> Self {
-        SimulationUpdater {
-            dt: ((input.now - res.timers.last_time) / 1000.0) as f32,
-            ctx,
-            res,
-            input,
-        }
+        SimulationUpdater { ctx, res, input }
     }
 
     pub fn update(&mut self) -> AppResult<()> {
+        self.res.main.dt = ((self.input.now - self.res.timers.last_time) / 1000.0) as f32;
+
         if let Some(viewport) = self.input.event_viewport_resize {
             self.ctx.dispatcher().dispatch_log(format!("viewport:resize: {:?}", viewport));
             self.res.video.viewport_size = viewport;
@@ -174,8 +170,8 @@ impl<'a> SimulationUpdater<'a> {
         } else if self.input.screenshot.is_just_released() {
             self.res.screenshot_trigger.is_triggered = true;
             //let multiplier = self.res.controllers.internal_resolution.multiplier as f32;
-            self.res.screenshot_trigger.delay = 120; //(2.0 * multiplier * multiplier * (1.0 / self.dt)) as i32; // 2 seconds aprox.
-            if self.res.screenshot_trigger.delay as f32 * self.dt > 2.0 {
+            self.res.screenshot_trigger.delay = 120; //(2.0 * multiplier * multiplier * (1.0 / self.res.main.dt)) as i32; // 2 seconds aprox.
+            if self.res.screenshot_trigger.delay as f32 * self.res.main.dt > 2.0 {
                 self.ctx.dispatcher().dispatch_top_message("Screenshot about to be downloaded, please wait.");
             }
         }
@@ -205,7 +201,7 @@ impl<'a> SimulationUpdater<'a> {
         let ctx = &self.ctx;
         let scaling = &mut self.res.scaling;
         let input = &self.input;
-        let pixel_velocity = self.dt * self.res.speed.filter_speed;
+        let pixel_velocity = self.res.main.dt * self.res.main.filter_speed;
 
         let mut changed = false;
         let mut custom_change = scaling.custom_change;
@@ -305,7 +301,7 @@ impl<'a> SimulationUpdater<'a> {
         if self.input.reset_speeds {
             self.res.camera.turning_speed = TURNING_BASE_SPEED;
             self.res.camera.movement_speed = initial_movement_speed;
-            self.res.speed.filter_speed = PIXEL_MANIPULATION_BASE_SPEED;
+            self.res.main.filter_speed = PIXEL_MANIPULATION_BASE_SPEED;
             self.ctx.dispatcher().dispatch_top_message("All speeds have been reset.");
             self.change_frontend_input_values();
         }
@@ -317,7 +313,7 @@ impl<'a> SimulationUpdater<'a> {
             .set_max(16_384.0 * TURNING_BASE_SPEED)
             .set_trigger_handler(|x| ctx.dispatcher().dispatch_change_turning_speed(x / TURNING_BASE_SPEED))
             .process_with_multiplications();
-        FieldChanger::new(*ctx, &mut self.res.speed.filter_speed, input.filter_speed.to_just_pressed())
+        FieldChanger::new(*ctx, &mut self.res.main.filter_speed, input.filter_speed.to_just_pressed())
             .set_progression(2.0)
             .set_min(0.007_812_5 * PIXEL_MANIPULATION_BASE_SPEED)
             .set_max(16_384.0 * PIXEL_MANIPULATION_BASE_SPEED)
@@ -414,42 +410,42 @@ impl<'a> SimulationUpdater<'a> {
         let mut camera = CameraSystem::new(&mut self.res.camera, self.ctx.dispatcher());
 
         if self.input.walk_left {
-            camera.advance(CameraDirection::Left, self.dt);
+            camera.advance(CameraDirection::Left, self.res.main.dt);
         }
         if self.input.walk_right {
-            camera.advance(CameraDirection::Right, self.dt);
+            camera.advance(CameraDirection::Right, self.res.main.dt);
         }
         if self.input.walk_up {
-            camera.advance(CameraDirection::Up, self.dt);
+            camera.advance(CameraDirection::Up, self.res.main.dt);
         }
         if self.input.walk_down {
-            camera.advance(CameraDirection::Down, self.dt);
+            camera.advance(CameraDirection::Down, self.res.main.dt);
         }
         if self.input.walk_forward {
-            camera.advance(CameraDirection::Forward, self.dt);
+            camera.advance(CameraDirection::Forward, self.res.main.dt);
         }
         if self.input.walk_backward {
-            camera.advance(CameraDirection::Backward, self.dt);
+            camera.advance(CameraDirection::Backward, self.res.main.dt);
         }
 
         if self.input.turn_left {
-            camera.turn(CameraDirection::Left, self.dt);
+            camera.turn(CameraDirection::Left, self.res.main.dt);
         }
         if self.input.turn_right {
-            camera.turn(CameraDirection::Right, self.dt);
+            camera.turn(CameraDirection::Right, self.res.main.dt);
         }
         if self.input.turn_up {
-            camera.turn(CameraDirection::Up, self.dt);
+            camera.turn(CameraDirection::Up, self.res.main.dt);
         }
         if self.input.turn_down {
-            camera.turn(CameraDirection::Down, self.dt);
+            camera.turn(CameraDirection::Down, self.res.main.dt);
         }
 
         if self.input.rotate_left {
-            camera.rotate(CameraDirection::Left, self.dt);
+            camera.rotate(CameraDirection::Left, self.res.main.dt);
         }
         if self.input.rotate_right {
-            camera.rotate(CameraDirection::Right, self.dt);
+            camera.rotate(CameraDirection::Right, self.res.main.dt);
         }
 
         if self.input.mouse_click.is_just_pressed() {
@@ -468,9 +464,9 @@ impl<'a> SimulationUpdater<'a> {
         }
 
         if self.input.camera_zoom.increase {
-            camera.change_zoom(self.dt * -100.0, self.ctx.dispatcher());
+            camera.change_zoom(self.res.main.dt * -100.0, self.ctx.dispatcher());
         } else if self.input.camera_zoom.decrease {
-            camera.change_zoom(self.dt * 100.0, self.ctx.dispatcher());
+            camera.change_zoom(self.res.main.dt * 100.0, self.ctx.dispatcher());
         } else if self.input.mouse_scroll_y != 0.0 {
             camera.change_zoom(self.input.mouse_scroll_y, self.ctx.dispatcher());
         }
@@ -479,7 +475,7 @@ impl<'a> SimulationUpdater<'a> {
             camera.handle_camera_change(change);
         }
 
-        camera.update_view(self.dt)
+        camera.update_view(self.res.main.dt)
     }
 
     fn update_colors(&mut self) {
@@ -493,7 +489,7 @@ impl<'a> SimulationUpdater<'a> {
         dispatcher.enable_extra_messages(false);
         dispatcher.dispatch_change_camera_zoom(self.res.camera.zoom);
         dispatcher.dispatch_change_camera_movement_mode(self.res.camera.locked_mode);
-        dispatcher.dispatch_change_pixel_speed(self.res.speed.filter_speed / PIXEL_MANIPULATION_BASE_SPEED);
+        dispatcher.dispatch_change_pixel_speed(self.res.main.filter_speed / PIXEL_MANIPULATION_BASE_SPEED);
         dispatcher.dispatch_change_turning_speed(self.res.camera.turning_speed / TURNING_BASE_SPEED);
         dispatcher.dispatch_change_movement_speed(self.res.camera.movement_speed / self.res.initial_parameters.initial_movement_speed);
         dispatcher.dispatch_scaling_method(self.res.scaling.scaling_method);
@@ -531,7 +527,7 @@ impl<'a> SimulationUpdater<'a> {
             if glm::length(&movement_route).abs() <= std::f32::EPSILON {
                 movement_route = glm::vec3(1.0, 0.0, 0.0);
             }
-            let movement_force = movement_route.normalize() * self.dt * 1.2;
+            let movement_force = movement_route.normalize() * self.res.main.dt * 1.2;
             self.res.demo_1.movement_speed += movement_force;
             if glm::length(&self.res.demo_1.movement_speed).abs() > self.res.demo_1.movement_max_speed {
                 self.res.demo_1.movement_speed = self.res.demo_1.movement_speed.normalize() * self.res.demo_1.movement_max_speed;
@@ -568,7 +564,7 @@ impl<'a> SimulationUpdater<'a> {
             let color_route = self.res.demo_1.color_target - self.res.demo_1.color_position;
             let is_void_route = color_route == glm::vec3(0.0, 0.0, 0.0);
             if !is_void_route {
-                self.res.demo_1.color_position += color_route.normalize() * self.dt * 0.1;
+                self.res.demo_1.color_position += color_route.normalize() * self.res.main.dt * 0.1;
                 self.res.controllers.light_color.value = get_int_from_3_f32color(&self.res.demo_1.color_position.into());
                 self.res.controllers.light_color.dispatch_event(self.ctx.dispatcher());
             }
@@ -581,7 +577,7 @@ impl<'a> SimulationUpdater<'a> {
         }
         {
             // spreading
-            let spread_change = self.dt * 0.03 * self.res.controllers.cur_pixel_spread.value * self.res.controllers.cur_pixel_spread.value;
+            let spread_change = self.res.main.dt * 0.03 * self.res.controllers.cur_pixel_spread.value * self.res.controllers.cur_pixel_spread.value;
             if self.res.demo_1.spreading {
                 self.res.controllers.cur_pixel_spread.value += spread_change;
                 if self.res.controllers.cur_pixel_spread.value > 1000.0 {
@@ -781,7 +777,7 @@ impl<'a> SimulationUpdater<'a> {
         };
 
         if let ScreenCurvatureKindOptions::Pulse = filters.screen_curvature_kind.value {
-            output.pixels_pulse += self.dt * 0.3;
+            output.pixels_pulse += self.res.main.dt * 0.3;
         } else {
             output.pixels_pulse = 0.0;
         }

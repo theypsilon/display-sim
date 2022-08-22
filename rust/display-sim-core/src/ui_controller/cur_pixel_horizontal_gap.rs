@@ -19,7 +19,7 @@ use crate::general_types::IncDec;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::MainState;
 use crate::ui_controller::{EncodedValue, UiController};
-use app_error::AppResult;
+use app_util::AppResult;
 
 #[derive(Default, Copy, Clone)]
 pub struct CurPixelHorizontalGap {
@@ -50,7 +50,7 @@ impl UiController for CurPixelHorizontalGap {
     }
     fn update(&mut self, main: &MainState, ctx: &dyn SimulationContext) -> bool {
         FieldChanger::new(ctx, &mut self.value, self.input)
-            .set_progression(0.00125 * main.dt * main.filter_speed)
+            .set_progression(1.5 * main.dt * main.filter_speed)
             .set_event_value(self.event)
             .set_min(0.0)
             .set_trigger_handler(|x| dispatch(x, ctx.dispatcher()))

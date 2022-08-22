@@ -15,7 +15,7 @@
 
 use crate::console;
 use crate::dispatch_event::{dispatch_event, dispatch_event_with};
-use app_error::{AppError, AppResult};
+use app_util::{AppError, AppResult};
 use core::app_events::AppEventDispatcher;
 use core::camera::CameraLockMode;
 use core::simulation_core_state::ScalingMethod;

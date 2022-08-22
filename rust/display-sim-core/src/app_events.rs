@@ -15,7 +15,7 @@
 
 use crate::camera::CameraLockMode;
 use crate::simulation_core_state::ScalingMethod;
-use app_error::AppResult;
+use app_util::AppResult;
 use std::fmt::Display;
 
 pub trait AppEventDispatcher {

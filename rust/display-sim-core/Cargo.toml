@@ -12,4 +12,4 @@ arraygen = "0.3.2"
 enum-len-derive = { path = "../enum-len-derive" }
 enum-len-trait = { path = "../enum-len-trait" }
 derive-new = "0.5.9"
-app-error = { path = "../display-sim-app-error", package = "display-sim-app-error" }
+app-util = { path = "../display-sim-app-util", package = "display-sim-app-util" }

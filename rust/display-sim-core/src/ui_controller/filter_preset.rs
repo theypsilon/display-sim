@@ -18,7 +18,7 @@ use crate::general_types::IncDec;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::MainState;
 use crate::ui_controller::{EncodedValue, UiController};
-use app_error::AppResult;
+use app_util::AppResult;
 use std::str::FromStr;
 
 #[derive(Default, Clone)]
@@ -92,7 +92,7 @@ impl FilterPresetOptions {
 #[cfg(test)]
 mod filter_presets_tests {
     use super::FilterPresetOptions;
-    use app_error::AppResult;
+    use app_util::AppResult;
     use std::str::FromStr;
     #[test]
     fn test_from_str_to_str() -> AppResult<()> {

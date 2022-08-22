@@ -16,7 +16,7 @@
 use crate::app_events::AppEventDispatcher;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::MainState;
-use app_error::AppResult;
+use app_util::AppResult;
 
 pub trait UiController {
     fn event_tag(&self) -> &'static str;

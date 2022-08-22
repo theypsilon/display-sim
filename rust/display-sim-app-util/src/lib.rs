@@ -64,3 +64,23 @@ impl<'a> From<&'a str> for AppError {
         AppError { err: string.into() }
     }
 }
+
+#[cfg(not(target_arch = "wasm32"))]
+pub fn log(string: &str) {
+    println!("{}", string);
+}
+
+#[cfg(target_arch = "wasm32")]
+pub fn log(string: &str) {
+    web_sys::console::log_1(&(string.to_string()).into())
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub fn log_error(string: &str) {
+    println!("ERROR: {}", string);
+}
+
+#[cfg(target_arch = "wasm32")]
+pub fn log_error(string: &str) {
+    web_sys::console::error_1(&(string.to_string()).into())
+}

@@ -18,10 +18,11 @@ use crate::field_changer::FieldChanger;
 use crate::general_types::{IncDec, OptionCursor};
 
 use crate::boolean_button::BooleanButton;
+use crate::input_types::TrackedButton;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::MainState;
 use crate::ui_controller::{EncodedValue, UiController};
-use app_error::AppResult;
+use app_util::AppResult;
 use std::fmt::Display;
 
 pub trait EnumUi {
@@ -57,6 +58,7 @@ impl<T: Clone + OptionCursor + Display + EnumUi> UiController for EnumHolder<T> 
         self.value.keys_dec()
     }
     fn update(&mut self, _: &MainState, ctx: &dyn SimulationContext) -> bool {
+        self.input.track();
         FieldChanger::new(ctx, &mut self.value, self.input.to_just_pressed())
             .set_trigger_handler(|x: &T| dispatch(x, ctx.dispatcher()))
             .process_options()

@@ -17,7 +17,7 @@ use crate::app_events::AppEventDispatcher;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::MainState;
 use crate::ui_controller::{EncodedValue, UiController};
-use app_error::AppResult;
+use app_util::AppResult;
 
 macro_rules! rgb_impl {
     ($ty:ident, $event_tag:expr, $dispatch_tag:expr) => {

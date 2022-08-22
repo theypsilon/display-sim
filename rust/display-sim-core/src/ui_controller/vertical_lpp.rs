@@ -19,11 +19,12 @@ use crate::general_types::IncDec;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::MainState;
 use crate::ui_controller::{EncodedValue, UiController};
-use app_error::AppResult;
+use app_util::AppResult;
 
 #[derive(Default, Copy, Clone)]
 pub struct VerticalLpp {
     input: IncDec<bool>,
+    old_input: IncDec<bool>,
     event: Option<usize>,
     pub value: usize,
 }
@@ -32,6 +33,7 @@ impl From<usize> for VerticalLpp {
     fn from(value: usize) -> Self {
         VerticalLpp {
             input: Default::default(),
+            old_input: Default::default(),
             event: None,
             value,
         }
@@ -51,9 +53,10 @@ impl UiController for VerticalLpp {
     fn update(&mut self, _: &MainState, ctx: &dyn SimulationContext) -> bool {
         FieldChanger::new(ctx, &mut self.value, self.input)
             .set_progression(1)
-            .set_event_value(self.event)
+            .skip_if_input_is_not_changing(&mut self.old_input)
             .set_min(1)
             .set_max(20)
+            .set_event_value(self.event)
             .set_trigger_handler(|x| dispatch(x, ctx.dispatcher()))
             .process_with_sums()
     }

@@ -35,7 +35,7 @@ members = [
     "rust/glow-safe-adapter",
     "rust/display-sim-core",
     "rust/display-sim-render",
-    "rust/display-sim-app-error",
+    "rust/display-sim-app-util",
     "rust/display-sim-web-exports",
     "rust/display-sim-native",
     "rust/display-sim-stub-render",

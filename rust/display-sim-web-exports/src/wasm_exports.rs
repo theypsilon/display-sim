@@ -20,7 +20,7 @@ use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 use crate::console;
 use crate::web_entrypoint::{print_error, web_load, web_run_frame, web_unload, InputOutput};
-use app_error::AppResult;
+use app_util::AppResult;
 use core::general_types::Size2D;
 use core::simulation_core_state::{AnimationStep, Resources, VideoInputResources};
 use core::ui_controller::filter_preset::FilterPresetOptions;

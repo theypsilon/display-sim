@@ -71,6 +71,7 @@ pub struct AnimationStep {
     pub delay: u32,
 }
 
+#[derive(Debug)]
 pub enum KeyEventKind {
     Inc,
     Dec,
@@ -92,7 +93,6 @@ pub struct Resources {
     pub demo_1: FlightDemoData,
     pub controllers: Controllers,
     pub scaling: Scaling,
-    pub speed: Speeds,
     pub saved_filters: Option<Controllers>,
     pub custom_is_changed: bool,
     pub main: MainState,
@@ -114,9 +114,6 @@ impl Default for Resources {
             video: VideoInputResources::default(),
             camera: CameraData::new(MOVEMENT_BASE_SPEED / MOVEMENT_SPEED_FACTOR, TURNING_BASE_SPEED),
             demo_1: FlightDemoData::default(),
-            speed: Speeds {
-                filter_speed: PIXEL_MANIPULATION_BASE_SPEED,
-            },
             scaling: Scaling::default(),
             saved_filters: None,
             custom_is_changed: false,
@@ -224,10 +221,6 @@ pub struct SimulationTimers {
 pub struct InitialParameters {
     pub initial_movement_speed: f32,
     pub initial_position_z: f32,
-}
-
-pub struct Speeds {
-    pub filter_speed: f32,
 }
 
 #[derive(Clone)]

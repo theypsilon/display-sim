@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-use app_error::AppResult;
+use app_util::AppResult;
 use wasm_bindgen::{JsCast, JsValue};
 
 pub fn dispatch_event(observer: &JsValue, kind: &str) -> AppResult<()> {

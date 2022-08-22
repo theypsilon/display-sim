@@ -21,7 +21,7 @@ use web_sys::WebGl2RenderingContext;
 use crate::console;
 use crate::web_events::WebEventDispatcher;
 use crate::web_utils::now;
-use app_error::{AppError, AppResult};
+use app_util::{AppError, AppResult};
 use core::camera::CameraChange;
 use core::input_types::{Input, InputEventValue, Pressed};
 use core::simulation_context::{ConcreteSimulationContext, RandomGenerator, SimulationContext};

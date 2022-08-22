@@ -19,7 +19,7 @@ use crate::general_types::IncDec;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::MainState;
 use crate::ui_controller::{EncodedValue, UiController};
-use app_error::AppResult;
+use app_util::AppResult;
 
 #[derive(Default, Copy, Clone)]
 pub struct ExtraBright {
@@ -49,8 +49,11 @@ impl UiController for ExtraBright {
         &["shift+x", "pixel-brightness-dec"]
     }
     fn update(&mut self, main: &MainState, ctx: &dyn SimulationContext) -> bool {
+        if self.input.any_active() {
+            app_util::log(&format!("ExtraBright::UPDATE: DT {} SPEED {} VALUE {}", main.dt, main.filter_speed, self.value));
+        }
         FieldChanger::new(ctx, &mut self.value, self.input)
-            .set_progression(0.01 * main.dt * main.filter_speed)
+            .set_progression(0.5 * main.dt * main.filter_speed)
             .set_event_value(self.event)
             .set_min(-1.0)
             .set_max(1.0)
@@ -66,15 +69,18 @@ impl UiController for ExtraBright {
         self.event = None;
         self.input.increase = false;
         self.input.decrease = false;
+        app_util::log("ExtraBright::RESET_INPUTS");
     }
     fn read_event(&mut self, encoded: &dyn EncodedValue) -> AppResult<()> {
         self.event = Some(encoded.to_f32()?);
         Ok(())
     }
     fn read_key_inc(&mut self, pressed: bool) {
+        app_util::log(&format!("ExtraBright::READ_KEY_INC {:?}", pressed));
         self.input.increase = pressed;
     }
     fn read_key_dec(&mut self, pressed: bool) {
+        app_util::log(&format!("ExtraBright::READ_KEY_DEC {:?}", pressed));
         self.input.decrease = pressed;
     }
     fn dispatch_event(&self, dispatcher: &dyn AppEventDispatcher) {

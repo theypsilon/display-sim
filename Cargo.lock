@@ -476,10 +476,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "display-sim-app-error"
+name = "display-sim-app-util"
 version = "0.1.0"
 dependencies = [
  "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]
@@ -488,7 +489,7 @@ version = "0.1.0"
 dependencies = [
  "arraygen",
  "derive-new",
- "display-sim-app-error",
+ "display-sim-app-util",
  "enum-len-derive",
  "enum-len-trait",
  "nalgebra-glm",
@@ -514,7 +515,7 @@ name = "display-sim-render"
 version = "0.1.0"
 dependencies = [
  "derive-new",
- "display-sim-app-error",
+ "display-sim-app-util",
  "display-sim-core",
  "glow-safe-adapter",
  "nalgebra-glm",
@@ -525,7 +526,7 @@ name = "display-sim-stub-render"
 version = "0.1.0"
 dependencies = [
  "derive-new",
- "display-sim-app-error",
+ "display-sim-app-util",
  "display-sim-core",
  "display-sim-render",
  "glob",
@@ -548,7 +549,7 @@ version = "0.1.0"
 dependencies = [
  "console_error_panic_hook",
  "derive-new",
- "display-sim-app-error",
+ "display-sim-app-util",
  "display-sim-core",
  "display-sim-render",
  "getrandom",

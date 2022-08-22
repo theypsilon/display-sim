@@ -28,19 +28,20 @@ pub(crate) fn trigger_hotkey_action(input: &mut Input, res: &mut Resources, keyc
 
 pub(crate) fn trigger_hotkey_action_2(input: &mut Input, res: &mut Resources, keycode: &str, pressed: Pressed) -> ActionUsed {
     // @TODO Fix Shift Ctrl combos
-    /*
     if let Some((kind, index)) = res.controller_events.get_mut(keycode) {
         let controller = &mut res.controllers.get_ui_controllers_mut()[*index];
         let pressed = match pressed {
             Pressed::Yes => true,
             Pressed::No => false,
         };
+
         match kind {
             KeyEventKind::Inc => controller.read_key_inc(pressed),
             KeyEventKind::Dec => controller.read_key_dec(pressed),
             KeyEventKind::Set => unreachable!(),
         }
-    }*/
+    }
+
     if let Some(keycode) = get_contextualized_action_2(input, res, keycode) {
         process_modifiers_2(input, res, keycode.as_ref(), pressed);
         if pressed == Pressed::Yes && input.active_pressed_actions_2.iter().any(|active_action| *active_action == keycode) {

@@ -81,13 +81,11 @@ async function show (template: SimTemplate, view_model: SimViewModel, model: Sim
 
     view_model.init(await model.load());
 
-    async function fireBackendEvent (kind: string, msg?: any) {
-        const event = {
-            message: msg,
-            type: 'front2back:' + kind
-        };
+    async function fireBackendEvent (kind: string, message?: any) {
+        const type = 'front2back:' + kind;
+        const event = { message, type };
         await backendEmitter.fire(event);
-        console.log('front2back', kind, msg);
+        log_event(type, message);
     }
 
     async function fireKeyboardEvent ({ pressed, key, timeout }: {pressed: boolean, key: string, timeout?: number}) {
@@ -134,7 +132,7 @@ async function show (template: SimTemplate, view_model: SimViewModel, model: Sim
     // Listening backend events
     backendObservable.subscribe(async e => {
         const msg = e.message;
-        console.log('back2front', e.type, msg);
+        log_event(e.type, msg);
         switch (e.type) {
         case 'back2front:top_message': return view_model.openTopMessage(msg);
         case 'back2front:request_fullscreen': return view_model.setFullscreen();
@@ -255,4 +253,13 @@ async function handleWebGLKeys (msg: DispatchKeyMessage, model: SimModel, view_m
     }
     default: throw new Error('WebGL key not handled. ' + msg.key);
     }
+}
+
+const eventsIgnoringLogs = ['front2back:mouse-move', 'front2back:mouse-click', 'back2front:fps', 'back2front:top_message'];
+
+function log_event(topic: string, msg: any) {
+    if (eventsIgnoringLogs.includes(topic)) {
+        return;
+    }
+    console.log(topic, msg)
 }

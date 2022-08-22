@@ -18,11 +18,20 @@ use arraygen::Arraygen;
 use enum_len_trait::EnumLen;
 use num_traits::{FromPrimitive, ToPrimitive};
 
-#[derive(Clone, Default, Arraygen)]
+#[derive(Clone, Default, Arraygen, Debug, Eq)]
 #[gen_array(pub fn get_buttons: &mut T, implicit_select_all: _)]
 pub struct IncDec<T> {
     pub increase: T,
     pub decrease: T,
+}
+
+impl<T> PartialEq for IncDec<T>
+where
+    T: PartialEq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.increase == other.increase && self.decrease == other.decrease
+    }
 }
 
 impl IncDec<BooleanButton> {
@@ -89,6 +98,31 @@ pub trait OptionCursor {
     fn has_reached_maximum_limit(&self) -> bool;
     fn has_reached_minimum_limit(&self) -> bool;
 }
+
+pub trait Increment {
+    fn inc(&mut self);
+}
+
+pub trait Decrement {
+    fn dec(&mut self);
+}
+
+macro_rules! increment_decrement_impl {
+    ($($t:ty)*) => ($(
+        impl Increment for $t {
+            fn inc(&mut self) {
+                *self += 1;
+            }
+        }
+        impl Decrement for $t {
+            fn dec(&mut self) {
+                *self -= 1;
+            }
+        }
+    )*)
+}
+
+increment_decrement_impl! { usize u8 u16 u32 u64 isize i8 i16 i32 i64 }
 
 impl<T> OptionCursor for T
 where
