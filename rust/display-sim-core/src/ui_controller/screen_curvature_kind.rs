@@ -17,6 +17,8 @@ use crate::ui_controller::enum_ui::{EnumHolder, EnumUi};
 use enum_len_derive::EnumLen;
 use num_derive::{FromPrimitive, ToPrimitive};
 
+use super::EncodedValue;
+
 #[derive(FromPrimitive, ToPrimitive, EnumLen, Copy, Clone)]
 pub enum ScreenCurvatureKindOptions {
     Flat,
@@ -53,4 +55,10 @@ impl EnumUi for ScreenCurvatureKindOptions {
     }
 }
 
-pub type ScreenCurvatureKind = EnumHolder<ScreenCurvatureKindOptions>;
+impl From<&'static dyn EncodedValue> for ScreenCurvatureKindOptions {
+    fn from(value: &'static dyn EncodedValue) -> Self {
+        value.to_usize()
+    }
+}
+
+pub type ScreenCurvatureKind = EnumHolder<'static, ScreenCurvatureKindOptions>;

@@ -13,9 +13,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
+use std::convert::TryFrom;
+
 use crate::ui_controller::enum_ui::{EnumHolder, EnumUi};
+use app_util::AppError;
 use enum_len_derive::EnumLen;
 use num_derive::{FromPrimitive, ToPrimitive};
+use num_traits::FromPrimitive;
+
+use crate::ui_controller::EncodedValue;
 
 #[derive(FromPrimitive, ToPrimitive, EnumLen, Copy, Clone)]
 pub enum ColorChannelsOptions {
@@ -51,4 +57,16 @@ impl EnumUi for ColorChannelsOptions {
     }
 }
 
-pub type ColorChannels = EnumHolder<ColorChannelsOptions>;
+impl TryFrom<&'static dyn EncodedValue> for ColorChannelsOptions {
+    type Error = AppError;
+
+    fn try_from(value: &'static dyn EncodedValue) -> Result<Self, Self::Error> {
+        if let Some(option) = ColorChannelsOptions::from_usize(value.to_usize()?) {
+            Ok(option)
+        } else {
+            Err(AppError::from("Incorrect value for ColorChannelsOptions"))
+        }
+    }
+}
+
+pub type ColorChannels = EnumHolder<'static, ColorChannelsOptions>;

@@ -44,12 +44,6 @@ impl UiController for BrightnessColor {
     fn update(&mut self, _: &MainState, _: &dyn SimulationContext) -> bool {
         false
     }
-    fn apply_event(&mut self) {
-        if let Some(v) = self.event {
-            self.value = v;
-            // self.ctx.dispatcher().dispatch_top_message("Brightness Color changed.");
-        }
-    }
     fn reset_inputs(&mut self) {
         self.event = None;
     }

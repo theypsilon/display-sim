@@ -32,6 +32,7 @@ pub struct InternalResolution {
     maximium_reached: bool,
     pub changed: bool,
     input: IncDec<BooleanButton>,
+    event: Option<i32>,
 }
 
 impl Default for InternalResolution {
@@ -43,6 +44,7 @@ impl Default for InternalResolution {
             minimum_reached: false,
             maximium_reached: false,
             changed: false,
+            event: None,
         }
     }
 }
@@ -154,14 +156,20 @@ impl UiController for InternalResolution {
         let inputs = self.input.to_just_pressed();
         self.changed = FieldChanger::new(ctx, self as &mut InternalResolution, inputs)
             .set_trigger_handler(|x: &InternalResolution| dispatch(x, ctx.dispatcher()))
+            .set_event_value(self.event.map(|y| {
+                let resolution = InternalResolution::default();
+                resolution.set_resolution(y);
+                resolution
+            }))
             .process_options();
         self.changed
     }
-    fn apply_event(&mut self) {}
     fn reset_inputs(&mut self) {
         self.input = Default::default();
+        self.event = None;
     }
-    fn read_event(&mut self, _: &dyn EncodedValue) -> AppResult<()> {
+    fn read_event(&mut self, value: &dyn EncodedValue) -> AppResult<()> {
+        self.event = Some(value.to_i32()?);
         Ok(())
     }
     fn read_key_inc(&mut self, pressed: bool) {
@@ -176,7 +184,9 @@ impl UiController for InternalResolution {
     fn pre_process_input(&mut self) {
         self.input.get_buttons().iter_mut().for_each(|button| button.track_input());
     }
-    fn post_process_input(&mut self) {}
+    fn post_process_input(&mut self) {
+        self.event = None;
+    }
 }
 
 fn dispatch(value: &InternalResolution, dispatcher: &dyn AppEventDispatcher) {

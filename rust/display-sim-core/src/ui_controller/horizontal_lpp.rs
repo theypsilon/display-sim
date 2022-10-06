@@ -14,17 +14,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 use crate::app_events::AppEventDispatcher;
+use crate::boolean_button::BooleanButton;
 use crate::field_changer::FieldChanger;
 use crate::general_types::IncDec;
+use crate::input_types::TrackedButton;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::MainState;
 use crate::ui_controller::{EncodedValue, UiController};
 use app_util::AppResult;
 
-#[derive(Default, Copy, Clone)]
+#[derive(Default, Clone)]
 pub struct HorizontalLpp {
-    input: IncDec<bool>,
-    old_input: IncDec<bool>,
+    input: IncDec<BooleanButton>,
     event: Option<usize>,
     pub value: usize,
 }
@@ -33,7 +34,6 @@ impl From<usize> for HorizontalLpp {
     fn from(value: usize) -> Self {
         HorizontalLpp {
             input: Default::default(),
-            old_input: Default::default(),
             event: None,
             value,
         }
@@ -51,39 +51,35 @@ impl UiController for HorizontalLpp {
         &["shift+l", "horizontal-lpp-dec"]
     }
     fn update(&mut self, _: &MainState, ctx: &dyn SimulationContext) -> bool {
-        FieldChanger::new(ctx, &mut self.value, self.input)
+        FieldChanger::new(ctx, &mut self.value, self.input.to_just_pressed())
             .set_progression(1)
-            .skip_if_input_is_not_changing(&mut self.old_input)
             .set_event_value(self.event)
             .set_min(1)
             .set_max(20)
             .set_trigger_handler(|x| dispatch(x, ctx.dispatcher()))
             .process_with_sums()
     }
-    fn apply_event(&mut self) {
-        if let Some(v) = self.event {
-            self.value = v;
-        }
-    }
     fn reset_inputs(&mut self) {
         self.event = None;
-        self.input.increase = false;
-        self.input.decrease = false;
+        self.input.increase.input = false;
+        self.input.decrease.input = false;
     }
     fn read_event(&mut self, encoded: &dyn EncodedValue) -> AppResult<()> {
         self.event = Some(encoded.to_usize()?);
         Ok(())
     }
     fn read_key_inc(&mut self, pressed: bool) {
-        self.input.increase = pressed;
+        self.input.increase.input = pressed;
     }
     fn read_key_dec(&mut self, pressed: bool) {
-        self.input.decrease = pressed;
+        self.input.decrease.input = pressed;
     }
     fn dispatch_event(&self, dispatcher: &dyn AppEventDispatcher) {
         dispatch(self.value, dispatcher)
     }
-    fn pre_process_input(&mut self) {}
+    fn pre_process_input(&mut self) {
+        self.input.track()
+    }
     fn post_process_input(&mut self) {
         self.event = None;
     }

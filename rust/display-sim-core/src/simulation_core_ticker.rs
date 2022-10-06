@@ -146,7 +146,6 @@ impl<'a> SimulationUpdater<'a> {
         self.update_scaling();
         self.update_filters()?;
         self.update_camera();
-        self.update_colors();
         self.update_screenshot();
         if self.res.controllers.preset_kind.value == FilterPresetOptions::DemoFlight1 {
             self.update_demo();
@@ -476,12 +475,6 @@ impl<'a> SimulationUpdater<'a> {
         }
 
         camera.update_view(self.res.main.dt)
-    }
-
-    fn update_colors(&mut self) {
-        for controller in self.res.controllers.get_ui_controllers_mut().iter_mut() {
-            controller.apply_event();
-        }
     }
 
     fn change_frontend_input_values(&self) {

@@ -22,7 +22,8 @@ use crate::input_types::TrackedButton;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::MainState;
 use crate::ui_controller::{EncodedValue, UiController};
-use app_util::AppResult;
+use app_util::{AppError, AppResult};
+use std::convert::{TryFrom, TryInto};
 use std::fmt::Display;
 
 pub trait EnumUi {
@@ -33,21 +34,34 @@ pub trait EnumUi {
 }
 
 #[derive(Clone, Default)]
-pub struct EnumHolder<T: Clone + OptionCursor + Display + EnumUi> {
+pub struct EnumHolder<'a, T: Clone + OptionCursor + Display + EnumUi + TryFrom<&'a dyn EncodedValue>>
+where
+    AppError: From<<T as TryFrom<&'a dyn EncodedValue>>::Error>,
+{
     input: IncDec<BooleanButton>,
+    event: Option<T>,
     pub value: T,
+    _u: std::marker::PhantomData<&'a T>,
 }
 
-impl<T: Clone + OptionCursor + Display + EnumUi> From<T> for EnumHolder<T> {
+impl<'a, T: Clone + OptionCursor + Display + EnumUi + TryFrom<&'a dyn EncodedValue>> From<T> for EnumHolder<'a, T>
+where
+    AppError: From<<T as TryFrom<&'a dyn EncodedValue>>::Error>,
+{
     fn from(value: T) -> Self {
         EnumHolder {
             input: Default::default(),
+            event: None,
             value,
+            _u: Default::default(),
         }
     }
 }
 
-impl<T: Clone + OptionCursor + Display + EnumUi> UiController for EnumHolder<T> {
+impl<'a, T: Clone + OptionCursor + Display + EnumUi + TryFrom<&'a dyn EncodedValue>> UiController for EnumHolder<'a, T>
+where
+    AppError: From<<T as TryFrom<&'a dyn EncodedValue>>::Error>,
+{
     fn event_tag(&self) -> &'static str {
         self.value.event_tag()
     }
@@ -58,16 +72,16 @@ impl<T: Clone + OptionCursor + Display + EnumUi> UiController for EnumHolder<T> 
         self.value.keys_dec()
     }
     fn update(&mut self, _: &MainState, ctx: &dyn SimulationContext) -> bool {
-        self.input.track();
         FieldChanger::new(ctx, &mut self.value, self.input.to_just_pressed())
             .set_trigger_handler(|x: &T| dispatch(x, ctx.dispatcher()))
             .process_options()
     }
-    fn apply_event(&mut self) {}
     fn reset_inputs(&mut self) {
         self.input = Default::default();
+        self.event = None;
     }
-    fn read_event(&mut self, _: &dyn EncodedValue) -> AppResult<()> {
+    fn read_event(&mut self, value: &dyn EncodedValue) -> AppResult<()> {
+        self.event = Some(value.try_into()?);
         Ok(())
     }
     fn read_key_inc(&mut self, pressed: bool) {
@@ -79,8 +93,12 @@ impl<T: Clone + OptionCursor + Display + EnumUi> UiController for EnumHolder<T> 
     fn dispatch_event(&self, dispatcher: &dyn AppEventDispatcher) {
         dispatch(&self.value, dispatcher)
     }
-    fn pre_process_input(&mut self) {}
-    fn post_process_input(&mut self) {}
+    fn pre_process_input(&mut self) {
+        self.input.track()
+    }
+    fn post_process_input(&mut self) {
+        self.event = None;
+    }
 }
 
 fn dispatch<T: Clone + OptionCursor + Display + EnumUi>(value: &T, dispatcher: &dyn AppEventDispatcher) {

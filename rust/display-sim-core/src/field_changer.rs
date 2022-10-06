@@ -55,15 +55,6 @@ impl<'a, T, U, TriggerHandler: FnOnce(U)> FieldChanger<'a, T, U, TriggerHandler>
         self.trigger_handler = Some(trigger_handler);
         self
     }
-    pub(crate) fn skip_if_input_is_not_changing(mut self, previous_input: &mut IncDec<bool>) -> Self {
-        if self.incdec == *previous_input {
-            self.skip_process = true
-        } else {
-            self.skip_process = false;
-            *previous_input = self.incdec.clone()
-        }
-        self
-    }
 }
 
 impl<'a, T: PartialOrd + PartialEq + AddAssign + SubAssign, TriggerHandler: FnOnce(T)> FieldChanger<'a, T, T, TriggerHandler> {

@@ -42,12 +42,12 @@ impl UiController for LightColor {
         &[]
     }
     fn update(&mut self, _: &MainState, _: &dyn SimulationContext) -> bool {
-        false
-    }
-    fn apply_event(&mut self) {
         if let Some(v) = self.event {
             self.value = v;
-            //self.ctx.dispatcher().dispatch_top_message("Light Color changed.")
+            self.event = None;
+            true
+        } else {
+            false
         }
     }
     fn reset_inputs(&mut self) {

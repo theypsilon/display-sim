@@ -17,6 +17,8 @@ use crate::ui_controller::enum_ui::{EnumHolder, EnumUi};
 use enum_len_derive::EnumLen;
 use num_derive::{FromPrimitive, ToPrimitive};
 
+use crate::ui_controller::EncodedValue;
+
 #[derive(FromPrimitive, ToPrimitive, EnumLen, Copy, Clone)]
 pub enum TextureInterpolationOptions {
     Nearest,
@@ -47,4 +49,10 @@ impl EnumUi for TextureInterpolationOptions {
     }
 }
 
-pub type TextureInterpolation = EnumHolder<TextureInterpolationOptions>;
+impl From<&'static dyn EncodedValue> for TextureInterpolationOptions {
+    fn from(value: &'static dyn EncodedValue) -> Self {
+        value.to_usize()
+    }
+}
+
+pub type TextureInterpolation = EnumHolder<'static, TextureInterpolationOptions>;

@@ -17,6 +17,8 @@ use crate::ui_controller::enum_ui::{EnumHolder, EnumUi};
 use enum_len_derive::EnumLen;
 use num_derive::{FromPrimitive, ToPrimitive};
 
+use crate::ui_controller::EncodedValue;
+
 #[derive(FromPrimitive, ToPrimitive, EnumLen, Copy, Clone)]
 pub enum PixelGeometryKindOptions {
     Squares,
@@ -47,4 +49,10 @@ impl EnumUi for PixelGeometryKindOptions {
     }
 }
 
-pub type PixelGeometryKind = EnumHolder<PixelGeometryKindOptions>;
+impl From<&'static dyn EncodedValue> for PixelGeometryKindOptions {
+    fn from(value: &'static dyn EncodedValue) -> Self {
+        value.to_usize()
+    }
+}
+
+pub type PixelGeometryKind = EnumHolder<'static, PixelGeometryKindOptions>;

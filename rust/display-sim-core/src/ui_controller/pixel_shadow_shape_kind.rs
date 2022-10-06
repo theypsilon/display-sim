@@ -18,6 +18,8 @@ use crate::ui_controller::enum_ui::{EnumHolder, EnumUi};
 use crate::general_types::OptionCursor;
 use std::fmt::{Display, Error, Formatter};
 
+use crate::ui_controller::EncodedValue;
+
 pub const TEXTURE_SIZE: usize = 510;
 
 const SHADOWS_LEN: usize = 24;
@@ -123,4 +125,10 @@ impl EnumUi for ShadowShape {
     }
 }
 
-pub type PixelShadowShapeKind = EnumHolder<ShadowShape>;
+impl From<&'static dyn EncodedValue> for ShadowShape {
+    fn from(value: &'static dyn EncodedValue) -> Self {
+        value.to_usize()
+    }
+}
+
+pub type PixelShadowShapeKind = EnumHolder<'static, ShadowShape>;

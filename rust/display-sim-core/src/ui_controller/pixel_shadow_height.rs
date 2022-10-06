@@ -57,11 +57,6 @@ impl UiController for PixelShadowHeight {
             .set_trigger_handler(|x| dispatch(x, ctx.dispatcher()))
             .process_with_sums()
     }
-    fn apply_event(&mut self) {
-        if let Some(v) = self.event {
-            self.value = v;
-        }
-    }
     fn reset_inputs(&mut self) {
         self.event = None;
         self.input.increase = false;
