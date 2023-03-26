@@ -55,7 +55,7 @@ build() {
 
     if ${optimize_wasm} ; then
         pushd www/src/wasm
-        echo wasm-opt -O3 -o display_sim_bg.wasm display_sim_bg.wasm
+        wasm-opt -O3 -o display_sim_bg.wasm display_sim_bg.wasm
         popd
     fi
 
