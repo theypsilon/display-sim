@@ -41,7 +41,7 @@ RUN cargo test --all \
     && cp -r /app/www/src/wasm /wasm \
     && rm -rf /app
 
-FROM node:16.16.0-alpine3.16 as webpack-artifact
+FROM node:18.15.0-alpine3.16 as webpack-artifact
 WORKDIR /www
 ADD www/package*.json ./
 RUN npm install

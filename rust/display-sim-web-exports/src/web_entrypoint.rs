@@ -160,7 +160,7 @@ fn read_frontend_event(input: &mut Input, res: &mut Resources, event: JsValue) -
     let frontend_event = frontend_event?;
     if let Some((KeyEventKind::Set, index)) = res.controller_events.get_mut(frontend_event.as_ref() as &str) {
         let controller = &mut res.controllers.get_ui_controllers_mut()[*index];
-        controller.read_event(JsEncodedValue::new(value))?;
+        controller.read_event(Box::new(JsEncodedValue::new(value)))?;
         return Ok(());
     }
     let event_value = match frontend_event.as_ref() as &str {
