@@ -58,7 +58,7 @@ impl From<Box<dyn EncodedValue>> for PixelGeometryKindOptions {
             Ok(x) => {
                 log_error(&format!("Unexpected PixelGeometryKindOptions value {}", x));
                 PixelGeometryKindOptions::Squares
-            },
+            }
             Err(e) => {
                 log_error(&e);
                 PixelGeometryKindOptions::Squares

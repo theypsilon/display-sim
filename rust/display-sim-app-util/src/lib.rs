@@ -14,9 +14,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 use std::{
+    convert::Infallible,
     error::Error,
     fmt::{Display, Formatter, Result},
-    convert::Infallible
 };
 
 pub type AppResult<T> = std::result::Result<T, AppError>;
@@ -62,7 +62,9 @@ impl From<std::string::String> for AppError {
 
 impl From<Infallible> for AppError {
     fn from(_: Infallible) -> Self {
-        AppError { err: "Infallible error?".into() }
+        AppError {
+            err: "Infallible error?".into(),
+        }
     }
 }
 

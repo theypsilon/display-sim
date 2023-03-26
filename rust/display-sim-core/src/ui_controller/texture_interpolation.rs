@@ -58,7 +58,7 @@ impl From<Box<dyn EncodedValue>> for TextureInterpolationOptions {
             Ok(x) => {
                 log_error(&format!("Unexpected TextureInterpolationOptions value {}", x));
                 TextureInterpolationOptions::Linear
-            },
+            }
             Err(e) => {
                 log_error(&e);
                 TextureInterpolationOptions::Linear

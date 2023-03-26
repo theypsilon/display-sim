@@ -67,7 +67,7 @@ impl From<Box<dyn EncodedValue>> for ScreenCurvatureKindOptions {
             Ok(x) => {
                 log_error(&format!("Unexpected ScreenCurvatureKindOptions value {}", x));
                 ScreenCurvatureKindOptions::Flat
-            },
+            }
             Err(e) => {
                 log_error(&e);
                 ScreenCurvatureKindOptions::Flat
