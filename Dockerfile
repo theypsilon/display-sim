@@ -1,9 +1,6 @@
 FROM rust:1.68.1-slim-buster as rust-wasm
 WORKDIR /app
-ARG RUST_TOOLCHAIN="1.68.1" \
-    BINARYEN_VER="version_111" \
-    BINARYEN_ARCH="x86_64-linux" \
-    BINARYEN_SHA="2f340545b302c706bf22d2ee2382ae53a73f32bd62cb3435fb9404303c4dc940"
+ARG RUST_TOOLCHAIN="1.68.1"
 RUN set -eux; \
     apt-get update ; \
     apt-get install -y --no-install-recommends \
@@ -18,17 +15,11 @@ RUN set -eux; \
         build-essential \
         libssl-dev \
     ; \
-    cargo install wasm-pack; \
     rustup target add wasm32-unknown-unknown --toolchain ${RUST_TOOLCHAIN}; \
     rustup component add clippy; \
-    wget -q -O binaryen.tar.gz "https://github.com/WebAssembly/binaryen/releases/download/${BINARYEN_VER}/binaryen-${BINARYEN_VER}-${BINARYEN_ARCH}.tar.gz"; \
-    echo "${BINARYEN_SHA} *binaryen.tar.gz" | sha256sum -c -; \
-    tar xf binaryen.tar.gz binaryen-${BINARYEN_VER}/bin/wasm-opt ; \
-    mkdir -p /usr/bin/bin && mv binaryen-${BINARYEN_VER}/bin/wasm-opt /usr/bin/bin/ ; \
-    rm -rf binaryen* ; \
+    cargo install wasm-pack; \
     apt-get remove -y --auto-remove wget; \
     rm -rf /var/lib/apt/lists/*
-ENV PATH $PATH:/usr/bin/bin   
 
 FROM rust-wasm as wasm-artifact
 ENV RUST_BACKTRACE=1
