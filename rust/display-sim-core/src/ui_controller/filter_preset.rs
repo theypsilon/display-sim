@@ -136,7 +136,7 @@ impl UiController for FilterPreset {
         self.input.increase = false;
         self.input.decrease = false;
     }
-    fn read_event(&mut self, encoded: &dyn EncodedValue) -> AppResult<()> {
+    fn read_event(&mut self, encoded: Box<dyn EncodedValue>) -> AppResult<()> {
         self.event = Some(FilterPresetOptions::from_str(&encoded.to_string()?)?);
         Ok(())
     }

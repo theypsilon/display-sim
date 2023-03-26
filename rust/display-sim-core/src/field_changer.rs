@@ -83,7 +83,7 @@ where
         if let Some(val) = self.event_value {
             *self.var = val;
             changed = true;
-        } else if self.skip_process == false {
+        } else if !self.skip_process {
             if self.incdec.increase {
                 self.var.next_option();
                 changed = true;
@@ -138,7 +138,7 @@ where
     let velocity = if let Some(velocity) = params.velocity { velocity } else { Default::default() };
     if let Some(val) = params.event_value {
         *params.var = val;
-    } else if params.skip_process == false {
+    } else if !params.skip_process {
         if !is_max && params.incdec.increase {
             inc_op(params.var, velocity);
         }

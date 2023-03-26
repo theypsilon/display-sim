@@ -183,11 +183,7 @@ pub fn get_3_f32color_from_int(color: i32) -> [f32; 3] {
 }
 
 fn get_u8_from_f32color(color: f32) -> u32 {
-    (match color {
-        c if c < 0.0 => 0.0,
-        c if c > 1.0 => 1.0,
-        c => c,
-    } * 255.0) as u32
+    (color.clamp(0.0, 1.0) * 255.0) as u32
 }
 
 pub fn get_int_from_3_f32color(color: &[f32; 3]) -> i32 {

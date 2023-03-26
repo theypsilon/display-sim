@@ -14,6 +14,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 use crate::ui_controller::enum_ui::{EnumHolder, EnumUi};
+use app_util::log_error;
 use enum_len_derive::EnumLen;
 use num_derive::{FromPrimitive, ToPrimitive};
 
@@ -55,9 +56,23 @@ impl EnumUi for ScreenCurvatureKindOptions {
     }
 }
 
-impl From<&'static dyn EncodedValue> for ScreenCurvatureKindOptions {
-    fn from(value: &'static dyn EncodedValue) -> Self {
-        value.to_usize()
+impl From<Box<dyn EncodedValue>> for ScreenCurvatureKindOptions {
+    fn from(value: Box<dyn EncodedValue>) -> Self {
+        match value.to_usize() {
+            Ok(0) => ScreenCurvatureKindOptions::Flat,
+            Ok(1) => ScreenCurvatureKindOptions::Curved1,
+            Ok(2) => ScreenCurvatureKindOptions::Curved2,
+            Ok(3) => ScreenCurvatureKindOptions::Curved3,
+            Ok(4) => ScreenCurvatureKindOptions::Pulse,
+            Ok(x) => {
+                log_error(&format!("Unexpected ScreenCurvatureKindOptions value {}", x));
+                ScreenCurvatureKindOptions::Flat
+            },
+            Err(e) => {
+                log_error(&e);
+                ScreenCurvatureKindOptions::Flat
+            }
+        }
     }
 }
 

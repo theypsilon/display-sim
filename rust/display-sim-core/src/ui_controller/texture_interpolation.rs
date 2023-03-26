@@ -14,6 +14,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 use crate::ui_controller::enum_ui::{EnumHolder, EnumUi};
+use app_util::log_error;
 use enum_len_derive::EnumLen;
 use num_derive::{FromPrimitive, ToPrimitive};
 
@@ -21,8 +22,8 @@ use crate::ui_controller::EncodedValue;
 
 #[derive(FromPrimitive, ToPrimitive, EnumLen, Copy, Clone)]
 pub enum TextureInterpolationOptions {
-    Nearest,
-    Linear,
+    Nearest = 0,
+    Linear = 1,
 }
 
 impl std::fmt::Display for TextureInterpolationOptions {
@@ -49,9 +50,20 @@ impl EnumUi for TextureInterpolationOptions {
     }
 }
 
-impl From<&'static dyn EncodedValue> for TextureInterpolationOptions {
-    fn from(value: &'static dyn EncodedValue) -> Self {
-        value.to_usize()
+impl From<Box<dyn EncodedValue>> for TextureInterpolationOptions {
+    fn from(value: Box<dyn EncodedValue>) -> Self {
+        match value.to_usize() {
+            Ok(0) => TextureInterpolationOptions::Nearest,
+            Ok(1) => TextureInterpolationOptions::Linear,
+            Ok(x) => {
+                log_error(&format!("Unexpected TextureInterpolationOptions value {}", x));
+                TextureInterpolationOptions::Linear
+            },
+            Err(e) => {
+                log_error(&e);
+                TextureInterpolationOptions::Linear
+            }
+        }
     }
 }
 

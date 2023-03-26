@@ -1,9 +1,9 @@
-FROM rust:1.62.1-slim-buster as rust-wasm
+FROM rust:1.68.1-slim-buster as rust-wasm
 WORKDIR /app
-ARG RUST_TOOLCHAIN="1.62.1" \
-    BINARYEN_VER="version_109" \
+ARG RUST_TOOLCHAIN="1.68.1" \
+    BINARYEN_VER="version_111" \
     BINARYEN_ARCH="x86_64-linux" \
-    BINARYEN_SHA="c3698aa14d14655f382a5dc73effb6fb3a88b9d03a1ef0acc24cbb1e0f592840"
+    BINARYEN_SHA="2f340545b302c706bf22d2ee2382ae53a73f32bd62cb3435fb9404303c4dc940"
 RUN set -eux; \
     apt-get update ; \
     apt-get install -y --no-install-recommends \

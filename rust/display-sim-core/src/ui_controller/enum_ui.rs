@@ -34,9 +34,9 @@ pub trait EnumUi {
 }
 
 #[derive(Clone, Default)]
-pub struct EnumHolder<'a, T: Clone + OptionCursor + Display + EnumUi + TryFrom<&'a dyn EncodedValue>>
+pub struct EnumHolder<'a, T: Clone + OptionCursor + Display + EnumUi + TryFrom<Box<dyn EncodedValue>>>
 where
-    AppError: From<<T as TryFrom<&'a dyn EncodedValue>>::Error>,
+    AppError: From<<T as TryFrom<Box<dyn EncodedValue>>>::Error>,
 {
     input: IncDec<BooleanButton>,
     event: Option<T>,
@@ -44,9 +44,9 @@ where
     _u: std::marker::PhantomData<&'a T>,
 }
 
-impl<'a, T: Clone + OptionCursor + Display + EnumUi + TryFrom<&'a dyn EncodedValue>> From<T> for EnumHolder<'a, T>
+impl<'a, T: Clone + OptionCursor + Display + EnumUi + TryFrom<Box<dyn EncodedValue>>> From<T> for EnumHolder<'a, T>
 where
-    AppError: From<<T as TryFrom<&'a dyn EncodedValue>>::Error>,
+    AppError: From<<T as TryFrom<Box<dyn EncodedValue>>>::Error>,
 {
     fn from(value: T) -> Self {
         EnumHolder {
@@ -58,9 +58,9 @@ where
     }
 }
 
-impl<'a, T: Clone + OptionCursor + Display + EnumUi + TryFrom<&'a dyn EncodedValue>> UiController for EnumHolder<'a, T>
+impl<'a, T: Clone + OptionCursor + Display + EnumUi + TryFrom<Box<dyn EncodedValue>>> UiController for EnumHolder<'a, T>
 where
-    AppError: From<<T as TryFrom<&'a dyn EncodedValue>>::Error>,
+    AppError: From<<T as TryFrom<Box<dyn EncodedValue>>>::Error>,
 {
     fn event_tag(&self) -> &'static str {
         self.value.event_tag()
@@ -80,8 +80,8 @@ where
         self.input = Default::default();
         self.event = None;
     }
-    fn read_event(&mut self, value: &dyn EncodedValue) -> AppResult<()> {
-        self.event = Some(value.try_into()?);
+    fn read_event(&mut self, encoded: Box<dyn EncodedValue>) -> AppResult<()> {
+        self.event = Some(encoded.try_into()?);
         Ok(())
     }
     fn read_key_inc(&mut self, pressed: bool) {

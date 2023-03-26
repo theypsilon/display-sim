@@ -57,10 +57,10 @@ impl EnumUi for ColorChannelsOptions {
     }
 }
 
-impl TryFrom<&'static dyn EncodedValue> for ColorChannelsOptions {
+impl TryFrom<Box<dyn EncodedValue>> for ColorChannelsOptions {
     type Error = AppError;
 
-    fn try_from(value: &'static dyn EncodedValue) -> Result<Self, Self::Error> {
+    fn try_from(value: Box<dyn EncodedValue>) -> Result<Self, Self::Error> {
         if let Some(option) = ColorChannelsOptions::from_usize(value.to_usize()?) {
             Ok(option)
         } else {

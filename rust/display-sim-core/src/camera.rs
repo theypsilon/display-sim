@@ -298,21 +298,9 @@ impl<'a> CameraSystem<'a> {
                 let distance_to_origin = glm::length(&self.data.position_destiny);
                 self.data.position_destiny = -self.data.direction * distance_to_origin;
             }
-            if self.data.position_destiny.z < 0.8 {
-                self.data.position_destiny.z = 0.8;
-            } else if self.data.position_destiny.z > 8000.0 {
-                self.data.position_destiny.z = 8000.0;
-            }
-            if self.data.position_destiny.x < -395.0 {
-                self.data.position_destiny.x = -395.0;
-            } else if self.data.position_destiny.x > 395.0 {
-                self.data.position_destiny.x = 395.0;
-            }
-            if self.data.position_destiny.y < -220.0 {
-                self.data.position_destiny.y = -220.0;
-            } else if self.data.position_destiny.y > 220.0 {
-                self.data.position_destiny.y = 220.0;
-            }
+            self.data.position_destiny.z = self.data.position_destiny.z.clamp(0.8, 8000.0);
+            self.data.position_destiny.x = self.data.position_destiny.x.clamp(-395.0, 395.0);
+            self.data.position_destiny.y = self.data.position_destiny.y.clamp(-220.0, 220.0);
         }
 
         let position_movement = (self.data.position_destiny - self.data.position_eye) * dt * 10.0;

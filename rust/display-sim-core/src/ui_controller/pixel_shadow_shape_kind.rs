@@ -14,6 +14,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 use crate::ui_controller::enum_ui::{EnumHolder, EnumUi};
+use app_util::log_error;
 
 use crate::general_types::OptionCursor;
 use std::fmt::{Display, Error, Formatter};
@@ -125,9 +126,15 @@ impl EnumUi for ShadowShape {
     }
 }
 
-impl From<&'static dyn EncodedValue> for ShadowShape {
-    fn from(value: &'static dyn EncodedValue) -> Self {
-        value.to_usize()
+impl From<Box<dyn EncodedValue>> for ShadowShape {
+    fn from(value: Box<dyn EncodedValue>) -> Self {
+        match value.to_usize() {
+            Ok(value) => ShadowShape { value },
+            Err(e) => {
+                log_error(&e);
+                Default::default()
+            }
+        }
     }
 }
 

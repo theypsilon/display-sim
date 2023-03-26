@@ -49,7 +49,7 @@ impl<GL: HasContext> BlurRender<GL> {
             self.gl.viewport(0, 0, tb.width, tb.height);
             self.gl.bind_texture(glow::TEXTURE_2D, texture);
             self.gl
-                .uniform_1_i32(self.gl.get_uniform_location(self.shader, "horizontal"), if horizontal { 1 } else { 0 });
+                .uniform_1_i32(self.gl.get_uniform_location(self.shader, "horizontal"), i32::from(horizontal));
             self.gl.clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
             self.gl.draw_elements(glow::TRIANGLES, 6, glow::UNSIGNED_INT, 0);
         };

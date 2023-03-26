@@ -85,10 +85,10 @@ impl InternalResolution {
         }
     }
     pub fn width(&self) -> i32 {
-        self.viewport.width as i32
+        self.viewport.width
     }
     pub fn height(&self) -> i32 {
-        self.viewport.height as i32
+        self.viewport.height
     }
 }
 
@@ -154,10 +154,11 @@ impl UiController for InternalResolution {
     }
     fn update(&mut self, _: &MainState, ctx: &dyn SimulationContext) -> bool {
         let inputs = self.input.to_just_pressed();
+        let event = self.event;
         self.changed = FieldChanger::new(ctx, self as &mut InternalResolution, inputs)
             .set_trigger_handler(|x: &InternalResolution| dispatch(x, ctx.dispatcher()))
-            .set_event_value(self.event.map(|y| {
-                let resolution = InternalResolution::default();
+            .set_event_value(event.map(|y| {
+                let mut resolution = InternalResolution::default();
                 resolution.set_resolution(y);
                 resolution
             }))
@@ -168,8 +169,8 @@ impl UiController for InternalResolution {
         self.input = Default::default();
         self.event = None;
     }
-    fn read_event(&mut self, value: &dyn EncodedValue) -> AppResult<()> {
-        self.event = Some(value.to_i32()?);
+    fn read_event(&mut self, encoded: Box<dyn EncodedValue>) -> AppResult<()> {
+        self.event = Some(encoded.to_i32()?);
         Ok(())
     }
     fn read_key_inc(&mut self, pressed: bool) {

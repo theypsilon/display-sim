@@ -53,7 +53,7 @@ impl UiController for LightColor {
     fn reset_inputs(&mut self) {
         self.event = None;
     }
-    fn read_event(&mut self, encoded: &dyn EncodedValue) -> AppResult<()> {
+    fn read_event(&mut self, encoded: Box<dyn EncodedValue>) -> AppResult<()> {
         self.event = Some(encoded.to_i32()?);
         Ok(())
     }

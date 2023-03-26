@@ -14,6 +14,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 use crate::ui_controller::enum_ui::{EnumHolder, EnumUi};
+use app_util::log_error;
 use enum_len_derive::EnumLen;
 use num_derive::{FromPrimitive, ToPrimitive};
 
@@ -21,8 +22,8 @@ use crate::ui_controller::EncodedValue;
 
 #[derive(FromPrimitive, ToPrimitive, EnumLen, Copy, Clone)]
 pub enum PixelGeometryKindOptions {
-    Squares,
-    Cubes,
+    Squares = 0,
+    Cubes = 1,
 }
 
 impl std::fmt::Display for PixelGeometryKindOptions {
@@ -49,9 +50,20 @@ impl EnumUi for PixelGeometryKindOptions {
     }
 }
 
-impl From<&'static dyn EncodedValue> for PixelGeometryKindOptions {
-    fn from(value: &'static dyn EncodedValue) -> Self {
-        value.to_usize()
+impl From<Box<dyn EncodedValue>> for PixelGeometryKindOptions {
+    fn from(value: Box<dyn EncodedValue>) -> Self {
+        match value.to_usize() {
+            Ok(0) => PixelGeometryKindOptions::Squares,
+            Ok(1) => PixelGeometryKindOptions::Cubes,
+            Ok(x) => {
+                log_error(&format!("Unexpected PixelGeometryKindOptions value {}", x));
+                PixelGeometryKindOptions::Squares
+            },
+            Err(e) => {
+                log_error(&e);
+                PixelGeometryKindOptions::Squares
+            }
+        }
     }
 }
 

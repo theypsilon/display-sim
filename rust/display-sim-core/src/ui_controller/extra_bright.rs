@@ -66,7 +66,7 @@ impl UiController for ExtraBright {
         self.input.decrease = false;
         app_util::log("ExtraBright::RESET_INPUTS");
     }
-    fn read_event(&mut self, encoded: &dyn EncodedValue) -> AppResult<()> {
+    fn read_event(&mut self, encoded: Box<dyn EncodedValue>) -> AppResult<()> {
         self.event = Some(encoded.to_f32()?);
         Ok(())
     }

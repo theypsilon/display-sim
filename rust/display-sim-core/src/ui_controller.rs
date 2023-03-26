@@ -24,7 +24,7 @@ pub trait UiController {
     fn keys_dec(&self) -> &[&'static str];
     fn update(&mut self, main: &MainState, ctx: &dyn SimulationContext) -> bool;
     fn reset_inputs(&mut self);
-    fn read_event(&mut self, encoded: &dyn EncodedValue) -> AppResult<()>;
+    fn read_event(&mut self, encoded: Box<dyn EncodedValue>) -> AppResult<()>;
     fn read_key_inc(&mut self, pressed: bool);
     fn read_key_dec(&mut self, pressed: bool);
     fn dispatch_event(&self, dispatcher: &dyn AppEventDispatcher);

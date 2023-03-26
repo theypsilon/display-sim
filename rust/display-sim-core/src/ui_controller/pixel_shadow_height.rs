@@ -62,7 +62,7 @@ impl UiController for PixelShadowHeight {
         self.input.increase = false;
         self.input.decrease = false;
     }
-    fn read_event(&mut self, encoded: &dyn EncodedValue) -> AppResult<()> {
+    fn read_event(&mut self, encoded: Box<dyn EncodedValue>) -> AppResult<()> {
         self.event = Some(encoded.to_f32()?);
         Ok(())
     }

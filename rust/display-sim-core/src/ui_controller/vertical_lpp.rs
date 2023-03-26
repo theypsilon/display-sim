@@ -64,7 +64,7 @@ impl UiController for VerticalLpp {
         self.input.increase.input = false;
         self.input.decrease.input = false;
     }
-    fn read_event(&mut self, encoded: &dyn EncodedValue) -> AppResult<()> {
+    fn read_event(&mut self, encoded: Box<dyn EncodedValue>) -> AppResult<()> {
         self.event = Some(encoded.to_usize()?);
         Ok(())
     }

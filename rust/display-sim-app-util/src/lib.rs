@@ -16,6 +16,7 @@
 use std::{
     error::Error,
     fmt::{Display, Formatter, Result},
+    convert::Infallible
 };
 
 pub type AppResult<T> = std::result::Result<T, AppError>;
@@ -59,6 +60,12 @@ impl From<std::string::String> for AppError {
     }
 }
 
+impl From<Infallible> for AppError {
+    fn from(_: Infallible) -> Self {
+        AppError { err: "Infallible error?".into() }
+    }
+}
+
 impl<'a> From<&'a str> for AppError {
     fn from(string: &'a str) -> Self {
         AppError { err: string.into() }
@@ -76,11 +83,11 @@ pub fn log(string: &str) {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub fn log_error(string: &str) {
+pub fn log_error(string: &dyn Display) {
     println!("ERROR: {}", string);
 }
 
 #[cfg(target_arch = "wasm32")]
-pub fn log_error(string: &str) {
+pub fn log_error(string: &dyn Display) {
     web_sys::console::error_1(&(string.to_string()).into())
 }
