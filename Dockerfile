@@ -24,7 +24,7 @@ RUN set -eux; \
     wget -q -O binaryen.tar.gz "https://github.com/WebAssembly/binaryen/releases/download/${BINARYEN_VER}/binaryen-${BINARYEN_VER}-${BINARYEN_ARCH}.tar.gz"; \
     echo "${BINARYEN_SHA} *binaryen.tar.gz" | sha256sum -c -; \
     tar xf binaryen.tar.gz binaryen-${BINARYEN_VER}/bin/wasm-opt ; \
-    mv binaryen-${BINARYEN_VER}/bin/wasm-opt /usr/bin/ ; \
+    mkdir -p /usr/bin/bin && mv binaryen-${BINARYEN_VER}/bin/wasm-opt /usr/bin/bin/ ; \
     rm -rf binaryen* ; \
     apt-get remove -y --auto-remove wget; \
     rm -rf /var/lib/apt/lists/*
