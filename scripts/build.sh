@@ -7,7 +7,6 @@ cd "$(dirname $0)/.."
 export RUST_BACKTRACE=1
 
 build() {        
-    local optimize_wasm=false
     local npm_build=false
     local dev_watch=false
     local npm_deps=false
@@ -15,16 +14,11 @@ build() {
     local new_hash="foo"
     local old_hash="bar"
 
-    if [[ "$@" =~ "--release-wasm-no-opt" ]] ; then
-	echo -n "[RELEASE WASM BUILD NO OPT] "
-	build_type=""
-    elif [[ "$@" =~ "--release-wasm" ]] ; then
+    if [[ "$@" =~ "--release-wasm" ]] ; then
         echo -n "[RELEASE WASM BUILD] "
-        optimize_wasm=true
         build_type=""
     elif [[ "$@" =~ "--release" ]]; then
         echo -n "[RELEASE BUILD] "
-        optimize_wasm=true
         npm_deps=true
         npm_build=true
         build_type=""
@@ -52,12 +46,6 @@ build() {
 
     echo "wasm-pack build ${build_type}:"
     wasm-pack build ${build_type} --out-dir www/src/wasm
-
-    if ${optimize_wasm} ; then
-        pushd www/src/wasm
-        wasm-opt -O3 -o display_sim_bg.wasm display_sim_bg.wasm
-        popd
-    fi
 
     if ${npm_deps} ; then
         source ~/.nvm/nvm.sh

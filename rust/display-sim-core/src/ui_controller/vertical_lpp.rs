@@ -87,7 +87,7 @@ impl UiController for VerticalLpp {
 
 fn dispatch(value: usize, dispatcher: &dyn AppEventDispatcher) {
     if dispatcher.are_extra_messages_enabled() {
-        dispatcher.dispatch_top_message(&format!("Vertical lines per pixel: {}", value));
+        dispatcher.dispatch_top_message(&format!("V. lines per pixel: {}", value));
     }
     dispatcher.dispatch_string_event("back2front:change_vertical_lpp", &(value as i32).to_string());
 }
