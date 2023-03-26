@@ -28,6 +28,7 @@ RUN set -eux; \
     rm -rf binaryen* ; \
     apt-get remove -y --auto-remove wget; \
     rm -rf /var/lib/apt/lists/*
+ENV PATH $PATH:/usr/bin/bin   
 
 FROM rust-wasm as wasm-artifact
 ENV RUST_BACKTRACE=1
