@@ -1,6 +1,6 @@
-FROM rust:1.68.1-slim-buster as rust-wasm
+FROM rust:1.73-buster as rust-wasm
 WORKDIR /app
-ARG RUST_TOOLCHAIN="1.68.1"
+ARG RUST_TOOLCHAIN="1.73.0"
 RUN set -eux; \
     apt-get update ; \
     apt-get install -y --no-install-recommends \
@@ -17,9 +17,7 @@ RUN set -eux; \
     ; \
     rustup target add wasm32-unknown-unknown --toolchain ${RUST_TOOLCHAIN}; \
     rustup component add clippy; \
-    cargo install wasm-pack; \
-    apt-get remove -y --auto-remove wget; \
-    rm -rf /var/lib/apt/lists/*
+    cargo install wasm-pack
 
 FROM rust-wasm as wasm-artifact
 ENV RUST_BACKTRACE=1
@@ -29,11 +27,9 @@ ADD scripts/build.sh /app/scripts/build.sh
 ARG BUILD_WASM_PARAMS="--release-wasm"
 RUN cargo test --all \
     && ./scripts/build.sh ${BUILD_WASM_PARAMS} \
-    && cargo clean \
-    && cp -r /app/www/src/wasm /wasm \
-    && rm -rf /app
+    && cp -r /app/www/src/wasm /wasm
 
-FROM node:18.15.0-alpine3.16 as webpack-artifact
+FROM node:18-buster as webpack-artifact
 WORKDIR /www
 ADD www/package*.json ./
 RUN npm install
