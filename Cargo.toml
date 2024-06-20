@@ -6,6 +6,7 @@ description = "Tool for making image filters with emphasis in CRT aesthetics."
 repository = "https://github.com/theypsilon/display-sim/"
 license-file = "COPYING.txt"
 edition = "2021"
+resolver = "2"
 
 [lib]
 crate-type = ["cdylib"]
@@ -18,6 +19,9 @@ path = "rust/display-sim-default-entrypoint.rs"
 [profile.release]
 debug = false
 lto = true
+opt-level = "z"
+codegen-units = 1
+panic = 'abort'
 
 [dependencies]
 display-sim-web-exports = { path = "rust/display-sim-web-exports" }
