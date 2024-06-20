@@ -38,11 +38,18 @@ module.exports = {
             },
             {
                 test: /\.(jpg|jpeg|gif|png|woff|woff2|eot|ttf|svg|ico)$/,
+                exclude: [/Loading_icon\.gif$/, /forkme\.png$/],
                 loader: 'url-loader',
-                options: {
-                    limit: 8192,
-                    fallback: require.resolve('file-loader')
-                }
+                options: {limit: 8192}
+            },
+            {
+                test: /Loading_icon\.gif$/,
+                loader: 'url-loader',
+                options: {limit: 65536}
+            },
+            {
+                test: /forkme\.png$/,
+                loader: 'file-loader'
             }
         ]
     },

@@ -36,12 +36,13 @@ window.onhashchange = () => {
 };
 
 Promise.all([
-    new FontFaceObserver('Archivo Black', { weight: 400 }).load(null, 10000),
-    new FontFaceObserver('Lato', { weight: 400 }).load(null, 10000),
-    new FontFaceObserver('Lato', { weight: 700 }).load(null, 10000)
-]).then(() => {
+    new FontFaceObserver('Archivo Black', { weight: 400 }).load(),
+    new FontFaceObserver('Lato', { weight: 400 }).load(),
+    new FontFaceObserver('Lato', { weight: 700 }).load()
+]).catch((e) => {
+    console.warn('Could not load fonts in time!')
+    console.error(e);
+}).finally(() => {
     const navigator = Navigator.make();
     navigator.goToLandingPage();
-}).catch((e) => {
-    console.error(e);
 });
