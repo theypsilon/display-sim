@@ -1,6 +1,6 @@
-FROM rust:1.73-buster as rust-wasm
+FROM rust:1.79-buster as rust-wasm
 WORKDIR /app
-ARG RUST_TOOLCHAIN="1.73.0"
+ARG RUST_TOOLCHAIN="1.79.0"
 RUN set -eux; \
     apt-get update ; \
     apt-get install -y --no-install-recommends \
@@ -14,6 +14,7 @@ RUN set -eux; \
         curl \
         build-essential \
         libssl-dev \
+        binaryen \
     ; \
     rustup target add wasm32-unknown-unknown --toolchain ${RUST_TOOLCHAIN}; \
     rustup component add clippy; \
