@@ -60,6 +60,10 @@ export class LandingTemplate {
         this._root.getElementById('file')?.click()
     }
 
+    private async scrollToExplanation(_: Event) {
+        this._root.getElementById('explanation')?.scrollIntoView({ behavior: 'smooth'})
+    }
+
     private async dropOnDropZone(e: DataEvent) {
         e.stopPropagation();
         e.preventDefault();
@@ -96,7 +100,7 @@ export class LandingTemplate {
                 </div>
                 <div class="col-md-4 col-md-offset-2 col-sm-12 text-center">
                     <p>Don't get why this is a thing?</p>
-                    <a class="btn btn-crt btn-green text-white" href="#explanation">Read some explanation below</a>
+                    <a class="btn btn-crt btn-green text-white" @click="${this.scrollToExplanation.bind(this)}">Read some explanation below</a>
                 </div>
             </div>
         </header>
@@ -144,7 +148,7 @@ export class LandingTemplate {
             </form>
         </section>
 
-        <section class="container explanation">
+        <section class="container explanation" id="explanation">
             <h3>Explanation:</h3>
             <a name="explanation"></a>
             <p>Old displays were designed to work with analog video signals carrying low resolution content. They used
