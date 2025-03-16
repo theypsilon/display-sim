@@ -30,7 +30,7 @@
     "html-webpack-plugin": "^5.5.0",
     "lit-html": "^1.1.2",
     "mini-css-extract-plugin": "^2.6.1",
-    "mocha": "^10.0.0",
+    "mocha": "^10.8.2",
     "sinon": "^14.0.0",
     "ts-loader": "^9.3.1",
     "ts-mocha": "^10.0.0",
