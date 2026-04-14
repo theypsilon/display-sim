@@ -17,7 +17,7 @@ core = { path = "../display-sim-core", package = "display-sim-core" }
 app-util = { path = "../display-sim-app-util", package = "display-sim-app-util" }
 derive-new = "0.5.9"
 glow = { path = "../glow-safe-adapter", package = "glow-safe-adapter" }
-rand = "0.8.5"
+rand = "0.9.3"
 
 [dependencies.render]
 path = "../display-sim-render"
