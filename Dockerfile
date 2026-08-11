@@ -29,7 +29,7 @@ RUN cargo test --all && \
     ./scripts/build.sh ${BUILD_WASM_PARAMS} && \
     cp -r /app/www/src/wasm /wasm
 
-FROM node:18-buster AS webpack-artifact
+FROM node:24-trixie AS webpack-artifact
 WORKDIR /www
 COPY www/package*.json ./
 RUN npm install
