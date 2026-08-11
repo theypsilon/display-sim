@@ -40,7 +40,7 @@ Promise.all([
     new FontFaceObserver('Lato', { weight: 400 }).load(),
     new FontFaceObserver('Lato', { weight: 700 }).load()
 ]).catch((e) => {
-    console.warn('Could not load fonts in time!')
+    console.warn('Could not load fonts in time!');
     console.error(e);
 }).finally(() => {
     const navigator = Navigator.make();
