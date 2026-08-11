@@ -1,6 +1,6 @@
-FROM rust:1.79-buster as rust-wasm
+FROM rust:1.97.1-slim-trixie AS rust-wasm
 WORKDIR /app
-ARG RUST_TOOLCHAIN="1.79.0"
+ARG RUST_TOOLCHAIN="1.97.1"
 RUN set -eux; \
     apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates \
@@ -19,7 +19,7 @@ RUN set -eux; \
     cargo install wasm-pack && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-FROM rust-wasm as wasm-artifact
+FROM rust-wasm AS wasm-artifact
 ENV RUST_BACKTRACE=1
 COPY rust/ /app/rust/
 COPY Cargo.* /app/
@@ -29,7 +29,7 @@ RUN cargo test --all && \
     ./scripts/build.sh ${BUILD_WASM_PARAMS} && \
     cp -r /app/www/src/wasm /wasm
 
-FROM node:18-buster as webpack-artifact
+FROM node:18-buster AS webpack-artifact
 WORKDIR /www
 COPY www/package*.json ./
 RUN npm install
