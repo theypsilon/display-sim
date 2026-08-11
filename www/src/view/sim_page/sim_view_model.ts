@@ -398,9 +398,10 @@ export class SimViewModel {
         this._navigator.openTopMessage(msg);
     }
     setFullscreen () {
-        if (window.screen.width !== window.innerWidth && window.screen.height !== window.innerHeight) {
+        if (window.screen.width !== window.innerWidth || window.screen.height !== window.innerHeight) {
             const element = document.documentElement;
-            (element.requestFullscreen || element.webkitRequestFullScreen || element.mozRequestFullScreen || element.msRequestFullscreen).bind(element)();
+            const result = (element.requestFullscreen || element.webkitRequestFullScreen || element.mozRequestFullScreen || element.msRequestFullscreen).bind(element)();
+            Promise.resolve(result).catch(e => console.error(e));
         }
     }
     requestPointerLock () {
@@ -409,7 +410,6 @@ export class SimViewModel {
     }
     exitPointerLock () {
         (document.exitPointerLock || document.mozExitPointerLock).bind(document)();
-        document.exitPointerLock();
     }
 
     presetSelectedName (msg: string) {
@@ -433,6 +433,7 @@ export class SimViewModel {
     }
     toggleInfoPanel () {
         this._state.menu.open = !this._state.menu.open;
+        this._state.menu.controlsText = this._state.menu.open ? 'Close Controls' : 'Open Controls';
         this._isDirty = true;
     }
     changeFps (msg: number) {

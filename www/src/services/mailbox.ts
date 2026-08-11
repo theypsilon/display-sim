@@ -29,7 +29,7 @@ export class Mailbox {
         this._dict[address].push(content);
     }
     consumeMessages (address: string): any {
-        const inbox = this._dict[address];
+        const inbox = this._dict[address] || [];
         this._dict[address] = [];
         return inbox;
     }

@@ -98,15 +98,16 @@ async function show (template: SimTemplate, view_model: SimViewModel, model: Sim
         }
     }
 
-    events.toggleControls.subscribe(() => view_model.toggleControls());
-    events.toggleMenu.subscribe(m => view_model.toggleMenu(m));
-    events.changeSyncedInput.subscribe(msg => fireBackendEvent(msg.kind, msg.value));
-    events.clickPreset.subscribe(async preset => {
+    const subscriptions: Disposable[] = [];
+    subscriptions.push(events.toggleControls.subscribe(() => view_model.toggleControls()));
+    subscriptions.push(events.toggleMenu.subscribe(m => view_model.toggleMenu(m)));
+    subscriptions.push(events.changeSyncedInput.subscribe(msg => fireBackendEvent(msg.kind, msg.value)));
+    subscriptions.push(events.clickPreset.subscribe(async preset => {
         view_model.clickPreset(preset);
         model.setPreset(preset);
         await fireBackendEvent(Constants.FILTER_PRESETS_SELECTED_EVENT_KIND, preset);
-    });
-    events.toggleCheckbox.subscribe(async (msg) => {
+    }));
+    subscriptions.push(events.toggleCheckbox.subscribe(async (msg) => {
         if (msg.kind === 'webgl:antialias') {
             view_model.showLoading();
             await model.changeAntialiasing(msg.value);
@@ -114,8 +115,8 @@ async function show (template: SimTemplate, view_model: SimViewModel, model: Sim
         } else {
             return fireBackendEvent(msg.kind, msg.value);
         }
-    });
-    events.dispatchKey.subscribe(msg => {
+    }));
+    subscriptions.push(events.dispatchKey.subscribe(msg => {
         if (msg.key.startsWith('webgl:')) {
             return handleWebGLKeys(msg, model, view_model);
         }
@@ -127,10 +128,10 @@ async function show (template: SimTemplate, view_model: SimViewModel, model: Sim
             case 'keyup': pressed = false; break;
         }
         return fireKeyboardEvent({ pressed, key: msg.key, timeout });
-    });
+    }));
 
     // Listening backend events
-    backendObservable.subscribe(async e => {
+    subscriptions.push(backendObservable.subscribe(async e => {
         const msg = e.message;
         log_event(e.type, msg);
         switch (e.type) {
@@ -187,7 +188,7 @@ async function show (template: SimTemplate, view_model: SimViewModel, model: Sim
         case 'back2front:rgb_blue_b': return view_model.changeColorRgb(msg, 'blue', 'b');
         default: throw new Error('Not covered following event: ' + e.type + ' ' + e.toString());
         }
-    });
+    }));
 
     const canvasListener = template.getCanvasListener(state);
     const windowListener = template.getWindowListener();
@@ -229,6 +230,7 @@ async function show (template: SimTemplate, view_model: SimViewModel, model: Sim
         windowListener.cancelAnimationFrame(newFrameId);
         model.unloadSimulation();
         listeners.forEach(({ eventBus, type, callback, options }) => eventBus.removeEventListener(type, callback, options));
+        subscriptions.forEach(subscription => subscription.dispose());
     });
 }
 

@@ -15,15 +15,24 @@
 
 import { LandingTemplate, actions, LandingTemplateEvents} from './landing_template';
 import { playHtmlSelection, playQuerystring } from './play_simulation';
+import { Navigator } from '../../services/navigator';
+import { Visibility } from '../../services/visibility';
+import { Disposable } from '../../services/disposable';
 
 import {data, LandingViewModel, LandingViewData} from './landing_view_model';
 import {SimImage} from "../../services/images";
 
 class LandingPage extends HTMLElement {
+    private _future: Promise<Disposable | void>;
+
     constructor () {
         super();
-        setupPage(this.attachShadow({ mode: 'open' }))
+        this._future = setupPage(this.attachShadow({ mode: 'open' }))
             .catch(e => console.error(e));
+    }
+
+    disconnectedCallback () {
+        this._future.then(mess => mess && mess.dispose());
     }
 }
 
@@ -32,37 +41,50 @@ window.customElements.define('landing-page', LandingPage);
 const state = data();
 const events = actions();
 
-async function setupPage (root: ShadowRoot) {
+async function setupPage (root: ShadowRoot): Promise<Disposable | void> {
     if (window.location.hash.length > 1) {
-        return playQuerystring(window.location.hash.substr(1));
+        return playQuerystring(window.location.hash.substr(1))
+            .catch(e => {
+                console.error(e);
+                Visibility.make().hideLoading();
+                Navigator.make().openTopMessage('The simulation could not be started, try again.');
+            });
     }
     const template = LandingTemplate.make(root, events);
     const view_model = LandingViewModel.make(state, template);
-    await show(state, events, view_model);
+    return show(state, events, view_model);
 }
 
-async function show (state: LandingViewData, events: LandingTemplateEvents, view_model: LandingViewModel) {
+async function show (state: LandingViewData, events: LandingTemplateEvents, view_model: LandingViewModel): Promise<Disposable> {
     view_model.turnVisibilityOn();
 
-    events.addImage.subscribe(async file => await uploadFile(file)
-        .then(view_model.addImage)
-        .catch(e => {
-            view_model.showError('That file could not be loaded, try again with a picture.');
-            console.error(e);
+    const subscriptions = [
+        events.addImage.subscribe(async file => await uploadFile(file)
+            .then(img => view_model.addImage(img))
+            .catch(e => {
+                view_model.showError('That file could not be loaded, try again with a picture.');
+                console.error(e);
+            })
+        ),
+        events.selectImage.subscribe(n => view_model.selectImage(n)),
+        events.clickPlaySimulation.subscribe(async () => {
+            view_model.turnVisibilityOff();
+            await playHtmlSelection(state)
+                .catch(e => {
+                    console.error(e);
+                    view_model.turnVisibilityOn();
+                    view_model.showError('The simulation could not be started, try again.');
+                });
         })
-    );
+    ];
 
-    events.selectImage.subscribe(n => view_model.selectImage(n));
-
-    events.clickPlaySimulation.subscribe(async () => {
-        view_model.turnVisibilityOff();
-        await playHtmlSelection(state);
-    })
+    return Disposable.make(() => subscriptions.forEach(subscription => subscription.dispose()));
 }
 
 function uploadFile (file: File): Promise<SimImage> {
     const url = (window.URL || window.webkitURL).createObjectURL(file);
-    return loadImageFromUrl(url);
+    return loadImageFromUrl(url)
+        .finally(() => URL.revokeObjectURL(url));
 }
 
 async function loadImageFromUrl (url: string): Promise<SimImage> {

@@ -122,15 +122,15 @@ export class SimModel {
             case 'dec': index = index - 1; break;
             default: throw new Error('Unreachable!');
         }
-        const newPerformance = options[index % options.length];
-        this._state.storedValues.performance = newPerformance;
+        const newPerformance = options[(index + options.length) % options.length];
+        this._state.storedValues.powerPreference = newPerformance;
         this._saveStoredValues();
         await this._reloadSimulation();
         return newPerformance;
     }
 
-    async changeAntialiasing (currentAntialias: boolean) {
-        this._state.storedValues.antialias = !currentAntialias;
+    async changeAntialiasing (newAntialias: boolean) {
+        this._state.storedValues.antialias = newAntialias;
         this._saveStoredValues();
         await this._reloadSimulation();
     }

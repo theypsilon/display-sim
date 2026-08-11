@@ -122,7 +122,7 @@ export class AnimationsGateway {
     }
 
     async privateFetchGif (url: string): Promise<TransformedDecodedFrame[]> {
-        const response = await window.fetch(url, { mode: 'no-cors' });
+        const response = await window.fetch(url);
         const buffer = await response.arrayBuffer();
         const gif = await this._decoder.decode(buffer);
         return gif.map((frame: RawDecodedFrame) => ({
