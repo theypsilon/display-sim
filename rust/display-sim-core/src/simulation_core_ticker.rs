@@ -35,16 +35,20 @@ use derive_new::new;
 // values are consequently expressed in legacy "units per 60 Hz frame".
 const FLIGHT_DEMO_REFERENCE_HZ: f32 = 60.0;
 // Do not turn a pause, debugger stop, or suspended tab into a camera teleport.
-const FLIGHT_DEMO_MAX_DT: f32 = 1.0 / 15.0;
-// Restore the deliberately composed opening from the first 2019 flight-demo
-// implementation. It starts outside the display and is already moving on the
-// first frame, instead of spawning at the origin and slowly accelerating out
-// of the geometry.
+const FLIGHT_DEMO_MAX_DT: f32 = 1.0 / 4.0;
+// The original 2019 pose is the first point of a short, composed flyby. The
+// other points pull the camera away from the pixel surface and around the
+// image before handing its velocity to the procedural waypoint flight.
+const FLIGHT_DEMO_OPENING_DURATION: f32 = 5.0;
 const FLIGHT_DEMO_OPENING_POSITION: [f32; 3] = [-75.4, -124.85, 8.18];
+const FLIGHT_DEMO_OPENING_CONTROL_1: [f32; 3] = [-125.0, -55.0, 40.0];
+const FLIGHT_DEMO_OPENING_CONTROL_2: [f32; 3] = [35.0, 135.0, 100.0];
+const FLIGHT_DEMO_OPENING_END: [f32; 3] = [110.0, 70.0, 115.0];
 const FLIGHT_DEMO_OPENING_DIRECTION: [f32; 3] = [0.52, 0.82, -0.24];
 const FLIGHT_DEMO_OPENING_UP: [f32; 3] = [0.04, 0.26, 0.97];
-const FLIGHT_DEMO_OPENING_SPEED: f32 = 10.0;
-const FLIGHT_DEMO_OPENING_TARGET_DISTANCE: f32 = 10.0;
+// This is where the historical direction intersects the image plane.
+const FLIGHT_DEMO_OPENING_LOOK_TARGET: [f32; 3] = [-57.676_666, -96.903_336, 0.0];
+const FLIGHT_DEMO_REFERENCE_IMAGE_SIZE: [f32; 2] = [256.0, 240.0];
 
 #[derive(new)]
 pub struct SimulationCoreTicker<'a> {
@@ -564,44 +568,39 @@ impl<'a> SimulationUpdater<'a> {
             self.res.demo_1.needs_initialization = false;
             self.res.demo_1.camera_backup = self.res.camera.clone();
             self.res.camera.locked_mode = CameraLockMode::ThreeDimensional;
-            self.res.camera.set_position(glm::make_vec3(&FLIGHT_DEMO_OPENING_POSITION));
+            let opening_scale = flight_opening_scale(self.res.video.image_size);
+            self.res.camera.set_position(glm::make_vec3(&FLIGHT_DEMO_OPENING_POSITION) * opening_scale);
             self.res.camera.direction = glm::make_vec3(&FLIGHT_DEMO_OPENING_DIRECTION);
             self.res.camera.axis_up = glm::make_vec3(&FLIGHT_DEMO_OPENING_UP);
-
-            // The preliminary demo flew toward a point on the display from
-            // this pose. Keep that first leg intact, then hand over to the
-            // later inertial, three-dimensional waypoint routine.
-            let half_width = self.res.video.image_size.width as f32 / 2.0;
-            let half_height = self.res.video.image_size.height as f32 / 2.0;
-            self.res.demo_1.movement_target = glm::vec3(
-                (self.ctx.random().next() - 0.5) * half_width,
-                (self.ctx.random().next() - 0.5) * half_height,
-                0.0,
-            );
-            let opening_route = self.res.demo_1.movement_target - self.res.camera.get_position();
-            self.res.demo_1.movement_speed = opening_route.normalize() * (FLIGHT_DEMO_OPENING_SPEED / FLIGHT_DEMO_REFERENCE_HZ);
-            self.res.demo_1.is_opening_flyby = true;
+            self.res.demo_1.movement_target = random_flight_target(self.ctx, self.res.video.image_size, self.res.initial_parameters.initial_position_z);
+            self.res.demo_1.opening_elapsed = Some(0.0);
             self.res.demo_1.color_target = glm::make_vec3(&get_3_f32color_from_int(self.res.controllers.light_color.value));
             self.res.demo_1.color_position = self.res.demo_1.color_target;
         }
         {
             // moving position
-            let movement_position = self.res.camera.get_position();
-            let mut movement_route = self.res.demo_1.movement_target - movement_position;
-            if glm::length(&movement_route) <= f32::EPSILON {
-                movement_route = glm::vec3(1.0, 0.0, 0.0);
-            }
+            if let Some(opening_elapsed) = self.res.demo_1.opening_elapsed {
+                let opening_elapsed = (opening_elapsed + dt).min(FLIGHT_DEMO_OPENING_DURATION);
+                let progress = opening_elapsed / FLIGHT_DEMO_OPENING_DURATION;
+                let scale = flight_opening_scale(self.res.video.image_size);
+                let points = flight_opening_points(scale);
+                self.res.camera.set_position(cubic_bezier(&points, progress));
 
-            if self.res.demo_1.is_opening_flyby {
-                let opening_direction = movement_route.normalize();
-                self.res
-                    .camera
-                    .set_position(movement_position + opening_direction * dt * FLIGHT_DEMO_OPENING_SPEED);
-                self.res.demo_1.movement_speed = opening_direction * (FLIGHT_DEMO_OPENING_SPEED / FLIGHT_DEMO_REFERENCE_HZ);
-                if glm::length(&movement_route).abs() <= FLIGHT_DEMO_OPENING_TARGET_DISTANCE {
-                    self.res.demo_1.is_opening_flyby = false;
-                }
+                // Preserve the curve's exit velocity so the procedural leg
+                // continues without stopping or snapping to a new speed.
+                self.res.demo_1.movement_speed = cubic_bezier_derivative(&points, progress) / (FLIGHT_DEMO_OPENING_DURATION * FLIGHT_DEMO_REFERENCE_HZ);
+                self.res.demo_1.movement_max_speed = glm::length(&self.res.demo_1.movement_speed);
+
+                let look_blend = progress * progress * (3.0 - 2.0 * progress);
+                let look_target = glm::make_vec3(&FLIGHT_DEMO_OPENING_LOOK_TARGET) * scale * (1.0 - look_blend);
+                CameraSystem::new(&mut self.res.camera, self.ctx.dispatcher()).look_at(look_target);
+                self.res.demo_1.opening_elapsed = (opening_elapsed < FLIGHT_DEMO_OPENING_DURATION).then_some(opening_elapsed);
             } else {
+                let movement_position = self.res.camera.get_position();
+                let mut movement_route = self.res.demo_1.movement_target - movement_position;
+                if glm::length(&movement_route) <= f32::EPSILON {
+                    movement_route = glm::vec3(1.0, 0.0, 0.0);
+                }
                 let movement_force = movement_route.normalize() * dt * 1.2;
                 self.res.demo_1.movement_speed += movement_force;
                 if glm::length(&self.res.demo_1.movement_speed).abs() > self.res.demo_1.movement_max_speed {
@@ -614,33 +613,21 @@ impl<'a> SimulationUpdater<'a> {
                 self.res
                     .camera
                     .set_position(movement_position + self.res.demo_1.movement_speed * dt * FLIGHT_DEMO_REFERENCE_HZ);
-            }
 
-            if !self.res.demo_1.is_opening_flyby && glm::length(&movement_route).abs() <= 15.0 {
-                let rnd_x = self.ctx.random().next() - 0.5;
-                let rnd_y = self.ctx.random().next() - 0.5;
-                let rnd_z = self.ctx.random().next() - 0.5;
-                self.res.demo_1.movement_target = glm::vec3(
-                    0.5 * rnd_x * self.res.video.image_size.width as f32 + self.res.video.image_size.width as f32 * if rnd_x > 0.0 { 0.75 } else { -0.75 },
-                    0.5 * rnd_y * self.res.video.image_size.height as f32 + self.res.video.image_size.height as f32 * if rnd_y > 0.0 { 0.75 } else { -0.75 },
-                    2.0 * rnd_z * self.res.initial_parameters.initial_position_z,
-                );
-                if self.res.demo_1.movement_target.z < 0.0 && self.ctx.random().next() > 0.3 {
-                    self.res.demo_1.movement_target.z = -self.res.demo_1.movement_target.z;
+                if glm::length(&movement_route).abs() <= 15.0 {
+                    self.res.demo_1.movement_target = random_flight_target(self.ctx, self.res.video.image_size, self.res.initial_parameters.initial_position_z);
+                    self.res.demo_1.movement_max_speed = self.ctx.random().next() * 0.6 + 0.3;
+                    if self.ctx.random().next() < 0.33 {
+                        self.res.controllers.color_channels.value = ColorChannelsOptions::Overlapping;
+                    } else {
+                        self.res.controllers.color_channels.value = ColorChannelsOptions::Combined;
+                    }
+                    if self.ctx.random().next() < 0.33 {
+                        self.res.controllers.pixels_geometry_kind.value = PixelGeometryKindOptions::Squares;
+                    } else {
+                        self.res.controllers.pixels_geometry_kind.value = PixelGeometryKindOptions::Cubes;
+                    }
                 }
-                self.res.demo_1.movement_max_speed = self.ctx.random().next() * 0.6 + 0.3;
-                if self.ctx.random().next() < 0.33 {
-                    self.res.controllers.color_channels.value = ColorChannelsOptions::Overlapping;
-                } else {
-                    self.res.controllers.color_channels.value = ColorChannelsOptions::Combined;
-                }
-                if self.ctx.random().next() < 0.33 {
-                    self.res.controllers.pixels_geometry_kind.value = PixelGeometryKindOptions::Squares;
-                } else {
-                    self.res.controllers.pixels_geometry_kind.value = PixelGeometryKindOptions::Cubes;
-                }
-            }
-            if !self.res.demo_1.is_opening_flyby {
                 CameraSystem::new(&mut self.res.camera, self.ctx.dispatcher()).look_at(glm::vec3(0.0, 0.0, 0.0));
             }
         }
@@ -978,6 +965,46 @@ impl<'a> SimulationUpdater<'a> {
     }
 }
 
+fn flight_opening_scale(image_size: Size2D<u32>) -> f32 {
+    (image_size.width as f32 / FLIGHT_DEMO_REFERENCE_IMAGE_SIZE[0])
+        .max(image_size.height as f32 / FLIGHT_DEMO_REFERENCE_IMAGE_SIZE[1])
+        .max(1.0)
+}
+
+fn flight_opening_points(scale: f32) -> [glm::Vec3; 4] {
+    [
+        glm::make_vec3(&FLIGHT_DEMO_OPENING_POSITION) * scale,
+        glm::make_vec3(&FLIGHT_DEMO_OPENING_CONTROL_1) * scale,
+        glm::make_vec3(&FLIGHT_DEMO_OPENING_CONTROL_2) * scale,
+        glm::make_vec3(&FLIGHT_DEMO_OPENING_END) * scale,
+    ]
+}
+
+fn cubic_bezier(points: &[glm::Vec3; 4], progress: f32) -> glm::Vec3 {
+    let inverse = 1.0 - progress;
+    points[0] * inverse.powi(3) + points[1] * 3.0 * inverse.powi(2) * progress + points[2] * 3.0 * inverse * progress.powi(2) + points[3] * progress.powi(3)
+}
+
+fn cubic_bezier_derivative(points: &[glm::Vec3; 4], progress: f32) -> glm::Vec3 {
+    let inverse = 1.0 - progress;
+    (points[1] - points[0]) * 3.0 * inverse.powi(2) + (points[2] - points[1]) * 6.0 * inverse * progress + (points[3] - points[2]) * 3.0 * progress.powi(2)
+}
+
+fn random_flight_target(ctx: &dyn SimulationContext, image_size: Size2D<u32>, initial_position_z: f32) -> glm::Vec3 {
+    let rnd_x = ctx.random().next() - 0.5;
+    let rnd_y = ctx.random().next() - 0.5;
+    let rnd_z = ctx.random().next() - 0.5;
+    let mut target = glm::vec3(
+        0.5 * rnd_x * image_size.width as f32 + image_size.width as f32 * if rnd_x > 0.0 { 0.75 } else { -0.75 },
+        0.5 * rnd_y * image_size.height as f32 + image_size.height as f32 * if rnd_y > 0.0 { 0.75 } else { -0.75 },
+        2.0 * rnd_z * initial_position_z,
+    );
+    if target.z < 0.0 && ctx.random().next() > 0.3 {
+        target.z = -target.z;
+    }
+    target
+}
+
 fn simplify_ar(ar: (f32, f32)) -> (f32, f32) {
     if ar.0.fract() == 0.0 && ar.1.fract() == 0.0 {
         let a = ar.0.trunc() as u32;
@@ -1053,6 +1080,18 @@ mod tests {
         resources.demo_1.movement_max_speed = 0.3;
         resources.camera.set_position(glm::vec3(0.0, 0.0, 0.0));
 
+        for dt in frame_times {
+            resources.main.dt = *dt;
+            SimulationUpdater::new(&ctx, &mut resources, &input).update_demo();
+        }
+        resources.camera.get_position()
+    }
+
+    fn flight_opening_position_after(frame_times: &[f32]) -> glm::Vec3 {
+        let ctx = make_fake_simulation_context();
+        let mut resources = Resources::default();
+        let input = Input::new(0.0);
+        resources.video.image_size = Size2D { width: 256, height: 240 };
         for dt in frame_times {
             resources.main.dt = *dt;
             SimulationUpdater::new(&ctx, &mut resources, &input).update_demo();
@@ -1159,22 +1198,45 @@ mod tests {
     }
 
     #[test]
-    fn flight_demo_starts_with_the_original_moving_flyby() {
+    fn flight_opening_is_independent_of_render_rate() {
+        let sixty_hz = flight_opening_position_after(&vec![1.0 / 60.0; 120]);
+        let thirty_hz = flight_opening_position_after(&vec![1.0 / 30.0; 60]);
+
+        assert!(glm::length(&(sixty_hz - thirty_hz)) < 0.001, "30 Hz: {:?}, 60 Hz: {:?}", thirty_hz, sixty_hz);
+    }
+
+    #[test]
+    fn flight_demo_starts_with_a_fast_curved_flyby() {
         let ctx = make_fake_simulation_context();
         let mut resources = Resources::default();
         let input = Input::new(0.0);
-        resources.video.image_size = Size2D { width: 320, height: 240 };
+        resources.video.image_size = Size2D { width: 256, height: 240 };
         resources.main.dt = 1.0 / FLIGHT_DEMO_REFERENCE_HZ;
 
         SimulationUpdater::new(&ctx, &mut resources, &input).update_demo();
 
         let opening_position = glm::make_vec3(&FLIGHT_DEMO_OPENING_POSITION);
         let distance_flown = glm::length(&(resources.camera.get_position() - opening_position));
-        assert!(resources.demo_1.is_opening_flyby);
-        assert!((distance_flown - FLIGHT_DEMO_OPENING_SPEED / FLIGHT_DEMO_REFERENCE_HZ).abs() < 0.001);
-        assert_eq!(resources.camera.direction, glm::make_vec3(&FLIGHT_DEMO_OPENING_DIRECTION));
+        assert!(resources.demo_1.opening_elapsed.is_some());
+        assert!(distance_flown > 0.8, "first-frame distance was only {}", distance_flown);
+        assert!(glm::dot(&resources.camera.direction, &glm::make_vec3(&FLIGHT_DEMO_OPENING_DIRECTION)) > 0.999);
         assert_eq!(resources.camera.axis_up, glm::make_vec3(&FLIGHT_DEMO_OPENING_UP));
-        assert!(glm::length(&resources.camera.get_position()) > 100.0);
+
+        for _ in 1..60 {
+            SimulationUpdater::new(&ctx, &mut resources, &input).update_demo();
+        }
+        let one_second_position = resources.camera.get_position();
+        assert!(one_second_position.x < opening_position.x);
+        assert!(glm::length(&(one_second_position - opening_position)) > 50.0);
+
+        for _ in 60..300 {
+            SimulationUpdater::new(&ctx, &mut resources, &input).update_demo();
+        }
+        let opening_end = glm::make_vec3(&FLIGHT_DEMO_OPENING_END);
+        assert!(resources.demo_1.opening_elapsed.is_none());
+        assert!(glm::length(&(resources.camera.get_position() - opening_end)) < 0.01);
+        assert!((glm::length(&resources.demo_1.movement_speed) - 1.0).abs() < 0.01);
+        assert!(glm::dot(&resources.camera.direction, &(-opening_end).normalize()) > 0.999);
     }
 
     #[test]
