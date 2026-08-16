@@ -620,9 +620,11 @@ impl<'a> SimulationUpdater<'a> {
             PixelGeometryKindOptions::Squares => 1.0,
             PixelGeometryKindOptions::Cubes => 0.5,
         };
-        // Flat quads still need depth testing when perspective, curvature, or
-        // the flight pulse makes their screen-space projections overlap.
-        output.pixel_have_depth = true;
+        // A flat square grid is one coplanar surface, so perspective cannot
+        // make its cells cross each other. Cubes and deformed square grids can
+        // overlap in screen space and therefore need a depth attachment.
+        output.pixel_have_depth = matches!(controllers.pixels_geometry_kind.value, PixelGeometryKindOptions::Cubes)
+            || !matches!(controllers.screen_curvature_kind.value, ScreenCurvatureKindOptions::Flat);
         output.height_modifier_factor = 1.0 - controllers.pixel_shadow_height.value;
         output.time = self.input.now;
 
@@ -1087,17 +1089,27 @@ mod tests {
     }
 
     #[test]
-    fn squares_and_cubes_both_request_depth_testing() {
+    fn depth_testing_is_requested_only_for_non_planar_geometry() {
         let ctx = make_fake_simulation_context();
         let mut resources = Resources::default();
         let input = Input::new(0.0);
         resources.scaling.scaling_initialized = true;
 
         resources.controllers.pixels_geometry_kind.value = PixelGeometryKindOptions::Squares;
+        resources.controllers.screen_curvature_kind.value = ScreenCurvatureKindOptions::Flat;
+        SimulationUpdater::new(&ctx, &mut resources, &input).update_outputs();
+        assert!(!resources.main.render.pixel_have_depth);
+
+        resources.controllers.screen_curvature_kind.value = ScreenCurvatureKindOptions::Curved1;
+        SimulationUpdater::new(&ctx, &mut resources, &input).update_outputs();
+        assert!(resources.main.render.pixel_have_depth);
+
+        resources.controllers.screen_curvature_kind.value = ScreenCurvatureKindOptions::Pulse;
         SimulationUpdater::new(&ctx, &mut resources, &input).update_outputs();
         assert!(resources.main.render.pixel_have_depth);
 
         resources.controllers.pixels_geometry_kind.value = PixelGeometryKindOptions::Cubes;
+        resources.controllers.screen_curvature_kind.value = ScreenCurvatureKindOptions::Flat;
         SimulationUpdater::new(&ctx, &mut resources, &input).update_outputs();
         assert!(resources.main.render.pixel_have_depth);
     }

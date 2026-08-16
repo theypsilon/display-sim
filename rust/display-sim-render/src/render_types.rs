@@ -91,7 +91,7 @@ pub struct TextureBufferStack<GL: HasContext> {
     interpolation: u32,
     cursor: usize,
     max_cursor: usize,
-    depthbuffer_active: bool,
+    cycle_depth_requirements: Vec<bool>,
     gl: Rc<GlowSafeAdapter<GL>>,
 }
 
@@ -104,17 +104,9 @@ impl<GL: HasContext> TextureBufferStack<GL> {
             interpolation: glow::LINEAR,
             cursor: 0,
             max_cursor: 0,
-            depthbuffer_active: false,
+            cycle_depth_requirements: vec![],
             gl,
         }
-    }
-
-    pub fn set_depthbuffer(&mut self, new_value: bool) -> AppResult<()> {
-        if self.depthbuffer_active != new_value {
-            self.depthbuffer_active = new_value;
-            self.reset_stack()?;
-        }
-        Ok(())
     }
 
     pub fn set_resolution(&mut self, width: i32, height: i32) -> AppResult<()> {
@@ -140,33 +132,57 @@ impl<GL: HasContext> TextureBufferStack<GL> {
     fn reset_stack(&mut self) -> AppResult<()> {
         self.cursor = 0;
         self.max_cursor = 0;
-        for tb in self.stack.iter() {
-            self.gl
-                .delete_framebuffer(tb.framebuffer().ok_or_else(|| Into::<String>::into("can't access framebuffer"))?);
-            self.gl
-                .delete_texture(tb.texture().ok_or_else(|| Into::<String>::into("can't access texture"))?);
-            if let Some(depthbuffer) = tb.depthbuffer {
-                self.gl.delete_renderbuffer(depthbuffer);
-            }
+        self.cycle_depth_requirements.clear();
+        for tb in std::mem::take(&mut self.stack) {
+            self.delete_texture_buffer(tb)?;
         }
-        self.stack.clear();
         Ok(())
     }
 
     pub fn push(&mut self) -> AppResult<()> {
-        if self.stack.len() == self.cursor {
-            let tb = if self.depthbuffer_active {
-                TextureBuffer::new_with_depthbuffer(&*self.gl, self.width, self.height, self.interpolation)?
+        self.push_with_depth(false)
+    }
+
+    pub fn push_with_depth(&mut self, depth_required: bool) -> AppResult<()> {
+        let index = self.cursor;
+        let requirements_len = self.cycle_depth_requirements.len();
+        let depth_required = if index < requirements_len {
+            let previous_requirement = &mut self.cycle_depth_requirements[index];
+            *previous_requirement |= depth_required;
+            *previous_requirement
+        } else if index == requirements_len {
+            self.cycle_depth_requirements.push(depth_required);
+            depth_required
+        } else {
+            return Err(format!("Bad texture buffer depth requirement index == {}.", index).into());
+        };
+
+        let buffer_has_depth = self.stack.get(index).map(|buffer| buffer.depthbuffer.is_some());
+        if buffer_has_depth != Some(depth_required) {
+            let replacement = self.create_texture_buffer(depth_required)?;
+            if index == self.stack.len() {
+                self.stack.push(replacement);
+            } else if index < self.stack.len() {
+                let previous = std::mem::replace(&mut self.stack[index], replacement);
+                self.delete_texture_buffer(previous)?;
             } else {
-                TextureBuffer::new(&*self.gl, self.width, self.height, self.interpolation)?
-            };
-            self.stack.push(tb);
+                self.delete_texture_buffer(replacement)?;
+                return Err(format!("Bad texture buffer stack allocation index == {}.", index).into());
+            }
         }
+
         self.cursor += 1;
         if self.cursor > self.max_cursor {
             self.max_cursor = self.cursor;
         }
         Ok(())
+    }
+
+    pub fn clear(&mut self) -> AppResult<()> {
+        if self.cursor != 0 {
+            return Err(format!("Cannot clear a texture buffer stack with cursor at {}.", self.cursor).into());
+        }
+        self.reset_stack()
     }
 
     pub fn pop(&mut self) -> AppResult<()> {
@@ -197,9 +213,35 @@ impl<GL: HasContext> TextureBufferStack<GL> {
         Ok(&self.stack[index as usize])
     }
 
-    pub fn assert_no_stack(&self) -> AppResult<()> {
+    pub fn assert_no_stack(&mut self) -> AppResult<()> {
         if self.cursor != 0 {
             return Err(format!("Texture buffer stack cursor not zero, '{}' instead.", self.cursor).into());
+        }
+
+        while self.stack.len() > self.max_cursor {
+            let unused = self.stack.pop().ok_or_else(|| Into::<String>::into("can't access unused texture buffer"))?;
+            self.delete_texture_buffer(unused)?;
+        }
+        self.max_cursor = 0;
+        self.cycle_depth_requirements.clear();
+        Ok(())
+    }
+
+    fn create_texture_buffer(&self, with_depth: bool) -> AppResult<TextureBuffer<GL>> {
+        if with_depth {
+            TextureBuffer::new_with_depthbuffer(&*self.gl, self.width, self.height, self.interpolation)
+        } else {
+            TextureBuffer::new(&*self.gl, self.width, self.height, self.interpolation)
+        }
+    }
+
+    fn delete_texture_buffer(&self, texture_buffer: TextureBuffer<GL>) -> AppResult<()> {
+        self.gl
+            .delete_framebuffer(texture_buffer.framebuffer().ok_or_else(|| Into::<String>::into("can't access framebuffer"))?);
+        self.gl
+            .delete_texture(texture_buffer.texture().ok_or_else(|| Into::<String>::into("can't access texture"))?);
+        if let Some(depthbuffer) = texture_buffer.depthbuffer {
+            self.gl.delete_renderbuffer(depthbuffer);
         }
         Ok(())
     }

@@ -57,15 +57,19 @@ impl<'a> SimulationDrawer<'a> {
             materials.pixels_render.load_image(&self.res.video);
         }
 
-        materials.main_buffer_stack.set_depthbuffer(output.pixel_have_depth)?;
         materials.main_buffer_stack.set_resolution(resolution_width, resolution_height)?;
         materials.main_buffer_stack.set_interpolation(match filters.texture_interpolation.value {
             TextureInterpolationOptions::Linear => glow::LINEAR,
             TextureInterpolationOptions::Nearest => glow::NEAREST,
         })?;
 
+        let overlapping_colors = matches!(filters.color_channels.value, ColorChannelsOptions::Overlapping);
+
+        // The first target is the final composition. The second target holds
+        // geometry only in combined-color mode; overlapping colors render
+        // their geometry into three separate targets below.
         materials.main_buffer_stack.push()?;
-        materials.main_buffer_stack.push()?;
+        materials.main_buffer_stack.push_with_depth(output.pixel_have_depth && !overlapping_colors)?;
         materials.main_buffer_stack.bind_current()?;
 
         gl.clear_color(0.0, 0.0, 0.0, 0.0);
@@ -83,8 +87,8 @@ impl<'a> SimulationDrawer<'a> {
         for hl_idx in 0..filters.horizontal_lpp.value {
             for vl_idx in 0..filters.vertical_lpp.value {
                 for color_idx in 0..output.color_splits {
-                    if let ColorChannelsOptions::Overlapping = filters.color_channels.value {
-                        materials.main_buffer_stack.push()?;
+                    if overlapping_colors {
+                        materials.main_buffer_stack.push_with_depth(output.pixel_have_depth)?;
                         materials.main_buffer_stack.bind_current()?;
                         if vl_idx == 0 && hl_idx == 0 {
                             gl.clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
@@ -120,7 +124,7 @@ impl<'a> SimulationDrawer<'a> {
                         height_modifier_factor: output.height_modifier_factor,
                     });
                 }
-                if let ColorChannelsOptions::Overlapping = filters.color_channels.value {
+                if overlapping_colors {
                     materials.main_buffer_stack.pop()?;
                     materials.main_buffer_stack.pop()?;
                     materials.main_buffer_stack.pop()?;
@@ -128,7 +132,7 @@ impl<'a> SimulationDrawer<'a> {
             }
         }
 
-        if let ColorChannelsOptions::Overlapping = filters.color_channels.value {
+        if overlapping_colors {
             materials.main_buffer_stack.bind_current()?;
             gl.active_texture(glow::TEXTURE0 + 0);
             gl.bind_texture(glow::TEXTURE_2D, materials.main_buffer_stack.get_nth(1)?.texture());
@@ -148,12 +152,10 @@ impl<'a> SimulationDrawer<'a> {
 
         if output.showing_background {
             materials.bg_buffer_stack.set_resolution(1920 / 2, 1080 / 2)?;
-            // The blurred backlight is rendered from the same 3D geometry as
-            // the foreground. It needs the same depth contract or distant
-            // cubes can paint over nearer faces before the blur pass.
-            materials.bg_buffer_stack.set_depthbuffer(output.pixel_have_depth)?;
             materials.bg_buffer_stack.set_interpolation(glow::LINEAR)?;
-            materials.bg_buffer_stack.push()?;
+            // Only the source of the backlight blur rasterizes geometry. The
+            // two temporary blur targets stay color-only.
+            materials.bg_buffer_stack.push_with_depth(output.pixel_have_depth)?;
             materials.bg_buffer_stack.bind_current()?;
             gl.clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
             for hl_idx in 0..filters.horizontal_lpp.value {
@@ -187,6 +189,11 @@ impl<'a> SimulationDrawer<'a> {
             let target = materials.main_buffer_stack.get_current()?;
             materials.blur_render.render(&mut materials.bg_buffer_stack, &source, target, 6)?;
             materials.bg_buffer_stack.pop()?;
+            materials.bg_buffer_stack.assert_no_stack()?;
+        } else {
+            // Release targets (including their depth attachment) when the
+            // backlight is disabled instead of retaining unused GPU memory.
+            materials.bg_buffer_stack.clear()?;
         }
         materials.main_buffer_stack.pop()?;
         materials.main_buffer_stack.pop()?;
