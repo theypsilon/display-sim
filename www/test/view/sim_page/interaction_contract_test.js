@@ -24,11 +24,13 @@ describe('simulation interaction contract', () => {
         assert.equal(normalizeWheelDelta(1, 2, 720), 720);
     });
 
-    it('uses browser button activation keys', () => {
+    it('isolates browser button activation keys without swallowing movement keys', () => {
         assert.isTrue(isHeldActionKey('Enter'));
         assert.isTrue(isHeldActionKey(' '));
         assert.isFalse(isHeldActionKey('Space'));
-        assert.isFalse(isHeldActionKey('a'));
+        for (const key of ['w', 'a', 's', 'd']) {
+            assert.isFalse(isHeldActionKey(key));
+        }
         assert.isTrue(isSingleActivationKey('Enter', false));
         assert.isTrue(isSingleActivationKey(' ', false));
         assert.isFalse(isSingleActivationKey('Enter', true));

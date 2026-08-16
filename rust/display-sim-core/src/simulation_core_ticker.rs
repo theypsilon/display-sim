@@ -36,6 +36,15 @@ use derive_new::new;
 const FLIGHT_DEMO_REFERENCE_HZ: f32 = 60.0;
 // Do not turn a pause, debugger stop, or suspended tab into a camera teleport.
 const FLIGHT_DEMO_MAX_DT: f32 = 1.0 / 15.0;
+// Restore the deliberately composed opening from the first 2019 flight-demo
+// implementation. It starts outside the display and is already moving on the
+// first frame, instead of spawning at the origin and slowly accelerating out
+// of the geometry.
+const FLIGHT_DEMO_OPENING_POSITION: [f32; 3] = [-75.4, -124.85, 8.18];
+const FLIGHT_DEMO_OPENING_DIRECTION: [f32; 3] = [0.52, 0.82, -0.24];
+const FLIGHT_DEMO_OPENING_UP: [f32; 3] = [0.04, 0.26, 0.97];
+const FLIGHT_DEMO_OPENING_SPEED: f32 = 10.0;
+const FLIGHT_DEMO_OPENING_TARGET_DISTANCE: f32 = 10.0;
 
 #[derive(new)]
 pub struct SimulationCoreTicker<'a> {
@@ -554,11 +563,23 @@ impl<'a> SimulationUpdater<'a> {
             self.res.demo_1.needs_initialization = false;
             self.res.demo_1.camera_backup = self.res.camera.clone();
             self.res.camera.locked_mode = CameraLockMode::ThreeDimensional;
-            self.res.demo_1.movement_target = glm::vec3(0.0, 0.0, 0.0);
-            self.res.demo_1.movement_speed = glm::vec3(0.0, 0.0, 0.0);
-            self.res.camera.set_position(glm::vec3(0.0, 0.0, 0.0));
-            self.res.camera.direction = glm::vec3(0.0, 1.0, 0.0);
-            self.res.camera.axis_up = glm::vec3(0.0, 0.0, 1.0);
+            self.res.camera.set_position(glm::make_vec3(&FLIGHT_DEMO_OPENING_POSITION));
+            self.res.camera.direction = glm::make_vec3(&FLIGHT_DEMO_OPENING_DIRECTION);
+            self.res.camera.axis_up = glm::make_vec3(&FLIGHT_DEMO_OPENING_UP);
+
+            // The preliminary demo flew toward a point on the display from
+            // this pose. Keep that first leg intact, then hand over to the
+            // later inertial, three-dimensional waypoint routine.
+            let half_width = self.res.video.image_size.width as f32 / 2.0;
+            let half_height = self.res.video.image_size.height as f32 / 2.0;
+            self.res.demo_1.movement_target = glm::vec3(
+                (self.ctx.random().next() - 0.5) * half_width,
+                (self.ctx.random().next() - 0.5) * half_height,
+                0.0,
+            );
+            let opening_route = self.res.demo_1.movement_target - self.res.camera.get_position();
+            self.res.demo_1.movement_speed = opening_route.normalize() * (FLIGHT_DEMO_OPENING_SPEED / FLIGHT_DEMO_REFERENCE_HZ);
+            self.res.demo_1.is_opening_flyby = true;
             self.res.demo_1.color_target = glm::make_vec3(&get_3_f32color_from_int(self.res.controllers.light_color.value));
             self.res.demo_1.color_position = self.res.demo_1.color_target;
         }
@@ -566,22 +587,35 @@ impl<'a> SimulationUpdater<'a> {
             // moving position
             let movement_position = self.res.camera.get_position();
             let mut movement_route = self.res.demo_1.movement_target - movement_position;
-            if glm::length(&movement_route).abs() <= std::f32::EPSILON {
+            if glm::length(&movement_route) <= f32::EPSILON {
                 movement_route = glm::vec3(1.0, 0.0, 0.0);
             }
-            let movement_force = movement_route.normalize() * dt * 1.2;
-            self.res.demo_1.movement_speed += movement_force;
-            if glm::length(&self.res.demo_1.movement_speed).abs() > self.res.demo_1.movement_max_speed {
-                self.res.demo_1.movement_speed = self.res.demo_1.movement_speed.normalize() * self.res.demo_1.movement_max_speed;
+
+            if self.res.demo_1.is_opening_flyby {
+                let opening_direction = movement_route.normalize();
+                self.res
+                    .camera
+                    .set_position(movement_position + opening_direction * dt * FLIGHT_DEMO_OPENING_SPEED);
+                self.res.demo_1.movement_speed = opening_direction * (FLIGHT_DEMO_OPENING_SPEED / FLIGHT_DEMO_REFERENCE_HZ);
+                if glm::length(&movement_route).abs() <= FLIGHT_DEMO_OPENING_TARGET_DISTANCE {
+                    self.res.demo_1.is_opening_flyby = false;
+                }
+            } else {
+                let movement_force = movement_route.normalize() * dt * 1.2;
+                self.res.demo_1.movement_speed += movement_force;
+                if glm::length(&self.res.demo_1.movement_speed).abs() > self.res.demo_1.movement_max_speed {
+                    self.res.demo_1.movement_speed = self.res.demo_1.movement_speed.normalize() * self.res.demo_1.movement_max_speed;
+                }
+                // Acceleration has always been time-scaled, but translation used
+                // to be applied once per rendered frame. Scale that legacy
+                // per-frame velocity by elapsed time so pacing jitter and lower
+                // refresh rates no longer change the flight path.
+                self.res
+                    .camera
+                    .set_position(movement_position + self.res.demo_1.movement_speed * dt * FLIGHT_DEMO_REFERENCE_HZ);
             }
-            // Acceleration has always been time-scaled, but translation used
-            // to be applied once per rendered frame. Scale that legacy
-            // per-frame velocity by elapsed time so pacing jitter and lower
-            // refresh rates no longer change the flight path.
-            self.res
-                .camera
-                .set_position(movement_position + self.res.demo_1.movement_speed * dt * FLIGHT_DEMO_REFERENCE_HZ);
-            if glm::length(&movement_route).abs() <= 15.0 {
+
+            if !self.res.demo_1.is_opening_flyby && glm::length(&movement_route).abs() <= 15.0 {
                 let rnd_x = self.ctx.random().next() - 0.5;
                 let rnd_y = self.ctx.random().next() - 0.5;
                 let rnd_z = self.ctx.random().next() - 0.5;
@@ -605,7 +639,9 @@ impl<'a> SimulationUpdater<'a> {
                     self.res.controllers.pixels_geometry_kind.value = PixelGeometryKindOptions::Cubes;
                 }
             }
-            CameraSystem::new(&mut self.res.camera, self.ctx.dispatcher()).look_at(glm::vec3(0.0, 0.0, 0.0));
+            if !self.res.demo_1.is_opening_flyby {
+                CameraSystem::new(&mut self.res.camera, self.ctx.dispatcher()).look_at(glm::vec3(0.0, 0.0, 0.0));
+            }
         }
         {
             // moving color
@@ -1119,6 +1155,25 @@ mod tests {
         let maximum_step = 0.3 * FLIGHT_DEMO_MAX_DT * FLIGHT_DEMO_REFERENCE_HZ;
 
         assert!((position.x - maximum_step).abs() < 0.001, "stall step was {}", position.x);
+    }
+
+    #[test]
+    fn flight_demo_starts_with_the_original_moving_flyby() {
+        let ctx = make_fake_simulation_context();
+        let mut resources = Resources::default();
+        let input = Input::new(0.0);
+        resources.video.image_size = Size2D { width: 320, height: 240 };
+        resources.main.dt = 1.0 / FLIGHT_DEMO_REFERENCE_HZ;
+
+        SimulationUpdater::new(&ctx, &mut resources, &input).update_demo();
+
+        let opening_position = glm::make_vec3(&FLIGHT_DEMO_OPENING_POSITION);
+        let distance_flown = glm::length(&(resources.camera.get_position() - opening_position));
+        assert!(resources.demo_1.is_opening_flyby);
+        assert!((distance_flown - FLIGHT_DEMO_OPENING_SPEED / FLIGHT_DEMO_REFERENCE_HZ).abs() < 0.001);
+        assert_eq!(resources.camera.direction, glm::make_vec3(&FLIGHT_DEMO_OPENING_DIRECTION));
+        assert_eq!(resources.camera.axis_up, glm::make_vec3(&FLIGHT_DEMO_OPENING_UP));
+        assert!(glm::length(&resources.camera.get_position()) > 100.0);
     }
 
     #[test]

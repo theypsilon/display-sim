@@ -210,8 +210,8 @@ export class SimTemplate
             class="${state.menu.visible ? '' : 'display-none'}"
             aria-label="Switch to ${state.uiMode === 'webgl' ? 'HTML' : 'WebGL'} UI panel"
             title="Switch to ${state.uiMode === 'webgl' ? 'HTML' : 'WebGL'} UI panel"
-            @keydown="${(e: KeyboardEvent) => e.stopPropagation()}"
-            @keyup="${(e: KeyboardEvent) => e.stopPropagation()}"
+            @keydown="${(e: KeyboardEvent) => isHeldActionKey(e.key) && e.stopPropagation()}"
+            @keyup="${(e: KeyboardEvent) => isHeldActionKey(e.key) && e.stopPropagation()}"
             @click="${() => this.toggleUiMode()}">
             <span class="ui-panel-mode-current">${state.uiMode === 'webgl' ? 'WebGL UI' : 'HTML UI'}</span>
             <span class="ui-panel-mode-action">Switch to ${state.uiMode === 'webgl' ? 'HTML' : 'WebGL'}</span>
