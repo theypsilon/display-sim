@@ -260,7 +260,7 @@ export function data () {
                         { type: 'selectors-input', class: 'menu-2 menu-blc-blue', text: 'Pixel texture', hk: { inc: 'N', dec: 'Shift + N' }, ref: options.pixel_shadow_shape },
                         { type: 'number-input', class: 'menu-2 menu-blc-lila', text: 'Pixel variable height', hk: { inc: 'M', dec: 'Shift + M' }, step: 0.001, min: 0, max: 1, value: 0, placeholder: 0, ref: options.pixel_shadow_height },
                         { type: 'selectors-input', class: 'menu-2 menu-blc-yellow', text: 'Texture interpolation', hk: { inc: 'H', dec: 'Shift + H' }, ref: options.texture_interpolation },
-                        { type: 'number-input', class: 'menu-2 menu-blc-green', text: 'Backlight', hk: { inc: 'dot', dec: 'Shift + dot' }, step: 0.001, min: 0, max: 1, value: 0.5, placeholder: 0.5, ref: options.backlight_percent },
+                        { type: 'number-input', class: 'menu-2 menu-blc-green', text: 'Backlight', hk: { inc: ',', dec: '.' }, step: 0.001, min: 0, max: 1, value: 0.5, placeholder: 0.5, ref: options.backlight_percent },
                         { type: 'number-input', class: 'display-none', text: 'Pixel spread', hk: { inc: 'P', dec: 'Shift + P' }, step: 0.001, min: 0, max: 10, value: 0, placeholder: 0, ref: options.pixel_spread },
                         { type: 'button-input', class: 'menu-2 menu-blc-grey', text: 'Reset Filter Values', ref: options.reset_filters }
                     ]
@@ -281,8 +281,8 @@ export function data () {
                     text: 'Command Modifiers',
                     open: false,
                     entries: [
-                        { type: 'selectors-input', class: 'menu-2 menu-blc-red', text: 'Camera speed', hk: { inc: 'F', dec: 'R' }, ref: options.move_speed },
-                        { type: 'selectors-input', class: 'menu-2 menu-blc-blue', text: 'Filter speed', hk: { inc: 'Shift + F', dec: 'Shift + R' }, ref: options.pixel_speed },
+                        { type: 'selectors-input', class: 'menu-2 menu-blc-red', text: 'Camera speed', hk: { inc: 'F', dec: 'Shift + F' }, ref: options.move_speed },
+                        { type: 'selectors-input', class: 'menu-2 menu-blc-blue', text: 'Filter speed', hk: { inc: 'R', dec: 'Shift + R' }, ref: options.pixel_speed },
                         { type: 'selectors-input', class: 'display-none', text: 'Turn speed', hk: { inc: 'Alt + F', dec: 'Alt + R' }, ref: options.turn_speed },
                         { type: 'button-input', class: 'menu-2 menu-blc-grey', text: 'Reset Modifiers', ref: options.reset_speeds }
                     ]
@@ -325,6 +325,8 @@ export class SimViewModel {
     private readonly _navigator: Navigator;
     private readonly _visibility: Visibility;
     private _isDirty: boolean;
+    private _fullscreenRequest: Promise<void>;
+    private _pointerLockGeneration: number;
 
     constructor (state: SimViewData, template: SimTemplate, navigator: Navigator, visibility: Visibility) {
         this._state = state;
@@ -332,6 +334,8 @@ export class SimViewModel {
         this._navigator = navigator;
         this._visibility = visibility;
         this._isDirty = true;
+        this._fullscreenRequest = Promise.resolve();
+        this._pointerLockGeneration = 0;
     }
 
     static make (state: SimViewData, template: SimTemplate, navigator?: Navigator, visibility?: Visibility) {
@@ -397,19 +401,53 @@ export class SimViewModel {
     openTopMessage (msg: string) {
         this._navigator.openTopMessage(msg);
     }
-    setFullscreen () {
+    setFullscreen (): Promise<void> {
         if (window.screen.width !== window.innerWidth || window.screen.height !== window.innerHeight) {
             const element = document.documentElement;
-            const result = (element.requestFullscreen || element.webkitRequestFullScreen || element.mozRequestFullScreen || element.msRequestFullscreen).bind(element)();
-            Promise.resolve(result).catch(e => console.error(e));
+            const request = element.requestFullscreen || element.webkitRequestFullScreen || element.mozRequestFullScreen || element.msRequestFullscreen;
+            if (request) {
+                try {
+                    this._fullscreenRequest = Promise.resolve(request.call(element))
+                        .then(() => undefined)
+                        .catch(error => Logger.log('Fullscreen request was rejected:', error));
+                } catch (error) {
+                    Logger.log('Fullscreen request was rejected:', error);
+                    this._fullscreenRequest = Promise.resolve();
+                }
+            }
         }
+        return this._fullscreenRequest;
     }
-    requestPointerLock () {
-        const element = document.documentElement;
-        (element.requestPointerLock || element.mozRequestPointerLock).bind(element)();
+    requestPointerLock (): Promise<void> {
+        // Pointer lock belongs to the surface that consumes relative motion.
+        // The original implementation targeted the canvas; using the document
+        // element can be rejected while a fullscreen transition is pending.
+        const element = this._template.getCanvas(this._state);
+        const request = element.requestPointerLock || element.mozRequestPointerLock;
+        if (!request) {
+            return Promise.resolve();
+        }
+        const generation = ++this._pointerLockGeneration;
+        return this._fullscreenRequest.then(() => {
+            if (generation !== this._pointerLockGeneration) {
+                return undefined;
+            }
+            try {
+                return Promise.resolve(request.call(element))
+                    .then(() => undefined)
+                    .catch(error => Logger.log('Pointer lock request was rejected:', error));
+            } catch (error) {
+                Logger.log('Pointer lock request was rejected:', error);
+                return undefined;
+            }
+        });
     }
     exitPointerLock () {
-        (document.exitPointerLock || document.mozExitPointerLock).bind(document)();
+        this._pointerLockGeneration++;
+        const exit = document.exitPointerLock || document.mozExitPointerLock;
+        if (exit) {
+            exit.call(document);
+        }
     }
 
     presetSelectedName (msg: string) {

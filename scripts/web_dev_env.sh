@@ -11,3 +11,4 @@ trap "tmux kill-pane -a -t ${TMUX_WINDOW_INDEX} 2> /dev/null || true" SIGINT SIG
 
 rm .build-hash || true
 cargo watch -s "echo; $(pwd)/scripts/build.sh --dev-server" -w 'rust/' -w 'Cargo.toml'
+wwww

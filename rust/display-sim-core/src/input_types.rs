@@ -65,10 +65,6 @@ impl CustomInputEvent {
         self.values.push(value);
     }
 
-    pub(crate) fn reset(&mut self) {
-        self.values.resize(0, InputEventValue::None);
-    }
-
     pub(crate) fn consume_values(&mut self) -> Vec<InputEventValue> {
         std::mem::take(&mut self.values)
     }

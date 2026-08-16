@@ -451,6 +451,50 @@ mod test_trigger_hotkey_action {
     #![allow(non_snake_case)]
 
     use super::*;
+
+    #[test]
+    fn every_shared_panel_keyboard_action_is_registered() {
+        // Keep this inventory in step with the canonical keys emitted by
+        // display-sim-sim-ui. Every pointer and keyboard activation in both
+        // native and web reaches this same router.
+        let panel_actions = "
+            scaling-method-dec scaling-method-inc
+            custom-scaling-resolution-width-dec custom-scaling-resolution-width-inc
+            custom-scaling-resolution-height-dec custom-scaling-resolution-height-inc
+            custom-scaling-aspect-ratio-x-dec custom-scaling-aspect-ratio-x-inc
+            custom-scaling-aspect-ratio-y-dec custom-scaling-aspect-ratio-y-inc
+            pixel-width-dec pixel-width-inc internal-resolution-dec internal-resolution-inc
+            blur-level-dec blur-level-inc color-gamma-dec color-gamma-inc color-noise-dec color-noise-inc
+            pixel-brightness-dec pixel-brightness-inc pixel-contrast-dec pixel-contrast-inc
+            screen-curvature-dec screen-curvature-inc pixel-horizontal-gap-dec pixel-horizontal-gap-inc
+            pixel-vertical-gap-dec pixel-vertical-gap-inc vertical-lpp-dec vertical-lpp-inc
+            horizontal-lpp-dec horizontal-lpp-inc color-representation-dec color-representation-inc
+            pixel-geometry-dec pixel-geometry-inc pixel-shadow-shape-dec pixel-shadow-shape-inc
+            pixel-shadow-height-dec pixel-shadow-height-inc texture-interpolation-dec texture-interpolation-inc
+            backlight-percent-dec backlight-percent-inc reset-filters
+            camera-movement-mode-dec camera-movement-mode-inc w a s d q e
+            arrowup arrowdown arrowleft arrowright + - camera-zoom-dec camera-zoom-inc reset-camera
+            move-speed-dec move-speed-inc pixel-speed-dec pixel-speed-inc reset-speeds
+            capture-framebuffer quit-simulation
+        ";
+        let mut input = Input::default();
+        let mut resources = Resources::default();
+
+        assert_eq!(panel_actions.split_ascii_whitespace().count(), 71);
+        for key in panel_actions.split_ascii_whitespace() {
+            assert_eq!(
+                trigger_hotkey_action(&mut input, &mut resources, key, Pressed::Yes),
+                ActionUsed::Yes,
+                "shared panel press is not routed: {key}"
+            );
+            assert_eq!(
+                trigger_hotkey_action(&mut input, &mut resources, key, Pressed::No),
+                ActionUsed::Yes,
+                "shared panel release is not routed: {key}"
+            );
+        }
+    }
+
     #[test]
     fn test_press__i___release__i() {
         let mut input_owned = Input::default();

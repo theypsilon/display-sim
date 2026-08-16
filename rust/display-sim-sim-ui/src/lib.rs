@@ -142,7 +142,17 @@ impl SyntheticKeys {
         // Match the web controls' explicit key-down/key-up contract rather
         // than converting keyboard activation into a timed pulse.
         let keyboard_held = enabled && response.has_focus() && ui.input(|input| input.key_down(egui::Key::Enter) || input.key_down(egui::Key::Space));
-        self.set_continuous(key, pointer_held || keyboard_held, output);
+        let held = pointer_held || keyboard_held;
+        let was_down = self.down.contains(key);
+        self.set_continuous(key, held, output);
+
+        // egui can receive pointer/key down and up between two rendered
+        // frames. In that case `clicked` is true, but the final held state is
+        // already false. Preserve the activation for one simulation frame;
+        // otherwise quick selector clicks and camera-pad taps disappear.
+        if enabled && response.clicked() && !held && !was_down {
+            self.pulse(key, output);
+        }
     }
 
     fn end_frame(&mut self, output: &mut Vec<InputEventValue>) {
@@ -839,7 +849,7 @@ impl SimPanel {
             let (_, changed) = self.number_f32(
                 ui,
                 "Backlight",
-                ("dot", "Shift + dot"),
+                (",", "."),
                 Accent::Green,
                 &mut backlight,
                 0.0..=1.0,
@@ -896,7 +906,7 @@ impl SimPanel {
             self.selector(
                 ui,
                 "Camera speed",
-                Some(("F", "R")),
+                Some(("F", "Shift + F")),
                 Accent::Red,
                 &format!("x{}", format_number(res.camera.movement_speed)),
                 "move-speed-dec",
@@ -906,7 +916,7 @@ impl SimPanel {
             self.selector(
                 ui,
                 "Filter speed",
-                Some(("Shift + F", "Shift + R")),
+                Some(("R", "Shift + R")),
                 Accent::Blue,
                 &format!("x{}", format_number(res.main.filter_speed)),
                 "pixel-speed-dec",
@@ -1435,6 +1445,12 @@ fn web_color(r: u8, g: u8, b: u8) -> Color32 {
 }
 
 fn configure_web_style(context: &Context) {
+    // HTML buttons do not stop being clickable merely because a render frame
+    // stalls between pointer-down and pointer-up. Both host adapters queue
+    // edges until the next frame, so egui's 0.8 s processing-time limit could
+    // otherwise discard ordinary clicks under load. Distance still cancels a
+    // click when the pointer actually moves away from the control.
+    context.options_mut(|options| options.input_options.max_click_duration = f64::INFINITY);
     context.all_styles_mut(|style| {
         style.spacing.item_spacing = Vec2::ZERO;
         style.spacing.button_padding = Vec2::ZERO;
@@ -2111,6 +2127,26 @@ mod tests {
     }
 
     #[test]
+    fn every_settable_controller_accepts_the_shared_panel_route() {
+        let mut resources = Resources::default();
+        let set_tags: Vec<_> = resources
+            .controller_events
+            .iter()
+            .filter_map(|(tag, kind)| matches!(kind, (KeyEventKind::Set, _)).then_some(*tag))
+            .collect();
+
+        assert_eq!(set_tags.len(), 24, "controller inventory changed; audit the shared panel");
+        for tag in set_tags {
+            let value = if tag == "front2back:filter-presets-selected" {
+                PanelEncodedValue::Text(FilterPresetOptions::Custom.to_string())
+            } else {
+                PanelEncodedValue::Number(0.5)
+            };
+            route_controller_value(&mut resources, tag, value).unwrap_or_else(|error| panic!("shared panel cannot route {tag}: {error}"));
+        }
+    }
+
+    #[test]
     fn routed_rgb_values_are_applied() {
         use core::simulation_context::make_fake_simulation_context;
         use core::ui_controller::UiController;
@@ -2125,7 +2161,79 @@ mod tests {
     #[test]
     fn preset_events_use_shared_controller_route() {
         let mut resources = Resources::default();
-        select_preset(&mut resources, FilterPresetOptions::DemoFlight1).unwrap();
+        for preset in FilterPresetOptions::ALL {
+            select_preset(&mut resources, preset).unwrap();
+            assert_eq!(resources.controllers.preset_kind.value, preset);
+        }
+    }
+
+    #[test]
+    fn flight_preset_click_across_frames_is_applied_by_the_real_panel() {
+        let mut panel = SimPanel::new();
+        let mut resources = Resources::default();
+        resources.video.viewport_size.width = 1_024;
+        resources.video.viewport_size.height = 640;
+        let mut input = Input::default();
+        let sink = shared_panel_events();
+        let screen_rect = Rect::from_min_size(Pos2::ZERO, Vec2::new(1_024.0, 640.0));
+        let raw_input = |time, events| egui::RawInput {
+            screen_rect: Some(screen_rect),
+            time: Some(time),
+            events,
+            ..Default::default()
+        };
+
+        for time in [0.0, 0.02] {
+            panel
+                .run(raw_input(time, Vec::new()), &mut resources, &mut input, &sink)
+                .unwrap()
+                .drop_without_applying_deltas();
+        }
+        let pointer = Pos2::new(125.0, 153.0);
+        panel
+            .run(
+                raw_input(
+                    1.0,
+                    vec![
+                        Event::PointerMoved(pointer),
+                        Event::PointerButton {
+                            pos: pointer,
+                            button: egui::PointerButton::Primary,
+                            pressed: true,
+                            modifiers: egui::Modifiers::NONE,
+                        },
+                    ],
+                ),
+                &mut resources,
+                &mut input,
+                &sink,
+            )
+            .unwrap()
+            .drop_without_applying_deltas();
+        for time in [2.0, 3.0, 4.0] {
+            panel
+                .run(raw_input(time, Vec::new()), &mut resources, &mut input, &sink)
+                .unwrap()
+                .drop_without_applying_deltas();
+        }
+        panel
+            .run(
+                raw_input(
+                    6.0,
+                    vec![Event::PointerButton {
+                        pos: pointer,
+                        button: egui::PointerButton::Primary,
+                        pressed: false,
+                        modifiers: egui::Modifiers::NONE,
+                    }],
+                ),
+                &mut resources,
+                &mut input,
+                &sink,
+            )
+            .unwrap()
+            .drop_without_applying_deltas();
+
         assert_eq!(resources.controllers.preset_kind.value, FilterPresetOptions::DemoFlight1);
     }
 
@@ -2208,6 +2316,196 @@ mod tests {
                 },
             )
             .drop_without_applying_deltas();
+        assert!(matches!(&events[0], InputEventValue::Keyboard { pressed: Pressed::No, key } if key == "button-action"));
+    }
+
+    #[test]
+    fn fast_pointer_click_survives_when_both_edges_arrive_in_one_frame() {
+        let context = Context::default();
+        let screen_rect = Rect::from_min_size(Pos2::ZERO, Vec2::new(200.0, 100.0));
+        let button_rect = Rect::from_min_size(Pos2::new(10.0, 10.0), Vec2::new(80.0, 24.0));
+        let pointer = button_rect.center();
+        let mut keys = SyntheticKeys::default();
+        let mut events = Vec::new();
+
+        // egui hit-tests pointer events against the widget geometry retained
+        // from the preceding frame, just as it does in the running panel.
+        context
+            .run_ui(
+                egui::RawInput {
+                    screen_rect: Some(screen_rect),
+                    ..Default::default()
+                },
+                |ui| {
+                    ui.interact(button_rect, Id::new("fast-pointer-button"), Sense::click());
+                },
+            )
+            .drop_without_applying_deltas();
+
+        keys.begin_frame(&mut events);
+        context
+            .run_ui(
+                egui::RawInput {
+                    screen_rect: Some(screen_rect),
+                    events: vec![
+                        egui::Event::PointerMoved(pointer),
+                        egui::Event::PointerButton {
+                            pos: pointer,
+                            button: egui::PointerButton::Primary,
+                            pressed: true,
+                            modifiers: egui::Modifiers::NONE,
+                        },
+                        egui::Event::PointerButton {
+                            pos: pointer,
+                            button: egui::PointerButton::Primary,
+                            pressed: false,
+                            modifiers: egui::Modifiers::NONE,
+                        },
+                    ],
+                    ..Default::default()
+                },
+                |ui| {
+                    let response = ui.interact(button_rect, Id::new("fast-pointer-button"), Sense::click());
+                    assert!(response.clicked());
+                    assert!(!response.is_pointer_button_down_on());
+                    keys.drive_button(ui, "button-action", &response, true, &mut events);
+                },
+            )
+            .drop_without_applying_deltas();
+        keys.end_frame(&mut events);
+
+        assert_eq!(events.len(), 1);
+        assert!(matches!(&events[0], InputEventValue::Keyboard { pressed: Pressed::Yes, key } if key == "button-action"));
+
+        events.clear();
+        keys.begin_frame(&mut events);
+        assert_eq!(events.len(), 1);
+        assert!(matches!(&events[0], InputEventValue::Keyboard { pressed: Pressed::No, key } if key == "button-action"));
+    }
+
+    #[test]
+    fn fast_keyboard_activation_survives_when_both_edges_arrive_in_one_frame() {
+        let context = Context::default();
+        let screen_rect = Rect::from_min_size(Pos2::ZERO, Vec2::new(200.0, 100.0));
+        let button_rect = Rect::from_min_size(Pos2::new(10.0, 10.0), Vec2::new(80.0, 24.0));
+        let button_id = Id::new("fast-keyboard-button");
+        let mut keys = SyntheticKeys::default();
+        let mut events = Vec::new();
+
+        context
+            .run_ui(
+                egui::RawInput {
+                    screen_rect: Some(screen_rect),
+                    ..Default::default()
+                },
+                |ui| {
+                    ui.interact(button_rect, button_id, Sense::click()).request_focus();
+                },
+            )
+            .drop_without_applying_deltas();
+
+        let key_event = |pressed| egui::Event::Key {
+            key: egui::Key::Enter,
+            physical_key: Some(egui::Key::Enter),
+            pressed,
+            repeat: false,
+            modifiers: egui::Modifiers::NONE,
+        };
+        context
+            .run_ui(
+                egui::RawInput {
+                    screen_rect: Some(screen_rect),
+                    events: vec![key_event(true), key_event(false)],
+                    ..Default::default()
+                },
+                |ui| {
+                    let response = ui.interact(button_rect, button_id, Sense::click());
+                    assert!(response.clicked());
+                    assert!(!ui.input(|input| input.key_down(egui::Key::Enter)));
+                    keys.drive_button(ui, "button-action", &response, true, &mut events);
+                },
+            )
+            .drop_without_applying_deltas();
+
+        assert!(matches!(&events[..], [InputEventValue::Keyboard { pressed: Pressed::Yes, key }] if key == "button-action"));
+        events.clear();
+        keys.begin_frame(&mut events);
+        assert!(matches!(&events[..], [InputEventValue::Keyboard { pressed: Pressed::No, key }] if key == "button-action"));
+    }
+
+    #[test]
+    fn releasing_an_observed_pointer_hold_does_not_retrigger_its_click() {
+        let context = Context::default();
+        let screen_rect = Rect::from_min_size(Pos2::ZERO, Vec2::new(200.0, 100.0));
+        let button_rect = Rect::from_min_size(Pos2::new(10.0, 10.0), Vec2::new(80.0, 24.0));
+        let pointer = button_rect.center();
+        let button_id = Id::new("held-pointer-button");
+        let mut keys = SyntheticKeys::default();
+        let mut events = Vec::new();
+
+        context
+            .run_ui(
+                egui::RawInput {
+                    screen_rect: Some(screen_rect),
+                    ..Default::default()
+                },
+                |ui| {
+                    ui.interact(button_rect, button_id, Sense::click());
+                },
+            )
+            .drop_without_applying_deltas();
+
+        keys.begin_frame(&mut events);
+        context
+            .run_ui(
+                egui::RawInput {
+                    screen_rect: Some(screen_rect),
+                    events: vec![
+                        egui::Event::PointerMoved(pointer),
+                        egui::Event::PointerButton {
+                            pos: pointer,
+                            button: egui::PointerButton::Primary,
+                            pressed: true,
+                            modifiers: egui::Modifiers::NONE,
+                        },
+                    ],
+                    ..Default::default()
+                },
+                |ui| {
+                    let response = ui.interact(button_rect, button_id, Sense::click());
+                    assert!(response.is_pointer_button_down_on());
+                    keys.drive_button(ui, "button-action", &response, true, &mut events);
+                },
+            )
+            .drop_without_applying_deltas();
+        keys.end_frame(&mut events);
+        assert_eq!(events.len(), 1);
+        assert!(matches!(&events[0], InputEventValue::Keyboard { pressed: Pressed::Yes, key } if key == "button-action"));
+
+        events.clear();
+        keys.begin_frame(&mut events);
+        context
+            .run_ui(
+                egui::RawInput {
+                    screen_rect: Some(screen_rect),
+                    events: vec![egui::Event::PointerButton {
+                        pos: pointer,
+                        button: egui::PointerButton::Primary,
+                        pressed: false,
+                        modifiers: egui::Modifiers::NONE,
+                    }],
+                    ..Default::default()
+                },
+                |ui| {
+                    let response = ui.interact(button_rect, button_id, Sense::click());
+                    assert!(response.clicked());
+                    keys.drive_button(ui, "button-action", &response, true, &mut events);
+                },
+            )
+            .drop_without_applying_deltas();
+        keys.end_frame(&mut events);
+
+        assert_eq!(events.len(), 1);
         assert!(matches!(&events[0], InputEventValue::Keyboard { pressed: Pressed::No, key } if key == "button-action"));
     }
 

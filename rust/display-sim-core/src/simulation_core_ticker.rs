@@ -17,7 +17,7 @@ use crate::boolean_actions::{trigger_hotkey_action, ActionUsed};
 use crate::camera::{CameraData, CameraDirection, CameraLockMode, CameraSystem};
 use crate::field_changer::FieldChanger;
 use crate::general_types::{get_3_f32color_from_int, get_int_from_3_f32color, Size2D};
-use crate::input_types::{Input, InputEventValue};
+use crate::input_types::{Input, InputEventValue, Pressed};
 use crate::math::gcd;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::{
@@ -54,10 +54,39 @@ impl<'a> SimulationCoreTicker<'a> {
 
     fn pre_process_input(&mut self, now: f64) {
         self.input.now = now;
+        let mut keyboard_states_this_tick = Vec::<(String, Pressed)>::new();
+        let mut deferred_keyboard_events = Vec::<InputEventValue>::new();
+        let mut defer_keyboard_tail = false;
         for value in self.input.custom_event.consume_values() {
             match value {
                 InputEventValue::Keyboard { pressed, key } => {
-                    let result = trigger_hotkey_action(self.input, self.res, key.to_lowercase().as_ref(), pressed);
+                    let normalized_key = key.to_lowercase();
+                    if defer_keyboard_tail {
+                        deferred_keyboard_events.push(InputEventValue::Keyboard { pressed, key });
+                        continue;
+                    }
+
+                    if keyboard_states_this_tick
+                        .iter()
+                        .find_map(|(key, state)| (key == &normalized_key).then_some(*state))
+                        .is_some_and(|previous| previous != pressed)
+                    {
+                        // The updater samples button state once per tick. If
+                        // opposite edges for one key were both applied before
+                        // that sample, a quick tap (down/up) or quick re-press
+                        // (up/down) would disappear. Keep the remaining
+                        // keyboard event order intact and resume it next tick,
+                        // making every physical or UI-generated transition
+                        // observable for at least one simulation update.
+                        defer_keyboard_tail = true;
+                        deferred_keyboard_events.push(InputEventValue::Keyboard { pressed, key });
+                        continue;
+                    }
+                    if !keyboard_states_this_tick.iter().any(|(key, _)| key == &normalized_key) {
+                        keyboard_states_this_tick.push((normalized_key.clone(), pressed));
+                    }
+
+                    let result = trigger_hotkey_action(self.input, self.res, normalized_key.as_ref(), pressed);
                     #[cfg(not(debug_assertions))]
                     let _ = result;
                     #[cfg(debug_assertions)]
@@ -84,7 +113,12 @@ impl<'a> SimulationCoreTicker<'a> {
                         self.input.mouse_scroll_y += wheel
                     }
                 }
-                InputEventValue::BlurredWindow => *self.input = Input::new(now),
+                InputEventValue::BlurredWindow => {
+                    *self.input = Input::new(now);
+                    keyboard_states_this_tick.clear();
+                    deferred_keyboard_events.clear();
+                    defer_keyboard_tail = false;
+                }
 
                 InputEventValue::PixelWidth(pixel_width) => self.input.event_pixel_width = Some(pixel_width),
                 InputEventValue::Camera(camera) => self.input.event_camera = Some(camera),
@@ -97,6 +131,9 @@ impl<'a> SimulationCoreTicker<'a> {
                 InputEventValue::None => {}
             };
         }
+        for event in deferred_keyboard_events {
+            self.input.push_event(event);
+        }
 
         self.input.get_tracked_buttons().iter_mut().for_each(|button| button.track());
         for controller in self.res.controllers.get_ui_controllers_mut().iter_mut() {
@@ -108,7 +145,6 @@ impl<'a> SimulationCoreTicker<'a> {
         self.input.mouse_scroll_y = 0.0;
         self.input.mouse_position_x = 0;
         self.input.mouse_position_y = 0;
-        self.input.custom_event.reset();
         self.input.reset_filters = false;
         self.input.reset_position = false;
         self.input.reset_speeds = false;
@@ -1006,6 +1042,66 @@ mod tests {
         assert_eq!(input.mouse_position_x, 2);
         assert_eq!(input.mouse_position_y, 3);
         assert_eq!(input.mouse_scroll_y, 75.0);
+    }
+
+    #[test]
+    fn keyboard_taps_between_ticks_are_observed_for_one_frame() {
+        let ctx = make_fake_simulation_context();
+        let mut resources = Resources::default();
+        let mut input = Input::new(0.0);
+        for key in ["w", "camera-movement-mode-inc"] {
+            input.push_event(InputEventValue::Keyboard {
+                pressed: Pressed::Yes,
+                key: key.into(),
+            });
+        }
+        for key in ["w", "camera-movement-mode-inc"] {
+            input.push_event(InputEventValue::Keyboard {
+                pressed: Pressed::No,
+                key: key.into(),
+            });
+        }
+
+        let mut ticker = SimulationCoreTicker::new(&ctx, &mut resources, &mut input);
+        ticker.pre_process_input(16.0);
+        assert!(ticker.input.walk_forward);
+        assert!(ticker.input.next_camera_movement_mode.increase.is_just_pressed());
+        ticker.post_process_input();
+
+        ticker.pre_process_input(32.0);
+        assert!(!ticker.input.walk_forward);
+        assert!(ticker.input.next_camera_movement_mode.increase.is_just_released());
+        assert!(ticker.input.active_pressed_actions.is_empty());
+    }
+
+    #[test]
+    fn rapid_repress_preserves_both_the_release_and_second_press() {
+        let ctx = make_fake_simulation_context();
+        let mut resources = Resources::default();
+        let mut input = Input::new(0.0);
+        for pressed in [Pressed::Yes, Pressed::No] {
+            input.push_event(InputEventValue::Keyboard { pressed, key: "w".into() });
+        }
+
+        let mut ticker = SimulationCoreTicker::new(&ctx, &mut resources, &mut input);
+        ticker.pre_process_input(16.0);
+        assert!(ticker.input.walk_forward);
+        ticker.post_process_input();
+
+        for pressed in [Pressed::Yes, Pressed::No] {
+            ticker.input.push_event(InputEventValue::Keyboard { pressed, key: "w".into() });
+        }
+        ticker.pre_process_input(32.0);
+        assert!(!ticker.input.walk_forward);
+        ticker.post_process_input();
+
+        ticker.pre_process_input(48.0);
+        assert!(ticker.input.walk_forward);
+        ticker.post_process_input();
+
+        ticker.pre_process_input(64.0);
+        assert!(!ticker.input.walk_forward);
+        assert!(ticker.input.active_pressed_actions.is_empty());
     }
 
     #[test]
