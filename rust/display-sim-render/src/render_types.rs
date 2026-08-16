@@ -22,6 +22,7 @@ use std::rc::Rc;
 pub struct TextureBuffer<GL: HasContext> {
     texture: Option<GL::Texture>,
     framebuffer: Option<GL::Framebuffer>,
+    depthbuffer: Option<GL::Renderbuffer>,
     pub width: i32,
     pub height: i32,
 }
@@ -31,6 +32,7 @@ impl<GL: HasContext> std::clone::Clone for TextureBuffer<GL> {
         TextureBuffer {
             texture: self.texture,
             framebuffer: self.framebuffer,
+            depthbuffer: self.depthbuffer,
             width: self.width,
             height: self.height,
         }
@@ -55,6 +57,7 @@ impl<GL: HasContext> TextureBuffer<GL> {
         Ok(TextureBuffer {
             texture,
             framebuffer,
+            depthbuffer: None,
             width,
             height,
         })
@@ -62,10 +65,13 @@ impl<GL: HasContext> TextureBuffer<GL> {
 
     fn new_with_depthbuffer(gl: &GlowSafeAdapter<GL>, width: i32, height: i32, interpolation: u32) -> AppResult<TextureBuffer<GL>> {
         let depthbuffer = Some(gl.create_renderbuffer()?);
-        let texture_buffer = Self::new(gl, width, height, interpolation)?;
+        let mut texture_buffer = Self::new(gl, width, height, interpolation)?;
         gl.bind_renderbuffer(glow::RENDERBUFFER, depthbuffer);
-        gl.renderbuffer_storage(glow::RENDERBUFFER, glow::DEPTH_COMPONENT16, width, height);
+        // The flight camera can be thousands of world units from one-unit
+        // pixel cubes. Sixteen depth bits cannot distinguish their faces.
+        gl.renderbuffer_storage(glow::RENDERBUFFER, glow::DEPTH_COMPONENT24, width, height);
         gl.framebuffer_renderbuffer(glow::FRAMEBUFFER, glow::DEPTH_ATTACHMENT, glow::RENDERBUFFER, depthbuffer);
+        texture_buffer.depthbuffer = depthbuffer;
         Ok(texture_buffer)
     }
 
@@ -139,6 +145,9 @@ impl<GL: HasContext> TextureBufferStack<GL> {
                 .delete_framebuffer(tb.framebuffer().ok_or_else(|| Into::<String>::into("can't access framebuffer"))?);
             self.gl
                 .delete_texture(tb.texture().ok_or_else(|| Into::<String>::into("can't access texture"))?);
+            if let Some(depthbuffer) = tb.depthbuffer {
+                self.gl.delete_renderbuffer(depthbuffer);
+            }
         }
         self.stack.clear();
         Ok(())

@@ -115,6 +115,7 @@ impl<GL: HasContext> GlowSafeAdapter<GL> {
     pub fn buffer_data_u8_slice(&self, _: u32, _: &[u8], _: u32) {}
     pub fn buffer_storage(&self, _: u32, _: i32, _: Option<&mut [u8]>, _: u32) {}
     pub fn delete_framebuffer(&self, _: GL::Framebuffer) {}
+    pub fn delete_renderbuffer(&self, _: GL::Renderbuffer) {}
     pub fn delete_texture(&self, _: GL::Texture) {}
     pub fn draw_arrays_instanced(&self, _: u32, _: i32, _: i32, _: i32) {}
     pub fn draw_elements(&self, _: u32, _: i32, _: u32, _: i32) {}

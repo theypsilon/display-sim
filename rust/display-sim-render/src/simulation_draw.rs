@@ -148,7 +148,10 @@ impl<'a> SimulationDrawer<'a> {
 
         if output.showing_background {
             materials.bg_buffer_stack.set_resolution(1920 / 2, 1080 / 2)?;
-            materials.bg_buffer_stack.set_depthbuffer(false)?;
+            // The blurred backlight is rendered from the same 3D geometry as
+            // the foreground. It needs the same depth contract or distant
+            // cubes can paint over nearer faces before the blur pass.
+            materials.bg_buffer_stack.set_depthbuffer(output.pixel_have_depth)?;
             materials.bg_buffer_stack.set_interpolation(glow::LINEAR)?;
             materials.bg_buffer_stack.push()?;
             materials.bg_buffer_stack.bind_current()?;

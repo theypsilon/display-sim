@@ -616,12 +616,13 @@ impl<'a> SimulationUpdater<'a> {
         let output = &mut self.res.main.render;
         let controllers = &self.res.controllers;
 
-        let (ambient_strength, pixel_have_depth) = match controllers.pixels_geometry_kind.value {
-            PixelGeometryKindOptions::Squares => (1.0, false),
-            PixelGeometryKindOptions::Cubes => (0.5, true),
+        output.ambient_strength = match controllers.pixels_geometry_kind.value {
+            PixelGeometryKindOptions::Squares => 1.0,
+            PixelGeometryKindOptions::Cubes => 0.5,
         };
-        output.ambient_strength = ambient_strength;
-        output.pixel_have_depth = pixel_have_depth;
+        // Flat quads still need depth testing when perspective, curvature, or
+        // the flight pulse makes their screen-space projections overlap.
+        output.pixel_have_depth = true;
         output.height_modifier_factor = 1.0 - controllers.pixel_shadow_height.value;
         output.time = self.input.now;
 
@@ -819,7 +820,7 @@ impl<'a> SimulationUpdater<'a> {
         output.pixel_scale_base = [
             (filters.cur_pixel_vertical_gap.value + 1.0) / scaling.pixel_width,
             filters.cur_pixel_horizontal_gap.value + 1.0,
-            (filters.cur_pixel_vertical_gap.value + filters.cur_pixel_vertical_gap.value) * 0.5 + 1.0,
+            (filters.cur_pixel_vertical_gap.value + filters.cur_pixel_horizontal_gap.value) * 0.5 + 1.0,
         ];
 
         let by_vertical_lpp = 1.0 / (filters.vertical_lpp.value as f32);
@@ -861,7 +862,7 @@ impl<'a> SimulationUpdater<'a> {
                     *pixel_scale = [
                         (filters.cur_pixel_vertical_gap.value + 1.0) / scaling.pixel_width,
                         filters.cur_pixel_horizontal_gap.value + 1.0,
-                        (filters.cur_pixel_vertical_gap.value + filters.cur_pixel_vertical_gap.value) * 0.5 + 1.0,
+                        (filters.cur_pixel_vertical_gap.value + filters.cur_pixel_horizontal_gap.value) * 0.5 + 1.0,
                     ];
                     if filters.vertical_lpp.value > 1 {
                         let vl_cur_offset = vl_offset_beginning + vl_idx as f32;
@@ -1046,5 +1047,58 @@ mod tests {
 
         assert_eq!(resources.camera.get_position(), original_position);
         assert_eq!(resources.camera.direction, original_direction);
+    }
+
+    #[test]
+    fn square_pixels_produce_unit_square_and_cube_scales() {
+        let ctx = make_fake_simulation_context();
+        let mut resources = Resources::default();
+        let input = Input::new(0.0);
+        resources.scaling.pixel_width = 1.0;
+        resources.controllers.cur_pixel_vertical_gap.value = 0.0;
+        resources.controllers.cur_pixel_horizontal_gap.value = 0.0;
+        resources.controllers.vertical_lpp.value = 1;
+        resources.controllers.horizontal_lpp.value = 1;
+        resources.main.render.color_splits = 1;
+
+        SimulationUpdater::new(&ctx, &mut resources, &input).update_output_pixel_scale_gap_offset();
+
+        assert_eq!(resources.main.render.pixel_spread, [1.0, 1.0]);
+        assert_eq!(resources.main.render.pixel_scale_base, [1.0, 1.0, 1.0]);
+        assert_eq!(resources.main.render.pixel_scale_foreground[0][0], [1.0, 1.0, 1.0]);
+    }
+
+    #[test]
+    fn cube_depth_scale_uses_both_planar_gaps() {
+        let ctx = make_fake_simulation_context();
+        let mut resources = Resources::default();
+        let input = Input::new(0.0);
+        resources.scaling.pixel_width = 1.0;
+        resources.controllers.cur_pixel_vertical_gap.value = 1.0;
+        resources.controllers.cur_pixel_horizontal_gap.value = 3.0;
+        resources.controllers.vertical_lpp.value = 1;
+        resources.controllers.horizontal_lpp.value = 1;
+        resources.main.render.color_splits = 1;
+
+        SimulationUpdater::new(&ctx, &mut resources, &input).update_output_pixel_scale_gap_offset();
+
+        assert_eq!(resources.main.render.pixel_scale_base, [2.0, 4.0, 3.0]);
+        assert_eq!(resources.main.render.pixel_scale_foreground[0][0], [2.0, 4.0, 3.0]);
+    }
+
+    #[test]
+    fn squares_and_cubes_both_request_depth_testing() {
+        let ctx = make_fake_simulation_context();
+        let mut resources = Resources::default();
+        let input = Input::new(0.0);
+        resources.scaling.scaling_initialized = true;
+
+        resources.controllers.pixels_geometry_kind.value = PixelGeometryKindOptions::Squares;
+        SimulationUpdater::new(&ctx, &mut resources, &input).update_outputs();
+        assert!(resources.main.render.pixel_have_depth);
+
+        resources.controllers.pixels_geometry_kind.value = PixelGeometryKindOptions::Cubes;
+        SimulationUpdater::new(&ctx, &mut resources, &input).update_outputs();
+        assert!(resources.main.render.pixel_have_depth);
     }
 }

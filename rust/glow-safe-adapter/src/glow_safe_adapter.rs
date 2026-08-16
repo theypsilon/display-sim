@@ -185,6 +185,10 @@ impl<GL: HasContext> GlowSafeAdapter<GL> {
         unsafe { self.gl.delete_framebuffer(framebuffer) }
     }
 
+    pub fn delete_renderbuffer(&self, renderbuffer: GL::Renderbuffer) {
+        unsafe { self.gl.delete_renderbuffer(renderbuffer) }
+    }
+
     pub fn delete_texture(&self, texture: GL::Texture) {
         unsafe { self.gl.delete_texture(texture) }
     }

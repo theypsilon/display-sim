@@ -15,6 +15,14 @@
 
 use crate::app_events::AppEventDispatcher;
 
+const PROJECTION_MIN_NEAR_PLANE: f32 = 0.01;
+const PROJECTION_MAX_NEAR_PLANE: f32 = 4.0;
+const PROJECTION_FAR_PLANE: f32 = 10_000.0;
+// Keep roughly thirteen bits of depth precision across the distance from the
+// camera to the display. A fixed 0.01 near plane made one-unit cube faces map
+// to the same depth value once the flight camera was far from the origin.
+const PROJECTION_NEAR_DISTANCE_DIVISOR: f32 = 2_048.0;
+
 pub(crate) enum CameraDirection {
     Down,
     Up,
@@ -127,7 +135,8 @@ impl CameraData {
     }
 
     pub fn get_projection(&self, width: f32, height: f32) -> glm::TMat4<f32> {
-        glm::perspective::<f32>(width / height, crate::math::radians(self.zoom), 0.01, 10000.0)
+        let near_plane = (glm::length(&self.position_eye) / PROJECTION_NEAR_DISTANCE_DIVISOR).clamp(PROJECTION_MIN_NEAR_PLANE, PROJECTION_MAX_NEAR_PLANE);
+        glm::perspective::<f32>(width / height, crate::math::radians(self.zoom), near_plane, PROJECTION_FAR_PLANE)
     }
 }
 
@@ -316,5 +325,42 @@ impl<'a> CameraSystem<'a> {
 
         self.dispatcher
             .dispatch_camera_update(&self.data.position_eye, &self.data.direction, &self.data.axis_up);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn window_depth(transform: &glm::TMat4<f32>, position: glm::Vec3) -> f32 {
+        let clip = transform * glm::vec4(position.x, position.y, position.z, 1.0);
+        (clip.z / clip.w + 1.0) * 0.5
+    }
+
+    #[test]
+    fn distant_cube_faces_remain_distinct_in_a_24_bit_depth_buffer() {
+        let mut camera = CameraData::new(0.0, 0.0);
+        camera.set_position(glm::vec3(0.0, 0.0, 4_000.0));
+        let transform = camera.get_projection(16.0, 9.0) * camera.get_view();
+        let front = window_depth(&transform, glm::vec3(0.0, 0.0, 0.5));
+        let back = window_depth(&transform, glm::vec3(0.0, 0.0, -0.5));
+        let depth24_step = 1.0 / ((1_u32 << 24) - 1) as f32;
+
+        assert!(
+            back - front > depth24_step,
+            "one-unit faces collapsed to one depth value: front={}, back={}",
+            front,
+            back
+        );
+    }
+
+    #[test]
+    fn close_camera_keeps_the_original_small_near_plane() {
+        let mut camera = CameraData::new(0.0, 0.0);
+        camera.set_position(glm::vec3(0.0, 0.0, 0.8));
+        let projection = camera.get_projection(1.0, 1.0);
+        let expected = glm::perspective::<f32>(1.0, crate::math::radians(camera.zoom), PROJECTION_MIN_NEAR_PLANE, PROJECTION_FAR_PLANE);
+
+        assert!((projection - expected).abs().amax() < 0.000_001);
     }
 }

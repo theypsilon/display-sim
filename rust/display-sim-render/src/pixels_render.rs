@@ -236,6 +236,16 @@ impl<GL: HasContext> PixelsRender<GL> {
         gl.uniform_1_f32(gl.get_uniform_location(shader, "color_noise"), uniforms.color_noise);
 
         gl.bind_vertex_array(self.vao);
+        // Adjacent cubes share coplanar faces. With both windings rendered,
+        // those faces compete for the same depth value and expose individual
+        // triangles. Cull only closed cube geometry; flat squares remain
+        // visible from either side.
+        let cull_back_faces = matches!(uniforms.geometry_kind, PixelGeometryKindOptions::Cubes);
+        if cull_back_faces {
+            gl.enable(glow::CULL_FACE);
+        } else {
+            gl.disable(glow::CULL_FACE);
+        }
         gl.draw_arrays_instanced(
             glow::TRIANGLES,
             0,
@@ -245,6 +255,11 @@ impl<GL: HasContext> PixelsRender<GL> {
             },
             (self.width * self.height) as i32,
         );
+        // Full-screen composition quads use the historical opposite winding.
+        // Do not leak cube culling into those later passes (or into egui).
+        if cull_back_faces {
+            gl.disable(glow::CULL_FACE);
+        }
     }
 }
 
@@ -280,10 +295,10 @@ const CUBE_GEOMETRY : [f32; 216] = [
     -0.5, -0.5,  0.5,      0.0,  0.0,  1.0,
 
     -0.5, -0.5, -0.5,      0.0,  0.0, -1.0,
-     0.5, -0.5, -0.5,      0.0,  0.0, -1.0,
-     0.5,  0.5, -0.5,      0.0,  0.0, -1.0,
-     0.5,  0.5, -0.5,      0.0,  0.0, -1.0,
     -0.5,  0.5, -0.5,      0.0,  0.0, -1.0,
+     0.5,  0.5, -0.5,      0.0,  0.0, -1.0,
+     0.5,  0.5, -0.5,      0.0,  0.0, -1.0,
+     0.5, -0.5, -0.5,      0.0,  0.0, -1.0,
     -0.5, -0.5, -0.5,      0.0,  0.0, -1.0,
 
     -0.5,  0.5,  0.5,      -1.0,  0.0,  0.0,
@@ -293,12 +308,12 @@ const CUBE_GEOMETRY : [f32; 216] = [
     -0.5, -0.5,  0.5,      -1.0,  0.0,  0.0,
     -0.5,  0.5,  0.5,      -1.0,  0.0,  0.0,
 
-     0.5,  0.5,  0.5,      1.0,  0.0,  0.0,
+     0.5, -0.5, -0.5,      1.0,  0.0,  0.0,
      0.5,  0.5, -0.5,      1.0,  0.0,  0.0,
-     0.5, -0.5, -0.5,      1.0,  0.0,  0.0,
-     0.5, -0.5, -0.5,      1.0,  0.0,  0.0,
-     0.5, -0.5,  0.5,      1.0,  0.0,  0.0,
      0.5,  0.5,  0.5,      1.0,  0.0,  0.0,
+     0.5,  0.5,  0.5,      1.0,  0.0,  0.0,
+     0.5, -0.5,  0.5,      1.0,  0.0,  0.0,
+     0.5, -0.5, -0.5,      1.0,  0.0,  0.0,
 
     -0.5, -0.5, -0.5,      0.0, -1.0,  0.0,
      0.5, -0.5, -0.5,      0.0, -1.0,  0.0,
@@ -307,12 +322,12 @@ const CUBE_GEOMETRY : [f32; 216] = [
     -0.5, -0.5,  0.5,      0.0, -1.0,  0.0,
     -0.5, -0.5, -0.5,      0.0, -1.0,  0.0,
 
-    -0.5,  0.5, -0.5,      0.0,  1.0,  0.0,
+     0.5,  0.5,  0.5,      0.0,  1.0,  0.0,
      0.5,  0.5, -0.5,      0.0,  1.0,  0.0,
-     0.5,  0.5,  0.5,      0.0,  1.0,  0.0,
-     0.5,  0.5,  0.5,      0.0,  1.0,  0.0,
-    -0.5,  0.5,  0.5,      0.0,  1.0,  0.0,
     -0.5,  0.5, -0.5,      0.0,  1.0,  0.0,
+    -0.5,  0.5, -0.5,      0.0,  1.0,  0.0,
+    -0.5,  0.5,  0.5,      0.0,  1.0,  0.0,
+     0.5,  0.5,  0.5,      0.0,  1.0,  0.0,
 ];
 
 pub const PIXEL_VERTEX_SHADER: &str = r#"#version 300 es
@@ -460,3 +475,67 @@ void main()
     FragColor = vec4(pow(result.r, gamma), pow(result.g, gamma), pow(result.b, gamma), result.a);
 } 
 "#;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn position(vertex: usize) -> [f32; 3] {
+        let offset = vertex * 6;
+        [CUBE_GEOMETRY[offset], CUBE_GEOMETRY[offset + 1], CUBE_GEOMETRY[offset + 2]]
+    }
+
+    fn normal(vertex: usize) -> [f32; 3] {
+        let offset = vertex * 6 + 3;
+        [CUBE_GEOMETRY[offset], CUBE_GEOMETRY[offset + 1], CUBE_GEOMETRY[offset + 2]]
+    }
+
+    fn subtract(a: [f32; 3], b: [f32; 3]) -> [f32; 3] {
+        [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
+    }
+
+    fn cross(a: [f32; 3], b: [f32; 3]) -> [f32; 3] {
+        [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
+    }
+
+    fn dot(a: [f32; 3], b: [f32; 3]) -> f32 {
+        a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+    }
+
+    #[test]
+    fn every_cube_triangle_has_counter_clockwise_outward_winding() {
+        for triangle in 0..12 {
+            let first = triangle * 3;
+            let p0 = position(first);
+            let p1 = position(first + 1);
+            let p2 = position(first + 2);
+            let n0 = normal(first);
+
+            assert_eq!(normal(first + 1), n0, "triangle {triangle} has split normals");
+            assert_eq!(normal(first + 2), n0, "triangle {triangle} has split normals");
+            assert!(
+                dot(cross(subtract(p1, p0), subtract(p2, p0)), n0) > 0.0,
+                "triangle {} winds against its outward normal",
+                triangle
+            );
+        }
+    }
+
+    #[test]
+    fn square_geometry_is_a_flat_unit_square() {
+        let positions = (0..6).map(position).collect::<Vec<_>>();
+        assert!(positions.iter().all(|point| point[2] == 0.5));
+        let min_x = positions.iter().map(|point| point[0]).fold(f32::INFINITY, f32::min);
+        let max_x = positions.iter().map(|point| point[0]).fold(f32::NEG_INFINITY, f32::max);
+        let min_y = positions.iter().map(|point| point[1]).fold(f32::INFINITY, f32::min);
+        let max_y = positions.iter().map(|point| point[1]).fold(f32::NEG_INFINITY, f32::max);
+
+        assert_eq!(max_x - min_x, 1.0);
+        assert_eq!(max_y - min_y, 1.0);
+    }
+
+    #[test]
+    fn pixel_offsets_form_a_centered_unit_grid() {
+        assert_eq!(calculate_offsets(2, 2), vec![-0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5]);
+    }
+}
