@@ -19,12 +19,14 @@ import { Lazy } from '../../services/lazy';
 export class SimWasmBackend {
     private _app: any;
     private _canvas: HTMLCanvasElement | null;
+    private _webglUiEnabled: boolean;
 
     private static _instance: Lazy<SimWasmBackend> = Lazy.from(() => new SimWasmBackend());
     static getInstance (): SimWasmBackend { return this._instance.get(); }
     private constructor () {
         this._app = null;
         this._canvas = null;
+        this._webglUiEnabled = true;
     }
 
     async load (canvas: HTMLCanvasElement, eventBus: any, params: any) {
@@ -71,6 +73,7 @@ export class SimWasmBackend {
 
             Logger.log('calling wasmApp.load');
             this._app.load(gl, eventBus, config);
+            this._app.set_webgl_ui_enabled(this._webglUiEnabled);
             Logger.log('wasmApp.load done');
     
             return { success: true };   
@@ -89,6 +92,13 @@ export class SimWasmBackend {
 
     uiEvent (kind: string, value: any) {
         this._app.ui_event(kind, value);
+    }
+
+    setWebglUiEnabled (enabled: boolean) {
+        this._webglUiEnabled = enabled;
+        if (this._app) {
+            this._app.set_webgl_ui_enabled(enabled);
+        }
     }
 
     uiCapturesPointer (): boolean {

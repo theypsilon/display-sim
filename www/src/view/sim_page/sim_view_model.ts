@@ -18,6 +18,7 @@ import { Logger } from '../../services/logger';
 import { Navigator } from '../../services/navigator';
 import { Visibility } from '../../services/visibility';
 import { SimTemplate } from "./sim_template";
+import {nextSimulationUiMode, SimulationUiMode} from './interaction_contract';
 
 declare global {
     interface Document {
@@ -178,6 +179,7 @@ export function data () {
     return {
         initStoredValues: false,
         fps: 60,
+        uiMode: 'webgl' as SimulationUiMode,
         options,
         menu: {
             open: true,
@@ -389,6 +391,16 @@ export class SimViewModel {
         this._isDirty = true;
     }
 
+    toggleUiMode (): SimulationUiMode {
+        this._state.uiMode = nextSimulationUiMode(this._state.uiMode);
+        this._isDirty = true;
+        return this._state.uiMode;
+    }
+
+    webglUiEnabled (): boolean {
+        return this._state.menu.visible && this._state.uiMode === 'webgl';
+    }
+
     toggleMenu (menu: MenuEntry) {
         menu.open = !menu.open;
         this._isDirty = true;
@@ -398,9 +410,6 @@ export class SimViewModel {
         this._isDirty = true;
     }
 
-    openTopMessage (msg: string) {
-        this._navigator.openTopMessage(msg);
-    }
     setFullscreen (): Promise<void> {
         if (window.screen.width !== window.innerWidth || window.screen.height !== window.innerHeight) {
             const element = document.documentElement;
@@ -451,9 +460,6 @@ export class SimViewModel {
     }
 
     presetSelectedName (msg: string) {
-        if (msg === Constants.PRESET_KIND_CUSTOM) {
-            this._navigator.openTopMessage('Now you are in the Custom mode, you may change any filter value you want.');
-        }
         this._state.options.presets.selected = msg;
         this._isDirty = true;
     }

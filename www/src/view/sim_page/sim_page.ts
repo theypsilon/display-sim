@@ -80,7 +80,10 @@ async function setupPage (root: ShadowRoot, state: SimViewData): Promise<Disposa
 
 async function show (template: SimTemplate, view_model: SimViewModel, model: SimModel, events: SimTemplateEvents, backendObservable: Observable<BackendMessage>, backendEmitter: Action<BackendMessage>): Promise<Disposable> {
 
-    view_model.init(await model.load());
+    const initDto = await model.load();
+    view_model.init(initDto);
+    model.setWebglUiEnabled(view_model.webglUiEnabled());
+    const currentCanvas = () => model.getCanvas();
     const pulses = new OneFramePulseState();
 
     async function fireBackendEvent (kind: string, message?: any) {
@@ -142,10 +145,15 @@ async function show (template: SimTemplate, view_model: SimViewModel, model: Sim
         const msg = e.message;
         log_event(e.type, msg);
         switch (e.type) {
-        case 'back2front:top_message': return view_model.openTopMessage(msg);
         case 'back2front:request_fullscreen': return view_model.setFullscreen();
         case 'back2front:request_pointer_lock': return view_model.requestPointerLock();
-        case 'back2front:preset_selected_name': return view_model.presetSelectedName(msg);
+        case 'back2front:preset_selected_name': {
+            view_model.presetSelectedName(msg);
+            if (msg === Constants.PRESET_KIND_CUSTOM) {
+                model.uiMessage('Now you are in the Custom mode, you may change any filter value you want.');
+            }
+            return;
+        }
         case 'back2front:screenshot': return model.fireScreenshot(msg);
         case 'back2front:camera_update': return view_model.updateCameraMatrix(msg);
         case 'back2front:toggle_info_panel': return view_model.toggleInfoPanel();
@@ -194,7 +202,7 @@ async function show (template: SimTemplate, view_model: SimViewModel, model: Sim
         case 'back2front:rgb_blue_g': return view_model.changeColorRgb(msg, 'blue', 'g');
         case 'back2front:rgb_blue_b': return view_model.changeColorRgb(msg, 'blue', 'b');
         case 'back2front:ui-copy': return writeSystemClipboard(msg);
-        case 'back2front:ui-cursor': canvas.style.setProperty('cursor', msg);
+        case 'back2front:ui-cursor': currentCanvas().style.setProperty('cursor', msg);
         case 'back2front:ui-ime': return updateImeAgent(msg);
         default: throw new Error('Not covered following event: ' + e.type + ' ' + e.toString());
         }
@@ -202,11 +210,24 @@ async function show (template: SimTemplate, view_model: SimViewModel, model: Sim
 
     const canvasListener = template.getCanvasListener(state);
     const windowListener = template.getWindowListener();
-    const canvas = template.getCanvas(state);
     const imeAgent = template.getImeAgent(state);
     let imeActive = false;
     let composing = false;
     let pendingKeyText: string | null = null;
+
+    subscriptions.push(events.toggleUiMode.subscribe(() => {
+        const mode = view_model.toggleUiMode();
+        if (mode === 'html') {
+            imeActive = false;
+            composing = false;
+            pendingKeyText = null;
+            imeAgent.value = '';
+            imeAgent.blur();
+            currentCanvas().style.removeProperty('cursor');
+        }
+        view_model.newFrame();
+        model.setWebglUiEnabled(mode === 'webgl');
+    }));
 
     async function writeSystemClipboard (text: string) {
         try {
@@ -233,7 +254,7 @@ async function show (template: SimTemplate, view_model: SimViewModel, model: Sim
             }
         } else if (document.activeElement === imeAgent) {
             imeAgent.blur();
-            canvas.focus({preventScroll: true});
+            currentCanvas().focus({preventScroll: true});
         }
     }
 
@@ -320,7 +341,7 @@ async function show (template: SimTemplate, view_model: SimViewModel, model: Sim
     }
 
     function pointerPayload (e: Parameters<BackendEvent>[0]) {
-        const rect = canvas.getBoundingClientRect();
+        const rect = currentCanvas().getBoundingClientRect();
         return {
             x: e.clientX - rect.left,
             y: e.clientY - rect.top,
@@ -329,7 +350,7 @@ async function show (template: SimTemplate, view_model: SimViewModel, model: Sim
     }
 
     function pointerIsInsideCanvas (e: Parameters<BackendEvent>[0]) {
-        const rect = canvas.getBoundingClientRect();
+        const rect = currentCanvas().getBoundingClientRect();
         return e.clientX >= rect.left && e.clientX < rect.right
             && e.clientY >= rect.top && e.clientY < rect.bottom;
     }
@@ -356,6 +377,7 @@ async function show (template: SimTemplate, view_model: SimViewModel, model: Sim
                 }
             }, 0);
         }
+        const canvas = currentCanvas();
         const shadowActiveElement = canvas.getRootNode() instanceof ShadowRoot
             ? (canvas.getRootNode() as ShadowRoot).activeElement
             : document.activeElement;
@@ -374,14 +396,14 @@ async function show (template: SimTemplate, view_model: SimViewModel, model: Sim
     });
     addDomListener(canvasListener, 'pointerdown', e => {
         markInputsActive();
-        canvas.focus({preventScroll: true});
+        currentCanvas().focus({preventScroll: true});
         const pointer = pointerPayload(e);
         model.uiEvent('pointer-moved', pointer);
         model.uiEvent('pointer-button', {...pointer, button: e.button, pressed: true});
         void updateCanvasFocusFromPointer(e);
         if (model.uiCapturesPointer()) {
             try {
-                canvas.setPointerCapture((e as unknown as PointerEvent).pointerId);
+                currentCanvas().setPointerCapture((e as unknown as PointerEvent).pointerId);
             } catch (_) {
                 // Synthetic events and pointer-lock transitions may not own a
                 // capturable browser pointer.
@@ -403,7 +425,7 @@ async function show (template: SimTemplate, view_model: SimViewModel, model: Sim
         model.uiEvent('pointer-moved', pointer);
         model.uiEvent('pointer-button', {...pointer, button: e.button, pressed: false});
         try {
-            canvas.releasePointerCapture((e as unknown as PointerEvent).pointerId);
+            currentCanvas().releasePointerCapture((e as unknown as PointerEvent).pointerId);
         } catch (_) {}
         await releaseSimPointer(e.button);
         await updateCanvasFocusFromPointer(e);
@@ -531,7 +553,7 @@ async function handleWebGLKeys (msg: DispatchKeyMessage, model: SimModel, view_m
     }
 }
 
-const eventsIgnoringLogs = ['front2back:mouse-move', 'front2back:mouse-click', 'back2front:fps', 'back2front:top_message'];
+const eventsIgnoringLogs = ['front2back:mouse-move', 'front2back:mouse-click', 'back2front:fps'];
 
 function log_event(topic: string, msg: any) {
     if (eventsIgnoringLogs.includes(topic)) {

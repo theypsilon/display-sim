@@ -52,6 +52,9 @@ pub(crate) struct InputOutput {
     last_cursor: Option<egui::CursorIcon>,
     last_ime: Option<egui::output::IMEOutput>,
     has_simulation_frame: bool,
+    panel_enabled: bool,
+    panel_clear_pending: bool,
+    toast_was_painted: bool,
 }
 
 pub(crate) fn web_load(
@@ -83,6 +86,9 @@ pub(crate) fn web_load(
         last_cursor: None,
         last_ime: None,
         has_simulation_frame: false,
+        panel_enabled: true,
+        panel_clear_pending: false,
+        toast_was_painted: false,
     })
 }
 
@@ -101,16 +107,19 @@ pub(crate) fn web_run_frame(res: &mut Resources, io: &mut InputOutput) -> AppRes
     }
     let frame_now = now()?;
     let raw_input = io.egui_input.take_input(frame_now / 1000.0);
-    let mut egui_output = io.panel.run(raw_input, res, &mut io.input, &io.panel_events)?;
-    let input_focused = io.panel.context().egui_wants_keyboard_input();
-    if input_focused != io.input_focused {
-        io.input_focused = input_focused;
-        io.input.push_event(InputEventValue::Keyboard {
-            pressed: Pressed::from_bool(input_focused),
-            key: "input_focused".into(),
-        });
+    let mut egui_output = io.panel.run_with_controls(raw_input, res, &mut io.input, &io.panel_events, io.panel_enabled)?;
+    let toast_visible = io.panel.has_active_toast();
+    if io.panel_enabled {
+        let input_focused = io.panel.context().egui_wants_keyboard_input();
+        if input_focused != io.input_focused {
+            io.input_focused = input_focused;
+            io.input.push_event(InputEventValue::Keyboard {
+                pressed: Pressed::from_bool(input_focused),
+                key: "input_focused".into(),
+            });
+        }
+        handle_platform_output(io, &mut egui_output.platform_output)?;
     }
-    handle_platform_output(io, &mut egui_output.platform_output)?;
 
     let ctx = ConcreteSimulationContext::new(
         WebEventDispatcher::new(io.materials.gl.clone(), io.event_bus.clone(), io.panel_events.clone()),
@@ -121,6 +130,22 @@ pub(crate) fn web_run_frame(res: &mut Resources, io: &mut InputOutput) -> AppRes
     ctx.dispatcher_instance.check_error()?;
 
     if condition {
+        if io.panel_clear_pending || toast_visible || io.toast_was_painted {
+            if !drew_simulation {
+                if io.has_simulation_frame {
+                    present_to_default_framebuffer(&mut io.materials, res)?;
+                } else {
+                    io.materials.gl.bind_framebuffer(glow::FRAMEBUFFER, None);
+                    io.materials.gl.disable(glow::SCISSOR_TEST);
+                    io.materials
+                        .gl
+                        .viewport(0, 0, res.video.viewport_size.width as i32, res.video.viewport_size.height as i32);
+                    io.materials.gl.clear_color(0.0, 0.0, 0.0, 1.0);
+                    io.materials.gl.clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
+                }
+            }
+            io.panel_clear_pending = false;
+        }
         if res.quit && io.has_simulation_frame {
             present_to_default_framebuffer(&mut io.materials, res)?;
         }
@@ -140,6 +165,7 @@ pub(crate) fn web_run_frame(res: &mut Resources, io: &mut InputOutput) -> AppRes
             .paint_and_update_textures([width, height], egui_output.pixels_per_point, &primitives, &mut egui_output.textures_delta);
         io.materials.gl.disable(glow::BLEND);
         io.materials.gl.enable(glow::DEPTH_TEST);
+        io.toast_was_painted = toast_visible;
     } else {
         egui_output.drop_without_applying_deltas();
     }
@@ -150,16 +176,41 @@ pub(crate) fn web_set_ui_metrics(io: &mut InputOutput, width: u32, height: u32, 
     io.egui_input.set_metrics(width, height, pixels_per_point);
 }
 
+pub(crate) fn web_set_panel_enabled(io: &mut InputOutput, enabled: bool) {
+    if io.panel_enabled == enabled {
+        return;
+    }
+    if !enabled {
+        io.panel.release_all(&mut io.input);
+        io.panel_clear_pending = true;
+        if io.input_focused {
+            io.input_focused = false;
+            io.input.push_event(InputEventValue::Keyboard {
+                pressed: Pressed::No,
+                key: "input_focused".into(),
+            });
+        }
+        io.last_cursor = None;
+        io.last_ime = None;
+    }
+    io.egui_input.set_panel_enabled(enabled);
+    io.panel_enabled = enabled;
+}
+
 pub(crate) fn web_ui_event(io: &mut InputOutput, kind: &str, value: &JsValue) -> AppResult<()> {
-    io.egui_input.on_event(kind, value, io.panel.panel_rect())
+    if io.panel_enabled || kind == "focus" {
+        io.egui_input.on_event(kind, value, io.panel.panel_rect())
+    } else {
+        Ok(())
+    }
 }
 
 pub(crate) fn web_ui_captures_pointer(io: &InputOutput) -> bool {
-    io.egui_input.pointer_is_captured(io.panel.panel_rect()) || io.panel.context().egui_is_using_pointer()
+    io.panel_enabled && (io.egui_input.pointer_is_captured(io.panel.panel_rect()) || io.panel.context().egui_is_using_pointer())
 }
 
 pub(crate) fn web_ui_wants_keyboard(io: &InputOutput) -> bool {
-    io.panel.context().egui_wants_keyboard_input()
+    io.panel_enabled && io.panel.context().egui_wants_keyboard_input()
 }
 
 pub(crate) fn web_ui_message(io: &mut InputOutput, message: &str) {

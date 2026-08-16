@@ -8,6 +8,12 @@
 
 export const WHEEL_POINTS_PER_LINE = 100;
 
+export type SimulationUiMode = 'webgl' | 'html';
+
+export function nextSimulationUiMode (mode: SimulationUiMode): SimulationUiMode {
+    return mode === 'webgl' ? 'html' : 'webgl';
+}
+
 export function screenshotName (index: number): string {
     if (!Number.isSafeInteger(index) || index < 1) {
         throw new Error(`Invalid screenshot index: ${index}`);

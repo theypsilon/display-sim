@@ -44,6 +44,7 @@ export function actions() {
         toggleCheckbox: PubSubImpl.make<{kind: string, value: boolean}>(),
         changeSyncedInput: PubSubImpl.make<{kind: string, value: number}>(),
         toggleControls: PubSubImpl.make<void>(),
+        toggleUiMode: PubSubImpl.make<void>(),
         toggleMenu: PubSubImpl.make<MenuEntry>(),
         clickPreset: PubSubImpl.make<string>()
     };
@@ -92,7 +93,7 @@ export class SimTemplate
 
     refresh(state: SimViewData): void {
         this._rendered = true;
-        if (!state.menu.visible || !state.menu.open) {
+        if (!state.menu.visible || !state.menu.open || state.uiMode !== 'html') {
             void this.releaseHeldActions();
         }
         render(this.generateSimTemplate(state), this._root);
@@ -101,6 +102,11 @@ export class SimTemplate
     private async toggleControls() {
         await this.releaseHeldActions();
         await this._actions.toggleControls.fire();
+    }
+
+    private async toggleUiMode() {
+        await this.releaseHeldActions();
+        await this._actions.toggleUiMode.fire();
     }
 
     private async toggleMenu(menu: MenuEntry) {
@@ -200,6 +206,29 @@ export class SimTemplate
         <div><canvas id="gl-canvas-id" tabindex="0" role="application" aria-label="Display Sim controls and simulation"></canvas></div>
         <textarea id="egui-ime-agent" class="egui-ime-agent" aria-label="Display Sim text editor"
             autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
+        <button id="ui-panel-mode-toggle" type="button"
+            class="${state.menu.visible ? '' : 'display-none'}"
+            aria-label="Switch to ${state.uiMode === 'webgl' ? 'HTML' : 'WebGL'} UI panel"
+            title="Switch to ${state.uiMode === 'webgl' ? 'HTML' : 'WebGL'} UI panel"
+            @keydown="${(e: KeyboardEvent) => e.stopPropagation()}"
+            @keyup="${(e: KeyboardEvent) => e.stopPropagation()}"
+            @click="${() => this.toggleUiMode()}">
+            <span class="ui-panel-mode-current">${state.uiMode === 'webgl' ? 'WebGL UI' : 'HTML UI'}</span>
+            <span class="ui-panel-mode-action">Switch to ${state.uiMode === 'webgl' ? 'HTML' : 'WebGL'}</span>
+        </button>
+        <div id="simulation-ui" class="${state.uiMode === 'html' ? '' : 'display-none'}" aria-hidden="${state.uiMode !== 'html'}">
+            <div id="fps-counter">${state.fps}</div>
+            <div id="info-panel" class="${state.menu.visible ? '' : 'display-none'}">
+                <div id="info-panel-content" class="${state.menu.open ? '' : 'display-none'}">
+                    ${state.menu.entries.map(entry => this.generateTemplateFromGenericEntry(entry))}
+                </div>
+                <div id="info-panel-toggle"
+                    class="collapse-button collapse-controller"
+                    role="button" tabindex="0" aria-expanded="${state.menu.open}"
+                    @keydown="${(e: KeyboardEvent) => this.activateOnKeyboard(e, () => this.toggleControls())}"
+                    @click="${() => this.toggleControls()}">${state.menu.controlsText}</div>
+            </div>
+        </div>
         `;
     }
 

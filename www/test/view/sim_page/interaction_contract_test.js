@@ -4,6 +4,7 @@ import {
     HeldActionState,
     isHeldActionKey,
     isSingleActivationKey,
+    nextSimulationUiMode,
     normalizeWheelDelta,
     OneFramePulseState,
     PrimaryPointerState,
@@ -12,6 +13,11 @@ import {
 } from '../../../src/view/sim_page/interaction_contract';
 
 describe('simulation interaction contract', () => {
+    it('toggles between the two web panel implementations', () => {
+        assert.equal(nextSimulationUiMode('webgl'), 'html');
+        assert.equal(nextSimulationUiMode('html'), 'webgl');
+    });
+
     it('normalizes wheel pixels, lines, and pages', () => {
         assert.equal(normalizeWheelDelta(12.5, 0, 720), 12.5);
         assert.equal(normalizeWheelDelta(-2, 1, 720), -2 * WHEEL_POINTS_PER_LINE);

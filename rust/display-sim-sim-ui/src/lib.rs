@@ -335,6 +335,10 @@ impl SimPanel {
         self.panel_rect
     }
 
+    pub fn has_active_toast(&self) -> bool {
+        !self.toasts.is_empty()
+    }
+
     /// Sets a single expanded category, useful for restoring panel state and
     /// for deterministic visual-regression captures.
     pub fn open_only(&mut self, section: SimPanelSection) {
@@ -358,6 +362,20 @@ impl SimPanel {
     }
 
     pub fn run(&mut self, raw_input: egui::RawInput, res: &mut Resources, input: &mut Input, events: &SharedPanelEvents) -> AppResult<egui::FullOutput> {
+        self.run_with_controls(raw_input, res, input, events, true)
+    }
+
+    /// Runs the shared notification chrome while optionally omitting the
+    /// interactive controls. The web host uses this to keep one WebGL toast
+    /// renderer active when its alternative HTML controls are selected.
+    pub fn run_with_controls(
+        &mut self,
+        raw_input: egui::RawInput,
+        res: &mut Resources,
+        input: &mut Input,
+        events: &SharedPanelEvents,
+        controls_enabled: bool,
+    ) -> AppResult<egui::FullOutput> {
         self.time = raw_input.time.unwrap_or(self.time + raw_input.predicted_dt as f64);
         let focused = raw_input.focused;
         let render_rect = raw_input.screen_rect.unwrap_or_else(|| {
@@ -394,6 +412,9 @@ impl SimPanel {
         if !focused {
             self.synthetic.release_all(&mut input_events);
         }
+        if !controls_enabled {
+            self.synthetic.release_all(&mut input_events);
+        }
 
         let context = self.context.clone();
         let mut controller_sets = Vec::new();
@@ -401,7 +422,11 @@ impl SimPanel {
         let was_visible = self.visible;
         let output = context.run_ui(raw_input, |root_ui| {
             let ctx = root_ui.ctx().clone();
-            self.show_chrome(&ctx);
+            self.show_chrome(&ctx, controls_enabled);
+            if !controls_enabled {
+                self.panel_rect = None;
+                return;
+            }
             if res.quit {
                 self.panel_rect = None;
                 self.show_session_ended(&ctx);
@@ -467,20 +492,22 @@ impl SimPanel {
             });
     }
 
-    fn show_chrome(&self, ctx: &Context) {
-        egui::Area::new(Id::new("display-sim-fps"))
-            .anchor(Align2::RIGHT_TOP, [-20.0, 20.0])
-            .order(egui::Order::Foreground)
-            .show(ctx, |ui| {
-                let (rect, _) = ui.allocate_exact_size(Vec2::new(20.0, 20.0), Sense::hover());
-                ui.painter().text(
-                    rect.left_top(),
-                    Align2::LEFT_TOP,
-                    format!("{:.0}", self.fps),
-                    FontId::proportional(14.0),
-                    Color32::WHITE,
-                );
-            });
+    fn show_chrome(&self, ctx: &Context, show_fps: bool) {
+        if show_fps {
+            egui::Area::new(Id::new("display-sim-fps"))
+                .anchor(Align2::RIGHT_TOP, [-20.0, 20.0])
+                .order(egui::Order::Foreground)
+                .show(ctx, |ui| {
+                    let (rect, _) = ui.allocate_exact_size(Vec2::new(20.0, 20.0), Sense::hover());
+                    ui.painter().text(
+                        rect.left_top(),
+                        Align2::LEFT_TOP,
+                        format!("{:.0}", self.fps),
+                        FontId::proportional(14.0),
+                        Color32::WHITE,
+                    );
+                });
+        }
         if let Some(toast) = self.toasts.back() {
             let opacity = if self.time <= toast.fade_at {
                 0.75
@@ -2569,6 +2596,35 @@ mod tests {
         assert_eq!(rect.left(), PANEL_X);
         assert_eq!(rect.width(), PANEL_WIDTH);
         assert_eq!(rect.height(), 507.0);
+    }
+
+    #[test]
+    fn notification_only_mode_paints_toasts_without_controls() {
+        let mut panel = SimPanel::new();
+        let mut resources = Resources::default();
+        resources.video.viewport_size.width = 1_024;
+        resources.video.viewport_size.height = 640;
+        let mut input = Input::default();
+        let events = shared_panel_events();
+        events.borrow_mut().push_message("one renderer");
+
+        let output = panel
+            .run_with_controls(
+                egui::RawInput {
+                    screen_rect: Some(Rect::from_min_size(Pos2::ZERO, Vec2::new(1_024.0, 640.0))),
+                    ..Default::default()
+                },
+                &mut resources,
+                &mut input,
+                &events,
+                false,
+            )
+            .unwrap();
+
+        assert!(panel.panel_rect().is_none());
+        assert!(panel.has_active_toast());
+        assert!(!output.shapes.is_empty());
+        output.drop_without_applying_deltas();
     }
 
     #[test]

@@ -107,6 +107,10 @@ export class SimModel {
         this._wasmBackend.uiEvent(kind, value);
     }
 
+    setWebglUiEnabled (enabled: boolean) {
+        this._wasmBackend.setWebglUiEnabled(enabled);
+    }
+
     uiCapturesPointer (): boolean {
         return this._wasmBackend.uiCapturesPointer();
     }
@@ -117,6 +121,10 @@ export class SimModel {
 
     uiMessage (message: string) {
         this._wasmBackend.uiMessage(message);
+    }
+
+    getCanvas (): HTMLCanvasElement {
+        return this._state.canvas;
     }
 
     setPreset (preset: string) {
@@ -156,8 +164,7 @@ export class SimModel {
     unloadSimulation () {
         this._state.loaded = false;
         this._wasmBackend.unload();
-        const newCanvas = document.createElement('canvas');
-        newCanvas.setAttribute('tabindex', '0');
+        const newCanvas = this._state.canvas.cloneNode(false) as HTMLCanvasElement;
         this._state.canvas.parentNode.replaceChild(newCanvas, this._state.canvas);
         this._state.canvas.remove();
         this._state.canvas = newCanvas;

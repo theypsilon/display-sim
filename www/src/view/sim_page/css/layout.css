@@ -17,6 +17,50 @@ canvas {
     color: white;
 }
 
+#ui-panel-mode-toggle {
+    position: fixed;
+    top: 12px;
+    right: 52px;
+    z-index: 20;
+    min-width: 150px;
+    padding: 7px 12px 8px;
+    border: 1px solid #777;
+    border-radius: 4px;
+    background: rgba(18, 18, 21, 0.92);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+    color: #eee;
+    font-family: 'Lato', sans-serif;
+    line-height: 1.15;
+    text-align: left;
+    cursor: pointer;
+}
+
+#ui-panel-mode-toggle:hover {
+    border-color: #aaa;
+    background: rgba(40, 40, 44, 0.96);
+}
+
+#ui-panel-mode-toggle:focus-visible {
+    outline: 2px solid #6cc8ff;
+    outline-offset: 2px;
+}
+
+.ui-panel-mode-current,
+.ui-panel-mode-action {
+    display: block;
+}
+
+.ui-panel-mode-current {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.ui-panel-mode-action {
+    margin-top: 2px;
+    color: #aaa;
+    font-size: 11px;
+}
+
 canvas:hover {
     cursor: move;
 }

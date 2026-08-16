@@ -201,7 +201,6 @@ impl AppEventDispatcher for WebEventDispatcher {
 
     fn dispatch_top_message(&self, message: &str) {
         self.panel_events.borrow_mut().push_message(message);
-        self.catch_error(dispatch_event_with(&self.event_bus, "back2front:top_message", &message.into()));
     }
 
     fn dispatch_minimum_value(&self, value: &dyn Display) {

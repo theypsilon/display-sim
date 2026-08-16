@@ -20,8 +20,8 @@ use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 use crate::console;
 use crate::web_entrypoint::{
-    print_error, web_load, web_run_frame, web_set_ui_metrics, web_ui_captures_pointer, web_ui_event, web_ui_message, web_ui_wants_keyboard, web_unload,
-    InputOutput,
+    print_error, web_load, web_run_frame, web_set_panel_enabled, web_set_ui_metrics, web_ui_captures_pointer, web_ui_event, web_ui_message,
+    web_ui_wants_keyboard, web_unload, InputOutput,
 };
 use app_util::AppResult;
 use core::general_types::Size2D;
@@ -81,6 +81,15 @@ impl WasmApp {
     pub fn set_ui_metrics(&mut self, width: u32, height: u32, pixels_per_point: f32) {
         if let Some(ref mut io) = self.io {
             web_set_ui_metrics(io, width, height, pixels_per_point);
+        }
+    }
+
+    /// Enables or completely suppresses the canvas-rendered control panel.
+    /// The HTML host uses this while its alternative panel is selected.
+    #[wasm_bindgen]
+    pub fn set_webgl_ui_enabled(&mut self, enabled: bool) {
+        if let Some(ref mut io) = self.io {
+            web_set_panel_enabled(io, enabled);
         }
     }
 

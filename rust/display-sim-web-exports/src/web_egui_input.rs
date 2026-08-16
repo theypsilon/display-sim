@@ -14,6 +14,7 @@ pub(crate) struct WebEguiInput {
     physical_size: [u32; 2],
     pixels_per_point: f32,
     focused: bool,
+    panel_enabled: bool,
 }
 
 impl Default for WebEguiInput {
@@ -27,11 +28,37 @@ impl Default for WebEguiInput {
             physical_size: [1, 1],
             pixels_per_point: 1.0,
             focused: true,
+            panel_enabled: true,
         }
     }
 }
 
 impl WebEguiInput {
+    pub(crate) fn set_panel_enabled(&mut self, enabled: bool) {
+        if self.panel_enabled == enabled {
+            return;
+        }
+        self.panel_enabled = enabled;
+        if enabled {
+            self.events.push(Event::WindowFocused(self.focused));
+            return;
+        }
+
+        // Keep only the cancellation sequence until the panel is enabled and
+        // run again. This prevents an egui drag, pressed button, modifier, or
+        // focused text field from surviving a round-trip through HTML mode.
+        self.events.clear();
+        self.release_pointer_buttons();
+        self.pointer_pos = None;
+        self.pointer_captured = false;
+        self.events.push(Event::PointerGone);
+        if self.modifiers != Modifiers::default() {
+            self.modifiers = Modifiers::default();
+            self.events.push(Event::ModifiersChanged(self.modifiers));
+        }
+        self.events.push(Event::WindowFocused(false));
+    }
+
     pub(crate) fn set_metrics(&mut self, width: u32, height: u32, pixels_per_point: f32) {
         self.physical_size = [width.max(1), height.max(1)];
         self.pixels_per_point = pixels_per_point.max(0.1);
@@ -150,7 +177,9 @@ impl WebEguiInput {
                         self.release_pointer_buttons();
                         self.pointer_captured = false;
                     }
-                    self.events.push(Event::WindowFocused(focused));
+                    if self.panel_enabled {
+                        self.events.push(Event::WindowFocused(focused));
+                    }
                 }
             }
             _ => return Err(AppError::new(format!("Unknown web egui event: {kind}"))),
@@ -172,7 +201,7 @@ impl WebEguiInput {
             time: Some(time),
             predicted_dt: 1.0 / 60.0,
             events: std::mem::take(&mut self.events),
-            focused: self.focused,
+            focused: self.focused && self.panel_enabled,
             ..Default::default()
         };
         let viewport = input.viewports.get_mut(&ViewportId::ROOT).expect("root viewport");
@@ -211,6 +240,40 @@ impl WebEguiInput {
             pressed: false,
             modifiers,
         }));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn disabling_cancels_and_reenabling_restores_panel_focus() {
+        let mut input = WebEguiInput::default();
+        input.events.push(Event::Copy);
+        input.modifiers.shift = true;
+        input.pointer_pos = Some(Pos2::new(10.0, 20.0));
+        input.pointer_buttons_down.push(PointerButton::Primary);
+        input.pointer_captured = true;
+
+        input.set_panel_enabled(false);
+
+        assert!(matches!(
+            input.events.as_slice(),
+            [
+                Event::PointerButton { pressed: false, .. },
+                Event::PointerGone,
+                Event::ModifiersChanged(_),
+                Event::WindowFocused(false)
+            ]
+        ));
+        assert_eq!(input.modifiers, Modifiers::default());
+        assert_eq!(input.pointer_pos, None);
+        assert!(input.pointer_buttons_down.is_empty());
+        assert!(!input.pointer_captured);
+
+        input.set_panel_enabled(true);
+        assert!(matches!(input.events.last(), Some(Event::WindowFocused(true))));
     }
 }
 
