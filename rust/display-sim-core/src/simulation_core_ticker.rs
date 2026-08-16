@@ -52,6 +52,8 @@ impl<'a> SimulationCoreTicker<'a> {
             match value {
                 InputEventValue::Keyboard { pressed, key } => {
                     let result = trigger_hotkey_action(self.input, self.res, key.to_lowercase().as_ref(), pressed);
+                    #[cfg(not(debug_assertions))]
+                    let _ = result;
                     #[cfg(debug_assertions)]
                     {
                         if let ActionUsed::No(not_used) = result {
@@ -64,12 +66,16 @@ impl<'a> SimulationCoreTicker<'a> {
                     debug_assert_eq!(result, ActionUsed::Yes)
                 }
                 InputEventValue::MouseMove { x, y } => {
-                    self.input.mouse_position_x = x;
-                    self.input.mouse_position_y = y;
+                    // Both browser movement events and native raw-device
+                    // events can arrive several times between simulation
+                    // ticks. `movementX/Y` are deltas, so preserve the full
+                    // path rather than only the final event.
+                    self.input.mouse_position_x = self.input.mouse_position_x.saturating_add(x);
+                    self.input.mouse_position_y = self.input.mouse_position_y.saturating_add(y);
                 }
                 InputEventValue::MouseWheel(wheel) => {
                     if self.input.canvas_focused {
-                        self.input.mouse_scroll_y = wheel
+                        self.input.mouse_scroll_y += wheel
                     }
                 }
                 InputEventValue::BlurredWindow => *self.input = Input::new(now),
@@ -940,4 +946,32 @@ fn calculate_far_away_position(bg_size: Size2D<f32>, internal_resolution: &Inter
 
         Interesting mathematical fact: 0.68 * squared(4/3) = 1.2076 = 0.68 * 16/9
     */
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::input_types::Pressed;
+    use crate::simulation_context::make_fake_simulation_context;
+
+    #[test]
+    fn relative_mouse_and_wheel_events_accumulate_between_ticks() {
+        let ctx = make_fake_simulation_context();
+        let mut resources = Resources::default();
+        let mut input = Input::new(0.0);
+        input.push_event(InputEventValue::Keyboard {
+            pressed: Pressed::Yes,
+            key: "canvas_focused".into(),
+        });
+        input.push_event(InputEventValue::MouseMove { x: 3, y: -2 });
+        input.push_event(InputEventValue::MouseMove { x: -1, y: 5 });
+        input.push_event(InputEventValue::MouseWheel(100.0));
+        input.push_event(InputEventValue::MouseWheel(-25.0));
+
+        SimulationCoreTicker::new(&ctx, &mut resources, &mut input).pre_process_input(16.0);
+
+        assert_eq!(input.mouse_position_x, 2);
+        assert_eq!(input.mouse_position_y, 3);
+        assert_eq!(input.mouse_scroll_y, 75.0);
+    }
 }

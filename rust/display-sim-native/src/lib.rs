@@ -14,5 +14,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 mod native_entrypoint;
+mod simulation_input;
+mod winit_egui;
 
 pub use native_entrypoint::*;

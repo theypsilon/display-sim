@@ -1,0 +1,10 @@
+[package]
+name = "display-sim-sim-ui"
+version = "0.1.0"
+authors = ["José manuel Barroso Galindo <theypsilon@gmail.com>"]
+edition = "2021"
+
+[dependencies]
+egui = { workspace = true }
+core = { path = "../display-sim-core", package = "display-sim-core" }
+app-util = { path = "../display-sim-app-util", package = "display-sim-app-util" }

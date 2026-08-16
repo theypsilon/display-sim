@@ -42,6 +42,12 @@ members = [
     "rust/display-sim-app-util",
     "rust/display-sim-web-exports",
     "rust/display-sim-native",
+    "rust/display-sim-sim-ui",
     "rust/display-sim-stub-render",
     "rust/display-sim-testing",
 ]
+
+[workspace.dependencies]
+egui = { version = "=0.36.1", default-features = false, features = ["default_fonts"] }
+egui_glow = { version = "=0.36.1", default-features = false }
+glow = "=0.17.0"

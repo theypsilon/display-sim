@@ -14,18 +14,31 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 use glow::*;
+use std::sync::Arc;
 
 pub struct GlowSafeAdapter<GL: HasContext> {
-    gl: GL,
+    gl: Arc<GL>,
 }
 
 impl<GL: HasContext> GlowSafeAdapter<GL> {
     pub fn new(gl: GL) -> Self {
+        Self::from_shared(Arc::new(gl))
+    }
+
+    pub fn from_shared(gl: Arc<GL>) -> Self {
         GlowSafeAdapter { gl }
+    }
+
+    pub fn shared_context(&self) -> Arc<GL> {
+        Arc::clone(&self.gl)
     }
 
     pub fn enable(&self, parameter: u32) {
         unsafe { self.gl.enable(parameter) }
+    }
+
+    pub fn disable(&self, parameter: u32) {
+        unsafe { self.gl.disable(parameter) }
     }
 
     pub fn enable_vertex_attrib_array(&self, index: Option<u32>) {
@@ -204,6 +217,10 @@ impl<GL: HasContext> GlowSafeAdapter<GL> {
         unsafe { self.gl.get_error() }
     }
 
+    pub fn read_pixels(&self, x: i32, y: i32, width: i32, height: i32, format: u32, ty: u32, pixels: &mut [u8]) {
+        unsafe { self.gl.read_pixels(x, y, width, height, format, ty, PixelPackData::Slice(Some(pixels))) }
+    }
+
     pub fn get_uniform_location(&self, program: GL::Program, name: &str) -> Option<GL::UniformLocation> {
         unsafe { self.gl.get_uniform_location(program, name) }
     }
@@ -236,7 +253,19 @@ impl<GL: HasContext> GlowSafeAdapter<GL> {
         ty: u32,
         pixels: Option<&[u8]>,
     ) {
-        unsafe { self.gl.tex_image_2d(target, level, internal_format, width, height, border, format, ty, pixels) }
+        unsafe {
+            self.gl.tex_image_2d(
+                target,
+                level,
+                internal_format,
+                width,
+                height,
+                border,
+                format,
+                ty,
+                PixelUnpackData::Slice(pixels),
+            )
+        }
     }
 
     pub fn uniform_1_i32(&self, location: Option<GL::UniformLocation>, x: i32) {

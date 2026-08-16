@@ -18,6 +18,9 @@ app-util = { path = "../display-sim-app-util", package = "display-sim-app-util" 
 derive-new = "0.5.9"
 glow = { path = "../glow-safe-adapter", package = "glow-safe-adapter" }
 rand = "0.8.6"
+egui = { workspace = true }
+egui_glow = { workspace = true }
+sim-ui = { path = "../display-sim-sim-ui", package = "display-sim-sim-ui" }
 
 [dependencies.render]
 path = "../display-sim-render"
@@ -31,6 +34,7 @@ features = [
   'Performance',
   'Document',
   'Element',
+  'Navigator',
 ]
 
 [dependencies.getrandom]

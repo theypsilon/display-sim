@@ -19,6 +19,7 @@ import {Mailbox} from '../../services/mailbox';
 import {LocalStorage} from '../../services/local_storage';
 import {SimWasmBackend} from './sim_wasm_backend';
 import {throwOnNull} from "../../services/guards";
+import {screenshotName} from './interaction_contract';
 
 const STORE_KEY_WEBGL_POWER_PREFERENCE = 'option-powerPreference';
 const STORE_KEY_WEBGL_ANTIALIAS = 'option-antialias';
@@ -31,6 +32,7 @@ export class SimModel {
     private readonly _wasmBackend: SimWasmBackend;
     private readonly _store: LocalStorage;
     private readonly _state: any;
+    private _screenshotIndex = 0;
 
     constructor (canvas: HTMLCanvasElement, eventBus: any, mailbox: Mailbox, wasmBackend: SimWasmBackend, store: LocalStorage) {
         this._eventBus = eventBus;
@@ -101,6 +103,22 @@ export class SimModel {
         }
     }
 
+    uiEvent (kind: string, value: any) {
+        this._wasmBackend.uiEvent(kind, value);
+    }
+
+    uiCapturesPointer (): boolean {
+        return this._wasmBackend.uiCapturesPointer();
+    }
+
+    uiWantsKeyboard (): boolean {
+        return this._wasmBackend.uiWantsKeyboard();
+    }
+
+    uiMessage (message: string) {
+        this._wasmBackend.uiMessage(message);
+    }
+
     setPreset (preset: string) {
         if (preset !== Constants.PRESET_KIND_CUSTOM) {
             this._state.storedValues.selectedPreset = preset;
@@ -163,32 +181,49 @@ export class SimModel {
         Logger.log('starting screenshot');
         Logger.log('width', width, 'height', height);
 
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = throwOnNull(canvas.getContext('2d'));
-    
-        const imageData = ctx.createImageData(width, height);
-        imageData.data.set(buffer);
-        ctx.putImageData(imageData, 0, 0);
-        ctx.globalCompositeOperation = 'copy';
-        ctx.scale(1, -1); // Y flip
-        ctx.translate(0, -imageData.height);
-        ctx.drawImage(canvas, 0, 0);
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.globalCompositeOperation = 'source-over';
-    
-        const a = document.createElement('a');
-        document.body.appendChild(a);
-        a.classList.add('no-display');
-        const blob = await new Promise(resolve => canvas.toBlob(resolve));
-        const url = URL.createObjectURL(blob as Blob);
-        a.href = url;
-        a.download = 'Display-Sim_' + new Date().toISOString() + '.png';
-        a.click();
-    
+        let anchor: HTMLAnchorElement | null = null;
+        let url: string | null = null;
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = throwOnNull(canvas.getContext('2d'));
+
+            const imageData = ctx.createImageData(width, height);
+            imageData.data.set(buffer);
+            ctx.putImageData(imageData, 0, 0);
+            ctx.globalCompositeOperation = 'copy';
+            ctx.scale(1, -1); // Y flip
+            ctx.translate(0, -imageData.height);
+            ctx.drawImage(canvas, 0, 0);
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.globalCompositeOperation = 'source-over';
+
+            anchor = document.createElement('a');
+            document.body.appendChild(anchor);
+            anchor.classList.add('no-display');
+            const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(value => {
+                if (value) {
+                    resolve(value);
+                } else {
+                    reject(new Error('Browser PNG encoding returned no data.'));
+                }
+            }, 'image/png'));
+            url = URL.createObjectURL(blob);
+            anchor.href = url;
+            anchor.download = screenshotName(++this._screenshotIndex);
+            anchor.click();
+            this.uiMessage('Screenshot saved.');
+        } catch (error) {
+            const detail = error instanceof Error ? error.message : String(error);
+            Logger.log('Screenshot failed:', detail);
+            this.uiMessage(`Screenshot failed: ${detail}`);
+        }
+
         await new Promise(resolve => setTimeout(resolve, 3000));
-        URL.revokeObjectURL(url);
-        a.remove();
+        if (url) {
+            URL.revokeObjectURL(url);
+        }
+        anchor?.remove();
     }
 }

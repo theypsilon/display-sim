@@ -5,7 +5,7 @@
   "scripts": {
     "build": "webpack --config webpack.prod.js",
     "start": "webpack serve --open --config webpack.dev.js --stats-error-details",
-    "test": "ts-mocha",
+    "test": "node node_modules/ts-mocha/bin/ts-mocha",
     "lint": "eslint src test",
     "lintfix": "eslint --fix src test"
   },

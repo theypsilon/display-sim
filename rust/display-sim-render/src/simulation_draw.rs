@@ -32,6 +32,7 @@ pub struct SimulationDrawer<'a> {
 impl<'a> SimulationDrawer<'a> {
     pub fn new(ctx: &'a dyn SimulationContext, materials: &'a mut Materials, res: &'a Resources) -> Self {
         materials.gl.enable(glow::DEPTH_TEST);
+        materials.gl.disable(glow::BLEND);
         SimulationDrawer { ctx, materials, res }
     }
 
@@ -44,7 +45,7 @@ impl<'a> SimulationDrawer<'a> {
         let output = &self.res.main.render;
 
         let materials = &mut self.materials;
-        let gl = &materials.gl;
+        let gl = materials.gl.clone();
 
         let resolution_width = filters.internal_resolution.width();
         let resolution_height = filters.internal_resolution.height();
@@ -218,18 +219,23 @@ impl<'a> SimulationDrawer<'a> {
             materials.main_buffer_stack.pop()?;
             materials.main_buffer_stack.assert_no_stack()?;
 
-            gl.bind_framebuffer(glow::FRAMEBUFFER, None);
-            gl.clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
-
-            gl.viewport(0, 0, viewport_width as i32, viewport_height as i32);
-
-            materials.internal_resolution_render.render(materials.main_buffer_stack.get_nth(1)?.texture());
+            present_to_default_framebuffer(materials, self.res)?;
         }
 
-        check_error(gl, line!())?;
+        check_error(&gl, line!())?;
 
         Ok(())
     }
+}
+
+pub fn present_to_default_framebuffer(materials: &mut Materials, res: &Resources) -> AppResult<()> {
+    let gl = &materials.gl;
+    gl.disable(glow::BLEND);
+    gl.bind_framebuffer(glow::FRAMEBUFFER, None);
+    gl.clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
+    gl.viewport(0, 0, res.video.viewport_size.width as i32, res.video.viewport_size.height as i32);
+    materials.internal_resolution_render.render(materials.main_buffer_stack.get_nth(1)?.texture());
+    Ok(())
 }
 
 fn check_error(gl: &GlowSafeAdapter<glow::Context>, line: u32) -> AppResult<()> {

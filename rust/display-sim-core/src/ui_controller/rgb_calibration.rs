@@ -50,7 +50,12 @@ macro_rules! rgb_impl {
                 &[]
             }
             fn update(&mut self, _: &MainState, _: &dyn SimulationContext) -> bool {
-                false
+                if let Some(value) = self.event.take() {
+                    self.value = value;
+                    true
+                } else {
+                    false
+                }
             }
             fn reset_inputs(&mut self) {
                 self.event = None;

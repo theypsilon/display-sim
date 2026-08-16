@@ -27,23 +27,11 @@ pub(crate) fn trigger_hotkey_action(input: &mut Input, res: &mut Resources, keyc
 }
 
 pub(crate) fn trigger_hotkey_action_2(input: &mut Input, res: &mut Resources, keycode: &str, pressed: Pressed) -> ActionUsed {
-    // @TODO Fix Shift Ctrl combos
-    if let Some((kind, index)) = res.controller_events.get_mut(keycode) {
-        let controller = &mut res.controllers.get_ui_controllers_mut()[*index];
-        let pressed = match pressed {
-            Pressed::Yes => true,
-            Pressed::No => false,
-        };
-
-        match kind {
-            KeyEventKind::Inc => controller.read_key_inc(pressed),
-            KeyEventKind::Dec => controller.read_key_dec(pressed),
-            KeyEventKind::Set => unreachable!(),
-        }
-    }
+    // Modifier keys themselves are handled by the built-in action table, but
+    // their transitions must first retarget any held controller hotkeys.
+    process_modifiers_2(input, res, keycode, pressed);
 
     if let Some(keycode) = get_contextualized_action_2(input, res, keycode) {
-        process_modifiers_2(input, res, keycode.as_ref(), pressed);
         if pressed == Pressed::Yes && input.active_pressed_actions_2.iter().any(|active_action| *active_action == keycode) {
             return ActionUsed::Yes;
         }
@@ -93,24 +81,35 @@ fn process_modifiers_2(input: &mut Input, res: &mut Resources, keycode: &str, pr
 fn react_to_modifier_2(input: &mut Input, res: &mut Resources, modifier: BooleanAction, pressed: Pressed) {
     let modifier_code = get_modifier_code(modifier);
     let (to_add, to_delete) = match pressed {
-        Pressed::Yes => modify_active_actions_2(&input.active_pressed_actions_2, modifier_code),
-        Pressed::No => unmodify_active_actions_2(&input.active_pressed_actions_2, modifier_code),
+        Pressed::Yes => modify_active_actions_2(&input.active_pressed_actions_2, &res.controller_events, modifier_code),
+        Pressed::No => unmodify_active_actions_2(&input.active_pressed_actions_2, &res.controller_events, modifier_code),
     };
     resolve_modifications_2(input, res, to_add, to_delete);
 }
 
-fn modify_active_actions_2(active_actions: &[String], modifier_code: &str) -> (Vec<String>, Vec<(usize, String)>) {
+fn modify_active_actions_2(
+    active_actions: &[String],
+    controller_events: &std::collections::HashMap<&'static str, (KeyEventKind, usize)>,
+    modifier_code: &str,
+) -> (Vec<String>, Vec<(usize, String)>) {
     let mut to_delete = Vec::new();
     let mut to_add = Vec::new();
     for (i, keycode) in active_actions.iter().enumerate() {
         let modified_keycode = format!("{}{}", modifier_code, keycode);
+        if !controller_events.contains_key(modified_keycode.as_str()) {
+            continue;
+        }
         to_delete.push((i, keycode.clone()));
         to_add.push(modified_keycode);
     }
     (to_add, to_delete)
 }
 
-fn unmodify_active_actions_2(active_actions: &[String], modifier_code: &str) -> (Vec<String>, Vec<(usize, String)>) {
+fn unmodify_active_actions_2(
+    active_actions: &[String],
+    controller_events: &std::collections::HashMap<&'static str, (KeyEventKind, usize)>,
+    modifier_code: &str,
+) -> (Vec<String>, Vec<(usize, String)>) {
     let mut to_delete = Vec::new();
     let mut to_add = Vec::new();
     for (i, keycode) in active_actions.iter().enumerate() {
@@ -118,14 +117,16 @@ fn unmodify_active_actions_2(active_actions: &[String], modifier_code: &str) -> 
             continue;
         }
         to_delete.push((i, keycode.clone()));
-        let unmodified_keycode = keycode.replace(modifier_code, "");
-        to_add.push(unmodified_keycode);
+        let unmodified_keycode = keycode.replacen(modifier_code, "", 1);
+        if controller_events.contains_key(unmodified_keycode.as_str()) {
+            to_add.push(unmodified_keycode);
+        }
     }
     (to_add, to_delete)
 }
 
 fn resolve_modifications_2(input: &mut Input, res: &mut Resources, to_add: Vec<String>, to_delete: Vec<(usize, String)>) {
-    for (i, removed_keycode) in to_delete.into_iter() {
+    for (i, removed_keycode) in to_delete.into_iter().rev() {
         handle_action_2(input, res, removed_keycode.as_ref(), Pressed::No);
         input.active_pressed_actions_2.remove(i);
     }
@@ -156,20 +157,20 @@ fn handle_action_2(input: &mut Input, res: &mut Resources, keycode: &str, presse
     }
 }
 
-fn get_contextualized_action_2(input: &Input, res: &mut Resources, keycode: &str) -> Option<String> {
+fn get_contextualized_action_2(input: &Input, res: &Resources, keycode: &str) -> Option<String> {
     if input.shift && !is_shift(keycode) {
         let combo = format!("shift+{}", keycode);
-        if res.controller_events.contains_key(keycode) {
+        if res.controller_events.contains_key(combo.as_str()) {
             return Some(combo);
         }
     } else if input.control && !is_ctrl(keycode) {
         let combo = format!("ctrl+{}", keycode);
-        if res.controller_events.contains_key(keycode) {
+        if res.controller_events.contains_key(combo.as_str()) {
             return Some(combo);
         }
     } else if input.alt && !is_alt(keycode) {
         let combo = format!("alt+{}", keycode);
-        if res.controller_events.contains_key(keycode) {
+        if res.controller_events.contains_key(combo.as_str()) {
             return Some(combo);
         }
     }
@@ -313,7 +314,7 @@ fn unmodify_active_actions(active_actions: &[KeyCodeBooleanAction], modifier_cod
 }
 
 fn resolve_modifications(input: &mut Input, to_add: Vec<KeyCodeBooleanAction>, to_delete: Vec<IndexBooleanAction>) {
-    for (i, removed_action) in to_delete.into_iter() {
+    for (i, removed_action) in to_delete.into_iter().rev() {
         handle_action(input, removed_action, Pressed::No);
         input.active_pressed_actions.remove(i);
     }
@@ -514,5 +515,41 @@ mod test_trigger_hotkey_action {
         );
         trigger_hotkey_action_intern(input, "shift", Pressed::No);
         assert_eq!(format!("{:?}", input.active_pressed_actions), "[(\"g\", NextCameraMovementMode(Increase))]");
+    }
+
+    #[test]
+    fn modifier_retargets_multiple_builtin_hotkeys_without_index_shift() {
+        let mut input = Input::default();
+        trigger_hotkey_action_intern(&mut input, "g", Pressed::Yes);
+        trigger_hotkey_action_intern(&mut input, "f", Pressed::Yes);
+        trigger_hotkey_action_intern(&mut input, "shift", Pressed::Yes);
+
+        assert!(input.active_pressed_actions.iter().any(|(key, _)| key == "shift+g"));
+        assert!(input.active_pressed_actions.iter().any(|(key, _)| key == "shift+f"));
+        assert!(input.active_pressed_actions.iter().any(|(key, _)| key == "shift"));
+
+        trigger_hotkey_action_intern(&mut input, "shift", Pressed::No);
+        assert!(input.active_pressed_actions.iter().any(|(key, _)| key == "g"));
+        assert!(input.active_pressed_actions.iter().any(|(key, _)| key == "f"));
+        assert!(!input.active_pressed_actions.iter().any(|(key, _)| key.starts_with("shift+")));
+    }
+
+    #[test]
+    fn modifier_retargets_and_releases_controller_hotkeys() {
+        let mut input = Input::default();
+        let mut resources = Resources::default();
+        trigger_hotkey_action(&mut input, &mut resources, "b", Pressed::Yes);
+        trigger_hotkey_action(&mut input, &mut resources, "c", Pressed::Yes);
+        assert_eq!(input.active_pressed_actions_2, ["b", "c"]);
+
+        trigger_hotkey_action(&mut input, &mut resources, "shift", Pressed::Yes);
+        assert_eq!(input.active_pressed_actions_2, ["shift+b", "shift+c"]);
+
+        trigger_hotkey_action(&mut input, &mut resources, "b", Pressed::No);
+        assert_eq!(input.active_pressed_actions_2, ["shift+c"]);
+        trigger_hotkey_action(&mut input, &mut resources, "shift", Pressed::No);
+        assert_eq!(input.active_pressed_actions_2, ["c"]);
+        trigger_hotkey_action(&mut input, &mut resources, "c", Pressed::No);
+        assert!(input.active_pressed_actions_2.is_empty());
     }
 }

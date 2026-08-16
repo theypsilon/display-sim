@@ -52,6 +52,7 @@ pub fn new_glow_stub() -> GlowSafeAdapter<Context> {
 
 impl<GL: HasContext> GlowSafeAdapter<GL> {
     pub fn enable(&self, _: u32) {}
+    pub fn disable(&self, _: u32) {}
     pub fn enable_vertex_attrib_array(&self, _: u32) {}
     pub fn create_framebuffer(&self) -> Result<GL::Framebuffer, String> {
         Ok(Default::default())

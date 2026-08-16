@@ -22,20 +22,28 @@ use core::simulation_core_state::ScalingMethod;
 use core::simulation_core_state::{AnimationStep, Resources, VideoInputResources};
 use core::simulation_core_ticker::SimulationCoreTicker;
 use render::error::AppResult;
-use render::simulation_draw::SimulationDrawer;
+use render::simulation_draw::{present_to_default_framebuffer, SimulationDrawer};
 use render::simulation_render_state::{Materials, VideoInputMaterials};
+use sim_ui::{shared_panel_events, SharedPanelEvents, SimPanel, SimPanelSection};
 
+use std::cell::Cell;
 use std::fmt::Display;
+use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use glutin::event::{ElementState, Event, MouseButton, MouseScrollDelta, WindowEvent};
+use glutin::dpi::LogicalSize;
+use glutin::event::{DeviceEvent, ElementState, Event, MouseButton, WindowEvent};
 use glutin::event_loop::{ControlFlow, EventLoop};
 use glutin::monitor::MonitorHandle;
 use glutin::window::{Fullscreen, WindowBuilder};
-use glutin::{ContextBuilder, ContextError, GlProfile, GlRequest, PossiblyCurrent, Robustness, WindowedContext};
+use glutin::{ContextBuilder, GlProfile, GlRequest, PossiblyCurrent, Robustness, WindowedContext};
 
 use glow::GlowSafeAdapter;
+
+use crate::simulation_input::{browser_wheel_delta, SimulationKeyboardInput, SimulationPointerInput};
+use crate::winit_egui::WinitEguiInput;
 
 pub fn main() {
     if let Err(e) = program() {
@@ -57,11 +65,16 @@ impl RandomGenerator for NativeRnd {
 fn program() -> AppResult<()> {
     println!("Initializing Window.");
     let winit_loop = EventLoop::new();
-    let monitor = winit_loop.primary_monitor().unwrap();
-    let hidpi = monitor.scale_factor();
-    let mut window_size = monitor.size().to_logical::<f64>(hidpi);
-    window_size.width *= 0.8;
-    window_size.height *= 0.8;
+    let monitor = winit_loop.primary_monitor().or_else(|| winit_loop.available_monitors().next());
+    let window_size = if let Some(monitor) = &monitor {
+        let mut size = monitor.size().to_logical::<f64>(monitor.scale_factor());
+        size.width *= 0.8;
+        size.height *= 0.8;
+        size
+    } else {
+        println!("No monitor metadata available; using a 1280x720 window.");
+        LogicalSize::new(1280.0, 720.0)
+    };
 
     let wb = WindowBuilder::new()
         .with_inner_size(window_size)
@@ -84,7 +97,7 @@ fn program() -> AppResult<()> {
 
     let windowed_ctx = unsafe { windowed_ctx.make_current().map_err(|e| format!("Context Error: {:?}", e))? };
     let windowed_ctx = Rc::new(windowed_ctx);
-    let gl_ctx = unsafe { glow::Context::from_loader_function(|ptr| windowed_ctx.context().get_proc_address(ptr) as *const _) };
+    let gl_ctx = Arc::new(unsafe { glow::Context::from_loader_function(|ptr| windowed_ctx.context().get_proc_address(ptr) as *const _) });
     println!("Pixel format of the window's GL context: {:?}", windowed_ctx.get_pixel_format());
 
     let img_path = "www/assets/pics/frames/seiken.png";
@@ -93,6 +106,7 @@ fn program() -> AppResult<()> {
     let img_size = img.dimensions();
     let pixels = img.into_vec().into_boxed_slice();
 
+    let physical_size = windowed_ctx.window().inner_size();
     let res_input = VideoInputResources {
         steps: vec![AnimationStep { delay: 16 }],
         max_texture_size: std::i32::MAX,
@@ -105,8 +119,8 @@ fn program() -> AppResult<()> {
             height: img_size.1,
         },
         viewport_size: Size2D {
-            width: (monitor.size().width as f64 * 0.8) as u32,
-            height: (monitor.size().height as f64 * 0.8) as u32,
+            width: physical_size.width,
+            height: physical_size.height,
         },
         current_frame: 0,
         preset: None,
@@ -120,16 +134,50 @@ fn program() -> AppResult<()> {
     let mut res = Resources::default();
     res.initialize(res_input, 0.0);
     println!("Preparing materials.");
-    let materials = Materials::new(Rc::new(GlowSafeAdapter::new(gl_ctx)), materials_input)?;
+    let adapter = Rc::new(GlowSafeAdapter::from_shared(Arc::clone(&gl_ctx)));
+    let materials = Materials::new(adapter.clone(), materials_input)?;
+    let painter = egui_glow::Painter::new(gl_ctx, "", None, false).map_err(|error| format!("Could not create egui painter: {error}"))?;
 
     println!("Preparing input.");
     let input = Input::new(0.0);
+    let egui_input = WinitEguiInput::new(windowed_ctx.window());
+    let mut panel = SimPanel::new();
+    if std::env::var_os("DISPLAY_SIM_CAPTURE_UI").is_some() {
+        let section = std::env::var("DISPLAY_SIM_UI_SECTION").ok().and_then(|name| match name.as_str() {
+            "presets" => Some(SimPanelSection::Presets),
+            "image-scaling" => Some(SimPanelSection::ImageScaling),
+            "performance" => Some(SimPanelSection::Performance),
+            "colors" => Some(SimPanelSection::Colors),
+            "geometry-and-textures" => Some(SimPanelSection::GeometryAndTextures),
+            "camera" => Some(SimPanelSection::Camera),
+            "command-modifiers" => Some(SimPanelSection::CommandModifiers),
+            "webgl-settings" => Some(SimPanelSection::WebGlSettings),
+            "extra" => Some(SimPanelSection::Extra),
+            _ => None,
+        });
+        if let Some(section) = section {
+            panel.open_only(section);
+        }
+    }
+    let panel_events = shared_panel_events();
     println!("Preparing simulation context.");
-    let sim_ctx = ConcreteSimulationContext::new(NativeEventDispatcher::new(windowed_ctx.clone()), NativeRnd {});
+    let sim_ctx = ConcreteSimulationContext::new(NativeEventDispatcher::new(windowed_ctx.clone(), adapter, panel_events.clone()), NativeRnd {});
 
     let timings = Timings::new(Instant::now(), Duration::from_secs_f64(1.0 / 60.0));
 
-    let mut state = NativeSimulationState::new(sim_ctx, windowed_ctx, monitor, res, input, materials, timings);
+    let mut state = NativeSimulationState::new(
+        sim_ctx,
+        windowed_ctx,
+        monitor,
+        res,
+        input,
+        materials,
+        timings,
+        panel,
+        panel_events,
+        egui_input,
+        painter,
+    );
 
     winit_loop.run(move |event, _, control_flow| match state.iteration(event, control_flow) {
         Ok(()) => {}
@@ -143,11 +191,23 @@ fn program() -> AppResult<()> {
 struct NativeSimulationState {
     sim_ctx: ConcreteSimulationContext<NativeEventDispatcher, NativeRnd>,
     windowed_ctx: Rc<WindowedContext<PossiblyCurrent>>,
-    monitor: MonitorHandle,
+    monitor: Option<MonitorHandle>,
     res: Resources,
     input: Input,
     materials: Materials,
     timings: Timings,
+    panel: SimPanel,
+    panel_events: SharedPanelEvents,
+    egui_input: WinitEguiInput,
+    painter: Option<egui_glow::Painter>,
+    ui_capture_path: Option<PathBuf>,
+    has_simulation_frame: bool,
+    simulation_pointer: SimulationPointerInput,
+    canvas_focused: bool,
+    input_focused: bool,
+    window_focused: bool,
+    interactions_reset: bool,
+    simulation_keyboard: SimulationKeyboardInput,
 }
 
 struct Timings {
@@ -170,11 +230,15 @@ impl NativeSimulationState {
     pub fn new(
         sim_ctx: ConcreteSimulationContext<NativeEventDispatcher, NativeRnd>,
         windowed_ctx: Rc<WindowedContext<PossiblyCurrent>>,
-        monitor: MonitorHandle,
+        monitor: Option<MonitorHandle>,
         res: Resources,
         input: Input,
         materials: Materials,
         timings: Timings,
+        panel: SimPanel,
+        panel_events: SharedPanelEvents,
+        egui_input: WinitEguiInput,
+        painter: egui_glow::Painter,
     ) -> Self {
         NativeSimulationState {
             sim_ctx,
@@ -184,89 +248,275 @@ impl NativeSimulationState {
             input,
             materials,
             timings,
+            panel,
+            panel_events,
+            egui_input,
+            painter: Some(painter),
+            ui_capture_path: std::env::var_os("DISPLAY_SIM_CAPTURE_UI").map(PathBuf::from),
+            has_simulation_frame: false,
+            simulation_pointer: SimulationPointerInput::default(),
+            canvas_focused: false,
+            input_focused: false,
+            window_focused: true,
+            interactions_reset: false,
+            simulation_keyboard: SimulationKeyboardInput::default(),
         }
     }
 
-    pub fn iteration(&mut self, event: Event<()>, control_flow: &mut ControlFlow) -> Result<(), ContextError> {
+    fn set_canvas_focused(&mut self, focused: bool) {
+        if self.canvas_focused == focused {
+            return;
+        }
+        self.canvas_focused = focused;
+        self.input.push_event(InputEventValue::Keyboard {
+            pressed: Pressed::from_bool(focused),
+            key: "canvas_focused".into(),
+        });
+    }
+
+    fn set_input_focused(&mut self, focused: bool) {
+        if self.input_focused == focused {
+            return;
+        }
+        self.input_focused = focused;
+        self.input.push_event(InputEventValue::Keyboard {
+            pressed: Pressed::from_bool(focused),
+            key: "input_focused".into(),
+        });
+    }
+
+    fn release_sim_pointer(&mut self, emit_release: bool) {
+        let was_active = self.simulation_pointer.is_down() || self.sim_ctx.dispatcher_instance.cursor_hidden.get();
+        if emit_release {
+            if let Some(event) = self.simulation_pointer.release() {
+                self.input.push_event(event);
+            }
+        } else {
+            self.simulation_pointer.clear();
+        }
+        if !was_active {
+            return;
+        }
+        self.sim_ctx.dispatcher_instance.cursor_hidden.set(false);
+        if let Err(error) = self.windowed_ctx.window().set_cursor_grab(false) {
+            println!("Could not release cursor grab: {error}");
+        }
+        self.windowed_ctx.window().set_cursor_visible(true);
+    }
+
+    fn reset_interactions(&mut self) {
+        if self.interactions_reset {
+            return;
+        }
+        self.interactions_reset = true;
+        self.panel.release_all(&mut self.input);
+        self.input.push_event(InputEventValue::BlurredWindow);
+        self.simulation_keyboard.clear();
+        self.canvas_focused = false;
+        self.input_focused = false;
+        self.release_sim_pointer(false);
+    }
+
+    pub fn iteration(&mut self, event: Event<()>, control_flow: &mut ControlFlow) -> AppResult<()> {
         *control_flow = ControlFlow::Poll;
+        let frame_boundary = matches!(&event, Event::MainEventsCleared);
 
         match event {
-            Event::LoopDestroyed => return Ok(()),
-            Event::WindowEvent { ref event, .. } => match event {
-                WindowEvent::Resized(size) => {
-                    let dpi_factor = self.windowed_ctx.window().scale_factor();
-                    //self.windowed_ctx.resize(size.to_physical::<f64>(dpi_factor));
-                    self.windowed_ctx.resize(*size);
-
-                    println!("Size changed: ({}, {})", size.width, size.height);
-                    self.res.video.viewport_size.width = (size.width as f64 * dpi_factor) as u32;
-                    self.res.video.viewport_size.height = (size.height as f64 * dpi_factor) as u32;
+            Event::LoopDestroyed => {
+                if let Some(mut painter) = self.painter.take() {
+                    painter.destroy();
                 }
-                WindowEvent::KeyboardInput { input: keyevent, .. } => {
-                    if let Some(key) = keyevent.virtual_keycode {
-                        self.input.push_event(InputEventValue::Keyboard {
-                            pressed: match keyevent.state {
-                                ElementState::Pressed => Pressed::Yes,
-                                ElementState::Released => Pressed::No,
-                            },
-                            key: format!("{:?}", key),
-                        });
+                return Ok(());
+            }
+            Event::WindowEvent { ref event, .. } => {
+                if let WindowEvent::Focused(focused) = event {
+                    self.window_focused = *focused;
+                }
+                if self.window_focused {
+                    self.interactions_reset = false;
+                }
+                let panel_rect = self.panel.panel_rect();
+                self.egui_input.on_window_event(event, panel_rect);
+                let pointer_captured = self.egui_input.pointer_is_captured(panel_rect) || self.panel.context().egui_is_using_pointer();
+                match event {
+                    WindowEvent::Resized(size) => {
+                        self.windowed_ctx.resize(*size);
+                        println!("Size changed: ({}, {})", size.width, size.height);
+                        self.input.push_event(InputEventValue::ViewportResize(size.width, size.height));
                     }
-                }
-                WindowEvent::MouseInput { button, state, .. } => {
-                    if *button == MouseButton::Left {
-                        let pressed = match state {
-                            ElementState::Pressed => Pressed::Yes,
-                            ElementState::Released => Pressed::No,
-                        };
-                        self.input.push_event(InputEventValue::MouseClick(pressed));
-                        if pressed == Pressed::Yes && matches!(self.windowed_ctx.window().fullscreen(), None) {
-                            self.windowed_ctx
-                                .window()
-                                .set_fullscreen(Some(Fullscreen::Borderless(Some(self.monitor.clone()))));
+                    WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
+                        self.windowed_ctx.resize(**new_inner_size);
+                        self.input
+                            .push_event(InputEventValue::ViewportResize(new_inner_size.width, new_inner_size.height));
+                    }
+                    WindowEvent::KeyboardInput { input: keyevent, .. } => {
+                        // The web frontend has a window-level keyboard
+                        // listener, so simulation hotkeys continue to see
+                        // both presses and releases while an input is being
+                        // edited. Printable keys are paired with the following
+                        // ReceivedCharacter event so their values also follow
+                        // the active operating-system keyboard layout.
+                        if self.window_focused {
+                            for input_event in self.simulation_keyboard.on_keyboard_input(keyevent) {
+                                self.input.push_event(input_event);
+                            }
                         }
                     }
+                    WindowEvent::ReceivedCharacter(character) => {
+                        if self.window_focused {
+                            for input_event in self.simulation_keyboard.on_received_character(*character) {
+                                self.input.push_event(input_event);
+                            }
+                        }
+                    }
+                    WindowEvent::ModifiersChanged(modifiers) => {
+                        if self.window_focused {
+                            self.simulation_keyboard.on_modifiers_changed(*modifiers);
+                        }
+                    }
+                    WindowEvent::MouseInput { button, state, .. } => {
+                        if *button == MouseButton::Left {
+                            let pressed = *state == ElementState::Pressed;
+                            if let Some(input_event) = self.simulation_pointer.on_primary_button(pressed, pointer_captured || !self.window_focused) {
+                                let started = matches!(input_event, InputEventValue::MouseClick(Pressed::Yes));
+                                self.input.push_event(input_event);
+                                if started && matches!(self.windowed_ctx.window().fullscreen(), None) {
+                                    self.windowed_ctx.window().set_fullscreen(Some(Fullscreen::Borderless(self.monitor.clone())));
+                                }
+                            }
+                        }
+                    }
+                    WindowEvent::MouseWheel { delta, .. } => {
+                        if self.window_focused && !pointer_captured {
+                            self.set_canvas_focused(true);
+                            self.input.push_event(InputEventValue::MouseWheel(browser_wheel_delta(delta)));
+                        }
+                    }
+                    WindowEvent::CursorMoved { .. } => {
+                        if self.window_focused {
+                            self.set_canvas_focused(!pointer_captured);
+                        }
+                    }
+                    WindowEvent::CursorLeft { .. } => {
+                        self.set_canvas_focused(false);
+                        self.panel.release_all(&mut self.input);
+                        self.release_sim_pointer(true);
+                    }
+                    WindowEvent::Focused(false) => {
+                        self.reset_interactions();
+                    }
+                    WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+                    _ => (),
                 }
-                WindowEvent::MouseWheel { delta, .. } => {
-                    let mouse_wheel = match delta {
-                        MouseScrollDelta::LineDelta(y, ..) => *y,
-                        MouseScrollDelta::PixelDelta(position) => position.y as f32,
-                    };
-                    self.input.push_event(InputEventValue::MouseWheel(mouse_wheel));
-                }
-                WindowEvent::CursorMoved { position, .. } => {
+            }
+            Event::DeviceEvent {
+                event: DeviceEvent::MouseMotion { delta },
+                ..
+            } => {
+                // `movementX/Y` in the web frontend are relative deltas. Raw
+                // device motion is the native equivalent and remains usable
+                // while the cursor is grabbed at a window edge.
+                if self.simulation_pointer.is_down() {
                     self.input.push_event(InputEventValue::MouseMove {
-                        x: position.x as i32,
-                        y: position.y as i32,
+                        x: delta.0 as i32,
+                        y: delta.1 as i32,
                     });
                 }
-                WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-                _ => (),
-            },
+            }
+            Event::Suspended => {
+                self.window_focused = false;
+                self.egui_input.on_suspended();
+                self.reset_interactions();
+            }
+            Event::MainEventsCleared => {
+                // KeyboardInput and ReceivedCharacter are separate winit
+                // events. Flush keys for which the platform emitted no text
+                // only after the current operating-system event batch.
+                for input_event in self.simulation_keyboard.flush_pending() {
+                    self.input.push_event(input_event);
+                }
+            }
             _ => (),
         }
 
         let now = Instant::now();
-        if (now - self.timings.last_time) >= self.timings.framerate {
+        // Like requestAnimationFrame in the web frontend, process a complete
+        // operating-system event batch before running one simulation/UI frame.
+        if frame_boundary && (now - self.timings.last_time) >= self.timings.framerate {
             self.timings.last_time = now;
+            let elapsed_ms = self.timings.starting_time.elapsed().as_millis() as f64;
+            let was_panel_visible = self.panel.is_visible();
+            let raw_input = self.egui_input.take_input(elapsed_ms / 1000.0);
+            let mut egui_output = self.panel.run(raw_input, &mut self.res, &mut self.input, &self.panel_events)?;
+            self.set_input_focused(self.panel.context().egui_wants_keyboard_input());
+            if !was_panel_visible && self.panel.is_visible() {
+                self.panel.release_all(&mut self.input);
+                self.release_sim_pointer(true);
+            }
+            self.egui_input.handle_platform_output(
+                self.windowed_ctx.window(),
+                std::mem::take(&mut egui_output.platform_output),
+                self.sim_ctx.dispatcher_instance.cursor_hidden.get(),
+            );
 
-            match SimulationCoreTicker::new(&self.sim_ctx, &mut self.res, &mut self.input).tick(self.timings.starting_time.elapsed().as_millis() as f64) {
-                Ok(_) => {}
-                Err(e) => println!("Tick error: {:?}", e),
-            };
+            if !self.res.quit {
+                match SimulationCoreTicker::new(&self.sim_ctx, &mut self.res, &mut self.input).tick(elapsed_ms) {
+                    Ok(_) => {}
+                    Err(e) => println!("Tick error: {:?}", e),
+                };
+            }
 
-            if self.res.drawable {
+            let screenshot_frame = self.res.screenshot_trigger.is_triggered;
+            let reuse_simulation_for_ui_capture = self.ui_capture_path.is_some() && self.has_simulation_frame;
+            if self.res.drawable && !reuse_simulation_for_ui_capture {
                 if let Err(e) = SimulationDrawer::new(&self.sim_ctx, &mut self.materials, &self.res).draw() {
                     println!("Draw error: {:?}", e);
+                } else if self.res.video.drawing_activation {
+                    self.has_simulation_frame = true;
                 }
             }
 
-            if self.res.quit {
-                println!("User closed the simulation.");
-                *control_flow = ControlFlow::Exit;
+            // Screenshot rendering leaves the offscreen target bound. During
+            // screenshot cooldown no simulation draw happens at all. In both
+            // cases redraw the latest clean simulation image before egui.
+            if self.has_simulation_frame && (screenshot_frame || !self.res.drawable || reuse_simulation_for_ui_capture || self.res.quit) {
+                present_to_default_framebuffer(&mut self.materials, &self.res)?;
             }
 
-            self.windowed_ctx.swap_buffers()?;
+            let width = self.res.video.viewport_size.width;
+            let height = self.res.video.viewport_size.height;
+            self.materials.gl.bind_framebuffer(glow::FRAMEBUFFER, None);
+            self.materials.gl.viewport(0, 0, width as i32, height as i32);
+            if self.res.quit && !self.has_simulation_frame {
+                self.materials.gl.clear_color(0.0, 0.0, 0.0, 1.0);
+                self.materials.gl.clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
+            }
+            let primitives = self
+                .panel
+                .context()
+                .tessellate(std::mem::take(&mut egui_output.shapes), egui_output.pixels_per_point);
+            if self.ui_capture_path.is_some() {
+                println!("Composited UI capture contains {} egui paint primitives", primitives.len());
+            }
+            self.painter
+                .as_mut()
+                .expect("egui painter was destroyed before event-loop shutdown")
+                .paint_and_update_textures([width, height], egui_output.pixels_per_point, &primitives, &mut egui_output.textures_delta);
+            // egui can intentionally emit an empty first pass while it adopts
+            // the window's native scale factor. Capture the first populated
+            // pass so this developer hook always includes the overlay.
+            if !primitives.is_empty() {
+                if let Some(path) = self.ui_capture_path.take() {
+                    match capture_composited_frame(&self.materials.gl, width, height, &path) {
+                        Ok(()) => println!("Composited UI frame saved to {}", path.display()),
+                        Err(error) => println!("Composited UI frame capture failed: {error}"),
+                    }
+                }
+            }
+            self.materials.gl.disable(glow::BLEND);
+            self.materials.gl.enable(glow::DEPTH_TEST);
+
+            self.windowed_ctx.swap_buffers().map_err(|error| format!("Swap buffers failed: {error}"))?;
         }
         Ok(())
     }
@@ -274,18 +524,30 @@ impl NativeSimulationState {
 
 struct NativeEventDispatcher {
     video_ctx: Rc<WindowedContext<PossiblyCurrent>>,
+    gl: Rc<GlowSafeAdapter<glow::Context>>,
+    panel_events: SharedPanelEvents,
+    extra_messages_enabled: Cell<bool>,
+    cursor_hidden: Cell<bool>,
 }
 
 impl NativeEventDispatcher {
-    pub fn new(video_ctx: Rc<WindowedContext<PossiblyCurrent>>) -> Self {
-        NativeEventDispatcher { video_ctx }
+    pub fn new(video_ctx: Rc<WindowedContext<PossiblyCurrent>>, gl: Rc<GlowSafeAdapter<glow::Context>>, panel_events: SharedPanelEvents) -> Self {
+        NativeEventDispatcher {
+            video_ctx,
+            gl,
+            panel_events,
+            extra_messages_enabled: Cell::new(false),
+            cursor_hidden: Cell::new(false),
+        }
     }
 }
 
 impl AppEventDispatcher for NativeEventDispatcher {
-    fn enable_extra_messages(&self, _: bool) {}
+    fn enable_extra_messages(&self, enabled: bool) {
+        self.extra_messages_enabled.set(enabled);
+    }
     fn are_extra_messages_enabled(&self) -> bool {
-        false
+        self.extra_messages_enabled.get()
     }
     fn dispatch_log(&self, msg: String) {
         println!("log: {}", msg);
@@ -334,34 +596,134 @@ impl AppEventDispatcher for NativeEventDispatcher {
     }
     fn dispatch_toggle_info_panel(&self) {
         println!("toggle_info_panel");
+        self.panel_events.borrow_mut().request_toggle();
     }
     fn dispatch_fps(&self, fps: f32) {
         println!("frames in 20 seconds: {}", fps);
+        self.panel_events.borrow_mut().set_fps(fps);
     }
     fn dispatch_request_fullscreen(&self) {
         println!("request_fullscreen");
     }
     fn dispatch_request_pointer_lock(&self) {
         println!("request_pointer_lock");
+        if let Err(error) = self.video_ctx.window().set_cursor_grab(true) {
+            println!("Could not grab cursor: {error}");
+        }
+        self.cursor_hidden.set(true);
         self.video_ctx.window().set_cursor_visible(false);
     }
     fn dispatch_exit_pointer_lock(&self) {
         println!("exit_pointer_lock");
+        if let Err(error) = self.video_ctx.window().set_cursor_grab(false) {
+            println!("Could not release cursor grab: {error}");
+        }
+        self.cursor_hidden.set(false);
         self.video_ctx.window().set_cursor_visible(true);
     }
-    fn dispatch_screenshot(&self, _: i32, _: i32, _: &mut [u8]) -> AppResult<()> {
-        Ok(())
+    fn dispatch_screenshot(&self, width: i32, height: i32, pixels: &mut [u8]) -> AppResult<()> {
+        let result = (|| {
+            if width <= 0 || height <= 0 {
+                return Err(format!("invalid screenshot size {width}x{height}").into());
+            }
+            self.gl.read_pixels(0, 0, width, height, glow::RGBA, glow::UNSIGNED_BYTE, pixels);
+            flip_rgba_rows(pixels, width as usize, height as usize)?;
+            let path = next_screenshot_path(Path::new("."));
+            image::save_buffer(&path, pixels, width as u32, height as u32, image::ColorType::Rgba8)
+                .map_err(|error| format!("could not save {}: {error}", path.display()))?;
+            Ok(path)
+        })();
+
+        match result {
+            Ok(path) => {
+                println!("Screenshot saved to {}", path.display());
+                self.panel_events.borrow_mut().push_message("Screenshot saved.");
+                Ok(())
+            }
+            Err(error) => {
+                let message = format!("Screenshot failed: {error}");
+                println!("{message}");
+                self.panel_events.borrow_mut().push_message(message);
+                Err(error)
+            }
+        }
     }
     fn dispatch_change_camera_movement_mode(&self, locked_mode: CameraLockMode) {
         println!("change_camera_movement_mode: {}", locked_mode);
     }
     fn dispatch_top_message(&self, message: &str) {
         println!("top_message: {}", message);
+        self.panel_events.borrow_mut().push_message(message);
     }
     fn dispatch_minimum_value(&self, value: &dyn Display) {
         println!("minimum: {}", value);
+        self.panel_events.borrow_mut().push_message(format!("Minimum: {value}"));
     }
     fn dispatch_maximum_value(&self, value: &dyn Display) {
         println!("maximum: {}", value);
+        self.panel_events.borrow_mut().push_message(format!("Maximum: {value}"));
+    }
+}
+
+fn flip_rgba_rows(pixels: &mut [u8], width: usize, height: usize) -> AppResult<()> {
+    let row_len = width.checked_mul(4).ok_or_else(|| "screenshot row size overflow".to_string())?;
+    let expected = row_len.checked_mul(height).ok_or_else(|| "screenshot buffer size overflow".to_string())?;
+    if pixels.len() != expected {
+        return Err(format!("screenshot buffer has {} bytes, expected {expected}", pixels.len()).into());
+    }
+    for y in 0..height / 2 {
+        let opposite = height - 1 - y;
+        for x in 0..row_len {
+            pixels.swap(y * row_len + x, opposite * row_len + x);
+        }
+    }
+    Ok(())
+}
+
+fn next_screenshot_path(directory: &Path) -> PathBuf {
+    for index in 1_u64.. {
+        let path = directory.join(format!("screenshot-{index}.png"));
+        if !path.exists() {
+            return path;
+        }
+    }
+    unreachable!("the screenshot index space was exhausted")
+}
+
+fn capture_composited_frame(gl: &GlowSafeAdapter<glow::Context>, width: u32, height: u32, path: &Path) -> AppResult<()> {
+    if width == 0 || height == 0 {
+        return Err(format!("invalid UI capture size {width}x{height}").into());
+    }
+    let len = (width as usize)
+        .checked_mul(height as usize)
+        .and_then(|pixels| pixels.checked_mul(4))
+        .ok_or_else(|| "UI capture buffer size overflow".to_string())?;
+    let mut pixels = vec![0; len];
+    gl.read_pixels(0, 0, width as i32, height as i32, glow::RGBA, glow::UNSIGNED_BYTE, &mut pixels);
+    flip_rgba_rows(&mut pixels, width as usize, height as usize)?;
+    image::save_buffer(path, &pixels, width, height, image::ColorType::Rgba8).map_err(|error| format!("could not save {}: {error}", path.display()))?;
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn flips_screenshot_rows() {
+        let mut pixels = vec![1, 2, 3, 4, 5, 6, 7, 8];
+        flip_rgba_rows(&mut pixels, 1, 2).unwrap();
+        assert_eq!(pixels, vec![5, 6, 7, 8, 1, 2, 3, 4]);
+    }
+
+    #[test]
+    fn screenshot_names_do_not_collide() {
+        let directory = std::env::temp_dir().join(format!("display-sim-screenshot-test-{}", std::process::id()));
+        std::fs::create_dir_all(&directory).unwrap();
+        let first = directory.join("screenshot-1.png");
+        std::fs::write(&first, []).unwrap();
+        assert_eq!(next_screenshot_path(&directory), directory.join("screenshot-2.png"));
+        std::fs::remove_file(first).unwrap();
+        std::fs::remove_dir(directory).unwrap();
     }
 }

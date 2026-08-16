@@ -20,6 +20,7 @@ use core::app_events::AppEventDispatcher;
 use core::camera::CameraLockMode;
 use core::simulation_core_state::ScalingMethod;
 use js_sys::Float32Array;
+use sim_ui::SharedPanelEvents;
 use std::cell::RefCell;
 use std::fmt::Display;
 use wasm_bindgen::JsValue;
@@ -30,15 +31,17 @@ pub struct WebEventDispatcher {
     extra_messages_enabled: RefCell<bool>,
     gl: WebGl2RenderingContext,
     event_bus: JsValue,
+    panel_events: SharedPanelEvents,
 }
 
 impl WebEventDispatcher {
-    pub fn new(gl: WebGl2RenderingContext, event_bus: JsValue) -> Self {
+    pub fn new(gl: WebGl2RenderingContext, event_bus: JsValue, panel_events: SharedPanelEvents) -> Self {
         WebEventDispatcher {
             error: Default::default(),
             extra_messages_enabled: RefCell::new(true),
             gl,
             event_bus,
+            panel_events,
         }
     }
 }
@@ -156,9 +159,11 @@ impl AppEventDispatcher for WebEventDispatcher {
         self.catch_error(dispatch_event(&self.event_bus, "back2front:exiting_session"));
     }
     fn dispatch_toggle_info_panel(&self) {
+        self.panel_events.borrow_mut().request_toggle();
         self.catch_error(dispatch_event(&self.event_bus, "back2front:toggle_info_panel"));
     }
     fn dispatch_fps(&self, fps: f32) {
+        self.panel_events.borrow_mut().set_fps(fps);
         self.catch_error(dispatch_event_with(&self.event_bus, "back2front:fps", &fps.into()));
     }
 
@@ -196,6 +201,7 @@ impl AppEventDispatcher for WebEventDispatcher {
     }
 
     fn dispatch_top_message(&self, message: &str) {
+        self.panel_events.borrow_mut().push_message(message);
         self.catch_error(dispatch_event_with(&self.event_bus, "back2front:top_message", &message.into()));
     }
 

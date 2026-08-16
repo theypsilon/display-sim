@@ -25,6 +25,7 @@ import {Observable, ObserverCb} from "../../services/observable";
 import {BackendEvent} from "../../services/event_types";
 import {Action} from "../../services/action";
 import {Disposable} from "../../services/disposable";
+import {BrowserKeyState, normalizeWheelDelta, OneFramePulseState, PrimaryPointerState} from './interaction_contract';
 
 interface Channels {
     front: PubSub<BackendMessage>;
@@ -80,6 +81,7 @@ async function setupPage (root: ShadowRoot, state: SimViewData): Promise<Disposa
 async function show (template: SimTemplate, view_model: SimViewModel, model: SimModel, events: SimTemplateEvents, backendObservable: Observable<BackendMessage>, backendEmitter: Action<BackendMessage>): Promise<Disposable> {
 
     view_model.init(await model.load());
+    const pulses = new OneFramePulseState();
 
     async function fireBackendEvent (kind: string, message?: any) {
         const type = 'front2back:' + kind;
@@ -88,14 +90,20 @@ async function show (template: SimTemplate, view_model: SimViewModel, model: Sim
         log_event(type, message);
     }
 
-    async function fireKeyboardEvent ({ pressed, key, timeout }: {pressed: boolean, key: string, timeout?: number}) {
+    async function fireKeyboardEvent ({ pressed, key }: {pressed: boolean, key: string}) {
         await fireBackendEvent('keyboard', { pressed, key });
-        if (pressed && timeout) {
-            setTimeout(() => {
-                Logger.log('Expired keydown for: ' + key);
-                fireKeyboardEvent({ pressed: false, key });
-            }, timeout);
-        }
+    }
+
+    async function fireKeyboardPulse (key: string) {
+        const generation = pulses.begin(key);
+        await fireKeyboardEvent({ pressed: true, key });
+        window.requestAnimationFrame(() => {
+            if (!pulses.finish(key, generation)) {
+                return;
+            }
+            Logger.log('Released one-frame keydown for: ' + key);
+            void fireKeyboardEvent({ pressed: false, key });
+        });
     }
 
     const subscriptions: Disposable[] = [];
@@ -121,13 +129,12 @@ async function show (template: SimTemplate, view_model: SimViewModel, model: Sim
             return handleWebGLKeys(msg, model, view_model);
         }
         let pressed;
-        let timeout;
         switch (msg.action) {
-            case 'keyboth': timeout = 250; // fall through
+            case 'keyboth': return fireKeyboardPulse(msg.key);
             case 'keydown': pressed = true; break;
             case 'keyup': pressed = false; break;
         }
-        return fireKeyboardEvent({ pressed, key: msg.key, timeout });
+        return fireKeyboardEvent({ pressed, key: msg.key });
     }));
 
     // Listening backend events
@@ -144,7 +151,7 @@ async function show (template: SimTemplate, view_model: SimViewModel, model: Sim
         case 'back2front:toggle_info_panel': return view_model.toggleInfoPanel();
         case 'back2front:fps': return view_model.changeFps(msg);
         case 'back2front:exit_pointer_lock': return view_model.exitPointerLock();
-        case 'back2front:exiting_session': return view_model.exitingSession();
+        case 'back2front:exiting_session': return Logger.log('Simulation session ended.');
         case 'back2front:change_camera_movement_mode': return view_model.changeCameraMovementMode(msg);
         case 'back2front:change_camera_zoom': return view_model.changeCameraZoom(msg);
         case 'back2front:change_pixel_width': return view_model.changePixelWidth(msg);
@@ -186,12 +193,49 @@ async function show (template: SimTemplate, view_model: SimViewModel, model: Sim
         case 'back2front:rgb_blue_r': return view_model.changeColorRgb(msg, 'blue', 'r');
         case 'back2front:rgb_blue_g': return view_model.changeColorRgb(msg, 'blue', 'g');
         case 'back2front:rgb_blue_b': return view_model.changeColorRgb(msg, 'blue', 'b');
+        case 'back2front:ui-copy': return writeSystemClipboard(msg);
+        case 'back2front:ui-cursor': canvas.style.setProperty('cursor', msg);
+        case 'back2front:ui-ime': return updateImeAgent(msg);
         default: throw new Error('Not covered following event: ' + e.type + ' ' + e.toString());
         }
     }));
 
     const canvasListener = template.getCanvasListener(state);
     const windowListener = template.getWindowListener();
+    const canvas = template.getCanvas(state);
+    const imeAgent = template.getImeAgent(state);
+    let imeActive = false;
+    let composing = false;
+    let pendingKeyText: string | null = null;
+
+    async function writeSystemClipboard (text: string) {
+        try {
+            await windowListener.navigator.clipboard.writeText(text);
+        } catch (error) {
+            // Clipboard permission can be denied outside a secure context.
+            // Keep a standards-compatible fallback for local development.
+            const priorValue = imeAgent.value;
+            imeAgent.value = text;
+            imeAgent.select();
+            document.execCommand('copy');
+            imeAgent.value = priorValue;
+            Logger.log('Clipboard API fallback used:', error);
+        }
+    }
+
+    function updateImeAgent ({active, x = 0, y = 0}: {active: boolean, x?: number, y?: number}) {
+        imeActive = active;
+        imeAgent.style.setProperty('left', `${x}px`);
+        imeAgent.style.setProperty('top', `${y}px`);
+        if (active) {
+            if (document.activeElement !== imeAgent) {
+                imeAgent.focus({preventScroll: true});
+            }
+        } else if (document.activeElement === imeAgent) {
+            imeAgent.blur();
+            canvas.focus({preventScroll: true});
+        }
+    }
 
     // frame loop on frontend
     let newFrameId: number;
@@ -201,8 +245,8 @@ async function show (template: SimTemplate, view_model: SimViewModel, model: Sim
         newFrameId = windowListener.requestAnimationFrame(requestNewFrame);
     })();
 
-    const listeners: {eventBus: Node | Window, type: string, callback: EventListenerOrEventListenerObject, options: EventListenerOptions | boolean}[] = [];
-    function addDomListener (eventBus: Node | Window, type: string, cb: BackendEvent, options?: (EventListenerOptions | boolean)) {
+    const listeners: {eventBus: Node | Window, type: string, callback: EventListenerOrEventListenerObject, options: AddEventListenerOptions | boolean}[] = [];
+    function addDomListener (eventBus: Node | Window, type: string, cb: BackendEvent, options?: (AddEventListenerOptions | boolean)) {
         options = options || false;
         const callback = cb as EventListenerOrEventListenerObject;
         eventBus.addEventListener(type, callback, options);
@@ -210,23 +254,253 @@ async function show (template: SimTemplate, view_model: SimViewModel, model: Sim
     }
 
     // Forwarding other events so they can be readed by the backend
-    addDomListener(windowListener, 'keydown', e => fireKeyboardEvent({ pressed: true, key: e.key }));
-    addDomListener(windowListener, 'keyup', e => fireKeyboardEvent({ pressed: false, key: e.key }));
+    const keyboardState = new BrowserKeyState();
+    const simPointer = new PrimaryPointerState();
+    let inputsReset = false;
+    let canvasFocused = false;
+
+    function pointerIsLocked () {
+        const legacyDocument = document as Document & {mozPointerLockElement?: Element | null};
+        return document.pointerLockElement !== null || legacyDocument.mozPointerLockElement != null;
+    }
+
+    function markInputsActive () {
+        if (!document.hidden && document.hasFocus()) {
+            inputsReset = false;
+        }
+    }
+
+    function forwardPhysicalKey (pressed: boolean, e: Parameters<BackendEvent>[0]) {
+        markInputsActive();
+        const key = pressed
+            ? keyboardState.press(e.code, e.key, e.location)
+            : keyboardState.release(e.code, e.key, e.location);
+        return key === undefined ? Promise.resolve() : fireKeyboardEvent({ pressed, key });
+    }
+
+    function releaseSimPointer (button?: number) {
+        const released = button === undefined ? simPointer.cancel() : simPointer.release(button);
+        if (!released) {
+            return Promise.resolve();
+        }
+        return fireBackendEvent('mouse-click', false);
+    }
+
+    function setCanvasFocused (focused: boolean) {
+        if (canvasFocused === focused) {
+            return Promise.resolve();
+        }
+        canvasFocused = focused;
+        return fireKeyboardEvent({ pressed: focused, key: 'canvas_focused' });
+    }
+
+    async function resetInteractions () {
+        if (inputsReset) {
+            return;
+        }
+        inputsReset = true;
+        canvasFocused = false;
+        simPointer.reset();
+        pulses.clear();
+        keyboardState.clear();
+        model.uiEvent('pointer-gone', {});
+        await template.releaseHeldActions();
+        await fireBackendEvent('blurred-window');
+    }
+
+    const isMac = /Mac|iPhone|iPad|iPod/.test(windowListener.navigator.platform);
+    function modifierPayload (e: Parameters<BackendEvent>[0]) {
+        return {
+            altKey: e.altKey,
+            ctrlKey: e.ctrlKey,
+            shiftKey: e.shiftKey,
+            macCommand: isMac && e.metaKey,
+            command: isMac ? e.metaKey : e.ctrlKey
+        };
+    }
+
+    function pointerPayload (e: Parameters<BackendEvent>[0]) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top,
+            ...modifierPayload(e)
+        };
+    }
+
+    function pointerIsInsideCanvas (e: Parameters<BackendEvent>[0]) {
+        const rect = canvas.getBoundingClientRect();
+        return e.clientX >= rect.left && e.clientX < rect.right
+            && e.clientY >= rect.top && e.clientY < rect.bottom;
+    }
+
+    function updateCanvasFocusFromPointer (e: Parameters<BackendEvent>[0]) {
+        const overSimulation = (pointerIsLocked() || pointerIsInsideCanvas(e)) && !model.uiCapturesPointer();
+        return setCanvasFocused(overSimulation);
+    }
+
+    function sendUiKey (pressed: boolean, e: Parameters<BackendEvent>[0]) {
+        model.uiEvent('key', {
+            pressed,
+            repeat: e.repeat,
+            code: e.code,
+            key: e.key,
+            ...modifierPayload(e)
+        });
+        if (pressed && !e.repeat && !e.isComposing && e.key.length === 1 && !e.ctrlKey && !e.metaKey && model.uiWantsKeyboard()) {
+            pendingKeyText = e.key;
+            model.uiEvent('text', {text: e.key});
+            windowListener.setTimeout(() => {
+                if (pendingKeyText === e.key) {
+                    pendingKeyText = null;
+                }
+            }, 0);
+        }
+        const shadowActiveElement = canvas.getRootNode() instanceof ShadowRoot
+            ? (canvas.getRootNode() as ShadowRoot).activeElement
+            : document.activeElement;
+        if (model.uiWantsKeyboard() || shadowActiveElement === canvas || shadowActiveElement === imeAgent) {
+            e.preventDefault();
+        }
+    }
+
+    addDomListener(windowListener, 'keydown', e => {
+        sendUiKey(true, e);
+        return forwardPhysicalKey(true, e);
+    });
+    addDomListener(windowListener, 'keyup', e => {
+        sendUiKey(false, e);
+        return forwardPhysicalKey(false, e);
+    });
+    addDomListener(canvasListener, 'pointerdown', e => {
+        markInputsActive();
+        canvas.focus({preventScroll: true});
+        const pointer = pointerPayload(e);
+        model.uiEvent('pointer-moved', pointer);
+        model.uiEvent('pointer-button', {...pointer, button: e.button, pressed: true});
+        void updateCanvasFocusFromPointer(e);
+        if (model.uiCapturesPointer()) {
+            try {
+                canvas.setPointerCapture((e as unknown as PointerEvent).pointerId);
+            } catch (_) {
+                // Synthetic events and pointer-lock transitions may not own a
+                // capturable browser pointer.
+            }
+        }
+    });
     addDomListener(canvasListener, 'mousedown', async e => {
-        if (e.buttons === 1) {
+        markInputsActive();
+        if (model.uiCapturesPointer()) {
+            return;
+        }
+        if (simPointer.press(e.button, e.buttons)) {
             await fireBackendEvent('mouse-click', true);
             model.runFrame(); // Needed so Firefox can go fullscreen during the scope of this event handler, otherwise the request is rejected.
         }
     });
-    addDomListener(windowListener, 'mouseup', () => fireBackendEvent('mouse-click', false)); // note this one goes to 'window'. It doesn't work with 'canvas' because of some obscure bug I didn't figure out yet.
-    addDomListener(windowListener, 'mousemove', e => fireBackendEvent('mouse-move', { x: e.movementX, y: e.movementY }));
-    addDomListener(canvasListener, 'mousewheel', e => fireBackendEvent('mouse-wheel', e.deltaY));
-    addDomListener(canvasListener, 'blur', () => fireBackendEvent('blurred-window'));
-    addDomListener(canvasListener, 'mouseover', () => fireKeyboardEvent({ pressed: true, key: 'canvas_focused' }));
-    addDomListener(canvasListener, 'mouseout', () => fireKeyboardEvent({ pressed: false, key: 'canvas_focused' }));
+    addDomListener(windowListener, 'pointerup', async e => {
+        const pointer = pointerPayload(e);
+        model.uiEvent('pointer-moved', pointer);
+        model.uiEvent('pointer-button', {...pointer, button: e.button, pressed: false});
+        try {
+            canvas.releasePointerCapture((e as unknown as PointerEvent).pointerId);
+        } catch (_) {}
+        await releaseSimPointer(e.button);
+        await updateCanvasFocusFromPointer(e);
+    });
+    addDomListener(windowListener, 'pointercancel', e => {
+        model.uiEvent('pointer-gone', {});
+        void setCanvasFocused(false);
+        return releaseSimPointer(e.button);
+    });
+    addDomListener(windowListener, 'pointermove', e => {
+        model.uiEvent('pointer-moved', pointerPayload(e));
+        void updateCanvasFocusFromPointer(e);
+        if (simPointer.isDown()) {
+            void fireBackendEvent('mouse-move', { x: e.movementX, y: e.movementY });
+        }
+    });
+    addDomListener(canvasListener, 'wheel', async e => {
+        e.preventDefault();
+        markInputsActive();
+        model.uiEvent('pointer-moved', pointerPayload(e));
+        model.uiEvent('wheel', {
+            deltaX: e.deltaX,
+            deltaY: e.deltaY,
+            deltaMode: e.deltaMode,
+            ...modifierPayload(e)
+        });
+        await updateCanvasFocusFromPointer(e);
+        if (model.uiCapturesPointer()) {
+            return;
+        }
+        await setCanvasFocused(true);
+        await fireBackendEvent('mouse-wheel', normalizeWheelDelta(e.deltaY, e.deltaMode, windowListener.innerHeight));
+    }, {passive: false});
+    addDomListener(canvasListener, 'contextmenu', e => {
+        if (model.uiCapturesPointer()) {
+            e.preventDefault();
+        }
+    });
+    addDomListener(imeAgent, 'beforeinput', e => {
+        if (composing || !imeActive || e.inputType !== 'insertText' || !e.data) {
+            return;
+        }
+        e.preventDefault();
+        if (pendingKeyText === e.data) {
+            pendingKeyText = null;
+            return;
+        }
+        model.uiEvent('text', {text: e.data});
+    });
+    addDomListener(imeAgent, 'compositionstart', () => {
+        composing = true;
+    });
+    addDomListener(imeAgent, 'compositionend', e => {
+        composing = false;
+        imeAgent.value = '';
+        if (e.data) {
+            // winit 0.26 exposes committed text but no portable pre-edit
+            // stream. Commit-only delivery on both adapters avoids a false
+            // platform distinction while retaining dead-key/IME input.
+            model.uiEvent('text', {text: e.data});
+        }
+    });
+    addDomListener(imeAgent, 'paste', e => {
+        e.preventDefault();
+        model.uiEvent('paste', {text: e.clipboardData?.getData('text/plain') || ''});
+    });
+    addDomListener(windowListener, 'blur', async () => {
+        model.uiEvent('focus', {focused: false});
+        await resetInteractions();
+    });
+    addDomListener(windowListener, 'focus', () => {
+        model.uiEvent('focus', {focused: true});
+        markInputsActive();
+    });
+    addDomListener(document, 'visibilitychange', () => document.hidden ? resetInteractions() : markInputsActive());
+    addDomListener(windowListener, 'pagehide', () => resetInteractions());
+    const pointerLockChanged = () => pointerIsLocked() ? Promise.resolve() : releaseSimPointer();
+    addDomListener(document, 'pointerlockchange', pointerLockChanged);
+    addDomListener(document, 'mozpointerlockchange', pointerLockChanged);
+    addDomListener(canvasListener, 'mouseenter', e => {
+        markInputsActive();
+        model.uiEvent('pointer-moved', pointerPayload(e));
+        return updateCanvasFocusFromPointer(e);
+    });
+    addDomListener(canvasListener, 'mouseleave', async () => {
+        await setCanvasFocused(false);
+        if (!pointerIsLocked()) {
+            model.uiEvent('pointer-gone', {});
+            await releaseSimPointer();
+        }
+    });
     addDomListener(windowListener, 'resize', () => fireBackendEvent('viewport-resize', model.resizeCanvas()));
 
     return Disposable.make(() => {
+        pulses.clear();
+        keyboardState.clear();
+        void template.releaseHeldActions();
         windowListener.cancelAnimationFrame(newFrameId);
         model.unloadSimulation();
         listeners.forEach(({ eventBus, type, callback, options }) => eventBus.removeEventListener(type, callback, options));

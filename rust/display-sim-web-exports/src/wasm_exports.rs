@@ -19,7 +19,10 @@ use js_sys::Uint8Array;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 use crate::console;
-use crate::web_entrypoint::{print_error, web_load, web_run_frame, web_unload, InputOutput};
+use crate::web_entrypoint::{
+    print_error, web_load, web_run_frame, web_set_ui_metrics, web_ui_captures_pointer, web_ui_event, web_ui_message, web_ui_wants_keyboard, web_unload,
+    InputOutput,
+};
 use app_util::AppResult;
 use core::general_types::Size2D;
 use core::simulation_core_state::{AnimationStep, Resources, VideoInputResources};
@@ -69,6 +72,44 @@ impl WasmApp {
         } else {
             console!(error. "State not yet initialized!");
             false
+        }
+    }
+
+    /// Supplies browser window metrics in physical pixels plus the browser's
+    /// device-pixel ratio, mirroring the native viewport adapter.
+    #[wasm_bindgen]
+    pub fn set_ui_metrics(&mut self, width: u32, height: u32, pixels_per_point: f32) {
+        if let Some(ref mut io) = self.io {
+            web_set_ui_metrics(io, width, height, pixels_per_point);
+        }
+    }
+
+    /// Queues one normalized browser event for the shared egui panel.
+    #[wasm_bindgen]
+    pub fn ui_event(&mut self, kind: String, value: JsValue) {
+        if let Some(ref mut io) = self.io {
+            handle_result(web_ui_event(io, &kind, &value));
+        }
+    }
+
+    /// Synchronous capture queries let JavaScript decide whether the same
+    /// physical event should also be forwarded to the simulation canvas.
+    #[wasm_bindgen]
+    pub fn ui_captures_pointer(&self) -> bool {
+        self.io.as_ref().map(web_ui_captures_pointer).unwrap_or(false)
+    }
+
+    #[wasm_bindgen]
+    pub fn ui_wants_keyboard(&self) -> bool {
+        self.io.as_ref().map(web_ui_wants_keyboard).unwrap_or(false)
+    }
+
+    /// Reports completion of an asynchronous host operation, such as the
+    /// browser's PNG encoding/download step, back to the shared panel.
+    #[wasm_bindgen]
+    pub fn ui_message(&mut self, message: String) {
+        if let Some(ref mut io) = self.io {
+            web_ui_message(io, &message);
         }
     }
 

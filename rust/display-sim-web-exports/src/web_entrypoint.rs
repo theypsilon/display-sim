@@ -15,10 +15,13 @@
 
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::sync::Arc;
 use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
 use web_sys::WebGl2RenderingContext;
 
 use crate::console;
+use crate::dispatch_event::dispatch_event_with;
+use crate::web_egui_input::WebEguiInput;
 use crate::web_events::WebEventDispatcher;
 use crate::web_utils::now;
 use app_util::{AppError, AppResult};
@@ -29,8 +32,9 @@ use core::simulation_core_state::{KeyEventKind, Resources, VideoInputResources};
 use core::simulation_core_ticker::SimulationCoreTicker;
 use core::ui_controller::EncodedValue;
 use glow::GlowSafeAdapter;
-use render::simulation_draw::SimulationDrawer;
+use render::simulation_draw::{present_to_default_framebuffer, SimulationDrawer};
 use render::simulation_render_state::{Materials, VideoInputMaterials};
+use sim_ui::{shared_panel_events, SharedPanelEvents, SimPanel};
 
 type OwnedClosure = Closure<dyn FnMut(JsValue)>;
 
@@ -41,6 +45,14 @@ pub(crate) struct InputOutput {
     event_bus: JsValue,
     webgl: WebGl2RenderingContext,
     events: Rc<RefCell<Vec<JsValue>>>,
+    panel: SimPanel,
+    panel_events: SharedPanelEvents,
+    egui_input: WebEguiInput,
+    painter: egui_glow::Painter,
+    input_focused: bool,
+    last_cursor: Option<egui::CursorIcon>,
+    last_ime: Option<egui::output::IMEOutput>,
+    has_simulation_frame: bool,
 }
 
 pub(crate) fn web_load(
@@ -51,7 +63,10 @@ pub(crate) fn web_load(
     input_materials: VideoInputMaterials,
 ) -> AppResult<InputOutput> {
     let webgl = webgl.dyn_into::<WebGl2RenderingContext>()?;
-    let gl = Rc::new(GlowSafeAdapter::new(glow::Context::from_webgl2_context(webgl.clone())));
+    let gl_context = Arc::new(glow::Context::from_webgl2_context(webgl.clone()));
+    let gl = Rc::new(GlowSafeAdapter::from_shared(Arc::clone(&gl_context)));
+    let painter = egui_glow::Painter::new(gl_context, "", None, false).map_err(|error| format!("Could not create web egui painter: {error}"))?;
+    let panel_events = shared_panel_events();
 
     res.initialize(input_resources, now()?);
     let (events, event_bus_subscriber) = set_event_listeners(event_bus.clone())?;
@@ -62,14 +77,23 @@ pub(crate) fn web_load(
         webgl,
         event_bus_subscriber,
         events,
+        panel: SimPanel::new(),
+        panel_events,
+        egui_input: WebEguiInput::default(),
+        painter,
+        input_focused: false,
+        last_cursor: None,
+        last_ime: None,
+        has_simulation_frame: false,
     })
 }
 
-pub(crate) fn web_unload(io: InputOutput) -> AppResult<()> {
+pub(crate) fn web_unload(mut io: InputOutput) -> AppResult<()> {
     let unsubscribe = js_sys::Reflect::get(&io.event_bus, &"unsubscribe".into())?.dyn_into::<js_sys::Function>()?;
     let args = js_sys::Array::new();
     args.push(io.event_bus_subscriber.as_ref().unchecked_ref());
     unsubscribe.apply(&io.event_bus, &args)?;
+    io.painter.destroy();
     Ok(())
 }
 
@@ -77,10 +101,137 @@ pub(crate) fn web_run_frame(res: &mut Resources, io: &mut InputOutput) -> AppRes
     for event in io.events.borrow_mut().drain(0..) {
         read_frontend_event(&mut io.input, res, event)?;
     }
-    let ctx = ConcreteSimulationContext::new(WebEventDispatcher::new(io.webgl.clone(), io.event_bus.clone()), WebRnd {});
-    let condition = tick(&ctx, &mut io.input, res, &mut io.materials)?;
+    let frame_now = now()?;
+    let raw_input = io.egui_input.take_input(frame_now / 1000.0);
+    let mut egui_output = io.panel.run(raw_input, res, &mut io.input, &io.panel_events)?;
+    let input_focused = io.panel.context().egui_wants_keyboard_input();
+    if input_focused != io.input_focused {
+        io.input_focused = input_focused;
+        io.input.push_event(InputEventValue::Keyboard {
+            pressed: Pressed::from_bool(input_focused),
+            key: "input_focused".into(),
+        });
+    }
+    handle_platform_output(io, &mut egui_output.platform_output)?;
+
+    let ctx = ConcreteSimulationContext::new(
+        WebEventDispatcher::new(io.webgl.clone(), io.event_bus.clone(), io.panel_events.clone()),
+        WebRnd {},
+    );
+    let (condition, drew_simulation) = tick(&ctx, &mut io.input, res, &mut io.materials)?;
+    io.has_simulation_frame |= drew_simulation;
     ctx.dispatcher_instance.check_error()?;
+
+    if condition {
+        if res.quit && io.has_simulation_frame {
+            present_to_default_framebuffer(&mut io.materials, res)?;
+        }
+        let width = res.video.viewport_size.width;
+        let height = res.video.viewport_size.height;
+        io.materials.gl.bind_framebuffer(glow::FRAMEBUFFER, None);
+        io.materials.gl.viewport(0, 0, width as i32, height as i32);
+        if res.quit && !io.has_simulation_frame {
+            io.materials.gl.clear_color(0.0, 0.0, 0.0, 1.0);
+            io.materials.gl.clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
+        }
+        let primitives = io
+            .panel
+            .context()
+            .tessellate(std::mem::take(&mut egui_output.shapes), egui_output.pixels_per_point);
+        io.painter
+            .paint_and_update_textures([width, height], egui_output.pixels_per_point, &primitives, &mut egui_output.textures_delta);
+        io.materials.gl.disable(glow::BLEND);
+        io.materials.gl.enable(glow::DEPTH_TEST);
+    } else {
+        egui_output.drop_without_applying_deltas();
+    }
     Ok(condition)
+}
+
+pub(crate) fn web_set_ui_metrics(io: &mut InputOutput, width: u32, height: u32, pixels_per_point: f32) {
+    io.egui_input.set_metrics(width, height, pixels_per_point);
+}
+
+pub(crate) fn web_ui_event(io: &mut InputOutput, kind: &str, value: &JsValue) -> AppResult<()> {
+    io.egui_input.on_event(kind, value, io.panel.panel_rect())
+}
+
+pub(crate) fn web_ui_captures_pointer(io: &InputOutput) -> bool {
+    io.egui_input.pointer_is_captured(io.panel.panel_rect()) || io.panel.context().egui_is_using_pointer()
+}
+
+pub(crate) fn web_ui_wants_keyboard(io: &InputOutput) -> bool {
+    io.panel.context().egui_wants_keyboard_input()
+}
+
+pub(crate) fn web_ui_message(io: &mut InputOutput, message: &str) {
+    io.panel_events.borrow_mut().push_message(message);
+}
+
+fn handle_platform_output(io: &mut InputOutput, output: &mut egui::PlatformOutput) -> AppResult<()> {
+    for command in std::mem::take(&mut output.commands) {
+        if let egui::OutputCommand::CopyText(text) = command {
+            dispatch_event_with(&io.event_bus, "back2front:ui-copy", &text.into())?;
+        }
+    }
+
+    if io.last_cursor != Some(output.cursor_icon) {
+        io.last_cursor = Some(output.cursor_icon);
+        dispatch_event_with(&io.event_bus, "back2front:ui-cursor", &css_cursor(output.cursor_icon).into())?;
+    }
+
+    if io.last_ime != output.ime {
+        io.last_ime = output.ime;
+        let message = js_sys::Object::new();
+        if let Some(ime) = output.ime {
+            js_sys::Reflect::set(&message, &"active".into(), &true.into())?;
+            js_sys::Reflect::set(&message, &"x".into(), &(ime.cursor_rect.left() as f64).into())?;
+            js_sys::Reflect::set(&message, &"y".into(), &(ime.cursor_rect.bottom() as f64).into())?;
+        } else {
+            js_sys::Reflect::set(&message, &"active".into(), &false.into())?;
+        }
+        dispatch_event_with(&io.event_bus, "back2front:ui-ime", &message)?;
+    }
+    Ok(())
+}
+
+fn css_cursor(icon: egui::CursorIcon) -> &'static str {
+    use egui::CursorIcon as C;
+    match icon {
+        C::Default => "default",
+        C::ContextMenu => "context-menu",
+        C::Help => "help",
+        C::PointingHand => "pointer",
+        C::Progress => "progress",
+        C::Wait => "wait",
+        C::Cell => "cell",
+        C::Crosshair => "crosshair",
+        C::Text => "text",
+        C::VerticalText => "vertical-text",
+        C::Alias => "alias",
+        C::Copy => "copy",
+        C::Move => "move",
+        C::NoDrop => "no-drop",
+        C::NotAllowed => "not-allowed",
+        C::Grab => "grab",
+        C::Grabbing => "grabbing",
+        C::AllScroll => "all-scroll",
+        C::ResizeHorizontal | C::ResizeColumn => "ew-resize",
+        C::ResizeVertical | C::ResizeRow => "ns-resize",
+        C::ResizeNeSw => "nesw-resize",
+        C::ResizeNwSe => "nwse-resize",
+        C::ResizeEast => "e-resize",
+        C::ResizeSouthEast => "se-resize",
+        C::ResizeSouth => "s-resize",
+        C::ResizeSouthWest => "sw-resize",
+        C::ResizeWest => "w-resize",
+        C::ResizeNorthWest => "nw-resize",
+        C::ResizeNorth => "n-resize",
+        C::ResizeNorthEast => "ne-resize",
+        C::ZoomIn => "zoom-in",
+        C::ZoomOut => "zoom-out",
+        C::None => "none",
+    }
 }
 
 pub(crate) fn print_error(e: AppError) {
@@ -97,15 +248,19 @@ impl RandomGenerator for WebRnd {
     }
 }
 
-fn tick(ctx: &dyn SimulationContext, input: &mut Input, res: &mut Resources, materials: &mut Materials) -> AppResult<bool> {
-    SimulationCoreTicker::new(ctx, res, input).tick(now()?)?;
+fn tick(ctx: &dyn SimulationContext, input: &mut Input, res: &mut Resources, materials: &mut Materials) -> AppResult<(bool, bool)> {
+    if !res.quit {
+        SimulationCoreTicker::new(ctx, res, input).tick(now()?)?;
+    }
     if res.quit {
-        return Ok(false);
+        return Ok((true, false));
     }
     if res.drawable {
+        let drew_simulation = res.video.drawing_activation;
         SimulationDrawer::new(ctx, materials, res).draw()?;
+        return Ok((true, drew_simulation));
     }
-    Ok(true)
+    Ok((true, false))
 }
 
 fn set_event_listeners(event_bus: JsValue) -> AppResult<(Rc<RefCell<Vec<JsValue>>>, OwnedClosure)> {

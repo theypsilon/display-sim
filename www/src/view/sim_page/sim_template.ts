@@ -28,6 +28,7 @@ import {
 } from "./sim_view_model";
 import {throwOnNull} from "../../services/guards";
 import {PubSubImpl} from "../../services/pubsub";
+import {HeldActionState, isHeldActionKey, isSingleActivationKey} from './interaction_contract';
 
 const css = require('!css-loader!./css/sim_page.css').default.toString();
 
@@ -54,6 +55,7 @@ export class SimTemplate
 {
     private readonly _root: ShadowRoot;
     private readonly _actions: SimTemplateEvents;
+    private readonly _heldActions = new HeldActionState();
     private _rendered: boolean;
 
     private constructor(root: ShadowRoot, actions: SimTemplateEvents) {
@@ -77,26 +79,105 @@ export class SimTemplate
         return throwOnNull(this.getCanvas(state).parentNode);
     }
 
+    getImeAgent(state: SimViewData): HTMLTextAreaElement {
+        if (!this._rendered) {
+            this.refresh(state);
+        }
+        return throwOnNull(this._root.getElementById('egui-ime-agent') as HTMLTextAreaElement | null);
+    }
+
     getWindowListener() {
         return window;
     }
 
     refresh(state: SimViewData): void {
         this._rendered = true;
+        if (!state.menu.visible || !state.menu.open) {
+            void this.releaseHeldActions();
+        }
         render(this.generateSimTemplate(state), this._root);
     }
 
     private async toggleControls() {
+        await this.releaseHeldActions();
         await this._actions.toggleControls.fire();
     }
 
     private async toggleMenu(menu: MenuEntry) {
+        await this.releaseHeldActions();
         await this._actions.toggleMenu.fire(menu);
     }
 
     private async dispatchKey(e: Event, action: 'keyup' | 'keydown' | 'keyboth', key: string, current?: string) {
         e.preventDefault();
         await this._actions.dispatchKey.fire({action, key, current});
+    }
+
+    private async beginHeldAction (e: PointerEvent | KeyboardEvent, key: string, current?: string) {
+        if (e instanceof KeyboardEvent) {
+            if (!isHeldActionKey(e.key)) {
+                return;
+            }
+        } else {
+            if (e.button !== 0) {
+                return;
+            }
+            const target = e.currentTarget as Element;
+            try {
+                target.setPointerCapture(e.pointerId);
+            } catch (_) {
+                // Pointer capture is best-effort (for example, a synthetic
+                // event does not own an active platform pointer).
+            }
+        }
+        e.preventDefault();
+        if (this._heldActions.press(key, current, this.heldActionSource(e))) {
+            await this._actions.dispatchKey.fire({action: 'keydown', key, current});
+        }
+    }
+
+    private async endHeldAction (e: PointerEvent | KeyboardEvent, key: string) {
+        if (e instanceof KeyboardEvent && !isHeldActionKey(e.key)) {
+            return;
+        }
+        e.preventDefault();
+        await this.releaseHeldAction(key, this.heldActionSource(e));
+    }
+
+    private heldActionSource (e: PointerEvent | KeyboardEvent): string {
+        return e instanceof KeyboardEvent
+            ? `keyboard:${e.code || e.key}`
+            : `pointer:${e.pointerId}`;
+    }
+
+    private async releaseHeldAction (key: string, source?: string) {
+        const action = source === undefined
+            ? this._heldActions.releaseSources(key, '')
+            : this._heldActions.release(key, source);
+        if (action) {
+            await this._actions.dispatchKey.fire({action: 'keyup', ...action});
+        }
+    }
+
+    private async releaseHeldKeyboardAction (key: string) {
+        const action = this._heldActions.releaseSources(key, 'keyboard:');
+        if (action) {
+            await this._actions.dispatchKey.fire({action: 'keyup', ...action});
+        }
+    }
+
+    public async releaseHeldActions () {
+        for (const action of this._heldActions.drain()) {
+            await this._actions.dispatchKey.fire({action: 'keyup', ...action});
+        }
+    }
+
+    private async activateOnKeyboard (e: KeyboardEvent, action: () => Promise<void>) {
+        if (!isSingleActivationKey(e.key, e.repeat)) {
+            return;
+        }
+        e.preventDefault();
+        await action();
     }
 
     private async changeSyncedInput(kind: string, value: number ) {
@@ -116,18 +197,9 @@ export class SimTemplate
         <style>
             ${css}
         </style>
-        <div tabindex=0><canvas id="gl-canvas-id"></canvas></div>
-        <div id="simulation-ui">
-            <div id="fps-counter">${state.fps}</div>
-            <div id="info-panel" class="${state.menu.visible ? '' : 'display-none'}">
-                <div id="info-panel-content" class="${state.menu.open ? '' : 'display-none'}">
-                    ${state.menu.entries.map(entry => this.generateTemplateFromGenericEntry(entry))}
-                </div>
-                <div id="info-panel-toggle" 
-                    class="collapse-button collapse-controller" 
-                    @click="${() => this.toggleControls()}">${state.menu.controlsText}</div>
-            </div>
-        </div>
+        <div><canvas id="gl-canvas-id" tabindex="0" role="application" aria-label="Display Sim controls and simulation"></canvas></div>
+        <textarea id="egui-ime-agent" class="egui-ime-agent" aria-label="Display Sim text editor"
+            autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
         `;
     }
 
@@ -149,7 +221,10 @@ export class SimTemplate
 
     private generateTemplateFromMenu (menu: MenuEntry): TemplateResult {
         return html`
-            <div class="collapse-button collapse-top-menu ${menu.open ? 'not-collapsed' : 'collapsed'}" @click="${() => this.toggleMenu(menu)}">${menu.text}</div>
+            <div class="collapse-button collapse-top-menu ${menu.open ? 'not-collapsed' : 'collapsed'}"
+                role="button" tabindex="0" aria-expanded="${menu.open}"
+                @keydown="${(e: KeyboardEvent) => this.activateOnKeyboard(e, () => this.toggleMenu(menu))}"
+                @click="${() => this.toggleMenu(menu)}">${menu.text}</div>
             <div class="info-category ${menu.open ? '' : 'display-none'}">
                 ${menu.entries.map(entry => this.generateTemplateFromGenericEntry(entry))}
             </div>
@@ -191,12 +266,24 @@ export class SimTemplate
                     @change="${(e: KeyboardEvent) => this.changeSyncedInput(halfPair.ref.eventKind, +(<HTMLInputElement>e.target).value)}"
                     >
                 <button class="button-inc-dec"
-                    @mouseup="${(e: Event) => this.dispatchKey(e,'keyup', halfPair.ref.eventKind + '-inc' )}"
-                    @mousedown="${(e: Event) => this.dispatchKey(e,'keydown', halfPair.ref.eventKind + '-inc' )}"
+                    @pointerdown="${(e: PointerEvent) => this.beginHeldAction(e, halfPair.ref.eventKind + '-inc')}"
+                    @pointerup="${(e: PointerEvent) => this.endHeldAction(e, halfPair.ref.eventKind + '-inc')}"
+                    @pointercancel="${(e: PointerEvent) => this.endHeldAction(e, halfPair.ref.eventKind + '-inc')}"
+                    @pointerleave="${(e: PointerEvent) => this.endHeldAction(e, halfPair.ref.eventKind + '-inc')}"
+                    @lostpointercapture="${(e: PointerEvent) => this.endHeldAction(e, halfPair.ref.eventKind + '-inc')}"
+                    @keydown="${(e: KeyboardEvent) => this.beginHeldAction(e, halfPair.ref.eventKind + '-inc')}"
+                    @keyup="${(e: KeyboardEvent) => this.endHeldAction(e, halfPair.ref.eventKind + '-inc')}"
+                    @blur="${() => this.releaseHeldKeyboardAction(halfPair.ref.eventKind + '-inc')}"
                     >+</button>
                 <button class="button-inc-dec"
-                    @mouseup="${(e: Event) => this.dispatchKey(e,'keyup', halfPair.ref.eventKind + '-dec' )}"
-                    @mousedown="${(e: Event) => this.dispatchKey(e,'keydown', halfPair.ref.eventKind + '-dec' )}"
+                    @pointerdown="${(e: PointerEvent) => this.beginHeldAction(e, halfPair.ref.eventKind + '-dec')}"
+                    @pointerup="${(e: PointerEvent) => this.endHeldAction(e, halfPair.ref.eventKind + '-dec')}"
+                    @pointercancel="${(e: PointerEvent) => this.endHeldAction(e, halfPair.ref.eventKind + '-dec')}"
+                    @pointerleave="${(e: PointerEvent) => this.endHeldAction(e, halfPair.ref.eventKind + '-dec')}"
+                    @lostpointercapture="${(e: PointerEvent) => this.endHeldAction(e, halfPair.ref.eventKind + '-dec')}"
+                    @keydown="${(e: KeyboardEvent) => this.beginHeldAction(e, halfPair.ref.eventKind + '-dec')}"
+                    @keyup="${(e: KeyboardEvent) => this.endHeldAction(e, halfPair.ref.eventKind + '-dec')}"
+                    @blur="${() => this.releaseHeldKeyboardAction(halfPair.ref.eventKind + '-dec')}"
                     >-</button>
             </div>
         `;
@@ -207,7 +294,8 @@ export class SimTemplate
             <div class="preset-list ${presetButtons.class}">
                 ${presetButtons.ref.choices.map(choices => html`
                     <a class="btn preset-btn ${presetButtons.ref.selected === choices.preset ? 'active-preset' : ''}" data-preset="${choices.preset}" href="#"
-                        @click="${() => this.clickPreset(choices.preset)}"
+                        @keydown="${(e: KeyboardEvent) => e.key === ' ' && this.activateOnKeyboard(e, () => this.clickPreset(choices.preset))}"
+                        @click="${(e: Event) => { e.preventDefault(); return this.clickPreset(choices.preset); }}"
                         >${choices.text}</a>
                 `)}
             </div>
@@ -216,19 +304,23 @@ export class SimTemplate
 
     private generateTemplateFromCheckboxInput (checkboxInput: CheckboxInputEntry) {
         return html`
-            <div class="menu-entry menu-button ${checkboxInput.class}"
+            <div class="menu-entry menu-button ${checkboxInput.class}" role="checkbox" tabindex="0"
+                aria-checked="${checkboxInput.ref.value}"
+                @keydown="${(e: KeyboardEvent) => this.activateOnKeyboard(e, () => this.toggleCheckbox(checkboxInput.ref.eventKind, !checkboxInput.ref.value))}"
                 @click="${() => this.toggleCheckbox(checkboxInput.ref.eventKind, !checkboxInput.ref.value )}">
                 <div class="feature-pack">
                     <div class="feature-name">${checkboxInput.text}</div>
                 </div>
-                <div class="feature-value input-holder"><input type="checkbox" ?checked=${checkboxInput.ref.value}></div>
+                <div class="feature-value input-holder"><input type="checkbox" tabindex="-1" aria-hidden="true" ?checked=${checkboxInput.ref.value}></div>
             </div>
         `;
     }
 
     private generateTemplateFromButtonInput (buttonInput: ButtonInputEntry) {
         return html`
-            <div class="menu-entry menu-button ${buttonInput.class}" @click="${(e: Event) => this.dispatchKey(e,'keyboth', buttonInput.ref.eventKind )}">
+            <div class="menu-entry menu-button ${buttonInput.class}" role="button" tabindex="0"
+                @keydown="${(e: KeyboardEvent) => this.activateOnKeyboard(e, () => this._actions.dispatchKey.fire({action: 'keyboth', key: buttonInput.ref.eventKind}))}"
+                @click="${(e: Event) => this.dispatchKey(e,'keyboth', buttonInput.ref.eventKind )}">
                 <div class="feature-pack">
                     <div class="feature-name">${buttonInput.text}</div>
                 </div>
@@ -248,20 +340,32 @@ export class SimTemplate
                     </div>` : ''}
                 </div>
                 <div class="feature-value input-holder">
-                    <div class="selector-inc"
-                        @mouseup="${(e: Event) => this.dispatchKey(e,'keyup', selectorInput.ref.eventKind + '-inc', selectorInput.ref.value )}}"
-                        @mousedown="${(e: Event) => this.dispatchKey(e,'keydown', selectorInput.ref.eventKind + '-inc', selectorInput.ref.value )}}"
+                    <div class="selector-inc" role="button" tabindex="0"
+                        @pointerdown="${(e: PointerEvent) => this.beginHeldAction(e, selectorInput.ref.eventKind + '-inc', selectorInput.ref.value)}"
+                        @pointerup="${(e: PointerEvent) => this.endHeldAction(e, selectorInput.ref.eventKind + '-inc')}"
+                        @pointercancel="${(e: PointerEvent) => this.endHeldAction(e, selectorInput.ref.eventKind + '-inc')}"
+                        @pointerleave="${(e: PointerEvent) => this.endHeldAction(e, selectorInput.ref.eventKind + '-inc')}"
+                        @lostpointercapture="${(e: PointerEvent) => this.endHeldAction(e, selectorInput.ref.eventKind + '-inc')}"
+                        @keydown="${(e: KeyboardEvent) => this.beginHeldAction(e, selectorInput.ref.eventKind + '-inc', selectorInput.ref.value)}"
+                        @keyup="${(e: KeyboardEvent) => this.endHeldAction(e, selectorInput.ref.eventKind + '-inc')}"
+                        @blur="${() => this.releaseHeldKeyboardAction(selectorInput.ref.eventKind + '-inc')}"
                         >
-                        <input class="number-input feature-readonly-input" type="text"
+                        <input class="number-input feature-readonly-input" type="text" readonly tabindex="-1" aria-hidden="true"
                             title="${ifDefined(selectorInput.ref.title)}"
                             .value="${selectorInput.ref.value}"
                             >
-                        <button class="button-inc-selector"
+                        <button class="button-inc-selector" type="button" tabindex="-1" aria-hidden="true"
                             >+</button>
                     </div>
-                    <button class="button-inc-dec"
-                        @mouseup="${(e: Event) => this.dispatchKey(e,'keyup', selectorInput.ref.eventKind + '-dec', selectorInput.ref.value )}"
-                        @mousedown="${(e: Event) => this.dispatchKey(e,'keydown', selectorInput.ref.eventKind + '-dec', selectorInput.ref.value )}"
+                    <button class="button-inc-dec" type="button"
+                        @pointerdown="${(e: PointerEvent) => this.beginHeldAction(e, selectorInput.ref.eventKind + '-dec', selectorInput.ref.value)}"
+                        @pointerup="${(e: PointerEvent) => this.endHeldAction(e, selectorInput.ref.eventKind + '-dec')}"
+                        @pointercancel="${(e: PointerEvent) => this.endHeldAction(e, selectorInput.ref.eventKind + '-dec')}"
+                        @pointerleave="${(e: PointerEvent) => this.endHeldAction(e, selectorInput.ref.eventKind + '-dec')}"
+                        @lostpointercapture="${(e: PointerEvent) => this.endHeldAction(e, selectorInput.ref.eventKind + '-dec')}"
+                        @keydown="${(e: KeyboardEvent) => this.beginHeldAction(e, selectorInput.ref.eventKind + '-dec', selectorInput.ref.value)}"
+                        @keyup="${(e: KeyboardEvent) => this.endHeldAction(e, selectorInput.ref.eventKind + '-dec')}"
+                        @blur="${() => this.releaseHeldKeyboardAction(selectorInput.ref.eventKind + '-dec')}"
                         >-</button>
                 </div>
             </div>
@@ -287,12 +391,24 @@ export class SimTemplate
                         @change="${(e: Event) => this.changeSyncedInput(numberInput.ref.eventKind, +(<HTMLInputElement>e.target).value)}"
                         >
                     <button class="button-inc-dec"
-                        @mouseup="${(e: Event) => this.dispatchKey(e,'keyup', numberInput.ref.eventKind + '-inc' )}"
-                        @mousedown="${(e: Event) => this.dispatchKey(e,'keydown', numberInput.ref.eventKind + '-inc' )}"
+                        @pointerdown="${(e: PointerEvent) => this.beginHeldAction(e, numberInput.ref.eventKind + '-inc')}"
+                        @pointerup="${(e: PointerEvent) => this.endHeldAction(e, numberInput.ref.eventKind + '-inc')}"
+                        @pointercancel="${(e: PointerEvent) => this.endHeldAction(e, numberInput.ref.eventKind + '-inc')}"
+                        @pointerleave="${(e: PointerEvent) => this.endHeldAction(e, numberInput.ref.eventKind + '-inc')}"
+                        @lostpointercapture="${(e: PointerEvent) => this.endHeldAction(e, numberInput.ref.eventKind + '-inc')}"
+                        @keydown="${(e: KeyboardEvent) => this.beginHeldAction(e, numberInput.ref.eventKind + '-inc')}"
+                        @keyup="${(e: KeyboardEvent) => this.endHeldAction(e, numberInput.ref.eventKind + '-inc')}"
+                        @blur="${() => this.releaseHeldKeyboardAction(numberInput.ref.eventKind + '-inc')}"
                         >+</button>
                     <button class="button-inc-dec"
-                        @mouseup="${(e: Event) => this.dispatchKey(e,'keyup', numberInput.ref.eventKind + '-dec' )}"
-                        @mousedown="${(e: Event) => this.dispatchKey(e,'keydown', numberInput.ref.eventKind + '-dec' )}"
+                        @pointerdown="${(e: PointerEvent) => this.beginHeldAction(e, numberInput.ref.eventKind + '-dec')}"
+                        @pointerup="${(e: PointerEvent) => this.endHeldAction(e, numberInput.ref.eventKind + '-dec')}"
+                        @pointercancel="${(e: PointerEvent) => this.endHeldAction(e, numberInput.ref.eventKind + '-dec')}"
+                        @pointerleave="${(e: PointerEvent) => this.endHeldAction(e, numberInput.ref.eventKind + '-dec')}"
+                        @lostpointercapture="${(e: PointerEvent) => this.endHeldAction(e, numberInput.ref.eventKind + '-dec')}"
+                        @keydown="${(e: KeyboardEvent) => this.beginHeldAction(e, numberInput.ref.eventKind + '-dec')}"
+                        @keyup="${(e: KeyboardEvent) => this.endHeldAction(e, numberInput.ref.eventKind + '-dec')}"
+                        @blur="${() => this.releaseHeldKeyboardAction(numberInput.ref.eventKind + '-dec')}"
                         >-</button>
                 </div>
             </div>
@@ -359,10 +475,17 @@ export class SimTemplate
     }
 
     private generateTemplateArrowKey (key: string) {
+        const action = key.toLowerCase();
         return html`
             <input type="button" class="activate-button feature-modificable-input" value="${key}"
-                @mousedown="${(e: Event) => this.dispatchKey(e,'keydown', key.toLowerCase() )}"
-                @mouseup="${(e: Event) => this.dispatchKey(e,'keyup', key.toLowerCase() )}"
+                @pointerdown="${(e: PointerEvent) => this.beginHeldAction(e, action)}"
+                @pointerup="${(e: PointerEvent) => this.endHeldAction(e, action)}"
+                @pointercancel="${(e: PointerEvent) => this.endHeldAction(e, action)}"
+                @pointerleave="${(e: PointerEvent) => this.endHeldAction(e, action)}"
+                @lostpointercapture="${(e: PointerEvent) => this.endHeldAction(e, action)}"
+                @keydown="${(e: KeyboardEvent) => this.beginHeldAction(e, action)}"
+                @keyup="${(e: KeyboardEvent) => this.endHeldAction(e, action)}"
+                @blur="${() => this.releaseHeldKeyboardAction(action)}"
             >
         `;
     }

@@ -15,8 +15,19 @@
 
 export type FileEvent = Event & {target: EventTarget & { files: FileList }};
 export type DataEvent = Event & {dataTransfer: DataTransfer};
-export type KeyboardEvent = Event & {key: string};
+export type KeyboardEvent = Event & {
+    code: string, key: string, location: number, repeat: boolean, isComposing: boolean,
+    altKey: boolean, ctrlKey: boolean, shiftKey: boolean, metaKey: boolean
+};
 export type MouseMovementEvent = Event & {movementX: number, movementY: number};
-export type MouseDownEvent = Event & {buttons: number};
-export type MouseWheelEvent = Event & {deltaY: number};
-export type BackendEvent = ((e: KeyboardEvent & MouseMovementEvent & MouseWheelEvent & MouseDownEvent) => void);
+export type MouseDownEvent = Event & {
+    button: number, buttons: number, clientX: number, clientY: number,
+    altKey: boolean, ctrlKey: boolean, shiftKey: boolean, metaKey: boolean
+};
+export type MouseWheelEvent = Event & {
+    deltaX: number, deltaY: number, deltaMode: number,
+    altKey: boolean, ctrlKey: boolean, shiftKey: boolean, metaKey: boolean
+};
+export type TextEvent = Event & {data: string | null, inputType: string};
+export type ClipboardEvent = Event & {clipboardData: DataTransfer | null};
+export type BackendEvent = ((e: KeyboardEvent & MouseMovementEvent & MouseWheelEvent & MouseDownEvent & TextEvent & ClipboardEvent) => void | Promise<void>);

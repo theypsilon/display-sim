@@ -77,9 +77,18 @@ impl std::str::FromStr for FilterPresetOptions {
 }
 
 impl FilterPresetOptions {
+    pub const ALL: [Self; 6] = [
+        Self::CrtApertureGrille1,
+        Self::CrtShadowMask1,
+        Self::CrtShadowMask2,
+        Self::Sharp1,
+        Self::DemoFlight1,
+        Self::Custom,
+    ];
+
     pub fn get_description(&self) -> &str {
         match self {
-            FilterPresetOptions::Sharp1 => "Sharp 1",
+            FilterPresetOptions::Sharp1 => "CRT Sharp Pixels",
             FilterPresetOptions::CrtApertureGrille1 => "CRT Aperture Grille 1",
             FilterPresetOptions::CrtShadowMask1 => "CRT Shadow Mask 1",
             FilterPresetOptions::CrtShadowMask2 => "CRT Shadow Mask 2",
@@ -91,23 +100,54 @@ impl FilterPresetOptions {
 
 #[cfg(test)]
 mod filter_presets_tests {
-    use super::FilterPresetOptions;
+    use super::{FilterPreset, FilterPresetOptions};
+    use crate::ui_controller::{EncodedValue, UiController};
     use app_util::AppResult;
     use std::str::FromStr;
+
+    struct TextEncodedValue(&'static str);
+
+    impl EncodedValue for TextEncodedValue {
+        fn to_f64(&self) -> AppResult<f64> {
+            Err("text value is not numeric".into())
+        }
+
+        fn to_f32(&self) -> AppResult<f32> {
+            Err("text value is not numeric".into())
+        }
+
+        fn to_u32(&self) -> AppResult<u32> {
+            Err("text value is not numeric".into())
+        }
+
+        fn to_i32(&self) -> AppResult<i32> {
+            Err("text value is not numeric".into())
+        }
+
+        fn to_usize(&self) -> AppResult<usize> {
+            Err("text value is not numeric".into())
+        }
+
+        fn to_string(&self) -> AppResult<String> {
+            Ok(self.0.to_owned())
+        }
+    }
+
     #[test]
     fn test_from_str_to_str() -> AppResult<()> {
-        // @TODO ensure a way to have this array correctly updated automatically
-        let presets: [FilterPresetOptions; 6] = [
-            FilterPresetOptions::Sharp1,
-            FilterPresetOptions::CrtApertureGrille1,
-            FilterPresetOptions::CrtShadowMask1,
-            FilterPresetOptions::CrtShadowMask2,
-            FilterPresetOptions::DemoFlight1,
-            FilterPresetOptions::Custom,
-        ];
-        for preset in presets.iter() {
+        for preset in FilterPresetOptions::ALL.iter() {
             assert_eq!(FilterPresetOptions::from_str(preset.to_string().as_ref())?, *preset);
         }
+        Ok(())
+    }
+
+    #[test]
+    fn frontend_event_selects_the_preset_immediately() -> AppResult<()> {
+        let mut preset = FilterPreset::default();
+
+        preset.read_event(Box::new(TextEncodedValue("crt-shadow-mask-2")))?;
+
+        assert_eq!(preset.value, FilterPresetOptions::CrtShadowMask2);
         Ok(())
     }
 }
@@ -137,7 +177,12 @@ impl UiController for FilterPreset {
         self.input.decrease = false;
     }
     fn read_event(&mut self, encoded: Box<dyn EncodedValue>) -> AppResult<()> {
-        self.event = Some(FilterPresetOptions::from_str(&encoded.to_string()?)?);
+        let preset = FilterPresetOptions::from_str(&encoded.to_string()?)?;
+        // Presets have no increment/decrement input for `update` to process.
+        // Publish the selected value immediately so the simulation ticker can
+        // apply it in the same tick as the frontend event.
+        self.event = Some(preset);
+        self.value = preset;
         Ok(())
     }
     fn read_key_inc(&mut self, pressed: bool) {

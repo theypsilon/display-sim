@@ -18,11 +18,13 @@ import { Lazy } from '../../services/lazy';
 
 export class SimWasmBackend {
     private _app: any;
+    private _canvas: HTMLCanvasElement | null;
 
     private static _instance: Lazy<SimWasmBackend> = Lazy.from(() => new SimWasmBackend());
     static getInstance (): SimWasmBackend { return this._instance.get(); }
     private constructor () {
         this._app = null;
+        this._canvas = null;
     }
 
     async load (canvas: HTMLCanvasElement, eventBus: any, params: any) {
@@ -64,6 +66,7 @@ export class SimWasmBackend {
         const gl = canvas.getContext('webgl2', params.ctxOptions) as WebGL2RenderingContext | null;
 
         if (gl) {
+            this._canvas = canvas;
             config.set_max_texture_size(gl.getParameter(gl.MAX_TEXTURE_SIZE));
 
             Logger.log('calling wasmApp.load');
@@ -78,10 +81,32 @@ export class SimWasmBackend {
     }
 
     runFrame () {
+        if (this._canvas) {
+            this._app.set_ui_metrics(this._canvas.width, this._canvas.height, window.devicePixelRatio || 1);
+        }
         return this._app.run_frame();
     }
 
+    uiEvent (kind: string, value: any) {
+        this._app.ui_event(kind, value);
+    }
+
+    uiCapturesPointer (): boolean {
+        return Boolean(this._app && this._app.ui_captures_pointer());
+    }
+
+    uiWantsKeyboard (): boolean {
+        return Boolean(this._app && this._app.ui_wants_keyboard());
+    }
+
+    uiMessage (message: string) {
+        if (this._app) {
+            this._app.ui_message(message);
+        }
+    }
+
     unload () {
+        this._canvas = null;
         return this._app.unload();
     }
 }
