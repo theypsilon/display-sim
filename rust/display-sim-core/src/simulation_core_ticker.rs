@@ -31,6 +31,12 @@ use crate::ui_controller::{
 use app_util::AppResult;
 use derive_new::new;
 
+// The flight demo was originally tuned while running at 60 Hz. Its velocity
+// values are consequently expressed in legacy "units per 60 Hz frame".
+const FLIGHT_DEMO_REFERENCE_HZ: f32 = 60.0;
+// Do not turn a pause, debugger stop, or suspended tab into a camera teleport.
+const FLIGHT_DEMO_MAX_DT: f32 = 1.0 / 15.0;
+
 #[derive(new)]
 pub struct SimulationCoreTicker<'a> {
     ctx: &'a dyn SimulationContext,
@@ -378,7 +384,7 @@ impl<'a> SimulationUpdater<'a> {
         if self.res.controllers.preset_kind.value == FilterPresetOptions::Custom && self.res.custom_is_changed {
             self.res.saved_filters = Some(self.res.controllers.clone());
         }
-        if self.res.controllers.preset_kind.value == FilterPresetOptions::DemoFlight1 {
+        if self.res.main.current_filter_preset == FilterPresetOptions::DemoFlight1 {
             self.res.camera = self.res.demo_1.camera_backup.clone();
         }
         self.res
@@ -507,6 +513,7 @@ impl<'a> SimulationUpdater<'a> {
     }
 
     fn update_demo(&mut self) {
+        let dt = self.res.main.dt.clamp(0.0, FLIGHT_DEMO_MAX_DT);
         if self.res.demo_1.needs_initialization {
             self.res.demo_1.needs_initialization = false;
             self.res.demo_1.camera_backup = self.res.camera.clone();
@@ -526,12 +533,18 @@ impl<'a> SimulationUpdater<'a> {
             if glm::length(&movement_route).abs() <= std::f32::EPSILON {
                 movement_route = glm::vec3(1.0, 0.0, 0.0);
             }
-            let movement_force = movement_route.normalize() * self.res.main.dt * 1.2;
+            let movement_force = movement_route.normalize() * dt * 1.2;
             self.res.demo_1.movement_speed += movement_force;
             if glm::length(&self.res.demo_1.movement_speed).abs() > self.res.demo_1.movement_max_speed {
                 self.res.demo_1.movement_speed = self.res.demo_1.movement_speed.normalize() * self.res.demo_1.movement_max_speed;
             }
-            self.res.camera.set_position(movement_position + self.res.demo_1.movement_speed);
+            // Acceleration has always been time-scaled, but translation used
+            // to be applied once per rendered frame. Scale that legacy
+            // per-frame velocity by elapsed time so pacing jitter and lower
+            // refresh rates no longer change the flight path.
+            self.res
+                .camera
+                .set_position(movement_position + self.res.demo_1.movement_speed * dt * FLIGHT_DEMO_REFERENCE_HZ);
             if glm::length(&movement_route).abs() <= 15.0 {
                 let rnd_x = self.ctx.random().next() - 0.5;
                 let rnd_y = self.ctx.random().next() - 0.5;
@@ -563,7 +576,7 @@ impl<'a> SimulationUpdater<'a> {
             let color_route = self.res.demo_1.color_target - self.res.demo_1.color_position;
             let is_void_route = color_route == glm::vec3(0.0, 0.0, 0.0);
             if !is_void_route {
-                self.res.demo_1.color_position += color_route.normalize() * self.res.main.dt * 0.1;
+                self.res.demo_1.color_position += color_route.normalize() * dt * 0.1;
                 self.res.controllers.light_color.value = get_int_from_3_f32color(&self.res.demo_1.color_position.into());
                 self.res.controllers.light_color.dispatch_event(self.ctx.dispatcher());
             }
@@ -576,7 +589,7 @@ impl<'a> SimulationUpdater<'a> {
         }
         {
             // spreading
-            let spread_change = self.res.main.dt * 0.03 * self.res.controllers.cur_pixel_spread.value * self.res.controllers.cur_pixel_spread.value;
+            let spread_change = dt * 0.03 * self.res.controllers.cur_pixel_spread.value * self.res.controllers.cur_pixel_spread.value;
             if self.res.demo_1.spreading {
                 self.res.controllers.cur_pixel_spread.value += spread_change;
                 if self.res.controllers.cur_pixel_spread.value > 1000.0 {
@@ -954,6 +967,23 @@ mod tests {
     use crate::input_types::Pressed;
     use crate::simulation_context::make_fake_simulation_context;
 
+    fn flight_position_after(frame_times: &[f32]) -> glm::Vec3 {
+        let ctx = make_fake_simulation_context();
+        let mut resources = Resources::default();
+        let input = Input::new(0.0);
+        resources.demo_1.needs_initialization = false;
+        resources.demo_1.movement_target = glm::vec3(10_000.0, 0.0, 0.0);
+        resources.demo_1.movement_speed = glm::vec3(0.3, 0.0, 0.0);
+        resources.demo_1.movement_max_speed = 0.3;
+        resources.camera.set_position(glm::vec3(0.0, 0.0, 0.0));
+
+        for dt in frame_times {
+            resources.main.dt = *dt;
+            SimulationUpdater::new(&ctx, &mut resources, &input).update_demo();
+        }
+        resources.camera.get_position()
+    }
+
     #[test]
     fn relative_mouse_and_wheel_events_accumulate_between_ticks() {
         let ctx = make_fake_simulation_context();
@@ -973,5 +1003,48 @@ mod tests {
         assert_eq!(input.mouse_position_x, 2);
         assert_eq!(input.mouse_position_y, 3);
         assert_eq!(input.mouse_scroll_y, 75.0);
+    }
+
+    #[test]
+    fn flight_translation_is_independent_of_render_rate() {
+        let sixty_hz = flight_position_after(&vec![1.0 / 60.0; 60]);
+        let thirty_hz = flight_position_after(&vec![1.0 / 30.0; 30]);
+
+        assert!((sixty_hz.x - 18.0).abs() < 0.001, "unexpected 60 Hz distance: {}", sixty_hz.x);
+        assert!((thirty_hz.x - sixty_hz.x).abs() < 0.001, "30 Hz: {}, 60 Hz: {}", thirty_hz.x, sixty_hz.x);
+    }
+
+    #[test]
+    fn flight_translation_does_not_teleport_after_a_stall() {
+        let position = flight_position_after(&[1.0]);
+        let maximum_step = 0.3 * FLIGHT_DEMO_MAX_DT * FLIGHT_DEMO_REFERENCE_HZ;
+
+        assert!((position.x - maximum_step).abs() < 0.001, "stall step was {}", position.x);
+    }
+
+    #[test]
+    fn flight_preset_restores_the_camera_when_leaving() {
+        let ctx = make_fake_simulation_context();
+        let mut resources = Resources::default();
+        let input = Input::new(0.0);
+        let original_position = glm::vec3(12.0, -8.0, 42.0);
+        let original_direction = glm::vec3(0.2, 0.3, -0.9).normalize();
+        resources.camera.set_position(original_position);
+        resources.camera.direction = original_direction;
+        resources.controllers.internal_resolution.set_resolution(720);
+
+        resources.controllers.preset_kind.value = FilterPresetOptions::DemoFlight1;
+        SimulationUpdater::new(&ctx, &mut resources, &input).update_filter_presets_from_event().unwrap();
+        assert_eq!(resources.camera.get_position(), original_position);
+        assert_eq!(resources.controllers.internal_resolution.height(), 720);
+
+        resources.main.dt = 1.0 / 60.0;
+        SimulationUpdater::new(&ctx, &mut resources, &input).update_demo();
+        resources.main.current_filter_preset = FilterPresetOptions::DemoFlight1;
+        resources.controllers.preset_kind.value = FilterPresetOptions::Sharp1;
+        SimulationUpdater::new(&ctx, &mut resources, &input).update_filter_presets_from_event().unwrap();
+
+        assert_eq!(resources.camera.get_position(), original_position);
+        assert_eq!(resources.camera.direction, original_direction);
     }
 }

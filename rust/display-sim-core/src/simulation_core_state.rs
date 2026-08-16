@@ -426,7 +426,9 @@ impl Controllers {
     }
 
     pub fn preset_demo_1(&mut self) {
-        self.internal_resolution = InternalResolution::default();
+        // Keep the selected performance resolution. The original flight
+        // preset preserved it; resetting to the 4K default makes the demo's
+        // 3D cube rendering unnecessarily expensive and visibly uneven.
         self.texture_interpolation = TextureInterpolationOptions::Linear.into();
         self.blur_passes = 0.into();
         self.vertical_lpp = 1.into();

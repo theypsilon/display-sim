@@ -19,23 +19,24 @@ use app_util::{AppError, AppResult};
 use core::app_events::AppEventDispatcher;
 use core::camera::CameraLockMode;
 use core::simulation_core_state::ScalingMethod;
+use glow::GlowSafeAdapter;
 use js_sys::Float32Array;
 use sim_ui::SharedPanelEvents;
 use std::cell::RefCell;
 use std::fmt::Display;
+use std::rc::Rc;
 use wasm_bindgen::JsValue;
-use web_sys::WebGl2RenderingContext;
 
 pub struct WebEventDispatcher {
     error: RefCell<Option<AppError>>,
     extra_messages_enabled: RefCell<bool>,
-    gl: WebGl2RenderingContext,
+    gl: Rc<GlowSafeAdapter<glow::Context>>,
     event_bus: JsValue,
     panel_events: SharedPanelEvents,
 }
 
 impl WebEventDispatcher {
-    pub fn new(gl: WebGl2RenderingContext, event_bus: JsValue, panel_events: SharedPanelEvents) -> Self {
+    pub fn new(gl: Rc<GlowSafeAdapter<glow::Context>>, event_bus: JsValue, panel_events: SharedPanelEvents) -> Self {
         WebEventDispatcher {
             error: Default::default(),
             extra_messages_enabled: RefCell::new(true),
@@ -179,10 +180,8 @@ impl AppEventDispatcher for WebEventDispatcher {
         self.catch_error(dispatch_event(&self.event_bus, "back2front:exit_pointer_lock"));
     }
 
-    // @TODO no other way to handle this by now, because of glow lacking API, find better way later
     fn dispatch_screenshot(&self, width: i32, height: i32, pixels: &mut [u8]) -> AppResult<()> {
-        let gl = &self.gl;
-        gl.read_pixels_with_opt_u8_array(0, 0, width, height, glow::RGBA, glow::UNSIGNED_BYTE, Some(&mut *pixels))?;
+        self.gl.read_pixels(0, 0, width, height, glow::RGBA, glow::UNSIGNED_BYTE, pixels);
         let js_pixels = unsafe { js_sys::Uint8Array::view(pixels) };
         let object = js_sys::Object::new();
         js_sys::Reflect::set(&object, &"width".into(), &width.into()).expect("Reflection failed on width");

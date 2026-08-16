@@ -444,7 +444,9 @@ impl NativeSimulationState {
         // operating-system event batch before running one simulation/UI frame.
         if frame_boundary && (now - self.timings.last_time) >= self.timings.framerate {
             self.timings.last_time = now;
-            let elapsed_ms = self.timings.starting_time.elapsed().as_millis() as f64;
+            // Preserve sub-millisecond frame timing. Integer milliseconds
+            // make 60 Hz motion alternate between coarse 16/17 ms steps.
+            let elapsed_ms = (now - self.timings.starting_time).as_secs_f64() * 1000.0;
             let was_panel_visible = self.panel.is_visible();
             let raw_input = self.egui_input.take_input(elapsed_ms / 1000.0);
             let mut egui_output = self.panel.run(raw_input, &mut self.res, &mut self.input, &self.panel_events)?;

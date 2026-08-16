@@ -43,7 +43,6 @@ pub(crate) struct InputOutput {
     input: Input,
     materials: Materials,
     event_bus: JsValue,
-    webgl: WebGl2RenderingContext,
     events: Rc<RefCell<Vec<JsValue>>>,
     panel: SimPanel,
     panel_events: SharedPanelEvents,
@@ -63,7 +62,7 @@ pub(crate) fn web_load(
     input_materials: VideoInputMaterials,
 ) -> AppResult<InputOutput> {
     let webgl = webgl.dyn_into::<WebGl2RenderingContext>()?;
-    let gl_context = Arc::new(glow::Context::from_webgl2_context(webgl.clone()));
+    let gl_context = Arc::new(glow::Context::from_webgl2_context(webgl));
     let gl = Rc::new(GlowSafeAdapter::from_shared(Arc::clone(&gl_context)));
     let painter = egui_glow::Painter::new(gl_context, "", None, false).map_err(|error| format!("Could not create web egui painter: {error}"))?;
     let panel_events = shared_panel_events();
@@ -74,7 +73,6 @@ pub(crate) fn web_load(
         input: Input::new(now()?),
         materials: Materials::new(gl, input_materials)?,
         event_bus,
-        webgl,
         event_bus_subscriber,
         events,
         panel: SimPanel::new(),
@@ -115,7 +113,7 @@ pub(crate) fn web_run_frame(res: &mut Resources, io: &mut InputOutput) -> AppRes
     handle_platform_output(io, &mut egui_output.platform_output)?;
 
     let ctx = ConcreteSimulationContext::new(
-        WebEventDispatcher::new(io.webgl.clone(), io.event_bus.clone(), io.panel_events.clone()),
+        WebEventDispatcher::new(io.materials.gl.clone(), io.event_bus.clone(), io.panel_events.clone()),
         WebRnd {},
     );
     let (condition, drew_simulation) = tick(&ctx, &mut io.input, res, &mut io.materials)?;
