@@ -71,7 +71,7 @@ pub struct AnimationStep {
     pub delay: u32,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum KeyEventKind {
     Inc,
     Dec,

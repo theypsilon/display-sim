@@ -109,6 +109,27 @@ describe('simulation interaction contract', () => {
         assert.equal(state.release('ShiftRight', 'Shift', 2), 'Shift');
     });
 
+    it('tracks UI-owned activation keys without forwarding or orphaning simulation edges', () => {
+        const state = new BrowserKeyState();
+
+        assert.isUndefined(state.press('Space', ' ', 0, false));
+        assert.isUndefined(state.press('Space', ' ', 0, true));
+        assert.isUndefined(state.release('Space', ' ', 0));
+
+        assert.equal(state.press('Space', ' '), ' ');
+        // Release routing follows the key-down owner, even if focus moved to
+        // a UI control that handles the key-up.
+        assert.equal(state.release('Space', ' '), ' ');
+    });
+
+    it('does not let a UI-owned duplicate delay a routed logical release', () => {
+        const state = new BrowserKeyState();
+        assert.equal(state.press('Enter', 'Enter', 0, true), 'Enter');
+        assert.isUndefined(state.press('NumpadEnter', 'Enter', 3, false));
+        assert.equal(state.release('Enter', 'Enter', 0), 'Enter');
+        assert.isUndefined(state.release('NumpadEnter', 'Enter', 3));
+    });
+
     it('recovers a modifier-changed release when a virtual keyboard omits code', () => {
         const state = new BrowserKeyState();
         assert.equal(state.press('', '+'), '+');
@@ -117,7 +138,9 @@ describe('simulation interaction contract', () => {
 
     it('only lets the newest one-frame pulse release a logical action', () => {
         const state = new OneFramePulseState();
+        assert.isFalse(state.isActive('reset-filters'));
         const first = state.begin('reset-filters');
+        assert.isTrue(state.isActive('reset-filters'));
         const second = state.begin('reset-filters');
         assert.isFalse(state.finish('reset-filters', first));
         assert.isTrue(state.finish('reset-filters', second));

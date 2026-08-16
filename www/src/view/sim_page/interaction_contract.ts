@@ -70,6 +70,23 @@ export function isSingleActivationKey (key: string, repeat: boolean): boolean {
     return !repeat && isHeldActionKey(key);
 }
 
+const simulationHandledKeyboardEvents = new WeakSet<Event>();
+
+/**
+ * Marks Enter/Space as belonging to a focused UI control. The event must
+ * still bubble to the window listener so an earlier simulation key-down can
+ * receive its matching key-up after focus moves.
+ */
+export function handleSimulationActivationKey (event: KeyboardEvent): void {
+    if (isHeldActionKey(event.key)) {
+        simulationHandledKeyboardEvents.add(event);
+    }
+}
+
+export function isSimulationKeyboardEventHandled (event: Event): boolean {
+    return simulationHandledKeyboardEvents.has(event);
+}
+
 export interface HeldAction {
     key: string;
     current?: string;
@@ -140,16 +157,19 @@ export class HeldActionState {
  * right Shift (and likewise for main-keyboard/numpad equivalents).
  */
 export class BrowserKeyState {
-    private readonly _active = new Map<string, string>();
+    private readonly _active = new Map<string, {key: string, routed: boolean}>();
     private readonly _logicalCounts = new Map<string, number>();
 
-    press (code: string, key: string, location = 0): string | undefined {
+    press (code: string, key: string, location = 0, routeToSimulation = true): string | undefined {
         const physical = this.physicalId(code, key, location);
         const active = this._active.get(physical);
         if (active !== undefined) {
             return undefined;
         }
-        this._active.set(physical, key);
+        this._active.set(physical, {key, routed: routeToSimulation});
+        if (!routeToSimulation) {
+            return undefined;
+        }
         const count = this._logicalCounts.get(key) || 0;
         this._logicalCounts.set(key, count + 1);
         return count === 0 ? key : undefined;
@@ -157,24 +177,28 @@ export class BrowserKeyState {
 
     release (code: string, fallback: string, location = 0): string | undefined {
         let physical = this.physicalId(code, fallback, location);
-        let key = this._active.get(physical);
+        let active = this._active.get(physical);
 
         // `KeyboardEvent.code` is normally stable and non-empty. For virtual
         // keyboards that omit it, recover a modifier-changed release when the
         // location identifies exactly one active physical key.
-        if (key === undefined && !code) {
+        if (active === undefined && !code) {
             const prefix = `fallback:${location}:`;
             const candidates = Array.from(this._active.keys()).filter(candidate => candidate.startsWith(prefix));
             if (candidates.length === 1) {
                 physical = candidates[0];
-                key = this._active.get(physical);
+                active = this._active.get(physical);
             }
         }
-        if (key === undefined) {
+        if (active === undefined) {
             return undefined;
         }
 
         this._active.delete(physical);
+        if (!active.routed) {
+            return undefined;
+        }
+        const key = active.key;
         const count = this._logicalCounts.get(key) || 0;
         if (count > 1) {
             this._logicalCounts.set(key, count - 1);
@@ -203,6 +227,10 @@ export class OneFramePulseState {
         const generation = ++this._nextGeneration;
         this._generations.set(key, generation);
         return generation;
+    }
+
+    isActive (key: string): boolean {
+        return this._generations.has(key);
     }
 
     finish (key: string, generation: number): boolean {

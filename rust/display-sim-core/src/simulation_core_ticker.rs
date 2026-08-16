@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-use crate::boolean_actions::{trigger_hotkey_action, ActionUsed};
+use crate::boolean_actions::{release_controller_hotkey_actions, trigger_hotkey_action, ActionUsed};
 use crate::camera::{CameraData, CameraDirection, CameraLockMode, CameraSystem};
 use crate::field_changer::FieldChanger;
 use crate::general_types::{get_3_f32color_from_int, get_int_from_3_f32color, Size2D};
@@ -123,6 +123,7 @@ impl<'a> SimulationCoreTicker<'a> {
                     }
                 }
                 InputEventValue::BlurredWindow => {
+                    release_controller_hotkey_actions(self.input, self.res);
                     *self.input = Input::new(now);
                     keyboard_states_this_tick.clear();
                     deferred_keyboard_events.clear();

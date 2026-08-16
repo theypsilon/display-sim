@@ -28,7 +28,7 @@ import {
 } from "./sim_view_model";
 import {throwOnNull} from "../../services/guards";
 import {PubSubImpl} from "../../services/pubsub";
-import {HeldActionState, isHeldActionKey, isSingleActivationKey} from './interaction_contract';
+import {handleSimulationActivationKey, HeldActionState, isHeldActionKey, isSingleActivationKey} from './interaction_contract';
 
 const css = require('!css-loader!./css/sim_page.css').default.toString();
 
@@ -210,13 +210,15 @@ export class SimTemplate
             class="${state.menu.visible ? '' : 'display-none'}"
             aria-label="Switch to ${state.uiMode === 'webgl' ? 'HTML' : 'WebGL'} UI panel"
             title="Switch to ${state.uiMode === 'webgl' ? 'HTML' : 'WebGL'} UI panel"
-            @keydown="${(e: KeyboardEvent) => isHeldActionKey(e.key) && e.stopPropagation()}"
-            @keyup="${(e: KeyboardEvent) => isHeldActionKey(e.key) && e.stopPropagation()}"
+            @keydown="${handleSimulationActivationKey}"
+            @keyup="${handleSimulationActivationKey}"
             @click="${() => this.toggleUiMode()}">
             <span class="ui-panel-mode-current">${state.uiMode === 'webgl' ? 'WebGL UI' : 'HTML UI'}</span>
             <span class="ui-panel-mode-action">Switch to ${state.uiMode === 'webgl' ? 'HTML' : 'WebGL'}</span>
         </button>
-        <div id="simulation-ui" class="${state.uiMode === 'html' ? '' : 'display-none'}" aria-hidden="${state.uiMode !== 'html'}">
+        <div id="simulation-ui" class="${state.uiMode === 'html' ? '' : 'display-none'}" aria-hidden="${state.uiMode !== 'html'}"
+            @keydown="${handleSimulationActivationKey}"
+            @keyup="${handleSimulationActivationKey}">
             <div id="fps-counter">${state.fps}</div>
             <div id="info-panel" class="${state.menu.visible ? '' : 'display-none'}">
                 <div id="info-panel-content" class="${state.menu.open ? '' : 'display-none'}">

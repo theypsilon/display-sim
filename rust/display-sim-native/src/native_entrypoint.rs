@@ -34,7 +34,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use glutin::dpi::LogicalSize;
-use glutin::event::{DeviceEvent, ElementState, Event, MouseButton, WindowEvent};
+use glutin::event::{DeviceEvent, ElementState, Event, MouseButton, VirtualKeyCode, WindowEvent};
 use glutin::event_loop::{ControlFlow, EventLoop};
 use glutin::monitor::MonitorHandle;
 use glutin::window::{Fullscreen, WindowBuilder};
@@ -357,7 +357,12 @@ impl NativeSimulationState {
                         // ReceivedCharacter event so their values also follow
                         // the active operating-system keyboard layout.
                         if self.window_focused {
-                            for input_event in self.simulation_keyboard.on_keyboard_input(keyevent) {
+                            let ui_owns_activation = self.panel.context().egui_wants_keyboard_input()
+                                && matches!(
+                                    keyevent.virtual_keycode,
+                                    Some(VirtualKeyCode::Return | VirtualKeyCode::NumpadEnter | VirtualKeyCode::Space)
+                                );
+                            for input_event in self.simulation_keyboard.on_keyboard_input_routed(keyevent, !ui_owns_activation) {
                                 self.input.push_event(input_event);
                             }
                         }

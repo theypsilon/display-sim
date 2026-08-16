@@ -25,7 +25,14 @@ import {Observable, ObserverCb} from "../../services/observable";
 import {BackendEvent} from "../../services/event_types";
 import {Action} from "../../services/action";
 import {Disposable} from "../../services/disposable";
-import {BrowserKeyState, normalizeWheelDelta, OneFramePulseState, PrimaryPointerState} from './interaction_contract';
+import {
+    BrowserKeyState,
+    isHeldActionKey,
+    isSimulationKeyboardEventHandled,
+    normalizeWheelDelta,
+    OneFramePulseState,
+    PrimaryPointerState
+} from './interaction_contract';
 
 interface Channels {
     front: PubSub<BackendMessage>;
@@ -98,8 +105,11 @@ async function show (template: SimTemplate, view_model: SimViewModel, model: Sim
     }
 
     async function fireKeyboardPulse (key: string) {
+        const alreadyPressed = pulses.isActive(key);
         const generation = pulses.begin(key);
-        await fireKeyboardEvent({ pressed: true, key });
+        if (!alreadyPressed) {
+            await fireKeyboardEvent({ pressed: true, key });
+        }
         window.requestAnimationFrame(() => {
             if (!pulses.finish(key, generation)) {
                 return;
@@ -293,8 +303,10 @@ async function show (template: SimTemplate, view_model: SimViewModel, model: Sim
 
     function forwardPhysicalKey (pressed: boolean, e: Parameters<BackendEvent>[0]) {
         markInputsActive();
+        const routeToSimulation = !isSimulationKeyboardEventHandled(e)
+            && !(isHeldActionKey(e.key) && model.uiWantsKeyboard());
         const key = pressed
-            ? keyboardState.press(e.code, e.key, e.location)
+            ? keyboardState.press(e.code, e.key, e.location, routeToSimulation)
             : keyboardState.release(e.code, e.key, e.location);
         return key === undefined ? Promise.resolve() : fireKeyboardEvent({ pressed, key });
     }

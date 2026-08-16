@@ -32,13 +32,16 @@ pub(crate) fn trigger_hotkey_action_2(input: &mut Input, res: &mut Resources, ke
     process_modifiers_2(input, res, keycode, pressed);
 
     if let Some(keycode) = get_contextualized_action_2(input, res, keycode) {
-        if pressed == Pressed::Yes && input.active_pressed_actions_2.iter().any(|active_action| *active_action == keycode) {
-            return ActionUsed::Yes;
-        }
-        handle_action_2(input, res, keycode.as_ref(), pressed);
+        let action = controller_action(res, keycode.as_ref()).expect("contextual controller key disappeared");
         match pressed {
-            Pressed::Yes => input.active_pressed_actions_2.push(keycode),
-            Pressed::No => remove_action_2(input, keycode.as_ref()),
+            Pressed::Yes => {
+                let was_active = controller_action_is_active(input, res, action);
+                input.active_pressed_actions_2.push(keycode);
+                if !was_active {
+                    set_controller_action(res, action, true);
+                }
+            }
+            Pressed::No => release_controller_action(input, res, keycode.as_ref(), action),
         }
         ActionUsed::Yes
     } else {
@@ -53,27 +56,61 @@ pub(crate) fn trigger_hotkey_action_2(input: &mut Input, res: &mut Resources, ke
     }
 }
 
-fn remove_action_2(input: &mut Input, keycode: &str) {
-    let mut index = None;
-    for (i, active_action) in input.active_pressed_actions_2.iter().enumerate() {
-        if *active_action == keycode {
-            debug_assert_eq!(index, None);
-            index = Some(i);
-            #[cfg(not(debug_assertions))]
-            break;
+type ControllerAction = (KeyEventKind, usize);
+
+fn controller_action(res: &Resources, keycode: &str) -> Option<ControllerAction> {
+    res.controller_events
+        .get(keycode)
+        .copied()
+        .filter(|(kind, _)| !matches!(kind, KeyEventKind::Set))
+}
+
+fn controller_action_is_active(input: &Input, res: &Resources, action: ControllerAction) -> bool {
+    input
+        .active_pressed_actions_2
+        .iter()
+        .any(|keycode| controller_action(res, keycode.as_ref()) == Some(action))
+}
+
+fn set_controller_action(res: &mut Resources, (kind, index): ControllerAction, pressed: bool) {
+    let controller = &mut res.controllers.get_ui_controllers_mut()[index];
+    match kind {
+        KeyEventKind::Inc => controller.read_key_inc(pressed),
+        KeyEventKind::Dec => controller.read_key_dec(pressed),
+        KeyEventKind::Set => unreachable!(),
+    }
+}
+
+fn release_controller_action(input: &mut Input, res: &mut Resources, keycode: &str, action: ControllerAction) {
+    if let Some(i) = input.active_pressed_actions_2.iter().position(|active_keycode| active_keycode == keycode) {
+        input.active_pressed_actions_2.remove(i);
+        if !controller_action_is_active(input, res, action) {
+            set_controller_action(res, action, false);
         }
     }
-    if let Some(i) = index {
-        input.active_pressed_actions_2.remove(i);
+}
+
+pub(crate) fn release_controller_hotkey_actions(input: &mut Input, res: &mut Resources) {
+    let mut actions = Vec::<ControllerAction>::new();
+    for keycode in &input.active_pressed_actions_2 {
+        if let Some(action) = controller_action(res, keycode.as_ref()) {
+            if !actions.contains(&action) {
+                actions.push(action);
+            }
+        }
+    }
+    input.active_pressed_actions_2.clear();
+    for action in actions {
+        set_controller_action(res, action, false);
     }
 }
 
 fn process_modifiers_2(input: &mut Input, res: &mut Resources, keycode: &str, pressed: Pressed) {
-    if is_shift(keycode) {
+    if is_shift(keycode) && is_modifier_owner_transition(input, BooleanAction::Shift, pressed) {
         react_to_modifier_2(input, res, BooleanAction::Shift, pressed)
-    } else if is_ctrl(keycode) {
+    } else if is_ctrl(keycode) && is_modifier_owner_transition(input, BooleanAction::Control, pressed) {
         react_to_modifier_2(input, res, BooleanAction::Control, pressed)
-    } else if is_alt(keycode) {
+    } else if is_alt(keycode) && is_modifier_owner_transition(input, BooleanAction::Alt, pressed) {
         react_to_modifier_2(input, res, BooleanAction::Alt, pressed)
     }
 }
@@ -126,55 +163,52 @@ fn unmodify_active_actions_2(
 }
 
 fn resolve_modifications_2(input: &mut Input, res: &mut Resources, to_add: Vec<String>, to_delete: Vec<(usize, String)>) {
-    for (i, removed_keycode) in to_delete.into_iter().rev() {
-        handle_action_2(input, res, removed_keycode.as_ref(), Pressed::No);
+    let mut affected = Vec::<ControllerAction>::new();
+    for (_, keycode) in &to_delete {
+        if let Some(action) = controller_action(res, keycode.as_ref()) {
+            if !affected.contains(&action) {
+                affected.push(action);
+            }
+        }
+    }
+    for keycode in &to_add {
+        if let Some(action) = controller_action(res, keycode.as_ref()) {
+            if !affected.contains(&action) {
+                affected.push(action);
+            }
+        }
+    }
+
+    for (i, _) in to_delete.into_iter().rev() {
         input.active_pressed_actions_2.remove(i);
     }
-    for modified_keycode in to_add.into_iter() {
-        handle_action_2(input, res, modified_keycode.as_ref(), Pressed::Yes);
+    for modified_keycode in to_add {
         input.active_pressed_actions_2.push(modified_keycode);
     }
-}
-
-fn handle_action_2(input: &mut Input, res: &mut Resources, keycode: &str, pressed: Pressed) {
-    let pressed = match pressed {
-        Pressed::Yes => true,
-        Pressed::No => false,
-    };
-    if is_shift(keycode) {
-        input.shift = pressed;
-    } else if is_ctrl(keycode) {
-        input.control = pressed;
-    } else if is_alt(keycode) {
-        input.alt = pressed;
-    } else if let Some((kind, index)) = res.controller_events.get_mut(keycode) {
-        let controller = &mut res.controllers.get_ui_controllers_mut()[*index];
-        match kind {
-            KeyEventKind::Inc => controller.read_key_inc(pressed),
-            KeyEventKind::Dec => controller.read_key_dec(pressed),
-            KeyEventKind::Set => unreachable!(),
-        }
+    for action in affected {
+        let pressed = controller_action_is_active(input, res, action);
+        set_controller_action(res, action, pressed);
     }
 }
 
 fn get_contextualized_action_2(input: &Input, res: &Resources, keycode: &str) -> Option<String> {
     if input.shift && !is_shift(keycode) {
         let combo = format!("shift+{}", keycode);
-        if res.controller_events.contains_key(combo.as_str()) {
+        if controller_action(res, combo.as_str()).is_some() {
             return Some(combo);
         }
     } else if input.control && !is_ctrl(keycode) {
         let combo = format!("ctrl+{}", keycode);
-        if res.controller_events.contains_key(combo.as_str()) {
+        if controller_action(res, combo.as_str()).is_some() {
             return Some(combo);
         }
     } else if input.alt && !is_alt(keycode) {
         let combo = format!("alt+{}", keycode);
-        if res.controller_events.contains_key(combo.as_str()) {
+        if controller_action(res, combo.as_str()).is_some() {
             return Some(combo);
         }
     }
-    if res.controller_events.contains_key(keycode) {
+    if controller_action(res, keycode).is_some() {
         Some(keycode.into())
     } else {
         None
@@ -203,13 +237,16 @@ fn trigger_hotkey_action_intern(input: &mut Input, keycode: &str, pressed: Press
         Some(action) => action,
     };
     process_modifiers(input, action, pressed);
-    if pressed == Pressed::Yes && input.active_pressed_actions.iter().any(|(_, active_action)| *active_action == action) {
-        return ActionUsed::Yes;
-    }
-    handle_action(input, action, pressed);
+    let active_keycode = maybe_new_keycode.unwrap_or_else(|| keycode.into());
     match pressed {
-        Pressed::Yes => input.active_pressed_actions.push((maybe_new_keycode.unwrap_or_else(|| keycode.into()), action)),
-        Pressed::No => remove_action(input, action),
+        Pressed::Yes => {
+            let was_active = input.active_pressed_actions.iter().any(|(_, active_action)| *active_action == action);
+            input.active_pressed_actions.push((active_keycode, action));
+            if !was_active {
+                handle_action(input, action, Pressed::Yes);
+            }
+        }
+        Pressed::No => remove_action(input, active_keycode.as_ref(), action),
     }
     ActionUsed::Yes
 }
@@ -245,10 +282,22 @@ fn get_contextualized_action(input: &Input, keycode: &str) -> (Option<String>, O
 
 fn process_modifiers(input: &mut Input, action: BooleanAction, pressed: Pressed) {
     match action {
-        BooleanAction::Shift => react_to_modifier(input, BooleanAction::Shift, pressed),
-        BooleanAction::Control => react_to_modifier(input, BooleanAction::Control, pressed),
-        BooleanAction::Alt => react_to_modifier(input, BooleanAction::Alt, pressed),
+        BooleanAction::Shift | BooleanAction::Control | BooleanAction::Alt if is_modifier_owner_transition(input, action, pressed) => {
+            react_to_modifier(input, action, pressed)
+        }
         _ => {}
+    }
+}
+
+fn is_modifier_owner_transition(input: &Input, modifier: BooleanAction, pressed: Pressed) -> bool {
+    let owners = input
+        .active_pressed_actions
+        .iter()
+        .filter(|(_, active_action)| *active_action == modifier)
+        .count();
+    match pressed {
+        Pressed::Yes => owners == 0,
+        Pressed::No => owners == 1,
     }
 }
 
@@ -314,28 +363,40 @@ fn unmodify_active_actions(active_actions: &[KeyCodeBooleanAction], modifier_cod
 }
 
 fn resolve_modifications(input: &mut Input, to_add: Vec<KeyCodeBooleanAction>, to_delete: Vec<IndexBooleanAction>) {
-    for (i, removed_action) in to_delete.into_iter().rev() {
-        handle_action(input, removed_action, Pressed::No);
+    let mut affected = Vec::<BooleanAction>::new();
+    for (_, action) in &to_delete {
+        if !affected.contains(action) {
+            affected.push(*action);
+        }
+    }
+    for (_, action) in &to_add {
+        if !affected.contains(action) {
+            affected.push(*action);
+        }
+    }
+
+    for (i, _) in to_delete.into_iter().rev() {
         input.active_pressed_actions.remove(i);
     }
-    for (modified_keycode, modified_action) in to_add.into_iter() {
-        handle_action(input, modified_action, Pressed::Yes);
+    for (modified_keycode, modified_action) in to_add {
         input.active_pressed_actions.push((modified_keycode, modified_action));
+    }
+    for action in affected {
+        let pressed = input.active_pressed_actions.iter().any(|(_, active_action)| *active_action == action);
+        handle_action(input, action, Pressed::from_bool(pressed));
     }
 }
 
-fn remove_action(input: &mut Input, action: BooleanAction) {
-    let mut index = None;
-    for (i, (_, active_action)) in input.active_pressed_actions.iter().enumerate() {
-        if *active_action == action {
-            debug_assert_eq!(index, None);
-            index = Some(i);
-            #[cfg(not(debug_assertions))]
-            break;
-        }
-    }
-    if let Some(i) = index {
+fn remove_action(input: &mut Input, keycode: &str, action: BooleanAction) {
+    if let Some(i) = input
+        .active_pressed_actions
+        .iter()
+        .position(|(active_keycode, active_action)| active_keycode == keycode && *active_action == action)
+    {
         input.active_pressed_actions.remove(i);
+        if !input.active_pressed_actions.iter().any(|(_, active_action)| *active_action == action) {
+            handle_action(input, action, Pressed::No);
+        }
     }
 }
 
@@ -451,6 +512,8 @@ mod test_trigger_hotkey_action {
     #![allow(non_snake_case)]
 
     use super::*;
+    use crate::simulation_context::make_fake_simulation_context;
+    use crate::ui_controller::UiController;
 
     #[test]
     fn every_shared_panel_keyboard_action_is_registered() {
@@ -503,6 +566,123 @@ mod test_trigger_hotkey_action {
         assert_eq!(format!("{:?}", input.active_pressed_actions), "[(\"g\", NextCameraMovementMode(Increase))]");
         trigger_hotkey_action_intern(input, "g", Pressed::No);
         assert_eq!(format!("{:?}", input.active_pressed_actions), "[]");
+    }
+
+    #[test]
+    fn same_key_from_two_sources_stays_active_until_both_release() {
+        let mut input = Input::default();
+
+        trigger_hotkey_action_intern(&mut input, "w", Pressed::Yes);
+        trigger_hotkey_action_intern(&mut input, "w", Pressed::Yes);
+        assert!(input.walk_forward);
+        assert_eq!(input.active_pressed_actions.len(), 2);
+
+        trigger_hotkey_action_intern(&mut input, "w", Pressed::No);
+        assert!(input.walk_forward);
+        assert_eq!(input.active_pressed_actions.len(), 1);
+
+        trigger_hotkey_action_intern(&mut input, "w", Pressed::No);
+        assert!(!input.walk_forward);
+        assert!(input.active_pressed_actions.is_empty());
+    }
+
+    #[test]
+    fn aliased_builtin_actions_keep_independent_owners() {
+        let mut input = Input::default();
+
+        trigger_hotkey_action_intern(&mut input, "g", Pressed::Yes);
+        trigger_hotkey_action_intern(&mut input, "camera-movement-mode-inc", Pressed::Yes);
+        trigger_hotkey_action_intern(&mut input, "g", Pressed::No);
+
+        assert!(input.next_camera_movement_mode.increase.input);
+        assert_eq!(
+            input.active_pressed_actions,
+            [(
+                "camera-movement-mode-inc".into(),
+                BooleanAction::NextCameraMovementMode(Boolean2DAction::Increase)
+            )]
+        );
+
+        trigger_hotkey_action_intern(&mut input, "camera-movement-mode-inc", Pressed::No);
+        assert!(!input.next_camera_movement_mode.increase.input);
+    }
+
+    #[test]
+    fn modifier_retargeting_does_not_release_an_unmodified_alias() {
+        let mut input = Input::default();
+
+        trigger_hotkey_action_intern(&mut input, "g", Pressed::Yes);
+        trigger_hotkey_action_intern(&mut input, "camera-movement-mode-inc", Pressed::Yes);
+        trigger_hotkey_action_intern(&mut input, "shift", Pressed::Yes);
+
+        assert!(input.next_camera_movement_mode.increase.input);
+        assert!(input.next_camera_movement_mode.decrease.input);
+
+        trigger_hotkey_action_intern(&mut input, "shift", Pressed::No);
+        assert!(input.next_camera_movement_mode.increase.input);
+        assert!(!input.next_camera_movement_mode.decrease.input);
+
+        trigger_hotkey_action_intern(&mut input, "g", Pressed::No);
+        assert!(input.next_camera_movement_mode.increase.input);
+        trigger_hotkey_action_intern(&mut input, "camera-movement-mode-inc", Pressed::No);
+        assert!(!input.next_camera_movement_mode.increase.input);
+    }
+
+    #[test]
+    fn modifier_retargeting_waits_for_its_last_owner_to_release() {
+        let mut input = Input::default();
+
+        trigger_hotkey_action_intern(&mut input, "g", Pressed::Yes);
+        trigger_hotkey_action_intern(&mut input, "shift", Pressed::Yes);
+        trigger_hotkey_action_intern(&mut input, "shift", Pressed::Yes);
+        assert!(input.shift);
+        assert!(input.next_camera_movement_mode.decrease.input);
+
+        trigger_hotkey_action_intern(&mut input, "shift", Pressed::No);
+        assert!(input.shift);
+        assert!(input.next_camera_movement_mode.decrease.input);
+        assert!(!input.next_camera_movement_mode.increase.input);
+
+        trigger_hotkey_action_intern(&mut input, "shift", Pressed::No);
+        assert!(!input.shift);
+        assert!(!input.next_camera_movement_mode.decrease.input);
+        assert!(input.next_camera_movement_mode.increase.input);
+    }
+
+    #[test]
+    fn aliased_controller_actions_keep_independent_owners() {
+        let ctx = make_fake_simulation_context();
+        let mut input = Input::default();
+        let mut resources = Resources::default();
+        let initial_blur = resources.controllers.blur_passes.value;
+
+        trigger_hotkey_action_2(&mut input, &mut resources, "j", Pressed::Yes);
+        trigger_hotkey_action_2(&mut input, &mut resources, "blur-level-inc", Pressed::Yes);
+        trigger_hotkey_action_2(&mut input, &mut resources, "j", Pressed::No);
+
+        resources.controllers.blur_passes.pre_process_input();
+        assert!(resources.controllers.blur_passes.update(&resources.main, &ctx));
+        assert_eq!(resources.controllers.blur_passes.value, initial_blur + 1);
+
+        trigger_hotkey_action_2(&mut input, &mut resources, "blur-level-inc", Pressed::No);
+        assert!(input.active_pressed_actions_2.is_empty());
+    }
+
+    #[test]
+    fn blur_releases_every_controller_hotkey_owner() {
+        let ctx = make_fake_simulation_context();
+        let mut input = Input::default();
+        let mut resources = Resources::default();
+        let initial_blur = resources.controllers.blur_passes.value;
+
+        trigger_hotkey_action_2(&mut input, &mut resources, "j", Pressed::Yes);
+        trigger_hotkey_action_2(&mut input, &mut resources, "blur-level-inc", Pressed::Yes);
+        release_controller_hotkey_actions(&mut input, &mut resources);
+
+        resources.controllers.blur_passes.pre_process_input();
+        assert!(!resources.controllers.blur_passes.update(&resources.main, &ctx));
+        assert_eq!(resources.controllers.blur_passes.value, initial_blur);
+        assert!(input.active_pressed_actions_2.is_empty());
     }
 
     #[test]

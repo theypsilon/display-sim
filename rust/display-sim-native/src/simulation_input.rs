@@ -1,6 +1,6 @@
 use core::input_types::{InputEventValue, Pressed};
 use glutin::event::{ElementState, KeyboardInput, ModifiersState, MouseScrollDelta, VirtualKeyCode};
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 const WHEEL_POINTS_PER_LINE: f32 = 100.0;
 
@@ -56,6 +56,7 @@ struct PendingPrintableKey {
 pub(crate) struct SimulationKeyboardInput {
     pending_printable: VecDeque<PendingPrintableKey>,
     active: HashMap<u32, String>,
+    ui_owned: HashSet<u32>,
     logical_counts: HashMap<String, usize>,
     modifiers: ModifiersState,
     dead_composition_pending: bool,
@@ -66,10 +67,18 @@ impl SimulationKeyboardInput {
         self.modifiers = modifiers;
     }
 
-    pub(crate) fn on_keyboard_input(&mut self, input: &KeyboardInput) -> Vec<InputEventValue> {
+    #[cfg(test)]
+    fn on_keyboard_input(&mut self, input: &KeyboardInput) -> Vec<InputEventValue> {
+        self.on_keyboard_input_routed(input, true)
+    }
+
+    pub(crate) fn on_keyboard_input_routed(&mut self, input: &KeyboardInput, route_to_simulation: bool) -> Vec<InputEventValue> {
         match input.state {
             ElementState::Pressed => {
-                if self.active.contains_key(&input.scancode) || self.pending_printable.iter().any(|pending| pending.scancode == input.scancode) {
+                if self.active.contains_key(&input.scancode)
+                    || self.ui_owned.contains(&input.scancode)
+                    || self.pending_printable.iter().any(|pending| pending.scancode == input.scancode)
+                {
                     // Repeated physical presses do not create another owner
                     // of the logical key. The core already repeats held
                     // actions once per simulation tick.
@@ -78,6 +87,10 @@ impl SimulationKeyboardInput {
                 let Some(key) = input.virtual_keycode else {
                     return Vec::new();
                 };
+                if !route_to_simulation {
+                    self.ui_owned.insert(input.scancode);
+                    return Vec::new();
+                }
                 let fallback = browser_key_name(key, self.modifiers.shift());
                 if is_layout_sensitive_printable(key) {
                     let command_modifier =
@@ -94,6 +107,9 @@ impl SimulationKeyboardInput {
                 }
             }
             ElementState::Released => {
+                if self.ui_owned.remove(&input.scancode) {
+                    return Vec::new();
+                }
                 if let Some(index) = self.pending_printable.iter().position(|pending| pending.scancode == input.scancode) {
                     let pending = self.pending_printable.remove(index).expect("pending printable index disappeared");
                     let mut events = Vec::new();
@@ -141,6 +157,7 @@ impl SimulationKeyboardInput {
     pub(crate) fn clear(&mut self) {
         self.pending_printable.clear();
         self.active.clear();
+        self.ui_owned.clear();
         self.logical_counts.clear();
         self.modifiers = ModifiersState::empty();
         self.dead_composition_pending = false;
@@ -510,6 +527,28 @@ mod tests {
         assert_keyboard(&events[0], Pressed::Yes, "e");
         let released = input.on_keyboard_input(&key(18, ElementState::Released, VirtualKeyCode::E, ModifiersState::empty()));
         assert_keyboard(&released[0], Pressed::No, "e");
+    }
+
+    #[test]
+    fn ui_owned_activation_keys_never_emit_simulation_edges() {
+        let mut input = SimulationKeyboardInput::default();
+        let space = key(57, ElementState::Pressed, VirtualKeyCode::Space, ModifiersState::empty());
+        assert!(input.on_keyboard_input_routed(&space, false).is_empty());
+        assert!(input.on_received_character(' ').is_empty());
+        assert!(input.on_keyboard_input_routed(&space, true).is_empty());
+        assert!(input
+            .on_keyboard_input_routed(&key(57, ElementState::Released, VirtualKeyCode::Space, ModifiersState::empty()), true)
+            .is_empty());
+    }
+
+    #[test]
+    fn routed_key_release_survives_focus_moving_to_the_ui() {
+        let mut input = SimulationKeyboardInput::default();
+        input.on_keyboard_input_routed(&key(57, ElementState::Pressed, VirtualKeyCode::Space, ModifiersState::empty()), true);
+        let pressed = input.on_received_character(' ');
+        assert_keyboard(&pressed[0], Pressed::Yes, " ");
+        let released = input.on_keyboard_input_routed(&key(57, ElementState::Released, VirtualKeyCode::Space, ModifiersState::empty()), false);
+        assert_keyboard(&released[0], Pressed::No, " ");
     }
 
     #[test]
