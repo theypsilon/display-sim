@@ -526,7 +526,15 @@ async function show (template: SimTemplate, view_model: SimViewModel, model: Sim
             await releaseSimPointer();
         }
     });
-    addDomListener(windowListener, 'resize', () => fireBackendEvent('viewport-resize', model.resizeCanvas()));
+    let viewportSize = {width: currentCanvas().width, height: currentCanvas().height};
+    addDomListener(windowListener, 'resize', () => {
+        const nextViewportSize = model.resizeCanvas();
+        if (nextViewportSize.width === viewportSize.width && nextViewportSize.height === viewportSize.height) {
+            return;
+        }
+        viewportSize = nextViewportSize;
+        return fireBackendEvent('viewport-resize', nextViewportSize);
+    });
 
     // `runFrame` dispatches the initial controller values through async
     // browser observers. Let those observers settle, render their values, and

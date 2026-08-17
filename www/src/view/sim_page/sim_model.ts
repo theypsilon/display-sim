@@ -179,8 +179,14 @@ export class SimModel {
     resizeCanvas () {
         const dpi = window.devicePixelRatio;
         const canvas = this._state.canvas;
-        const width = canvas.width = canvas.offsetWidth * dpi;
-        const height = canvas.height = canvas.offsetHeight * dpi;    
+        const width = Math.trunc(canvas.offsetWidth * dpi);
+        const height = Math.trunc(canvas.offsetHeight * dpi);
+        if (canvas.width !== width) {
+            canvas.width = width;
+        }
+        if (canvas.height !== height) {
+            canvas.height = height;
+        }
         return { width, height };
     }
 

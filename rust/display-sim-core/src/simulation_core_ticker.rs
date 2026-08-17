@@ -205,7 +205,11 @@ impl<'a> SimulationUpdater<'a> {
     pub fn update(&mut self) -> AppResult<()> {
         self.res.main.dt = ((self.input.now - self.res.timers.last_time) / 1000.0) as f32;
 
-        if let Some(viewport) = self.input.event_viewport_resize {
+        if let Some(viewport) = self
+            .input
+            .event_viewport_resize
+            .filter(|viewport| viewport.width != self.res.video.viewport_size.width || viewport.height != self.res.video.viewport_size.height)
+        {
             self.ctx.dispatcher().dispatch_log(format!("viewport:resize: {:?}", viewport));
             self.res.video.viewport_size = viewport;
             self.res.scaling.scaling_initialized = false;
@@ -1286,6 +1290,55 @@ mod tests {
         commands.emit(SimulationCommand::Camera(CameraChange::PosX(123.0)));
         SimulationCoreTicker::new(&ctx, &mut resources, &mut input, &mut commands).tick(16.0).unwrap();
         assert_eq!(resources.camera.get_position().x, 123.0);
+    }
+
+    #[test]
+    fn duplicate_viewport_notifications_do_not_reset_custom_camera_movement() {
+        let ctx = make_fake_simulation_context();
+        let mut resources = runnable_resources();
+        let mut input = Input::new(0.0);
+        let mut commands = SimulationCommandBus::default();
+        resources.controllers.preset_factory(FilterPresetOptions::Custom, &None);
+        resources.main.current_filter_preset = FilterPresetOptions::Custom;
+
+        SimulationCoreTicker::new(&ctx, &mut resources, &mut input, &mut commands).tick(16.0).unwrap();
+        let initial = resources.camera.get_position();
+        let viewport = resources.video.viewport_size;
+
+        commands.emit_all([
+            SimulationCommand::ViewportResize(viewport.width, viewport.height),
+            SimulationCommand::Keyboard {
+                pressed: Pressed::Yes,
+                key: "a".into(),
+            },
+        ]);
+        SimulationCoreTicker::new(&ctx, &mut resources, &mut input, &mut commands).tick(32.0).unwrap();
+        let pressed = resources.camera.get_position();
+        assert_ne!(pressed, initial);
+
+        commands.emit_all([
+            SimulationCommand::ViewportResize(viewport.width, viewport.height),
+            SimulationCommand::Keyboard {
+                pressed: Pressed::No,
+                key: "a".into(),
+            },
+        ]);
+        SimulationCoreTicker::new(&ctx, &mut resources, &mut input, &mut commands).tick(48.0).unwrap();
+
+        assert_eq!(
+            resources.camera.get_position(),
+            pressed,
+            "an identical viewport notification rebuilt the camera"
+        );
+
+        commands.emit(SimulationCommand::ViewportResize(viewport.width + 1, viewport.height));
+        SimulationCoreTicker::new(&ctx, &mut resources, &mut input, &mut commands).tick(64.0).unwrap();
+        assert_eq!(resources.video.viewport_size.width, viewport.width + 1);
+        assert_eq!(
+            resources.camera.get_position().x,
+            initial.x,
+            "an actual viewport change did not rebuild the camera"
+        );
     }
 
     #[test]
