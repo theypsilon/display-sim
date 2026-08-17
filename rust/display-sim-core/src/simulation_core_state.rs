@@ -186,6 +186,7 @@ pub struct ScreenshotTrigger {
 
 pub struct FlightDemoData {
     pub camera_backup: CameraData,
+    pub visual_preset_backup: FilterPresetOptions,
     pub movement_target: glm::Vec3,
     pub movement_speed: glm::Vec3,
     pub movement_max_speed: f32,
@@ -197,6 +198,7 @@ impl Default for FlightDemoData {
     fn default() -> FlightDemoData {
         FlightDemoData {
             camera_backup: CameraData::new(0.0, 0.0),
+            visual_preset_backup: FilterPresetOptions::default(),
             movement_target: glm::vec3(0.0, 0.0, 0.0),
             movement_speed: glm::vec3(0.0, 0.0, 0.0),
             movement_max_speed: 0.3,

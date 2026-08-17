@@ -528,6 +528,16 @@ async function show (template: SimTemplate, view_model: SimViewModel, model: Sim
     });
     addDomListener(windowListener, 'resize', () => fireBackendEvent('viewport-resize', model.resizeCanvas()));
 
+    // `runFrame` dispatches the initial controller values through async
+    // browser observers. Let those observers settle, render their values, and
+    // only then reveal an input-ready page. Subsequent frames have already
+    // paid the one-time shader/resource initialization cost.
+    await Promise.resolve();
+    view_model.newFrame();
+    if (!initDto.glError) {
+        view_model.hideLoading();
+    }
+
     return Disposable.make(() => {
         pulses.clear();
         keyboardState.clear();

@@ -348,7 +348,6 @@ export class SimViewModel {
         if (dto.glError) {
             return this.showFatalError('WebGL2 is not working on your browser, try restarting it! And remember, this works only on a PC with updated browser and graphics drivers.');
         }
-        this._visibility.hideLoading();
         if (dto.skipControllerUi) {
             this.setUiNotVisible();
         }
@@ -366,6 +365,10 @@ export class SimViewModel {
 
     showLoading () {
         this._visibility.showLoading();
+    }
+
+    hideLoading () {
+        this._visibility.hideLoading();
     }
 
     showFatalError (msg: string) {

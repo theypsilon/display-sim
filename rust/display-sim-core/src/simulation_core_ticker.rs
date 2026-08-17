@@ -228,6 +228,14 @@ impl<'a> SimulationUpdater<'a> {
         self.update_speeds();
         self.update_scaling();
         self.update_filters()?;
+        if self.input.reset_position {
+            self.res.scaling.scaling_initialized = false;
+            self.ctx.dispatcher().dispatch_top_message("The camera have been reset.");
+        }
+        // Scaling establishes the baseline camera pose. Do this before any
+        // camera command so startup, resize, scaling, and reset work cannot
+        // replace valid input later in the same tick.
+        self.update_output_scaling();
         self.update_camera();
         self.update_screenshot();
         if self.res.controllers.preset_kind.value == FilterPresetOptions::DemoFlight1 {
@@ -453,6 +461,12 @@ impl<'a> SimulationUpdater<'a> {
         if self.res.controllers.preset_kind.value == self.res.main.current_filter_preset {
             return Ok(());
         }
+        if self.res.controllers.preset_kind.value == FilterPresetOptions::DemoFlight1 {
+            // Flight is a camera program layered over the current visual
+            // preset. Remember that preset so manual camera input can stop
+            // the program without relabeling or rebuilding the filters.
+            self.res.demo_1.visual_preset_backup = self.res.main.current_filter_preset;
+        }
         if self.res.controllers.preset_kind.value == FilterPresetOptions::Custom && self.res.custom_is_changed {
             self.res.saved_filters = Some(self.res.controllers.clone());
         }
@@ -484,10 +498,7 @@ impl<'a> SimulationUpdater<'a> {
     }
 
     fn update_camera(&mut self) {
-        if self.input.reset_position {
-            self.res.scaling.scaling_initialized = false;
-            self.ctx.dispatcher().dispatch_top_message("The camera have been reset.");
-        }
+        self.stop_flight_for_manual_camera_input();
 
         if self.input.next_camera_movement_mode.increase.is_just_pressed() || self.input.next_camera_movement_mode.decrease.is_just_pressed() {
             self.res.camera.locked_mode = match self.res.camera.locked_mode {
@@ -570,6 +581,48 @@ impl<'a> SimulationUpdater<'a> {
         }
 
         camera.update_view(self.res.main.dt)
+    }
+
+    fn stop_flight_for_manual_camera_input(&mut self) {
+        if self.res.controllers.preset_kind.value != FilterPresetOptions::DemoFlight1 || !self.has_manual_camera_input() {
+            return;
+        }
+
+        // The five-second composed opening owns the absolute camera pose.
+        // Without ending Flight here, perfectly valid input is applied by
+        // update_camera and then overwritten by update_demo until the opening
+        // ends, which looks exactly like an input backlog. Manual input means
+        // immediate takeover: keep the current flyby pose and active visual
+        // configuration, but stop further automatic camera writes.
+        let visual_preset = self.res.demo_1.visual_preset_backup;
+        self.res.demo_1.needs_initialization = false;
+        self.res.demo_1.opening_elapsed = None;
+        self.res.controllers.preset_kind.value = visual_preset;
+        self.res.main.current_filter_preset = visual_preset;
+        self.res.controllers.preset_kind.dispatch_event(self.ctx.dispatcher());
+    }
+
+    fn has_manual_camera_input(&self) -> bool {
+        self.input.reset_position
+            || self.input.next_camera_movement_mode.increase.is_just_pressed()
+            || self.input.next_camera_movement_mode.decrease.is_just_pressed()
+            || self.input.walk_left
+            || self.input.walk_right
+            || self.input.walk_up
+            || self.input.walk_down
+            || self.input.walk_forward
+            || self.input.walk_backward
+            || self.input.turn_left
+            || self.input.turn_right
+            || self.input.turn_up
+            || self.input.turn_down
+            || self.input.rotate_left
+            || self.input.rotate_right
+            || self.input.camera_zoom.increase
+            || self.input.camera_zoom.decrease
+            || self.input.mouse_scroll_y != 0.0
+            || (self.input.mouse_click.is_activated() && (self.input.mouse_position_x != 0 || self.input.mouse_position_y != 0))
+            || self.input.event_camera.is_some()
     }
 
     fn change_frontend_input_values(&self) {
@@ -657,7 +710,6 @@ impl<'a> SimulationUpdater<'a> {
     fn update_outputs(&mut self) {
         self.res.main.current_filter_preset = self.res.controllers.preset_kind.value;
 
-        self.update_output_scaling();
         self.update_output_filter_source_colors();
         self.update_output_filter_curvature();
         self.update_output_filter_backlight();
@@ -1056,6 +1108,7 @@ fn calculate_far_away_position(bg_size: Size2D<f32>, internal_resolution: &Inter
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::camera::CameraChange;
     use crate::simulation_command::{ControllerValue, SimulationCommandPlayer};
     use crate::simulation_context::make_fake_simulation_context;
     use crate::simulation_core_state::{AnimationStep, VideoInputResources};
@@ -1201,6 +1254,38 @@ mod tests {
         assert!(!ticker.input.walk_forward);
         assert!(ticker.input.next_camera_movement_mode.increase.is_just_released());
         assert!(ticker.input.active_pressed_actions.is_empty());
+    }
+
+    #[test]
+    fn first_tick_camera_commands_survive_scaling_initialization() {
+        let ctx = make_fake_simulation_context();
+        let mut resources = runnable_resources();
+        let mut input = Input::new(0.0);
+        let mut commands = SimulationCommandBus::default();
+        assert!(!resources.scaling.scaling_initialized);
+
+        commands.emit_all([
+            SimulationCommand::Keyboard {
+                pressed: Pressed::Yes,
+                key: "camera-movement-mode-inc".into(),
+            },
+            SimulationCommand::Keyboard {
+                pressed: Pressed::Yes,
+                key: "w".into(),
+            },
+        ]);
+        SimulationCoreTicker::new(&ctx, &mut resources, &mut input, &mut commands).tick(16.0).unwrap();
+
+        assert!(resources.scaling.scaling_initialized);
+        assert_eq!(resources.camera.locked_mode.to_string(), "3D");
+        assert!(resources.camera.get_position().z < resources.initial_parameters.initial_position_z);
+
+        let mut resources = runnable_resources();
+        let mut input = Input::new(0.0);
+        let mut commands = SimulationCommandBus::default();
+        commands.emit(SimulationCommand::Camera(CameraChange::PosX(123.0)));
+        SimulationCoreTicker::new(&ctx, &mut resources, &mut input, &mut commands).tick(16.0).unwrap();
+        assert_eq!(resources.camera.get_position().x, 123.0);
     }
 
     #[test]
@@ -1458,6 +1543,93 @@ mod tests {
         assert!(glm::length(&(resources.camera.get_position() - opening_end)) < 0.01);
         assert!((glm::length(&resources.demo_1.movement_speed) - 1.0).abs() < 0.01);
         assert!(glm::dot(&resources.camera.direction, &(-opening_end).normalize()) > 0.999);
+    }
+
+    #[test]
+    fn movement_key_takes_over_immediately_during_flight_opening() {
+        let ctx = make_fake_simulation_context();
+        let mut resources = runnable_resources();
+        let mut input = Input::new(0.0);
+        let mut commands = SimulationCommandBus::default();
+        resources.controllers.preset_factory(FilterPresetOptions::Sharp1, &None);
+        resources.main.current_filter_preset = FilterPresetOptions::Sharp1;
+        let expected_visuals = flight_visual_state(&resources);
+
+        commands.emit(SimulationCommand::controller_set(
+            FILTER_PRESET_EVENT_TAG,
+            ControllerValue::Text(FilterPresetOptions::DemoFlight1.to_string()),
+        ));
+        SimulationCoreTicker::new(&ctx, &mut resources, &mut input, &mut commands).tick(16.0).unwrap();
+        assert_eq!(resources.controllers.preset_kind.value, FilterPresetOptions::DemoFlight1);
+        assert!(resources.demo_1.opening_elapsed.is_some());
+        let opening_position = resources.camera.get_position();
+
+        commands.emit(SimulationCommand::Keyboard {
+            pressed: Pressed::Yes,
+            key: "w".into(),
+        });
+        SimulationCoreTicker::new(&ctx, &mut resources, &mut input, &mut commands).tick(32.0).unwrap();
+
+        assert_eq!(resources.controllers.preset_kind.value, FilterPresetOptions::Sharp1);
+        assert_eq!(resources.main.current_filter_preset, FilterPresetOptions::Sharp1);
+        assert!(resources.demo_1.opening_elapsed.is_none());
+        assert!(glm::length(&(resources.camera.get_position() - opening_position)) > f32::EPSILON);
+        assert_eq!(flight_visual_state(&resources), expected_visuals);
+    }
+
+    #[test]
+    fn movement_mode_control_takes_over_immediately_during_flight_opening() {
+        let ctx = make_fake_simulation_context();
+        let mut resources = runnable_resources();
+        let mut input = Input::new(0.0);
+        let mut commands = SimulationCommandBus::default();
+        let visual_preset = resources.main.current_filter_preset;
+
+        commands.emit(SimulationCommand::controller_set(
+            FILTER_PRESET_EVENT_TAG,
+            ControllerValue::Text(FilterPresetOptions::DemoFlight1.to_string()),
+        ));
+        SimulationCoreTicker::new(&ctx, &mut resources, &mut input, &mut commands).tick(16.0).unwrap();
+        assert_eq!(resources.controllers.preset_kind.value, FilterPresetOptions::DemoFlight1);
+        assert!(resources.demo_1.opening_elapsed.is_some());
+        assert_eq!(resources.camera.locked_mode.to_string(), "3D");
+
+        commands.emit(SimulationCommand::Keyboard {
+            pressed: Pressed::Yes,
+            key: "camera-movement-mode-inc".into(),
+        });
+        SimulationCoreTicker::new(&ctx, &mut resources, &mut input, &mut commands).tick(32.0).unwrap();
+
+        assert_eq!(resources.camera.locked_mode.to_string(), "2D");
+        assert_eq!(resources.controllers.preset_kind.value, visual_preset);
+        assert_eq!(resources.main.current_filter_preset, visual_preset);
+        assert!(resources.demo_1.opening_elapsed.is_none());
+    }
+
+    #[test]
+    fn focusing_or_clicking_the_canvas_does_not_cancel_flight() {
+        let ctx = make_fake_simulation_context();
+        let mut resources = runnable_resources();
+        let mut input = Input::new(0.0);
+        let mut commands = SimulationCommandBus::default();
+
+        commands.emit(SimulationCommand::controller_set(
+            FILTER_PRESET_EVENT_TAG,
+            ControllerValue::Text(FilterPresetOptions::DemoFlight1.to_string()),
+        ));
+        SimulationCoreTicker::new(&ctx, &mut resources, &mut input, &mut commands).tick(16.0).unwrap();
+
+        commands.emit_all([
+            SimulationCommand::Keyboard {
+                pressed: Pressed::Yes,
+                key: "canvas_focused".into(),
+            },
+            SimulationCommand::MouseClick(Pressed::Yes),
+        ]);
+        SimulationCoreTicker::new(&ctx, &mut resources, &mut input, &mut commands).tick(32.0).unwrap();
+
+        assert_eq!(resources.controllers.preset_kind.value, FilterPresetOptions::DemoFlight1);
+        assert!(resources.demo_1.opening_elapsed.is_some());
     }
 
     #[test]
