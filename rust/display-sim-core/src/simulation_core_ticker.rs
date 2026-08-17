@@ -16,7 +16,7 @@
 use crate::boolean_actions::{release_controller_hotkey_actions, trigger_hotkey_action, ActionUsed};
 use crate::camera::{CameraData, CameraDirection, CameraLockMode, CameraSystem};
 use crate::field_changer::FieldChanger;
-use crate::general_types::{get_3_f32color_from_int, get_int_from_3_f32color, Size2D};
+use crate::general_types::{get_3_f32color_from_int, Size2D};
 use crate::input_types::Input;
 use crate::math::gcd;
 use crate::simulation_command::{Pressed, SimulationCommand, SimulationCommandBus};
@@ -607,8 +607,6 @@ impl<'a> SimulationUpdater<'a> {
             self.res.camera.axis_up = glm::make_vec3(&FLIGHT_DEMO_OPENING_UP);
             self.res.demo_1.movement_target = random_flight_target(self.ctx, self.res.video.image_size, self.res.initial_parameters.initial_position_z);
             self.res.demo_1.opening_elapsed = Some(0.0);
-            self.res.demo_1.color_target = glm::make_vec3(&get_3_f32color_from_int(self.res.controllers.light_color.value));
-            self.res.demo_1.color_position = self.res.demo_1.color_target;
         }
         {
             // moving position
@@ -650,50 +648,8 @@ impl<'a> SimulationUpdater<'a> {
                 if glm::length(&movement_route).abs() <= 15.0 {
                     self.res.demo_1.movement_target = random_flight_target(self.ctx, self.res.video.image_size, self.res.initial_parameters.initial_position_z);
                     self.res.demo_1.movement_max_speed = self.ctx.random().next() * 0.6 + 0.3;
-                    if self.ctx.random().next() < 0.33 {
-                        self.res.controllers.color_channels.value = ColorChannelsOptions::Overlapping;
-                    } else {
-                        self.res.controllers.color_channels.value = ColorChannelsOptions::Combined;
-                    }
-                    if self.ctx.random().next() < 0.33 {
-                        self.res.controllers.pixels_geometry_kind.value = PixelGeometryKindOptions::Squares;
-                    } else {
-                        self.res.controllers.pixels_geometry_kind.value = PixelGeometryKindOptions::Cubes;
-                    }
                 }
                 CameraSystem::new(&mut self.res.camera, self.ctx.dispatcher()).look_at(glm::vec3(0.0, 0.0, 0.0));
-            }
-        }
-        {
-            // moving color
-            let color_route = self.res.demo_1.color_target - self.res.demo_1.color_position;
-            let is_void_route = color_route == glm::vec3(0.0, 0.0, 0.0);
-            if !is_void_route {
-                self.res.demo_1.color_position += color_route.normalize() * dt * 0.1;
-                self.res.controllers.light_color.value = get_int_from_3_f32color(&self.res.demo_1.color_position.into());
-                self.res.controllers.light_color.dispatch_event(self.ctx.dispatcher());
-            }
-            if is_void_route || glm::length(&color_route).abs() <= 0.15 {
-                let rnd_r = self.ctx.random().next() * 0.6 + 0.4;
-                let rnd_g = self.ctx.random().next() * 0.6 + 0.4;
-                let rnd_b = self.ctx.random().next() * 0.6 + 0.4;
-                self.res.demo_1.color_target = glm::vec3(rnd_r, rnd_g, rnd_b);
-            }
-        }
-        {
-            // spreading
-            let spread_change = dt * 0.03 * self.res.controllers.cur_pixel_spread.value * self.res.controllers.cur_pixel_spread.value;
-            if self.res.demo_1.spreading {
-                self.res.controllers.cur_pixel_spread.value += spread_change;
-                if self.res.controllers.cur_pixel_spread.value > 1000.0 {
-                    self.res.demo_1.spreading = false;
-                }
-            } else {
-                self.res.controllers.cur_pixel_spread.value -= spread_change;
-                if self.res.controllers.cur_pixel_spread.value <= 0.5 {
-                    self.res.demo_1.spreading = true;
-                    self.res.controllers.cur_pixel_spread.value = 0.5;
-                }
             }
         }
     }
@@ -1150,6 +1106,48 @@ mod tests {
         resources.camera.get_position()
     }
 
+    #[derive(Debug, PartialEq)]
+    struct FlightVisualState {
+        internal_resolution: (i32, i32),
+        texture_interpolation: String,
+        blur_passes: usize,
+        lines_per_pixel: (usize, usize),
+        light_color: i32,
+        brightness_color: i32,
+        brightness: f32,
+        contrast: f32,
+        pixel_gaps: (f32, f32),
+        pixel_spread: f32,
+        pixel_shadow_height: f32,
+        pixel_geometry: String,
+        pixel_texture: usize,
+        color_channels: String,
+        screen_curvature: String,
+        backlight: f32,
+    }
+
+    fn flight_visual_state(resources: &Resources) -> FlightVisualState {
+        let controllers = &resources.controllers;
+        FlightVisualState {
+            internal_resolution: (controllers.internal_resolution.width(), controllers.internal_resolution.height()),
+            texture_interpolation: controllers.texture_interpolation.value.to_string(),
+            blur_passes: controllers.blur_passes.value,
+            lines_per_pixel: (controllers.vertical_lpp.value, controllers.horizontal_lpp.value),
+            light_color: controllers.light_color.value,
+            brightness_color: controllers.brightness_color.value,
+            brightness: controllers.extra_bright.value,
+            contrast: controllers.extra_contrast.value,
+            pixel_gaps: (controllers.cur_pixel_vertical_gap.value, controllers.cur_pixel_horizontal_gap.value),
+            pixel_spread: controllers.cur_pixel_spread.value,
+            pixel_shadow_height: controllers.pixel_shadow_height.value,
+            pixel_geometry: controllers.pixels_geometry_kind.value.to_string(),
+            pixel_texture: controllers.pixel_shadow_shape_kind.value.value,
+            color_channels: controllers.color_channels.value.to_string(),
+            screen_curvature: controllers.screen_curvature_kind.value.to_string(),
+            backlight: controllers.backlight_percent.value,
+        }
+    }
+
     #[test]
     fn relative_mouse_and_wheel_events_accumulate_between_ticks() {
         let ctx = make_fake_simulation_context();
@@ -1486,6 +1484,52 @@ mod tests {
 
         assert_eq!(resources.camera.get_position(), original_position);
         assert_eq!(resources.camera.direction, original_direction);
+    }
+
+    #[test]
+    fn flight_preserves_the_active_visual_configuration() {
+        let ctx = make_fake_simulation_context();
+        let mut resources = runnable_resources();
+        let mut input = Input::new(0.0);
+        let mut commands = SimulationCommandBus::default();
+
+        resources.controllers.internal_resolution.set_resolution(720);
+        resources.controllers.blur_passes.value = 4;
+        resources.controllers.vertical_lpp.value = 2;
+        resources.controllers.horizontal_lpp.value = 3;
+        resources.controllers.light_color.value = 0x0012_3456;
+        resources.controllers.brightness_color.value = 0x0065_4321;
+        resources.controllers.extra_bright.value = 0.35;
+        resources.controllers.extra_contrast.value = 1.75;
+        resources.controllers.cur_pixel_vertical_gap.value = 0.25;
+        resources.controllers.cur_pixel_horizontal_gap.value = 0.75;
+        resources.controllers.cur_pixel_spread.value = 2.5;
+        resources.controllers.pixel_shadow_height.value = 0.4;
+        resources.controllers.pixels_geometry_kind.value = PixelGeometryKindOptions::Squares;
+        resources.controllers.pixel_shadow_shape_kind.value.value = 17;
+        resources.controllers.color_channels.value = ColorChannelsOptions::SplitVertical;
+        resources.controllers.screen_curvature_kind.value = ScreenCurvatureKindOptions::Curved2;
+        resources.controllers.backlight_percent.value = 0.85;
+        let expected = flight_visual_state(&resources);
+
+        commands.emit(SimulationCommand::controller_set(
+            FILTER_PRESET_EVENT_TAG,
+            ControllerValue::Text(FilterPresetOptions::DemoFlight1.to_string()),
+        ));
+        SimulationCoreTicker::new(&ctx, &mut resources, &mut input, &mut commands).tick(16.0).unwrap();
+
+        assert_eq!(resources.controllers.preset_kind.value, FilterPresetOptions::DemoFlight1);
+        assert_eq!(flight_visual_state(&resources), expected);
+
+        // Repeatedly force the procedural leg to choose a new waypoint. This
+        // is where the completed 2019 routine used to randomize geometry.
+        resources.demo_1.opening_elapsed = None;
+        for _ in 0..64 {
+            resources.main.dt = 1.0 / FLIGHT_DEMO_REFERENCE_HZ;
+            resources.demo_1.movement_target = resources.camera.get_position();
+            SimulationUpdater::new(&ctx, &mut resources, &input).update_demo();
+            assert_eq!(flight_visual_state(&resources), expected);
+        }
     }
 
     #[test]

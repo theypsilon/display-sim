@@ -190,9 +190,6 @@ pub struct FlightDemoData {
     pub movement_speed: glm::Vec3,
     pub movement_max_speed: f32,
     pub opening_elapsed: Option<f32>,
-    pub color_target: glm::Vec3,
-    pub color_position: glm::Vec3,
-    pub spreading: bool,
     pub needs_initialization: bool,
 }
 
@@ -204,9 +201,6 @@ impl Default for FlightDemoData {
             movement_speed: glm::vec3(0.0, 0.0, 0.0),
             movement_max_speed: 0.3,
             opening_elapsed: None,
-            color_target: glm::vec3(0.0, 0.0, 0.0),
-            color_position: glm::vec3(0.0, 0.0, 0.0),
-            spreading: true,
             needs_initialization: true,
         }
     }
@@ -428,25 +422,9 @@ impl Controllers {
     }
 
     pub fn preset_demo_1(&mut self) {
-        // Keep the selected performance resolution. The original flight
-        // preset preserved it; resetting to the 4K default makes the demo's
-        // 3D cube rendering unnecessarily expensive and visibly uneven.
-        self.texture_interpolation = TextureInterpolationOptions::Linear.into();
-        self.blur_passes = 0.into();
-        self.vertical_lpp = 1.into();
-        self.horizontal_lpp = 1.into();
-        self.brightness_color = 0x00FF_FFFF.into();
-        self.extra_bright = 0.0.into();
-        self.extra_contrast = 1.0.into();
-        self.cur_pixel_vertical_gap = 0.0.into();
-        self.cur_pixel_horizontal_gap = 0.0.into();
-        self.cur_pixel_spread = 1.0.into();
-        self.pixel_shadow_height = 1.0.into();
-        self.pixels_geometry_kind = PixelGeometryKindOptions::Cubes.into();
-        self.pixel_shadow_shape_kind = ShadowShape { value: 0 }.into();
-        self.color_channels = ColorChannelsOptions::Combined.into();
-        self.screen_curvature_kind = ScreenCurvatureKindOptions::Pulse.into();
-        self.backlight_percent.value = 0.2;
+        // Flight is a camera program, not a visual preset. Preserve the
+        // active filter and geometry configuration so starting a flyby never
+        // darkens or otherwise restyles the image.
         self.preset_kind = FilterPresetOptions::DemoFlight1.into();
     }
 
