@@ -18,9 +18,10 @@ use crate::boolean_button::BooleanButton;
 use crate::field_changer::FieldChanger;
 use crate::general_types::IncDec;
 use crate::input_types::TrackedButton;
+use crate::simulation_command::ControllerValue;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::MainState;
-use crate::ui_controller::{EncodedValue, UiController};
+use crate::ui_controller::UiController;
 use app_util::AppResult;
 
 #[derive(Default, Clone)]
@@ -64,7 +65,7 @@ impl UiController for VerticalLpp {
         self.input.increase.input = false;
         self.input.decrease.input = false;
     }
-    fn read_event(&mut self, encoded: Box<dyn EncodedValue>) -> AppResult<()> {
+    fn read_event(&mut self, encoded: &ControllerValue) -> AppResult<()> {
         self.event = Some(encoded.to_usize()?);
         Ok(())
     }

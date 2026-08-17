@@ -16,9 +16,10 @@
 use crate::app_events::AppEventDispatcher;
 use crate::field_changer::FieldChanger;
 use crate::general_types::IncDec;
+use crate::simulation_command::ControllerValue;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::MainState;
-use crate::ui_controller::{EncodedValue, UiController};
+use crate::ui_controller::UiController;
 use app_util::AppResult;
 
 #[derive(Default, Copy, Clone)]
@@ -66,7 +67,7 @@ impl UiController for ExtraBright {
         self.input.decrease = false;
         app_util::log("ExtraBright::RESET_INPUTS");
     }
-    fn read_event(&mut self, encoded: Box<dyn EncodedValue>) -> AppResult<()> {
+    fn read_event(&mut self, encoded: &ControllerValue) -> AppResult<()> {
         self.event = Some(encoded.to_f32()?);
         Ok(())
     }

@@ -19,7 +19,7 @@ use app_util::log_error;
 use crate::general_types::OptionCursor;
 use std::fmt::{Display, Error, Formatter};
 
-use crate::ui_controller::EncodedValue;
+use crate::simulation_command::ControllerValue;
 
 pub const TEXTURE_SIZE: usize = 510;
 
@@ -126,8 +126,8 @@ impl EnumUi for ShadowShape {
     }
 }
 
-impl From<Box<dyn EncodedValue>> for ShadowShape {
-    fn from(value: Box<dyn EncodedValue>) -> Self {
+impl From<ControllerValue> for ShadowShape {
+    fn from(value: ControllerValue) -> Self {
         match value.to_usize() {
             Ok(value) => ShadowShape { value },
             Err(e) => {

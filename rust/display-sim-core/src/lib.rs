@@ -27,6 +27,7 @@ mod field_changer;
 pub mod general_types;
 pub mod input_types;
 mod math;
+pub mod simulation_command;
 pub mod simulation_context;
 pub mod simulation_core_state;
 pub mod simulation_core_ticker;

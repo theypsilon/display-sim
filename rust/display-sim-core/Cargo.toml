@@ -13,3 +13,7 @@ enum-len-derive = { path = "../enum-len-derive" }
 enum-len-trait = { path = "../enum-len-trait" }
 derive-new = "0.5.9"
 app-util = { path = "../display-sim-app-util", package = "display-sim-app-util" }
+serde = { workspace = true }
+
+[dev-dependencies]
+serde_json = "1.0"

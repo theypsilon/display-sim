@@ -19,9 +19,10 @@ use crate::general_types::{IncDec, OptionCursor};
 
 use crate::boolean_button::BooleanButton;
 use crate::input_types::TrackedButton;
+use crate::simulation_command::ControllerValue;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::MainState;
-use crate::ui_controller::{EncodedValue, UiController};
+use crate::ui_controller::UiController;
 use app_util::{AppError, AppResult};
 use std::convert::{TryFrom, TryInto};
 use std::fmt::Display;
@@ -34,9 +35,9 @@ pub trait EnumUi {
 }
 
 #[derive(Clone, Default)]
-pub struct EnumHolder<'a, T: Clone + OptionCursor + Display + EnumUi + TryFrom<Box<dyn EncodedValue>>>
+pub struct EnumHolder<'a, T: Clone + OptionCursor + Display + EnumUi + TryFrom<ControllerValue>>
 where
-    AppError: From<<T as TryFrom<Box<dyn EncodedValue>>>::Error>,
+    AppError: From<<T as TryFrom<ControllerValue>>::Error>,
 {
     input: IncDec<BooleanButton>,
     event: Option<T>,
@@ -44,9 +45,9 @@ where
     _u: std::marker::PhantomData<&'a T>,
 }
 
-impl<'a, T: Clone + OptionCursor + Display + EnumUi + TryFrom<Box<dyn EncodedValue>>> From<T> for EnumHolder<'a, T>
+impl<'a, T: Clone + OptionCursor + Display + EnumUi + TryFrom<ControllerValue>> From<T> for EnumHolder<'a, T>
 where
-    AppError: From<<T as TryFrom<Box<dyn EncodedValue>>>::Error>,
+    AppError: From<<T as TryFrom<ControllerValue>>::Error>,
 {
     fn from(value: T) -> Self {
         EnumHolder {
@@ -58,9 +59,9 @@ where
     }
 }
 
-impl<'a, T: Clone + OptionCursor + Display + EnumUi + TryFrom<Box<dyn EncodedValue>>> UiController for EnumHolder<'a, T>
+impl<'a, T: Clone + OptionCursor + Display + EnumUi + TryFrom<ControllerValue>> UiController for EnumHolder<'a, T>
 where
-    AppError: From<<T as TryFrom<Box<dyn EncodedValue>>>::Error>,
+    AppError: From<<T as TryFrom<ControllerValue>>::Error>,
 {
     fn event_tag(&self) -> &'static str {
         self.value.event_tag()
@@ -80,8 +81,8 @@ where
         self.input = Default::default();
         self.event = None;
     }
-    fn read_event(&mut self, encoded: Box<dyn EncodedValue>) -> AppResult<()> {
-        self.event = Some(encoded.try_into()?);
+    fn read_event(&mut self, encoded: &ControllerValue) -> AppResult<()> {
+        self.event = Some(encoded.clone().try_into()?);
         Ok(())
     }
     fn read_key_inc(&mut self, pressed: bool) {

@@ -21,7 +21,7 @@ use enum_len_derive::EnumLen;
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::FromPrimitive;
 
-use crate::ui_controller::EncodedValue;
+use crate::simulation_command::ControllerValue;
 
 #[derive(FromPrimitive, ToPrimitive, EnumLen, Copy, Clone)]
 pub enum ColorChannelsOptions {
@@ -57,10 +57,10 @@ impl EnumUi for ColorChannelsOptions {
     }
 }
 
-impl TryFrom<Box<dyn EncodedValue>> for ColorChannelsOptions {
+impl TryFrom<ControllerValue> for ColorChannelsOptions {
     type Error = AppError;
 
-    fn try_from(value: Box<dyn EncodedValue>) -> Result<Self, Self::Error> {
+    fn try_from(value: ControllerValue) -> Result<Self, Self::Error> {
         if let Some(option) = ColorChannelsOptions::from_usize(value.to_usize()?) {
             Ok(option)
         } else {

@@ -1,4 +1,4 @@
-use core::input_types::{InputEventValue, Pressed};
+use core::simulation_command::{Pressed, SimulationCommand};
 use glutin::event::{ElementState, KeyboardInput, ModifiersState, MouseScrollDelta, VirtualKeyCode};
 use std::collections::{HashMap, HashSet, VecDeque};
 
@@ -10,24 +10,24 @@ pub(crate) struct SimulationPointerInput {
 }
 
 impl SimulationPointerInput {
-    pub(crate) fn on_primary_button(&mut self, pressed: bool, blocked: bool) -> Option<InputEventValue> {
+    pub(crate) fn on_primary_button(&mut self, pressed: bool, blocked: bool) -> Option<SimulationCommand> {
         if pressed {
             if blocked || self.down {
                 return None;
             }
             self.down = true;
-            Some(InputEventValue::MouseClick(Pressed::Yes))
+            Some(SimulationCommand::MouseClick(Pressed::Yes))
         } else {
             self.release()
         }
     }
 
-    pub(crate) fn release(&mut self) -> Option<InputEventValue> {
+    pub(crate) fn release(&mut self) -> Option<SimulationCommand> {
         if !self.down {
             return None;
         }
         self.down = false;
-        Some(InputEventValue::MouseClick(Pressed::No))
+        Some(SimulationCommand::MouseClick(Pressed::No))
     }
 
     pub(crate) fn clear(&mut self) {
@@ -68,11 +68,11 @@ impl SimulationKeyboardInput {
     }
 
     #[cfg(test)]
-    fn on_keyboard_input(&mut self, input: &KeyboardInput) -> Vec<InputEventValue> {
+    fn on_keyboard_input(&mut self, input: &KeyboardInput) -> Vec<SimulationCommand> {
         self.on_keyboard_input_routed(input, true)
     }
 
-    pub(crate) fn on_keyboard_input_routed(&mut self, input: &KeyboardInput, route_to_simulation: bool) -> Vec<InputEventValue> {
+    pub(crate) fn on_keyboard_input_routed(&mut self, input: &KeyboardInput, route_to_simulation: bool) -> Vec<SimulationCommand> {
         match input.state {
             ElementState::Pressed => {
                 if self.active.contains_key(&input.scancode)
@@ -125,7 +125,7 @@ impl SimulationKeyboardInput {
         }
     }
 
-    pub(crate) fn on_received_character(&mut self, character: char) -> Vec<InputEventValue> {
+    pub(crate) fn on_received_character(&mut self, character: char) -> Vec<SimulationCommand> {
         if character.is_control() {
             return Vec::new();
         }
@@ -142,7 +142,7 @@ impl SimulationKeyboardInput {
         self.press(pending.scancode, value).into_iter().collect()
     }
 
-    pub(crate) fn flush_pending(&mut self) -> Vec<InputEventValue> {
+    pub(crate) fn flush_pending(&mut self) -> Vec<SimulationCommand> {
         let pending = std::mem::take(&mut self.pending_printable);
         let mut events = Vec::new();
         for pending in pending {
@@ -163,14 +163,14 @@ impl SimulationKeyboardInput {
         self.dead_composition_pending = false;
     }
 
-    fn press(&mut self, scancode: u32, key: String) -> Option<InputEventValue> {
+    fn press(&mut self, scancode: u32, key: String) -> Option<SimulationCommand> {
         self.active.insert(scancode, key.clone());
         let count = self.logical_counts.entry(key.clone()).or_default();
         *count += 1;
         (*count == 1).then(|| keyboard_event(true, key))
     }
 
-    fn release(&mut self, scancode: u32) -> Option<InputEventValue> {
+    fn release(&mut self, scancode: u32) -> Option<SimulationCommand> {
         let key = self.active.remove(&scancode)?;
         let count = self.logical_counts.get_mut(&key).expect("active physical key has no logical owner");
         *count -= 1;
@@ -183,8 +183,8 @@ impl SimulationKeyboardInput {
     }
 }
 
-fn keyboard_event(pressed: bool, key: String) -> InputEventValue {
-    InputEventValue::Keyboard {
+fn keyboard_event(pressed: bool, key: String) -> SimulationCommand {
+    SimulationCommand::Keyboard {
         pressed: Pressed::from_bool(pressed),
         key,
     }
@@ -413,8 +413,8 @@ mod tests {
         }
     }
 
-    fn assert_keyboard(event: &InputEventValue, expected_pressed: Pressed, expected_key: &str) {
-        assert!(matches!(event, InputEventValue::Keyboard { pressed, key } if *pressed == expected_pressed && key == expected_key));
+    fn assert_keyboard(event: &SimulationCommand, expected_pressed: Pressed, expected_key: &str) {
+        assert!(matches!(event, SimulationCommand::Keyboard { pressed, key } if *pressed == expected_pressed && key == expected_key));
     }
 
     #[test]
@@ -582,9 +582,12 @@ mod tests {
     fn primary_pointer_edges_are_balanced_and_ui_presses_are_blocked() {
         let mut input = SimulationPointerInput::default();
         assert!(input.on_primary_button(true, true).is_none());
-        assert!(matches!(input.on_primary_button(true, false), Some(InputEventValue::MouseClick(Pressed::Yes))));
+        assert!(matches!(
+            input.on_primary_button(true, false),
+            Some(SimulationCommand::MouseClick(Pressed::Yes))
+        ));
         assert!(input.on_primary_button(true, false).is_none());
-        assert!(matches!(input.on_primary_button(false, true), Some(InputEventValue::MouseClick(Pressed::No))));
+        assert!(matches!(input.on_primary_button(false, true), Some(SimulationCommand::MouseClick(Pressed::No))));
         assert!(input.on_primary_button(false, false).is_none());
         assert!(!input.is_down());
         input.on_primary_button(true, false);

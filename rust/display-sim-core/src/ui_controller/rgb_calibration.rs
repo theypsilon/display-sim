@@ -14,9 +14,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 use crate::app_events::AppEventDispatcher;
+use crate::simulation_command::ControllerValue;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::MainState;
-use crate::ui_controller::{EncodedValue, UiController};
+use crate::ui_controller::UiController;
 use app_util::AppResult;
 
 macro_rules! rgb_impl {
@@ -60,7 +61,7 @@ macro_rules! rgb_impl {
             fn reset_inputs(&mut self) {
                 self.event = None;
             }
-            fn read_event(&mut self, encoded: Box<dyn EncodedValue>) -> AppResult<()> {
+            fn read_event(&mut self, encoded: &ControllerValue) -> AppResult<()> {
                 self.event = Some(encoded.to_f32()?);
                 Ok(())
             }

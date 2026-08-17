@@ -18,7 +18,7 @@ use app_util::log_error;
 use enum_len_derive::EnumLen;
 use num_derive::{FromPrimitive, ToPrimitive};
 
-use crate::ui_controller::EncodedValue;
+use crate::simulation_command::ControllerValue;
 
 #[derive(FromPrimitive, ToPrimitive, EnumLen, Copy, Clone)]
 pub enum PixelGeometryKindOptions {
@@ -50,8 +50,8 @@ impl EnumUi for PixelGeometryKindOptions {
     }
 }
 
-impl From<Box<dyn EncodedValue>> for PixelGeometryKindOptions {
-    fn from(value: Box<dyn EncodedValue>) -> Self {
+impl From<ControllerValue> for PixelGeometryKindOptions {
+    fn from(value: ControllerValue) -> Self {
         match value.to_usize() {
             Ok(0) => PixelGeometryKindOptions::Squares,
             Ok(1) => PixelGeometryKindOptions::Cubes,

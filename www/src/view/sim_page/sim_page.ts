@@ -159,9 +159,6 @@ async function show (template: SimTemplate, view_model: SimViewModel, model: Sim
         case 'back2front:request_pointer_lock': return view_model.requestPointerLock();
         case 'back2front:preset_selected_name': {
             view_model.presetSelectedName(msg);
-            if (msg === Constants.PRESET_KIND_CUSTOM) {
-                model.uiMessage('Now you are in the Custom mode, you may change any filter value you want.');
-            }
             return;
         }
         case 'back2front:screenshot': return model.fireScreenshot(msg);

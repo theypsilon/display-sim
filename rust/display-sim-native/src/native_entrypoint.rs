@@ -16,7 +16,8 @@
 use core::app_events::AppEventDispatcher;
 use core::camera::CameraLockMode;
 use core::general_types::Size2D;
-use core::input_types::{Input, InputEventValue, Pressed};
+use core::input_types::Input;
+use core::simulation_command::{Pressed, SimulationCommand, SimulationCommandBus};
 use core::simulation_context::{ConcreteSimulationContext, RandomGenerator};
 use core::simulation_core_state::ScalingMethod;
 use core::simulation_core_state::{AnimationStep, Resources, VideoInputResources};
@@ -194,6 +195,7 @@ struct NativeSimulationState {
     monitor: Option<MonitorHandle>,
     res: Resources,
     input: Input,
+    commands: SimulationCommandBus,
     materials: Materials,
     timings: Timings,
     panel: SimPanel,
@@ -246,6 +248,7 @@ impl NativeSimulationState {
             monitor,
             res,
             input,
+            commands: SimulationCommandBus::default(),
             materials,
             timings,
             panel,
@@ -268,7 +271,7 @@ impl NativeSimulationState {
             return;
         }
         self.canvas_focused = focused;
-        self.input.push_event(InputEventValue::Keyboard {
+        self.commands.emit(SimulationCommand::Keyboard {
             pressed: Pressed::from_bool(focused),
             key: "canvas_focused".into(),
         });
@@ -279,7 +282,7 @@ impl NativeSimulationState {
             return;
         }
         self.input_focused = focused;
-        self.input.push_event(InputEventValue::Keyboard {
+        self.commands.emit(SimulationCommand::Keyboard {
             pressed: Pressed::from_bool(focused),
             key: "input_focused".into(),
         });
@@ -289,7 +292,7 @@ impl NativeSimulationState {
         let was_active = self.simulation_pointer.is_down() || self.sim_ctx.dispatcher_instance.cursor_hidden.get();
         if emit_release {
             if let Some(event) = self.simulation_pointer.release() {
-                self.input.push_event(event);
+                self.commands.emit(event);
             }
         } else {
             self.simulation_pointer.clear();
@@ -309,8 +312,8 @@ impl NativeSimulationState {
             return;
         }
         self.interactions_reset = true;
-        self.panel.release_all(&mut self.input);
-        self.input.push_event(InputEventValue::BlurredWindow);
+        self.panel.release_all(&mut self.commands);
+        self.commands.emit(SimulationCommand::BlurredWindow);
         self.simulation_keyboard.clear();
         self.canvas_focused = false;
         self.input_focused = false;
@@ -342,12 +345,12 @@ impl NativeSimulationState {
                     WindowEvent::Resized(size) => {
                         self.windowed_ctx.resize(*size);
                         println!("Size changed: ({}, {})", size.width, size.height);
-                        self.input.push_event(InputEventValue::ViewportResize(size.width, size.height));
+                        self.commands.emit(SimulationCommand::ViewportResize(size.width, size.height));
                     }
                     WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
                         self.windowed_ctx.resize(**new_inner_size);
-                        self.input
-                            .push_event(InputEventValue::ViewportResize(new_inner_size.width, new_inner_size.height));
+                        self.commands
+                            .emit(SimulationCommand::ViewportResize(new_inner_size.width, new_inner_size.height));
                     }
                     WindowEvent::KeyboardInput { input: keyevent, .. } => {
                         // The web frontend has a window-level keyboard
@@ -363,14 +366,14 @@ impl NativeSimulationState {
                                     Some(VirtualKeyCode::Return | VirtualKeyCode::NumpadEnter | VirtualKeyCode::Space)
                                 );
                             for input_event in self.simulation_keyboard.on_keyboard_input_routed(keyevent, !ui_owns_activation) {
-                                self.input.push_event(input_event);
+                                self.commands.emit(input_event);
                             }
                         }
                     }
                     WindowEvent::ReceivedCharacter(character) => {
                         if self.window_focused {
                             for input_event in self.simulation_keyboard.on_received_character(*character) {
-                                self.input.push_event(input_event);
+                                self.commands.emit(input_event);
                             }
                         }
                     }
@@ -383,8 +386,8 @@ impl NativeSimulationState {
                         if *button == MouseButton::Left {
                             let pressed = *state == ElementState::Pressed;
                             if let Some(input_event) = self.simulation_pointer.on_primary_button(pressed, pointer_captured || !self.window_focused) {
-                                let started = matches!(input_event, InputEventValue::MouseClick(Pressed::Yes));
-                                self.input.push_event(input_event);
+                                let started = matches!(input_event, SimulationCommand::MouseClick(Pressed::Yes));
+                                self.commands.emit(input_event);
                                 if started && matches!(self.windowed_ctx.window().fullscreen(), None) {
                                     self.windowed_ctx.window().set_fullscreen(Some(Fullscreen::Borderless(self.monitor.clone())));
                                 }
@@ -394,7 +397,7 @@ impl NativeSimulationState {
                     WindowEvent::MouseWheel { delta, .. } => {
                         if self.window_focused && !pointer_captured {
                             self.set_canvas_focused(true);
-                            self.input.push_event(InputEventValue::MouseWheel(browser_wheel_delta(delta)));
+                            self.commands.emit(SimulationCommand::MouseWheel(browser_wheel_delta(delta)));
                         }
                     }
                     WindowEvent::CursorMoved { .. } => {
@@ -404,7 +407,7 @@ impl NativeSimulationState {
                     }
                     WindowEvent::CursorLeft { .. } => {
                         self.set_canvas_focused(false);
-                        self.panel.release_all(&mut self.input);
+                        self.panel.release_all(&mut self.commands);
                         self.release_sim_pointer(true);
                     }
                     WindowEvent::Focused(false) => {
@@ -422,7 +425,7 @@ impl NativeSimulationState {
                 // device motion is the native equivalent and remains usable
                 // while the cursor is grabbed at a window edge.
                 if self.simulation_pointer.is_down() {
-                    self.input.push_event(InputEventValue::MouseMove {
+                    self.commands.emit(SimulationCommand::MouseMove {
                         x: delta.0 as i32,
                         y: delta.1 as i32,
                     });
@@ -438,7 +441,7 @@ impl NativeSimulationState {
                 // events. Flush keys for which the platform emitted no text
                 // only after the current operating-system event batch.
                 for input_event in self.simulation_keyboard.flush_pending() {
-                    self.input.push_event(input_event);
+                    self.commands.emit(input_event);
                 }
             }
             _ => (),
@@ -454,10 +457,10 @@ impl NativeSimulationState {
             let elapsed_ms = (now - self.timings.starting_time).as_secs_f64() * 1000.0;
             let was_panel_visible = self.panel.is_visible();
             let raw_input = self.egui_input.take_input(elapsed_ms / 1000.0);
-            let mut egui_output = self.panel.run(raw_input, &mut self.res, &mut self.input, &self.panel_events)?;
+            let mut egui_output = self.panel.run(raw_input, &self.res, &mut self.commands, &self.panel_events);
             self.set_input_focused(self.panel.context().egui_wants_keyboard_input());
             if !was_panel_visible && self.panel.is_visible() {
-                self.panel.release_all(&mut self.input);
+                self.panel.release_all(&mut self.commands);
                 self.release_sim_pointer(true);
             }
             self.egui_input.handle_platform_output(
@@ -467,7 +470,7 @@ impl NativeSimulationState {
             );
 
             if !self.res.quit {
-                match SimulationCoreTicker::new(&self.sim_ctx, &mut self.res, &mut self.input).tick(elapsed_ms) {
+                match SimulationCoreTicker::new(&self.sim_ctx, &mut self.res, &mut self.input, &mut self.commands).tick(elapsed_ms) {
                     Ok(_) => {}
                     Err(e) => println!("Tick error: {:?}", e),
                 };

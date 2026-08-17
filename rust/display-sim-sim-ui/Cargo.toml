@@ -7,4 +7,3 @@ edition = "2021"
 [dependencies]
 egui = { workspace = true }
 core = { path = "../display-sim-core", package = "display-sim-core" }
-app-util = { path = "../display-sim-app-util", package = "display-sim-app-util" }

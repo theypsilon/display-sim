@@ -17,18 +17,23 @@ use crate::boolean_actions::{release_controller_hotkey_actions, trigger_hotkey_a
 use crate::camera::{CameraData, CameraDirection, CameraLockMode, CameraSystem};
 use crate::field_changer::FieldChanger;
 use crate::general_types::{get_3_f32color_from_int, get_int_from_3_f32color, Size2D};
-use crate::input_types::{Input, InputEventValue, Pressed};
+use crate::input_types::Input;
 use crate::math::gcd;
+use crate::simulation_command::{Pressed, SimulationCommand, SimulationCommandBus};
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::{
-    Controllers, InitialParameters, LatestCustomScalingChange, Resources, ScalingMethod, MOVEMENT_BASE_SPEED, MOVEMENT_SPEED_FACTOR,
+    Controllers, InitialParameters, KeyEventKind, LatestCustomScalingChange, Resources, ScalingMethod, MOVEMENT_BASE_SPEED, MOVEMENT_SPEED_FACTOR,
     PIXEL_MANIPULATION_BASE_SPEED, TURNING_BASE_SPEED,
 };
 use crate::ui_controller::{
-    color_channels::ColorChannelsOptions, filter_preset::FilterPresetOptions, internal_resolution::InternalResolution,
-    pixel_geometry_kind::PixelGeometryKindOptions, screen_curvature_kind::ScreenCurvatureKindOptions, UiController,
+    color_channels::ColorChannelsOptions,
+    filter_preset::{FilterPresetOptions, FILTER_PRESET_EVENT_TAG},
+    internal_resolution::InternalResolution,
+    pixel_geometry_kind::PixelGeometryKindOptions,
+    screen_curvature_kind::ScreenCurvatureKindOptions,
+    UiController,
 };
-use app_util::AppResult;
+use app_util::{AppError, AppResult};
 use derive_new::new;
 
 // The flight demo was originally tuned while running at 60 Hz. Its velocity
@@ -49,33 +54,35 @@ const FLIGHT_DEMO_OPENING_UP: [f32; 3] = [0.04, 0.26, 0.97];
 // This is where the historical direction intersects the image plane.
 const FLIGHT_DEMO_OPENING_LOOK_TARGET: [f32; 3] = [-57.676_666, -96.903_336, 0.0];
 const FLIGHT_DEMO_REFERENCE_IMAGE_SIZE: [f32; 2] = [256.0, 240.0];
+const CUSTOM_PRESET_MESSAGE: &str = "Now you are in the Custom mode, you may change any filter value you want.";
 
 #[derive(new)]
 pub struct SimulationCoreTicker<'a> {
     ctx: &'a dyn SimulationContext,
     res: &'a mut Resources,
     input: &'a mut Input,
+    commands: &'a mut SimulationCommandBus,
 }
 
 impl<'a> SimulationCoreTicker<'a> {
     pub fn tick(&mut self, now: f64) -> AppResult<()> {
-        self.pre_process_input(now);
+        self.pre_process_input(now)?;
         SimulationUpdater::new(self.ctx, self.res, self.input).update()?;
         self.post_process_input();
         Ok(())
     }
 
-    fn pre_process_input(&mut self, now: f64) {
+    fn pre_process_input(&mut self, now: f64) -> AppResult<()> {
         self.input.now = now;
         let mut keyboard_states_this_tick = Vec::<(String, Pressed)>::new();
-        let mut deferred_keyboard_events = Vec::<InputEventValue>::new();
+        let mut deferred_keyboard_events = Vec::<SimulationCommand>::new();
         let mut defer_keyboard_tail = false;
-        for value in self.input.custom_event.consume_values() {
+        for value in self.commands.drain_for_tick() {
             match value {
-                InputEventValue::Keyboard { pressed, key } => {
+                SimulationCommand::Keyboard { pressed, key } => {
                     let normalized_key = key.to_lowercase();
                     if defer_keyboard_tail {
-                        deferred_keyboard_events.push(InputEventValue::Keyboard { pressed, key });
+                        deferred_keyboard_events.push(SimulationCommand::Keyboard { pressed, key });
                         continue;
                     }
 
@@ -92,7 +99,7 @@ impl<'a> SimulationCoreTicker<'a> {
                         // making every physical or UI-generated transition
                         // observable for at least one simulation update.
                         defer_keyboard_tail = true;
-                        deferred_keyboard_events.push(InputEventValue::Keyboard { pressed, key });
+                        deferred_keyboard_events.push(SimulationCommand::Keyboard { pressed, key });
                         continue;
                     }
                     if !keyboard_states_this_tick.iter().any(|(key, _)| key == &normalized_key) {
@@ -109,11 +116,11 @@ impl<'a> SimulationCoreTicker<'a> {
                         }
                     }
                 }
-                InputEventValue::MouseClick(pressed) => {
+                SimulationCommand::MouseClick(pressed) => {
                     let result = trigger_hotkey_action(self.input, self.res, "mouse_click", pressed);
                     debug_assert_eq!(result, ActionUsed::Yes)
                 }
-                InputEventValue::MouseMove { x, y } => {
+                SimulationCommand::MouseMove { x, y } => {
                     // Both browser movement events and native raw-device
                     // events can arrive several times between simulation
                     // ticks. `movementX/Y` are deltas, so preserve the full
@@ -121,12 +128,12 @@ impl<'a> SimulationCoreTicker<'a> {
                     self.input.mouse_position_x = self.input.mouse_position_x.saturating_add(x);
                     self.input.mouse_position_y = self.input.mouse_position_y.saturating_add(y);
                 }
-                InputEventValue::MouseWheel(wheel) => {
+                SimulationCommand::MouseWheel(wheel) => {
                     if self.input.canvas_focused {
                         self.input.mouse_scroll_y += wheel
                     }
                 }
-                InputEventValue::BlurredWindow => {
+                SimulationCommand::BlurredWindow => {
                     release_controller_hotkey_actions(self.input, self.res);
                     *self.input = Input::new(now);
                     keyboard_states_this_tick.clear();
@@ -134,25 +141,39 @@ impl<'a> SimulationCoreTicker<'a> {
                     defer_keyboard_tail = false;
                 }
 
-                InputEventValue::PixelWidth(pixel_width) => self.input.event_pixel_width = Some(pixel_width),
-                InputEventValue::Camera(camera) => self.input.event_camera = Some(camera),
-                InputEventValue::CustomScalingResolutionWidth(width) => self.input.event_scaling_resolution_width = Some(width),
-                InputEventValue::CustomScalingResolutionHeight(width) => self.input.event_scaling_resolution_height = Some(width),
-                InputEventValue::CustomScalingAspectRatioX(width) => self.input.event_scaling_aspect_ratio_x = Some(width),
-                InputEventValue::CustomScalingAspectRatioY(width) => self.input.event_scaling_aspect_ratio_y = Some(width),
-                InputEventValue::CustomScalingStretchNearest(flag) => self.input.event_custom_scaling_stretch_nearest = Some(flag),
-                InputEventValue::ViewportResize(width, height) => self.input.event_viewport_resize = Some(Size2D { width, height }),
-                InputEventValue::None => {}
+                SimulationCommand::ControllerSet { event_tag, value } => {
+                    let index = match self.res.controller_events.get(event_tag.as_str()) {
+                        Some((KeyEventKind::Set, index)) => *index,
+                        Some(_) => return Err(AppError::new(format!("{event_tag} is not a set event"))),
+                        None => return Err(AppError::new(format!("unknown controller event {event_tag}"))),
+                    };
+                    self.res.controllers.get_ui_controllers_mut()[index].read_event(&value)?;
+                    if event_tag == FILTER_PRESET_EVENT_TAG {
+                        // A preset replaces the controller collection. Apply
+                        // it at its exact FIFO position so a value command
+                        // before the preset is replaced, while one after it
+                        // edits the newly selected preset.
+                        let mut updater = SimulationUpdater::new(self.ctx, self.res, self.input);
+                        updater.update_filter_presets_from_event()?;
+                    }
+                }
+                SimulationCommand::PixelWidth(pixel_width) => self.input.event_pixel_width = Some(pixel_width),
+                SimulationCommand::Camera(camera) => self.input.event_camera = Some(camera),
+                SimulationCommand::CustomScalingResolutionWidth(width) => self.input.event_scaling_resolution_width = Some(width),
+                SimulationCommand::CustomScalingResolutionHeight(width) => self.input.event_scaling_resolution_height = Some(width),
+                SimulationCommand::CustomScalingAspectRatioX(width) => self.input.event_scaling_aspect_ratio_x = Some(width),
+                SimulationCommand::CustomScalingAspectRatioY(width) => self.input.event_scaling_aspect_ratio_y = Some(width),
+                SimulationCommand::CustomScalingStretchNearest(flag) => self.input.event_custom_scaling_stretch_nearest = Some(flag),
+                SimulationCommand::ViewportResize(width, height) => self.input.event_viewport_resize = Some(Size2D { width, height }),
             };
         }
-        for event in deferred_keyboard_events {
-            self.input.push_event(event);
-        }
+        self.commands.defer(deferred_keyboard_events);
 
         self.input.get_tracked_buttons().iter_mut().for_each(|button| button.track());
         for controller in self.res.controllers.get_ui_controllers_mut().iter_mut() {
             controller.pre_process_input();
         }
+        Ok(())
     }
 
     fn post_process_input(&mut self) {
@@ -419,6 +440,7 @@ impl<'a> SimulationUpdater<'a> {
             {
                 self.res.controllers.preset_kind.value = FilterPresetOptions::Custom;
                 self.res.controllers.preset_kind.dispatch_event(self.ctx.dispatcher());
+                self.ctx.dispatcher().dispatch_top_message(CUSTOM_PRESET_MESSAGE);
             } else if self.res.controllers.preset_kind.value == FilterPresetOptions::Custom {
                 self.res.custom_is_changed = true;
             }
@@ -435,7 +457,13 @@ impl<'a> SimulationUpdater<'a> {
             self.res.saved_filters = Some(self.res.controllers.clone());
         }
         if self.res.main.current_filter_preset == FilterPresetOptions::DemoFlight1 {
-            self.res.camera = self.res.demo_1.camera_backup.clone();
+            // Selecting and then leaving Flight in one input batch must not
+            // restore an old backup: the demo has not run yet and therefore
+            // has not captured the camera it would need to restore.
+            if !self.res.demo_1.needs_initialization {
+                self.res.camera = self.res.demo_1.camera_backup.clone();
+            }
+            self.res.demo_1.needs_initialization = false;
         }
         self.res
             .controllers
@@ -445,8 +473,13 @@ impl<'a> SimulationUpdater<'a> {
         }
         if self.res.controllers.preset_kind.value == FilterPresetOptions::Custom {
             self.res.custom_is_changed = false;
+            self.ctx.dispatcher().dispatch_top_message(CUSTOM_PRESET_MESSAGE);
         }
         self.change_frontend_input_values();
+        // Presets can be applied while consuming a FIFO command batch. Make
+        // the applied value authoritative immediately, not only at the end of
+        // the later simulation update.
+        self.res.main.current_filter_preset = self.res.controllers.preset_kind.value;
         Ok(())
     }
 
@@ -1067,8 +1100,26 @@ fn calculate_far_away_position(bg_size: Size2D<f32>, internal_resolution: &Inter
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input_types::Pressed;
+    use crate::simulation_command::{ControllerValue, SimulationCommandPlayer};
     use crate::simulation_context::make_fake_simulation_context;
+    use crate::simulation_core_state::{AnimationStep, VideoInputResources};
+
+    fn runnable_resources() -> Resources {
+        let mut resources = Resources::default();
+        resources.initialize(
+            VideoInputResources {
+                steps: vec![AnimationStep { delay: 60 }],
+                max_texture_size: 16_384,
+                image_size: Size2D { width: 256, height: 240 },
+                background_size: Size2D { width: 256, height: 240 },
+                viewport_size: Size2D { width: 1_024, height: 640 },
+                drawing_activation: true,
+                ..Default::default()
+            },
+            0.0,
+        );
+        resources
+    }
 
     fn flight_position_after(frame_times: &[f32]) -> glm::Vec3 {
         let ctx = make_fake_simulation_context();
@@ -1104,16 +1155,19 @@ mod tests {
         let ctx = make_fake_simulation_context();
         let mut resources = Resources::default();
         let mut input = Input::new(0.0);
-        input.push_event(InputEventValue::Keyboard {
+        let mut commands = SimulationCommandBus::default();
+        commands.emit(SimulationCommand::Keyboard {
             pressed: Pressed::Yes,
             key: "canvas_focused".into(),
         });
-        input.push_event(InputEventValue::MouseMove { x: 3, y: -2 });
-        input.push_event(InputEventValue::MouseMove { x: -1, y: 5 });
-        input.push_event(InputEventValue::MouseWheel(100.0));
-        input.push_event(InputEventValue::MouseWheel(-25.0));
+        commands.emit(SimulationCommand::MouseMove { x: 3, y: -2 });
+        commands.emit(SimulationCommand::MouseMove { x: -1, y: 5 });
+        commands.emit(SimulationCommand::MouseWheel(100.0));
+        commands.emit(SimulationCommand::MouseWheel(-25.0));
 
-        SimulationCoreTicker::new(&ctx, &mut resources, &mut input).pre_process_input(16.0);
+        SimulationCoreTicker::new(&ctx, &mut resources, &mut input, &mut commands)
+            .pre_process_input(16.0)
+            .unwrap();
 
         assert_eq!(input.mouse_position_x, 2);
         assert_eq!(input.mouse_position_y, 3);
@@ -1125,26 +1179,27 @@ mod tests {
         let ctx = make_fake_simulation_context();
         let mut resources = Resources::default();
         let mut input = Input::new(0.0);
+        let mut commands = SimulationCommandBus::default();
         for key in ["w", "camera-movement-mode-inc"] {
-            input.push_event(InputEventValue::Keyboard {
+            commands.emit(SimulationCommand::Keyboard {
                 pressed: Pressed::Yes,
                 key: key.into(),
             });
         }
         for key in ["w", "camera-movement-mode-inc"] {
-            input.push_event(InputEventValue::Keyboard {
+            commands.emit(SimulationCommand::Keyboard {
                 pressed: Pressed::No,
                 key: key.into(),
             });
         }
 
-        let mut ticker = SimulationCoreTicker::new(&ctx, &mut resources, &mut input);
-        ticker.pre_process_input(16.0);
+        let mut ticker = SimulationCoreTicker::new(&ctx, &mut resources, &mut input, &mut commands);
+        ticker.pre_process_input(16.0).unwrap();
         assert!(ticker.input.walk_forward);
         assert!(ticker.input.next_camera_movement_mode.increase.is_just_pressed());
         ticker.post_process_input();
 
-        ticker.pre_process_input(32.0);
+        ticker.pre_process_input(32.0).unwrap();
         assert!(!ticker.input.walk_forward);
         assert!(ticker.input.next_camera_movement_mode.increase.is_just_released());
         assert!(ticker.input.active_pressed_actions.is_empty());
@@ -1155,29 +1210,197 @@ mod tests {
         let ctx = make_fake_simulation_context();
         let mut resources = Resources::default();
         let mut input = Input::new(0.0);
+        let mut commands = SimulationCommandBus::default();
         for pressed in [Pressed::Yes, Pressed::No] {
-            input.push_event(InputEventValue::Keyboard { pressed, key: "w".into() });
+            commands.emit(SimulationCommand::Keyboard { pressed, key: "w".into() });
         }
 
-        let mut ticker = SimulationCoreTicker::new(&ctx, &mut resources, &mut input);
-        ticker.pre_process_input(16.0);
+        let mut ticker = SimulationCoreTicker::new(&ctx, &mut resources, &mut input, &mut commands);
+        ticker.pre_process_input(16.0).unwrap();
         assert!(ticker.input.walk_forward);
         ticker.post_process_input();
 
         for pressed in [Pressed::Yes, Pressed::No] {
-            ticker.input.push_event(InputEventValue::Keyboard { pressed, key: "w".into() });
+            ticker.commands.emit(SimulationCommand::Keyboard { pressed, key: "w".into() });
         }
-        ticker.pre_process_input(32.0);
+        ticker.pre_process_input(32.0).unwrap();
         assert!(!ticker.input.walk_forward);
         ticker.post_process_input();
 
-        ticker.pre_process_input(48.0);
+        ticker.pre_process_input(48.0).unwrap();
         assert!(ticker.input.walk_forward);
         ticker.post_process_input();
 
-        ticker.pre_process_input(64.0);
+        ticker.pre_process_input(64.0).unwrap();
         assert!(!ticker.input.walk_forward);
         assert!(ticker.input.active_pressed_actions.is_empty());
+    }
+
+    #[test]
+    fn every_settable_controller_accepts_the_unified_command_path() {
+        let ctx = make_fake_simulation_context();
+        let mut resources = Resources::default();
+        let mut input = Input::new(0.0);
+        let mut commands = SimulationCommandBus::default();
+        let mut set_tags: Vec<_> = resources
+            .controller_events
+            .iter()
+            .filter_map(|(tag, (kind, _))| (*kind == KeyEventKind::Set).then_some((*tag).to_owned()))
+            .collect();
+        set_tags.sort();
+
+        assert_eq!(set_tags.len(), 24, "controller inventory changed; audit every UI adapter");
+        for tag in set_tags {
+            let value = if tag == "front2back:filter-presets-selected" {
+                ControllerValue::Text(FilterPresetOptions::Custom.to_string())
+            } else {
+                ControllerValue::Number(0.5)
+            };
+            commands.emit(SimulationCommand::controller_set(tag, value));
+        }
+
+        SimulationCoreTicker::new(&ctx, &mut resources, &mut input, &mut commands)
+            .pre_process_input(16.0)
+            .unwrap();
+        assert!(commands.is_empty());
+    }
+
+    #[test]
+    fn controller_commands_are_validated_by_the_single_core_consumer() {
+        for event_tag in ["front2back:missing", "blur-level-inc"] {
+            let ctx = make_fake_simulation_context();
+            let mut resources = Resources::default();
+            let mut input = Input::new(0.0);
+            let mut commands = SimulationCommandBus::default();
+            commands.emit(SimulationCommand::controller_set(event_tag, ControllerValue::Number(1.0)));
+
+            let error = SimulationCoreTicker::new(&ctx, &mut resources, &mut input, &mut commands)
+                .pre_process_input(16.0)
+                .unwrap_err();
+            assert!(error.to_string().contains(event_tag), "unexpected error: {}", error);
+        }
+    }
+
+    #[test]
+    fn controller_commands_update_rgb_and_every_preset_through_the_bus() {
+        let ctx = make_fake_simulation_context();
+        let mut resources = runnable_resources();
+        let mut input = Input::new(0.0);
+        let mut commands = SimulationCommandBus::default();
+
+        commands.emit(SimulationCommand::controller_set("front2back:rgb-red-g", ControllerValue::Number(0.75)));
+        SimulationCoreTicker::new(&ctx, &mut resources, &mut input, &mut commands).tick(16.0).unwrap();
+        assert_eq!(resources.controllers.rgb_red_g.value, 0.75);
+
+        for (index, preset) in FilterPresetOptions::ALL.iter().copied().enumerate() {
+            commands.emit(SimulationCommand::controller_set(
+                "front2back:filter-presets-selected",
+                ControllerValue::Text(preset.to_string()),
+            ));
+            SimulationCoreTicker::new(&ctx, &mut resources, &mut input, &mut commands)
+                .tick(32.0 + index as f64 * 16.0)
+                .unwrap();
+            assert_eq!(resources.controllers.preset_kind.value, preset);
+        }
+    }
+
+    #[test]
+    fn preset_and_value_commands_apply_in_fifo_order() {
+        fn apply(commands: [SimulationCommand; 2]) -> Resources {
+            let ctx = make_fake_simulation_context();
+            let mut resources = runnable_resources();
+            let mut input = Input::new(0.0);
+            let mut bus = SimulationCommandBus::default();
+            bus.emit_all(commands);
+            SimulationCoreTicker::new(&ctx, &mut resources, &mut input, &mut bus).tick(16.0).unwrap();
+            resources
+        }
+
+        let preset = || SimulationCommand::controller_set(FILTER_PRESET_EVENT_TAG, ControllerValue::Text(FilterPresetOptions::Sharp1.to_string()));
+        let blur = || SimulationCommand::controller_set("front2back:blur-level", ControllerValue::Number(7.0));
+
+        let edited_preset = apply([preset(), blur()]);
+        assert_eq!(edited_preset.controllers.blur_passes.value, 7);
+        assert_eq!(edited_preset.controllers.preset_kind.value, FilterPresetOptions::Custom);
+
+        let replaced_edit = apply([blur(), preset()]);
+        assert_eq!(replaced_edit.controllers.blur_passes.value, 0);
+        assert_eq!(replaced_edit.controllers.preset_kind.value, FilterPresetOptions::Sharp1);
+    }
+
+    #[test]
+    fn entering_and_leaving_flight_in_one_batch_preserves_the_camera() {
+        let ctx = make_fake_simulation_context();
+        let mut resources = runnable_resources();
+        resources.camera.set_position(glm::vec3(12.0, -8.0, 42.0));
+        resources.demo_1.camera_backup.set_position(glm::vec3(-999.0, -999.0, -999.0));
+        let original_position = resources.camera.get_position();
+        let mut input = Input::new(0.0);
+        let mut commands = SimulationCommandBus::default();
+        commands.emit(SimulationCommand::controller_set(
+            FILTER_PRESET_EVENT_TAG,
+            ControllerValue::Text(FilterPresetOptions::DemoFlight1.to_string()),
+        ));
+        commands.emit(SimulationCommand::controller_set(
+            FILTER_PRESET_EVENT_TAG,
+            ControllerValue::Text(FilterPresetOptions::Sharp1.to_string()),
+        ));
+
+        SimulationCoreTicker::new(&ctx, &mut resources, &mut input, &mut commands)
+            .pre_process_input(16.0)
+            .unwrap();
+
+        assert_eq!(resources.controllers.preset_kind.value, FilterPresetOptions::Sharp1);
+        assert_eq!(resources.camera.get_position(), original_position);
+        assert!(!resources.demo_1.needs_initialization);
+    }
+
+    #[test]
+    fn recorded_commands_replay_through_the_same_core_path() {
+        fn tick(ctx: &dyn SimulationContext, resources: &mut Resources, input: &mut Input, commands: &mut SimulationCommandBus, now: f64) {
+            SimulationCoreTicker::new(ctx, resources, input, commands).tick(now).unwrap();
+        }
+
+        let ctx = make_fake_simulation_context();
+        let mut recorded_resources = runnable_resources();
+        let mut recorded_input = Input::new(0.0);
+        let mut recording_bus = SimulationCommandBus::default();
+        recording_bus.start_recording();
+        recording_bus.emit(SimulationCommand::controller_set("front2back:blur-level", ControllerValue::Number(2.0)));
+        recording_bus.emit(SimulationCommand::controller_set("front2back:blur-level", ControllerValue::Number(4.0)));
+        tick(&ctx, &mut recorded_resources, &mut recorded_input, &mut recording_bus, 16.0);
+        recording_bus.emit(SimulationCommand::controller_set(
+            "front2back:pixel-horizontal-gap",
+            ControllerValue::Number(0.125),
+        ));
+        tick(&ctx, &mut recorded_resources, &mut recorded_input, &mut recording_bus, 32.0);
+        let recording = recording_bus.finish_recording().unwrap();
+
+        assert_eq!(recording.commands.iter().map(|event| event.tick).collect::<Vec<_>>(), vec![0, 0, 1]);
+        assert_eq!(recording.commands.iter().map(|event| event.order).collect::<Vec<_>>(), vec![0, 1, 0]);
+
+        let mut replayed_resources = runnable_resources();
+        let mut replayed_input = Input::new(0.0);
+        let mut replay_bus = SimulationCommandBus::default();
+        let mut player = SimulationCommandPlayer::new(recording).unwrap();
+        assert_eq!(player.emit_next_tick(&mut replay_bus), 2);
+        tick(&ctx, &mut replayed_resources, &mut replayed_input, &mut replay_bus, 16.0);
+        assert_eq!(player.emit_next_tick(&mut replay_bus), 1);
+        tick(&ctx, &mut replayed_resources, &mut replayed_input, &mut replay_bus, 32.0);
+
+        assert!(player.is_finished());
+        assert_eq!(
+            replayed_resources.controllers.blur_passes.value,
+            recorded_resources.controllers.blur_passes.value
+        );
+        assert_eq!(
+            replayed_resources.controllers.cur_pixel_horizontal_gap.value,
+            recorded_resources.controllers.cur_pixel_horizontal_gap.value
+        );
+        assert_eq!(
+            replayed_resources.controllers.preset_kind.value,
+            recorded_resources.controllers.preset_kind.value
+        );
     }
 
     #[test]

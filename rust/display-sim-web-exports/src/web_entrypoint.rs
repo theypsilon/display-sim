@@ -26,11 +26,11 @@ use crate::web_events::WebEventDispatcher;
 use crate::web_utils::now;
 use app_util::{AppError, AppResult};
 use core::camera::CameraChange;
-use core::input_types::{Input, InputEventValue, Pressed};
+use core::input_types::Input;
+use core::simulation_command::{ControllerValue, Pressed, SimulationCommand, SimulationCommandBus};
 use core::simulation_context::{ConcreteSimulationContext, RandomGenerator, SimulationContext};
 use core::simulation_core_state::{KeyEventKind, Resources, VideoInputResources};
 use core::simulation_core_ticker::SimulationCoreTicker;
-use core::ui_controller::EncodedValue;
 use glow::GlowSafeAdapter;
 use render::simulation_draw::{present_to_default_framebuffer, SimulationDrawer};
 use render::simulation_render_state::{Materials, VideoInputMaterials};
@@ -41,6 +41,7 @@ type OwnedClosure = Closure<dyn FnMut(JsValue)>;
 pub(crate) struct InputOutput {
     event_bus_subscriber: OwnedClosure,
     input: Input,
+    commands: SimulationCommandBus,
     materials: Materials,
     event_bus: JsValue,
     events: Rc<RefCell<Vec<JsValue>>>,
@@ -74,6 +75,7 @@ pub(crate) fn web_load(
     let (events, event_bus_subscriber) = set_event_listeners(event_bus.clone())?;
     Ok(InputOutput {
         input: Input::new(now()?),
+        commands: SimulationCommandBus::default(),
         materials: Materials::new(gl, input_materials)?,
         event_bus,
         event_bus_subscriber,
@@ -103,17 +105,17 @@ pub(crate) fn web_unload(mut io: InputOutput) -> AppResult<()> {
 
 pub(crate) fn web_run_frame(res: &mut Resources, io: &mut InputOutput) -> AppResult<bool> {
     for event in io.events.borrow_mut().drain(0..) {
-        read_frontend_event(&mut io.input, res, event)?;
+        read_frontend_event(&mut io.commands, res, event)?;
     }
     let frame_now = now()?;
     let raw_input = io.egui_input.take_input(frame_now / 1000.0);
-    let mut egui_output = io.panel.run_with_controls(raw_input, res, &mut io.input, &io.panel_events, io.panel_enabled)?;
+    let mut egui_output = io.panel.run_with_controls(raw_input, res, &mut io.commands, &io.panel_events, io.panel_enabled);
     let toast_visible = io.panel.has_active_toast();
     if io.panel_enabled {
         let input_focused = io.panel.context().egui_wants_keyboard_input();
         if input_focused != io.input_focused {
             io.input_focused = input_focused;
-            io.input.push_event(InputEventValue::Keyboard {
+            io.commands.emit(SimulationCommand::Keyboard {
                 pressed: Pressed::from_bool(input_focused),
                 key: "input_focused".into(),
             });
@@ -125,7 +127,7 @@ pub(crate) fn web_run_frame(res: &mut Resources, io: &mut InputOutput) -> AppRes
         WebEventDispatcher::new(io.materials.gl.clone(), io.event_bus.clone(), io.panel_events.clone()),
         WebRnd {},
     );
-    let (condition, drew_simulation) = tick(&ctx, &mut io.input, res, &mut io.materials)?;
+    let (condition, drew_simulation) = tick(&ctx, &mut io.input, &mut io.commands, res, &mut io.materials)?;
     io.has_simulation_frame |= drew_simulation;
     ctx.dispatcher_instance.check_error()?;
 
@@ -181,11 +183,11 @@ pub(crate) fn web_set_panel_enabled(io: &mut InputOutput, enabled: bool) {
         return;
     }
     if !enabled {
-        io.panel.release_all(&mut io.input);
+        io.panel.release_all(&mut io.commands);
         io.panel_clear_pending = true;
         if io.input_focused {
             io.input_focused = false;
-            io.input.push_event(InputEventValue::Keyboard {
+            io.commands.emit(SimulationCommand::Keyboard {
                 pressed: Pressed::No,
                 key: "input_focused".into(),
             });
@@ -297,9 +299,15 @@ impl RandomGenerator for WebRnd {
     }
 }
 
-fn tick(ctx: &dyn SimulationContext, input: &mut Input, res: &mut Resources, materials: &mut Materials) -> AppResult<(bool, bool)> {
+fn tick(
+    ctx: &dyn SimulationContext,
+    input: &mut Input,
+    commands: &mut SimulationCommandBus,
+    res: &mut Resources,
+    materials: &mut Materials,
+) -> AppResult<(bool, bool)> {
     if !res.quit {
-        SimulationCoreTicker::new(ctx, res, input).tick(now()?)?;
+        SimulationCoreTicker::new(ctx, res, input, commands).tick(now()?)?;
     }
     if res.quit {
         return Ok((true, false));
@@ -327,44 +335,19 @@ fn set_event_listeners(event_bus: JsValue) -> AppResult<(Rc<RefCell<Vec<JsValue>
     Ok((events, onfrontendevent))
 }
 
-struct JsEncodedValue {
-    value: JsValue,
-}
-
-impl JsEncodedValue {
-    pub fn new(value: JsValue) -> Self {
-        JsEncodedValue { value }
-    }
-}
-
-impl EncodedValue for JsEncodedValue {
-    fn to_f64(&self) -> AppResult<f64> {
-        Ok(self.value.as_f64().ok_or("it should be a number")?)
-    }
-    fn to_f32(&self) -> AppResult<f32> {
-        Ok(self.to_f64()? as f32)
-    }
-    fn to_u32(&self) -> AppResult<u32> {
-        Ok(self.to_f64()? as u32)
-    }
-    fn to_i32(&self) -> AppResult<i32> {
-        Ok(self.to_f64()? as i32)
-    }
-    fn to_usize(&self) -> AppResult<usize> {
-        Ok(self.to_f64()? as usize)
-    }
-    fn to_string(&self) -> AppResult<String> {
-        Ok(self.value.as_string().ok_or("it should be a string")?)
-    }
-}
-
-fn read_frontend_event(input: &mut Input, res: &mut Resources, event: JsValue) -> AppResult<()> {
+fn read_frontend_event(commands: &mut SimulationCommandBus, res: &Resources, event: JsValue) -> AppResult<()> {
     let value = js_sys::Reflect::get(&event, &"message".into())?;
     let frontend_event: AppResult<String> = js_sys::Reflect::get(&event, &"type".into())?.as_string().ok_or("Could not get kind".into());
     let frontend_event = frontend_event?;
-    if let Some((KeyEventKind::Set, index)) = res.controller_events.get_mut(frontend_event.as_ref() as &str) {
-        let controller = &mut res.controllers.get_ui_controllers_mut()[*index];
-        controller.read_event(Box::new(JsEncodedValue::new(value)))?;
+    if matches!(res.controller_events.get(frontend_event.as_str()), Some((KeyEventKind::Set, _))) {
+        let value = if let Some(number) = value.as_f64() {
+            ControllerValue::Number(number)
+        } else if let Some(text) = value.as_string() {
+            ControllerValue::Text(text)
+        } else {
+            return Err(format!("controller event {frontend_event} requires a number or string").into());
+        };
+        commands.emit(SimulationCommand::controller_set(frontend_event, value));
         return Ok(());
     }
     let event_value = match frontend_event.as_ref() as &str {
@@ -374,42 +357,44 @@ fn read_frontend_event(input: &mut Input, res: &mut Resources, event: JsValue) -
             let key = js_sys::Reflect::get(&value, &"key".into())?
                 .as_string()
                 .ok_or_else(|| format!("it should be a string, but was {:?}", value))?;
-            InputEventValue::Keyboard { pressed, key }
+            SimulationCommand::Keyboard { pressed, key }
         }
         "front2back:mouse-click" => {
             let pressed = value.as_bool().ok_or("it should be a bool")?;
             let pressed = if pressed { Pressed::Yes } else { Pressed::No };
-            InputEventValue::MouseClick(pressed)
+            SimulationCommand::MouseClick(pressed)
         }
         "front2back:mouse-move" => {
             let x = js_sys::Reflect::get(&value, &"x".into())?.as_f64().ok_or("it should be a number")? as i32;
             let y = js_sys::Reflect::get(&value, &"y".into())?.as_f64().ok_or("it should be a number")? as i32;
-            InputEventValue::MouseMove { x, y }
+            SimulationCommand::MouseMove { x, y }
         }
-        "front2back:mouse-wheel" => InputEventValue::MouseWheel(value.as_f64().ok_or("it should be a number")? as f32),
-        "front2back:blurred-window" => InputEventValue::BlurredWindow,
-        "front2back:pixel-width" => InputEventValue::PixelWidth(value.as_f64().ok_or("it should be a number")? as f32),
-        "front2back:camera_zoom" => InputEventValue::Camera(CameraChange::Zoom(value.as_f64().ok_or("it should be a number")? as f32)),
-        "front2back:camera-pos-x" => InputEventValue::Camera(CameraChange::PosX(value.as_f64().ok_or("it should be a number")? as f32)),
-        "front2back:camera-pos-y" => InputEventValue::Camera(CameraChange::PosY(value.as_f64().ok_or("it should be a number")? as f32)),
-        "front2back:camera-pos-z" => InputEventValue::Camera(CameraChange::PosZ(value.as_f64().ok_or("it should be a number")? as f32)),
-        "front2back:camera-axis-up-x" => InputEventValue::Camera(CameraChange::AxisUpX(value.as_f64().ok_or("it should be a number")? as f32)),
-        "front2back:camera-axis-up-y" => InputEventValue::Camera(CameraChange::AxisUpY(value.as_f64().ok_or("it should be a number")? as f32)),
-        "front2back:camera-axis-up-z" => InputEventValue::Camera(CameraChange::AxisUpZ(value.as_f64().ok_or("it should be a number")? as f32)),
-        "front2back:camera-dir-x" => InputEventValue::Camera(CameraChange::DirectionX(value.as_f64().ok_or("it should be a number")? as f32)),
-        "front2back:camera-dir-y" => InputEventValue::Camera(CameraChange::DirectionY(value.as_f64().ok_or("it should be a number")? as f32)),
-        "front2back:camera-dir-z" => InputEventValue::Camera(CameraChange::DirectionZ(value.as_f64().ok_or("it should be a number")? as f32)),
-        "front2back:custom-scaling-resolution-width" => InputEventValue::CustomScalingResolutionWidth(value.as_f64().ok_or("it should be a number")? as f32),
-        "front2back:custom-scaling-resolution-height" => InputEventValue::CustomScalingResolutionHeight(value.as_f64().ok_or("it should be a number")? as f32),
-        "front2back:custom-scaling-aspect-ratio-x" => InputEventValue::CustomScalingAspectRatioX(value.as_f64().ok_or("it should be a number")? as f32),
-        "front2back:custom-scaling-aspect-ratio-y" => InputEventValue::CustomScalingAspectRatioY(value.as_f64().ok_or("it should be a number")? as f32),
-        "front2back:custom-scaling-stretch-nearest" => InputEventValue::CustomScalingStretchNearest(value.as_bool().ok_or("it should be a bool")?),
-        "front2back:viewport-resize" => InputEventValue::ViewportResize(
+        "front2back:mouse-wheel" => SimulationCommand::MouseWheel(value.as_f64().ok_or("it should be a number")? as f32),
+        "front2back:blurred-window" => SimulationCommand::BlurredWindow,
+        "front2back:pixel-width" => SimulationCommand::PixelWidth(value.as_f64().ok_or("it should be a number")? as f32),
+        "front2back:camera_zoom" => SimulationCommand::Camera(CameraChange::Zoom(value.as_f64().ok_or("it should be a number")? as f32)),
+        "front2back:camera-pos-x" => SimulationCommand::Camera(CameraChange::PosX(value.as_f64().ok_or("it should be a number")? as f32)),
+        "front2back:camera-pos-y" => SimulationCommand::Camera(CameraChange::PosY(value.as_f64().ok_or("it should be a number")? as f32)),
+        "front2back:camera-pos-z" => SimulationCommand::Camera(CameraChange::PosZ(value.as_f64().ok_or("it should be a number")? as f32)),
+        "front2back:camera-axis-up-x" => SimulationCommand::Camera(CameraChange::AxisUpX(value.as_f64().ok_or("it should be a number")? as f32)),
+        "front2back:camera-axis-up-y" => SimulationCommand::Camera(CameraChange::AxisUpY(value.as_f64().ok_or("it should be a number")? as f32)),
+        "front2back:camera-axis-up-z" => SimulationCommand::Camera(CameraChange::AxisUpZ(value.as_f64().ok_or("it should be a number")? as f32)),
+        "front2back:camera-dir-x" => SimulationCommand::Camera(CameraChange::DirectionX(value.as_f64().ok_or("it should be a number")? as f32)),
+        "front2back:camera-dir-y" => SimulationCommand::Camera(CameraChange::DirectionY(value.as_f64().ok_or("it should be a number")? as f32)),
+        "front2back:camera-dir-z" => SimulationCommand::Camera(CameraChange::DirectionZ(value.as_f64().ok_or("it should be a number")? as f32)),
+        "front2back:custom-scaling-resolution-width" => SimulationCommand::CustomScalingResolutionWidth(value.as_f64().ok_or("it should be a number")? as f32),
+        "front2back:custom-scaling-resolution-height" => {
+            SimulationCommand::CustomScalingResolutionHeight(value.as_f64().ok_or("it should be a number")? as f32)
+        }
+        "front2back:custom-scaling-aspect-ratio-x" => SimulationCommand::CustomScalingAspectRatioX(value.as_f64().ok_or("it should be a number")? as f32),
+        "front2back:custom-scaling-aspect-ratio-y" => SimulationCommand::CustomScalingAspectRatioY(value.as_f64().ok_or("it should be a number")? as f32),
+        "front2back:custom-scaling-stretch-nearest" => SimulationCommand::CustomScalingStretchNearest(value.as_bool().ok_or("it should be a bool")?),
+        "front2back:viewport-resize" => SimulationCommand::ViewportResize(
             js_sys::Reflect::get(&value, &"width".into())?.as_f64().ok_or("it should contain width")? as u32,
             js_sys::Reflect::get(&value, &"height".into())?.as_f64().ok_or("it should contain height")? as u32,
         ),
         _ => return Err(format!("Can't read frontend_event: {}", frontend_event).into()),
     };
-    input.push_event(event_value);
+    commands.emit(event_value);
     Ok(())
 }

@@ -13,7 +13,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
-use crate::input_types::{Boolean2DAction, BooleanAction, Input, KeyCodeBooleanAction, Pressed};
+use crate::input_types::{Boolean2DAction, BooleanAction, Input, KeyCodeBooleanAction};
+use crate::simulation_command::Pressed;
 use crate::simulation_core_state::{KeyEventKind, Resources};
 
 pub(crate) fn trigger_hotkey_action(input: &mut Input, res: &mut Resources, keycode: &str, pressed: Pressed) -> ActionUsed {

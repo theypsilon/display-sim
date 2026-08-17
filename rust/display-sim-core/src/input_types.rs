@@ -19,57 +19,6 @@ use crate::boolean_button::BooleanButton;
 use crate::camera::CameraChange;
 use crate::general_types::{IncDec, Size2D};
 
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub enum Pressed {
-    Yes,
-    No,
-}
-
-impl Pressed {
-    pub fn from_bool(pressed: bool) -> Self {
-        if pressed {
-            Pressed::Yes
-        } else {
-            Pressed::No
-        }
-    }
-}
-
-#[derive(Clone, Debug)]
-pub enum InputEventValue {
-    None,
-
-    Keyboard { pressed: Pressed, key: String },
-    MouseClick(Pressed),
-    MouseMove { x: i32, y: i32 },
-    MouseWheel(f32),
-    BlurredWindow,
-
-    PixelWidth(f32),
-    Camera(CameraChange),
-    CustomScalingResolutionWidth(f32),
-    CustomScalingResolutionHeight(f32),
-    CustomScalingAspectRatioX(f32),
-    CustomScalingAspectRatioY(f32),
-    CustomScalingStretchNearest(bool),
-    ViewportResize(u32, u32),
-}
-
-#[derive(Default)]
-pub(crate) struct CustomInputEvent {
-    values: Vec<InputEventValue>,
-}
-
-impl CustomInputEvent {
-    pub(crate) fn add_value(&mut self, value: InputEventValue) {
-        self.values.push(value);
-    }
-
-    pub(crate) fn consume_values(&mut self) -> Vec<InputEventValue> {
-        std::mem::take(&mut self.values)
-    }
-}
-
 pub(crate) trait SetOptionNone {
     fn set_none(&mut self);
 }
@@ -96,7 +45,6 @@ impl TrackedButton for IncDec<BooleanButton> {
 #[gen_array(pub(crate) fn get_options_to_be_noned: &mut dyn SetOptionNone, implicit_select_all: Option<_>)]
 #[gen_array(pub(crate) fn get_tracked_buttons: &mut dyn TrackedButton, implicit_select_all: BooleanButton, IncDec<BooleanButton>)]
 pub struct Input {
-    pub(crate) custom_event: CustomInputEvent,
     pub(crate) now: f64,
     pub(crate) walk_left: bool,
     pub(crate) walk_right: bool,
@@ -157,10 +105,6 @@ pub struct Input {
 impl Input {
     pub fn new(now: f64) -> Input {
         Input { now, ..Default::default() }
-    }
-
-    pub fn push_event(&mut self, event: InputEventValue) {
-        self.custom_event.add_value(event);
     }
 }
 

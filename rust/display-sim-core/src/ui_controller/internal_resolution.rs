@@ -18,9 +18,10 @@ use crate::field_changer::FieldChanger;
 use crate::general_types::{IncDec, OptionCursor, Size2D};
 
 use crate::boolean_button::BooleanButton;
+use crate::simulation_command::ControllerValue;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::MainState;
-use crate::ui_controller::{EncodedValue, UiController};
+use crate::ui_controller::UiController;
 use app_util::AppResult;
 use std::fmt::{Display, Error, Formatter};
 
@@ -169,7 +170,7 @@ impl UiController for InternalResolution {
         self.input = Default::default();
         self.event = None;
     }
-    fn read_event(&mut self, encoded: Box<dyn EncodedValue>) -> AppResult<()> {
+    fn read_event(&mut self, encoded: &ControllerValue) -> AppResult<()> {
         self.event = Some(encoded.to_i32()?);
         Ok(())
     }

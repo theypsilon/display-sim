@@ -14,6 +14,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 use crate::app_events::AppEventDispatcher;
+use serde::{Deserialize, Serialize};
 
 const PROJECTION_MIN_NEAR_PLANE: f32 = 0.01;
 const PROJECTION_MAX_NEAR_PLANE: f32 = 4.0;
@@ -32,7 +33,8 @@ pub(crate) enum CameraDirection {
     Backward,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "change", content = "value", rename_all = "snake_case")]
 pub enum CameraChange {
     Zoom(f32),
     PosX(f32),

@@ -15,11 +15,14 @@
 
 use crate::app_events::AppEventDispatcher;
 use crate::general_types::IncDec;
+use crate::simulation_command::ControllerValue;
 use crate::simulation_context::SimulationContext;
 use crate::simulation_core_state::MainState;
-use crate::ui_controller::{EncodedValue, UiController};
+use crate::ui_controller::UiController;
 use app_util::AppResult;
 use std::str::FromStr;
+
+pub const FILTER_PRESET_EVENT_TAG: &str = "front2back:filter-presets-selected";
 
 #[derive(Default, Clone)]
 pub struct FilterPreset {
@@ -101,37 +104,10 @@ impl FilterPresetOptions {
 #[cfg(test)]
 mod filter_presets_tests {
     use super::{FilterPreset, FilterPresetOptions};
-    use crate::ui_controller::{EncodedValue, UiController};
+    use crate::simulation_command::ControllerValue;
+    use crate::ui_controller::UiController;
     use app_util::AppResult;
     use std::str::FromStr;
-
-    struct TextEncodedValue(&'static str);
-
-    impl EncodedValue for TextEncodedValue {
-        fn to_f64(&self) -> AppResult<f64> {
-            Err("text value is not numeric".into())
-        }
-
-        fn to_f32(&self) -> AppResult<f32> {
-            Err("text value is not numeric".into())
-        }
-
-        fn to_u32(&self) -> AppResult<u32> {
-            Err("text value is not numeric".into())
-        }
-
-        fn to_i32(&self) -> AppResult<i32> {
-            Err("text value is not numeric".into())
-        }
-
-        fn to_usize(&self) -> AppResult<usize> {
-            Err("text value is not numeric".into())
-        }
-
-        fn to_string(&self) -> AppResult<String> {
-            Ok(self.0.to_owned())
-        }
-    }
 
     #[test]
     fn test_from_str_to_str() -> AppResult<()> {
@@ -145,7 +121,7 @@ mod filter_presets_tests {
     fn frontend_event_selects_the_preset_immediately() -> AppResult<()> {
         let mut preset = FilterPreset::default();
 
-        preset.read_event(Box::new(TextEncodedValue("crt-shadow-mask-2")))?;
+        preset.read_event(&ControllerValue::Text("crt-shadow-mask-2".into()))?;
 
         assert_eq!(preset.value, FilterPresetOptions::CrtShadowMask2);
         Ok(())
@@ -160,7 +136,7 @@ impl Default for FilterPresetOptions {
 
 impl UiController for FilterPreset {
     fn event_tag(&self) -> &'static str {
-        "front2back:filter-presets-selected"
+        FILTER_PRESET_EVENT_TAG
     }
     fn keys_inc(&self) -> &[&'static str] {
         &[]
@@ -176,8 +152,8 @@ impl UiController for FilterPreset {
         self.input.increase = false;
         self.input.decrease = false;
     }
-    fn read_event(&mut self, encoded: Box<dyn EncodedValue>) -> AppResult<()> {
-        let preset = FilterPresetOptions::from_str(&encoded.to_string()?)?;
+    fn read_event(&mut self, encoded: &ControllerValue) -> AppResult<()> {
+        let preset = FilterPresetOptions::from_str(encoded.to_text()?)?;
         // Presets have no increment/decrement input for `update` to process.
         // Publish the selected value immediately so the simulation ticker can
         // apply it in the same tick as the frontend event.

@@ -16,6 +16,7 @@
 use core::app_events::FakeEventDispatcher;
 use core::general_types::Size2D;
 use core::input_types::Input;
+use core::simulation_command::SimulationCommandBus;
 use core::simulation_context::{ConcreteSimulationContext, FakeRngGenerator};
 use core::simulation_core_state::{AnimationStep, Resources, VideoInputResources};
 use core::simulation_core_ticker::SimulationCoreTicker;
@@ -81,9 +82,10 @@ impl FakeVideoInput {
 
         let now = SystemTime::now();
         let mut input = Input::new(0.0);
+        let mut commands = SimulationCommandBus::default();
         let ctx = ConcreteSimulationContext::new(FakeEventDispatcher {}, FakeRngGenerator {});
         for _ in 0..times {
-            SimulationCoreTicker::new(&ctx, &mut res, &mut input).tick(now.elapsed().map_err(|e| e.to_string())?.as_millis() as f64 * 0.05)?;
+            SimulationCoreTicker::new(&ctx, &mut res, &mut input, &mut commands).tick(now.elapsed().map_err(|e| e.to_string())?.as_millis() as f64 * 0.05)?;
             if res.quit {
                 println!("User closed the simulation.");
                 return Ok(());

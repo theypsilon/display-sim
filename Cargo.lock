@@ -602,6 +602,8 @@ dependencies = [
  "nalgebra-glm",
  "num-derive",
  "num-traits",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -636,7 +638,6 @@ dependencies = [
 name = "display-sim-sim-ui"
 version = "0.1.0"
 dependencies = [
- "display-sim-app-util",
  "display-sim-core",
  "egui",
 ]

@@ -6,12 +6,10 @@
  * (at your option) any later version.
  */
 
-use app_util::{AppError, AppResult};
 use core::camera::{CameraChange, CameraLockMode};
-use core::input_types::{Input, InputEventValue, Pressed};
-use core::simulation_core_state::{KeyEventKind, Resources, ScalingMethod};
+use core::simulation_command::{ControllerValue, Pressed, SimulationCommand, SimulationCommandBus};
+use core::simulation_core_state::{Resources, ScalingMethod};
 use core::ui_controller::filter_preset::FilterPresetOptions;
-use core::ui_controller::EncodedValue;
 use egui::{
     Align, Align2, Color32, Context, CornerRadius, CursorIcon, Event, FontId, Id, Popup, Pos2, Rect, Response, ScrollArea, Sense, Stroke, TextEdit, TextStyle,
     Ui, Vec2,
@@ -19,57 +17,6 @@ use egui::{
 use std::cell::RefCell;
 use std::collections::{HashSet, VecDeque};
 use std::rc::Rc;
-
-/// An [`EncodedValue`] implementation for in-process UI values.
-///
-/// The web frontend has to encode values through JavaScript. The native panel
-/// can preserve their numeric type and only parses when a controller requests
-/// a different representation.
-#[derive(Clone, Debug, PartialEq)]
-pub enum PanelEncodedValue {
-    Number(f64),
-    Text(String),
-}
-
-impl PanelEncodedValue {
-    fn number(&self) -> AppResult<f64> {
-        match self {
-            Self::Number(value) => Ok(*value),
-            Self::Text(value) => value
-                .parse::<f64>()
-                .map_err(|error| AppError::new(format!("invalid number {value:?}: {error}"))),
-        }
-    }
-}
-
-impl EncodedValue for PanelEncodedValue {
-    fn to_f64(&self) -> AppResult<f64> {
-        self.number()
-    }
-
-    fn to_f32(&self) -> AppResult<f32> {
-        Ok(self.number()? as f32)
-    }
-
-    fn to_u32(&self) -> AppResult<u32> {
-        Ok(self.number()? as u32)
-    }
-
-    fn to_i32(&self) -> AppResult<i32> {
-        Ok(self.number()? as i32)
-    }
-
-    fn to_usize(&self) -> AppResult<usize> {
-        Ok(self.number()? as usize)
-    }
-
-    fn to_string(&self) -> AppResult<String> {
-        Ok(match self {
-            Self::Number(value) => value.to_string(),
-            Self::Text(value) => value.clone(),
-        })
-    }
-}
 
 /// Crosses the dispatcher/UI boundary without tying the panel to a platform.
 #[derive(Default, Debug)]
@@ -123,7 +70,7 @@ struct SyntheticKeys {
 }
 
 impl SyntheticKeys {
-    fn begin_frame(&mut self, output: &mut Vec<InputEventValue>) {
+    fn begin_frame(&mut self, output: &mut Vec<SimulationCommand>) {
         self.seen_continuous_keys.clear();
         let releases = std::mem::take(&mut self.release_next_frame);
         for key in releases {
@@ -131,13 +78,13 @@ impl SyntheticKeys {
         }
     }
 
-    fn set_continuous(&mut self, key: &str, held: bool, output: &mut Vec<InputEventValue>) {
+    fn set_continuous(&mut self, key: &str, held: bool, output: &mut Vec<SimulationCommand>) {
         self.continuous_keys.insert(key.to_owned());
         self.seen_continuous_keys.insert(key.to_owned());
         self.set_held(key, held, output);
     }
 
-    fn drive_button(&mut self, ui: &Ui, key: &str, response: &Response, enabled: bool, output: &mut Vec<InputEventValue>) {
+    fn drive_button(&mut self, ui: &Ui, key: &str, response: &Response, enabled: bool, output: &mut Vec<SimulationCommand>) {
         let pointer_held = enabled && response.is_pointer_button_down_on();
         // Match the web controls' explicit key-down/key-up contract rather
         // than converting keyboard activation into a timed pulse.
@@ -155,7 +102,7 @@ impl SyntheticKeys {
         }
     }
 
-    fn end_frame(&mut self, output: &mut Vec<InputEventValue>) {
+    fn end_frame(&mut self, output: &mut Vec<SimulationCommand>) {
         let missing: Vec<_> = self.continuous_keys.difference(&self.seen_continuous_keys).cloned().collect();
         for key in missing {
             self.set_held(&key, false, output);
@@ -163,12 +110,12 @@ impl SyntheticKeys {
         }
     }
 
-    fn pulse(&mut self, key: &str, output: &mut Vec<InputEventValue>) {
+    fn pulse(&mut self, key: &str, output: &mut Vec<SimulationCommand>) {
         self.set_held(key, true, output);
         self.release_next_frame.insert(key.to_owned());
     }
 
-    fn set_held(&mut self, key: &str, held: bool, output: &mut Vec<InputEventValue>) {
+    fn set_held(&mut self, key: &str, held: bool, output: &mut Vec<SimulationCommand>) {
         if held == self.down.contains(key) {
             return;
         }
@@ -178,26 +125,20 @@ impl SyntheticKeys {
             self.down.remove(key);
             self.release_next_frame.remove(key);
         }
-        output.push(InputEventValue::Keyboard {
+        output.push(SimulationCommand::Keyboard {
             pressed: Pressed::from_bool(held),
             key: key.to_owned(),
         });
     }
 
-    fn release_all(&mut self, output: &mut Vec<InputEventValue>) {
+    fn release_all(&mut self, output: &mut Vec<SimulationCommand>) {
         self.release_next_frame.clear();
         self.continuous_keys.clear();
         self.seen_continuous_keys.clear();
         for key in std::mem::take(&mut self.down) {
-            output.push(InputEventValue::Keyboard { pressed: Pressed::No, key });
+            output.push(SimulationCommand::Keyboard { pressed: Pressed::No, key });
         }
     }
-}
-
-#[derive(Clone)]
-struct ControllerSet {
-    event_tag: &'static str,
-    value: PanelEncodedValue,
 }
 
 struct Toast {
@@ -355,14 +296,14 @@ impl SimPanel {
         };
     }
 
-    pub fn release_all(&mut self, input: &mut Input) {
-        let mut events = Vec::new();
-        self.synthetic.release_all(&mut events);
-        push_input_events(input, events);
+    pub fn release_all(&mut self, commands: &mut SimulationCommandBus) {
+        let mut released = Vec::new();
+        self.synthetic.release_all(&mut released);
+        commands.emit_all(released);
     }
 
-    pub fn run(&mut self, raw_input: egui::RawInput, res: &mut Resources, input: &mut Input, events: &SharedPanelEvents) -> AppResult<egui::FullOutput> {
-        self.run_with_controls(raw_input, res, input, events, true)
+    pub fn run(&mut self, raw_input: egui::RawInput, res: &Resources, commands: &mut SimulationCommandBus, events: &SharedPanelEvents) -> egui::FullOutput {
+        self.run_with_controls(raw_input, res, commands, events, true)
     }
 
     /// Runs the shared notification chrome while optionally omitting the
@@ -371,11 +312,11 @@ impl SimPanel {
     pub fn run_with_controls(
         &mut self,
         raw_input: egui::RawInput,
-        res: &mut Resources,
-        input: &mut Input,
+        res: &Resources,
+        command_bus: &mut SimulationCommandBus,
         events: &SharedPanelEvents,
         controls_enabled: bool,
-    ) -> AppResult<egui::FullOutput> {
+    ) -> egui::FullOutput {
         self.time = raw_input.time.unwrap_or(self.time + raw_input.predicted_dt as f64);
         let focused = raw_input.focused;
         let render_rect = raw_input.screen_rect.unwrap_or_else(|| {
@@ -403,22 +344,20 @@ impl SimPanel {
             self.toasts.pop_front();
         }
 
-        let mut input_events = Vec::new();
-        self.synthetic.begin_frame(&mut input_events);
+        let mut commands = Vec::new();
+        self.synthetic.begin_frame(&mut commands);
         if drained.toggle_requests % 2 == 1 {
             self.visible = !self.visible;
-            self.synthetic.release_all(&mut input_events);
+            self.synthetic.release_all(&mut commands);
         }
         if !focused {
-            self.synthetic.release_all(&mut input_events);
+            self.synthetic.release_all(&mut commands);
         }
         if !controls_enabled {
-            self.synthetic.release_all(&mut input_events);
+            self.synthetic.release_all(&mut commands);
         }
 
         let context = self.context.clone();
-        let mut controller_sets = Vec::new();
-        let mut selected_preset = None;
         let was_visible = self.visible;
         let output = context.run_ui(raw_input, |root_ui| {
             let ctx = root_ui.ctx().clone();
@@ -448,7 +387,7 @@ impl SimPanel {
                         ScrollArea::vertical().max_height(max_content_height).auto_shrink([false, true]).show(ui, |ui| {
                             ui.set_min_width(PANEL_WIDTH);
                             ui.set_max_width(PANEL_WIDTH);
-                            self.show_panel(ui, res, &mut controller_sets, &mut selected_preset, &mut input_events);
+                            self.show_panel(ui, res, &mut commands);
                         });
                     }
                     if control_row(ui, if self.visible { "Close Controls" } else { "Open Controls" }).clicked() {
@@ -458,18 +397,12 @@ impl SimPanel {
             self.panel_rect = Some(response.response.rect);
         });
 
-        self.synthetic.end_frame(&mut input_events);
+        self.synthetic.end_frame(&mut commands);
         if was_visible && !self.visible {
-            self.synthetic.release_all(&mut input_events);
+            self.synthetic.release_all(&mut commands);
         }
-        for set in controller_sets {
-            route_controller_value(res, set.event_tag, set.value)?;
-        }
-        if let Some(preset) = selected_preset {
-            select_preset(res, preset)?;
-        }
-        push_input_events(input, input_events);
-        Ok(output)
+        command_bus.emit_all(commands);
+        output
     }
 
     fn show_session_ended(&self, ctx: &Context) {
@@ -533,16 +466,9 @@ impl SimPanel {
         }
     }
 
-    fn show_panel(
-        &mut self,
-        ui: &mut Ui,
-        res: &Resources,
-        sets: &mut Vec<ControllerSet>,
-        selected_preset: &mut Option<FilterPresetOptions>,
-        input_events: &mut Vec<InputEventValue>,
-    ) {
+    fn show_panel(&mut self, ui: &mut Ui, res: &Resources, commands: &mut Vec<SimulationCommand>) {
         if section_header(ui, "Presets", &mut self.sections.presets) {
-            self.preset_grid(ui, res, selected_preset);
+            self.preset_grid(ui, res, commands);
         }
 
         if section_header(ui, "Image Scaling", &mut self.sections.image_scaling) {
@@ -554,12 +480,12 @@ impl SimPanel {
                 &res.scaling.scaling_method.to_string(),
                 "scaling-method-dec",
                 "scaling-method-inc",
-                input_events,
+                commands,
             );
             let custom = matches!(res.scaling.scaling_method, ScalingMethod::Custom);
             let mut width = res.scaling.custom_resolution.width;
             let mut height = res.scaling.custom_resolution.height;
-            let (first, resolution_changed) = self.pair_f32(
+            let (first, [width_changed, height_changed]) = self.pair_f32(
                 ui,
                 "Image resolution",
                 Accent::Lilac,
@@ -572,15 +498,17 @@ impl SimPanel {
                 ["custom-scaling-resolution-width-dec", "custom-scaling-resolution-width-inc"],
                 ["custom-scaling-resolution-height-dec", "custom-scaling-resolution-height-inc"],
                 custom,
-                input_events,
+                commands,
             );
-            if resolution_changed {
-                input_events.push(InputEventValue::CustomScalingResolutionWidth(width));
-                input_events.push(InputEventValue::CustomScalingResolutionHeight(height));
+            if width_changed {
+                commands.push(SimulationCommand::CustomScalingResolutionWidth(width));
+            }
+            if height_changed {
+                commands.push(SimulationCommand::CustomScalingResolutionHeight(height));
             }
             let mut aspect_x = res.scaling.custom_aspect_ratio.width;
             let mut aspect_y = res.scaling.custom_aspect_ratio.height;
-            let (_, aspect_changed) = self.pair_f32(
+            let (_, [aspect_x_changed, aspect_y_changed]) = self.pair_f32(
                 ui,
                 "Aspect Ratio",
                 Accent::Lilac,
@@ -593,16 +521,18 @@ impl SimPanel {
                 ["custom-scaling-aspect-ratio-x-dec", "custom-scaling-aspect-ratio-x-inc"],
                 ["custom-scaling-aspect-ratio-y-dec", "custom-scaling-aspect-ratio-y-inc"],
                 custom,
-                input_events,
+                commands,
             );
-            if aspect_changed {
-                input_events.push(InputEventValue::CustomScalingAspectRatioX(aspect_x));
-                input_events.push(InputEventValue::CustomScalingAspectRatioY(aspect_y));
+            if aspect_x_changed {
+                commands.push(SimulationCommand::CustomScalingAspectRatioX(aspect_x));
+            }
+            if aspect_y_changed {
+                commands.push(SimulationCommand::CustomScalingAspectRatioY(aspect_y));
             }
             let mut stretch = res.scaling.custom_stretch;
             let (_, stretch_changed) = checkbox_row(ui, "Stretch to nearest border", Accent::Lilac, &mut stretch, custom);
             if stretch_changed {
-                input_events.push(InputEventValue::CustomScalingStretchNearest(stretch));
+                commands.push(SimulationCommand::CustomScalingStretchNearest(stretch));
             }
             let mut pixel_width = res.scaling.pixel_width;
             let (last, pixel_width_changed) = self.number_f32(
@@ -616,10 +546,10 @@ impl SimPanel {
                 "pixel-width-dec",
                 "pixel-width-inc",
                 custom,
-                input_events,
+                commands,
             );
             if pixel_width_changed {
-                input_events.push(InputEventValue::PixelWidth(pixel_width));
+                commands.push(SimulationCommand::PixelWidth(pixel_width));
             }
             if !custom {
                 let overlay = Rect::from_min_max(Pos2::new(first.left() + CATEGORY_INSET, first.top()), Pos2::new(last.right(), last.bottom()));
@@ -637,7 +567,7 @@ impl SimPanel {
                 &res.controllers.internal_resolution.to_string(),
                 "internal-resolution-dec",
                 "internal-resolution-inc",
-                input_events,
+                commands,
             );
             let mut blur = res.controllers.blur_passes.value;
             let (_, changed) = self.number_usize(
@@ -651,15 +581,15 @@ impl SimPanel {
                 "blur-level-dec",
                 "blur-level-inc",
                 true,
-                input_events,
+                commands,
             );
             if changed {
-                set(sets, "front2back:blur-level", blur as f64);
+                set(commands, "front2back:blur-level", blur as f64);
             }
         }
 
         if section_header(ui, "Colors", &mut self.sections.colors) {
-            self.rgb_matrix(ui, res, sets);
+            self.rgb_matrix(ui, res, commands);
             let mut gamma = res.controllers.color_gamma.value;
             let (_, changed) = self.number_f32(
                 ui,
@@ -672,10 +602,10 @@ impl SimPanel {
                 "color-gamma-dec",
                 "color-gamma-inc",
                 true,
-                input_events,
+                commands,
             );
             if changed {
-                set(sets, "front2back:color-gamma", gamma as f64);
+                set(commands, "front2back:color-gamma", gamma as f64);
             }
             let mut noise = res.controllers.color_noise.value;
             let (_, changed) = self.number_f32(
@@ -689,16 +619,16 @@ impl SimPanel {
                 "color-noise-dec",
                 "color-noise-inc",
                 true,
-                input_events,
+                commands,
             );
             if changed {
-                set(sets, "front2back:color-noise", noise as f64);
+                set(commands, "front2back:color-noise", noise as f64);
             }
             let packed = res.controllers.light_color.value as u32;
             let mut color = [((packed >> 16) & 0xff) as u8, ((packed >> 8) & 0xff) as u8, (packed & 0xff) as u8];
             if color_row(ui, "Source light color", Accent::Blue, &mut color) {
                 let value = ((color[0] as u32) << 16) | ((color[1] as u32) << 8) | color[2] as u32;
-                set(sets, "front2back:light-color", value as f64);
+                set(commands, "front2back:light-color", value as f64);
             }
             let mut bright = res.controllers.extra_bright.value;
             let (_, changed) = self.number_f32(
@@ -712,10 +642,10 @@ impl SimPanel {
                 "pixel-brightness-dec",
                 "pixel-brightness-inc",
                 true,
-                input_events,
+                commands,
             );
             if changed {
-                set(sets, "front2back:pixel-brightness", bright as f64);
+                set(commands, "front2back:pixel-brightness", bright as f64);
             }
             let mut contrast = res.controllers.extra_contrast.value;
             let (_, changed) = self.number_f32(
@@ -729,10 +659,10 @@ impl SimPanel {
                 "pixel-contrast-dec",
                 "pixel-contrast-inc",
                 true,
-                input_events,
+                commands,
             );
             if changed {
-                set(sets, "front2back:pixel-contrast", contrast as f64);
+                set(commands, "front2back:pixel-contrast", contrast as f64);
             }
         }
 
@@ -745,7 +675,7 @@ impl SimPanel {
                 &res.controllers.screen_curvature_kind.value.to_string(),
                 "screen-curvature-dec",
                 "screen-curvature-inc",
-                input_events,
+                commands,
             );
             let mut horizontal_gap = res.controllers.cur_pixel_horizontal_gap.value;
             let (_, changed) = self.number_f32(
@@ -759,10 +689,10 @@ impl SimPanel {
                 "pixel-horizontal-gap-dec",
                 "pixel-horizontal-gap-inc",
                 true,
-                input_events,
+                commands,
             );
             if changed {
-                set(sets, "front2back:pixel-horizontal-gap", horizontal_gap as f64);
+                set(commands, "front2back:pixel-horizontal-gap", horizontal_gap as f64);
             }
             let mut vertical_gap = res.controllers.cur_pixel_vertical_gap.value;
             let (_, changed) = self.number_f32(
@@ -776,10 +706,10 @@ impl SimPanel {
                 "pixel-vertical-gap-dec",
                 "pixel-vertical-gap-inc",
                 true,
-                input_events,
+                commands,
             );
             if changed {
-                set(sets, "front2back:pixel-vertical-gap", vertical_gap as f64);
+                set(commands, "front2back:pixel-vertical-gap", vertical_gap as f64);
             }
             let mut vertical_lpp = res.controllers.vertical_lpp.value;
             let (_, changed) = self.number_usize(
@@ -793,10 +723,10 @@ impl SimPanel {
                 "vertical-lpp-dec",
                 "vertical-lpp-inc",
                 true,
-                input_events,
+                commands,
             );
             if changed {
-                set(sets, "front2back:vertical-lpp", vertical_lpp as f64);
+                set(commands, "front2back:vertical-lpp", vertical_lpp as f64);
             }
             let mut horizontal_lpp = res.controllers.horizontal_lpp.value;
             let (_, changed) = self.number_usize(
@@ -810,10 +740,10 @@ impl SimPanel {
                 "horizontal-lpp-dec",
                 "horizontal-lpp-inc",
                 true,
-                input_events,
+                commands,
             );
             if changed {
-                set(sets, "front2back:horizontal-lpp", horizontal_lpp as f64);
+                set(commands, "front2back:horizontal-lpp", horizontal_lpp as f64);
             }
             self.selector(
                 ui,
@@ -823,7 +753,7 @@ impl SimPanel {
                 &res.controllers.color_channels.value.to_string(),
                 "color-representation-dec",
                 "color-representation-inc",
-                input_events,
+                commands,
             );
             self.selector(
                 ui,
@@ -833,7 +763,7 @@ impl SimPanel {
                 &res.controllers.pixels_geometry_kind.value.to_string(),
                 "pixel-geometry-dec",
                 "pixel-geometry-inc",
-                input_events,
+                commands,
             );
             self.selector(
                 ui,
@@ -843,7 +773,7 @@ impl SimPanel {
                 &res.controllers.pixel_shadow_shape_kind.value.to_string(),
                 "pixel-shadow-shape-dec",
                 "pixel-shadow-shape-inc",
-                input_events,
+                commands,
             );
             let mut height = res.controllers.pixel_shadow_height.value;
             let (_, changed) = self.number_f32(
@@ -857,10 +787,10 @@ impl SimPanel {
                 "pixel-shadow-height-dec",
                 "pixel-shadow-height-inc",
                 true,
-                input_events,
+                commands,
             );
             if changed {
-                set(sets, "front2back:pixel-shadow-height", height as f64);
+                set(commands, "front2back:pixel-shadow-height", height as f64);
             }
             self.selector(
                 ui,
@@ -870,7 +800,7 @@ impl SimPanel {
                 &res.controllers.texture_interpolation.value.to_string(),
                 "texture-interpolation-dec",
                 "texture-interpolation-inc",
-                input_events,
+                commands,
             );
             let mut backlight = res.controllers.backlight_percent.value;
             let (_, changed) = self.number_f32(
@@ -884,13 +814,13 @@ impl SimPanel {
                 "backlight-percent-dec",
                 "backlight-percent-inc",
                 true,
-                input_events,
+                commands,
             );
             if changed {
-                set(sets, "front2back:backlight-percent", backlight as f64);
+                set(commands, "front2back:backlight-percent", backlight as f64);
             }
             if action_row(ui, "Reset Filter Values", Accent::Grey).clicked() {
-                self.synthetic.pulse("reset-filters", input_events);
+                self.synthetic.pulse("reset-filters", commands);
             }
         }
 
@@ -903,10 +833,10 @@ impl SimPanel {
                 &res.camera.locked_mode.to_string(),
                 "camera-movement-mode-dec",
                 "camera-movement-mode-inc",
-                input_events,
+                commands,
             );
-            self.camera_buttons(ui, res.camera.locked_mode, input_events);
-            self.camera_matrix(ui, res, input_events);
+            self.camera_buttons(ui, res.camera.locked_mode, commands);
+            self.camera_matrix(ui, res, commands);
             let mut zoom = res.camera.zoom;
             let (_, changed) = self.number_f32(
                 ui,
@@ -919,13 +849,13 @@ impl SimPanel {
                 "camera-zoom-dec",
                 "camera-zoom-inc",
                 true,
-                input_events,
+                commands,
             );
             if changed {
-                input_events.push(InputEventValue::Camera(CameraChange::Zoom(zoom)));
+                commands.push(SimulationCommand::Camera(CameraChange::Zoom(zoom)));
             }
             if action_row(ui, "Reset Position", Accent::Grey).clicked() {
-                self.synthetic.pulse("reset-camera", input_events);
+                self.synthetic.pulse("reset-camera", commands);
             }
         }
 
@@ -938,7 +868,7 @@ impl SimPanel {
                 &format!("x{}", format_number(res.camera.movement_speed)),
                 "move-speed-dec",
                 "move-speed-inc",
-                input_events,
+                commands,
             );
             self.selector(
                 ui,
@@ -948,10 +878,10 @@ impl SimPanel {
                 &format!("x{}", format_number(res.main.filter_speed)),
                 "pixel-speed-dec",
                 "pixel-speed-inc",
-                input_events,
+                commands,
             );
             if action_row(ui, "Reset Modifiers", Accent::Grey).clicked() {
-                self.synthetic.pulse("reset-speeds", input_events);
+                self.synthetic.pulse("reset-speeds", commands);
             }
         }
 
@@ -961,15 +891,15 @@ impl SimPanel {
         }
 
         if section_header(ui, "Extra", &mut self.sections.extra) && action_row(ui, "Take Screenshot", Accent::Yellow).clicked() {
-            self.synthetic.pulse("capture-framebuffer", input_events);
+            self.synthetic.pulse("capture-framebuffer", commands);
         }
 
         if exit_row(ui, "Exit Simulation").clicked() {
-            self.synthetic.pulse("quit-simulation", input_events);
+            self.synthetic.pulse("quit-simulation", commands);
         }
     }
 
-    fn preset_grid(&mut self, ui: &mut Ui, res: &Resources, selected_preset: &mut Option<FilterPresetOptions>) {
+    fn preset_grid(&mut self, ui: &mut Ui, res: &Resources, commands: &mut Vec<SimulationCommand>) {
         let (full_rect, _) = ui.allocate_exact_size(Vec2::new(PANEL_WIDTH, 151.0), Sense::hover());
         let rect = Rect::from_min_size(full_rect.min + Vec2::new(CATEGORY_INSET, 0.0), Vec2::new(CATEGORY_WIDTH, 151.0));
         let painter = ui.painter().clone();
@@ -1015,7 +945,10 @@ impl SimPanel {
             // The web preset anchors dispatch even when the active preset is
             // clicked again; preserve that event behavior here as well.
             if response.clicked() {
-                *selected_preset = Some(preset);
+                commands.push(SimulationCommand::controller_set(
+                    "front2back:filter-presets-selected",
+                    ControllerValue::Text(preset.to_string()),
+                ));
             }
         }
     }
@@ -1029,7 +962,7 @@ impl SimPanel {
         value: &str,
         dec: &str,
         inc: &str,
-        events: &mut Vec<InputEventValue>,
+        events: &mut Vec<SimulationCommand>,
     ) -> Rect {
         let rect = row_base(ui, label, hotkeys, accent, false);
         let input_rect = row_control_rect(rect);
@@ -1091,7 +1024,7 @@ impl SimPanel {
         dec: &str,
         inc: &str,
         enabled: bool,
-        events: &mut Vec<InputEventValue>,
+        events: &mut Vec<SimulationCommand>,
     ) -> (Rect, bool) {
         let rect = row_base(ui, label, Some(hotkeys), accent, false);
         let input_rect = row_control_rect(rect);
@@ -1140,7 +1073,7 @@ impl SimPanel {
         dec: &str,
         inc: &str,
         enabled: bool,
-        events: &mut Vec<InputEventValue>,
+        events: &mut Vec<SimulationCommand>,
     ) -> (Rect, bool) {
         let rect = row_base(ui, label, Some(hotkeys), accent, false);
         let input_rect = row_control_rect(rect);
@@ -1185,21 +1118,21 @@ impl SimPanel {
         left_keys: [&str; 2],
         right_keys: [&str; 2],
         enabled: bool,
-        events: &mut Vec<InputEventValue>,
-    ) -> (Rect, bool) {
+        events: &mut Vec<SimulationCommand>,
+    ) -> (Rect, [bool; 2]) {
         let rect = row_base(ui, label, None, accent, false);
         let control = row_control_rect(rect);
         let half_width = 92.0;
         let separator_width = CONTROL_WIDTH - half_width * 2.0;
-        let mut changed = false;
+        let mut changed = [false, false];
         let left_input = Rect::from_min_size(control.min, Vec2::new(42.0, INPUT_HEIGHT));
         let right_origin = control.min + Vec2::new(half_width + separator_width, 0.0);
         let right_input = Rect::from_min_size(right_origin, Vec2::new(42.0, INPUT_HEIGHT));
         paint_input(ui, Rect::from_min_size(control.min, Vec2::new(half_width, INPUT_HEIGHT)), false);
         paint_input(ui, Rect::from_min_size(right_origin, Vec2::new(half_width, INPUT_HEIGHT)), false);
         if enabled {
-            changed |= edit_f32(ui, left_input, ("pair-left", label), left, left_range, speed);
-            changed |= edit_f32(ui, right_input, ("pair-right", label), right, right_range, speed);
+            changed[0] = edit_f32(ui, left_input, ("pair-left", label), left, left_range, speed);
+            changed[1] = edit_f32(ui, right_input, ("pair-right", label), right, right_range, speed);
         } else {
             paint_disabled_value(ui, left_input, &format_number(*left));
             paint_disabled_value(ui, right_input, &format_number(*right));
@@ -1246,7 +1179,7 @@ impl SimPanel {
         (rect, changed)
     }
 
-    fn rgb_matrix(&mut self, ui: &mut Ui, res: &Resources, sets: &mut Vec<ControllerSet>) {
+    fn rgb_matrix(&mut self, ui: &mut Ui, res: &Resources, commands: &mut Vec<SimulationCommand>) {
         let rows = [
             (
                 "red",
@@ -1285,13 +1218,13 @@ impl SimPanel {
                 // The web RGB matrix declares a step but no min/max, so its
                 // keyboard and wheel stepping remain unbounded.
                 if edit_f32(ui, input, ("rgb", tag), &mut value, f32::MIN..=f32::MAX, 0.01) {
-                    set(sets, tag, value as f64);
+                    set(commands, tag, value as f64);
                 }
             }
         }
     }
 
-    fn camera_buttons(&mut self, ui: &mut Ui, mode: CameraLockMode, events: &mut Vec<InputEventValue>) {
+    fn camera_buttons(&mut self, ui: &mut Ui, mode: CameraLockMode, events: &mut Vec<SimulationCommand>) {
         let (full, _) = ui.allocate_exact_size(Vec2::new(PANEL_WIDTH, 115.0), Sense::hover());
         let rect = Rect::from_min_size(full.min + Vec2::new(CATEGORY_INSET, 0.0), Vec2::new(CATEGORY_WIDTH, 115.0));
         let left = Rect::from_min_size(rect.min, Vec2::new(201.0, 115.0));
@@ -1422,7 +1355,7 @@ impl SimPanel {
         );
     }
 
-    fn camera_matrix(&mut self, ui: &mut Ui, res: &Resources, events: &mut Vec<InputEventValue>) {
+    fn camera_matrix(&mut self, ui: &mut Ui, res: &Resources, events: &mut Vec<SimulationCommand>) {
         let rows = [
             (
                 "positon",
@@ -1455,13 +1388,13 @@ impl SimPanel {
                     0.01,
                     NumberDisplay::Trimmed(2),
                 ) {
-                    events.push(InputEventValue::Camera(axis.change(value)));
+                    events.push(SimulationCommand::Camera(axis.change(value)));
                 }
             }
         }
     }
 
-    fn held_rect_button(&mut self, ui: &mut Ui, rect: Rect, label: &str, key: &str, events: &mut Vec<InputEventValue>) {
+    fn held_rect_button(&mut self, ui: &mut Ui, rect: Rect, label: &str, key: &str, events: &mut Vec<SimulationCommand>) {
         let response = flat_button(ui, rect, label, ("camera", key));
         self.synthetic.drive_button(ui, key, &response, true, events);
     }
@@ -1728,7 +1661,7 @@ fn edit_usize(
     let Some(text) = numeric_text_edit(ui, rect, id, value.to_string(), speed, step_range) else {
         return false;
     };
-    // `JsEncodedValue::to_usize` uses Rust's saturating float-to-integer cast,
+    // `ControllerValue::to_usize` uses Rust's saturating float-to-integer cast,
     // including truncation of fractions and mapping negative values to zero.
     let parsed = browser_number_value(&text) as usize;
     if parsed == *value {
@@ -2076,30 +2009,8 @@ fn paint_arrow(ui: &Ui, center: Pos2, direction: Vec2) {
     ui.painter().line_segment([tip, tip - direction * 2.5 - perpendicular * 2.0], stroke);
 }
 
-pub fn route_controller_value(res: &mut Resources, event_tag: &'static str, value: PanelEncodedValue) -> AppResult<()> {
-    let index = match res.controller_events.get(event_tag) {
-        Some((KeyEventKind::Set, index)) => *index,
-        Some(_) => return Err(AppError::new(format!("{event_tag} is not a set event"))),
-        None => return Err(AppError::new(format!("unknown controller event {event_tag}"))),
-    };
-    res.controllers.get_ui_controllers_mut()[index].read_event(Box::new(value))
-}
-
-pub fn select_preset(res: &mut Resources, preset: FilterPresetOptions) -> AppResult<()> {
-    route_controller_value(res, "front2back:filter-presets-selected", PanelEncodedValue::Text(preset.to_string()))
-}
-
-fn push_input_events(input: &mut Input, events: Vec<InputEventValue>) {
-    for event in events {
-        input.push_event(event);
-    }
-}
-
-fn set(sets: &mut Vec<ControllerSet>, event_tag: &'static str, value: f64) {
-    sets.push(ControllerSet {
-        event_tag,
-        value: PanelEncodedValue::Number(value),
-    });
+fn set(commands: &mut Vec<SimulationCommand>, event_tag: &'static str, value: f64) {
+    commands.push(SimulationCommand::controller_set(event_tag, ControllerValue::Number(value)));
 }
 
 #[derive(Clone, Copy)]
@@ -2134,64 +2045,24 @@ impl CameraAxis {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use core::general_types::Size2D;
+    use core::input_types::Input;
+    use core::simulation_context::make_fake_simulation_context;
+    use core::simulation_core_state::AnimationStep;
+    use core::simulation_core_ticker::SimulationCoreTicker;
 
     #[test]
-    fn encoded_values_convert() {
-        let numeric = PanelEncodedValue::Number(42.75);
-        assert_eq!(numeric.to_f64().unwrap(), 42.75);
-        assert_eq!(numeric.to_i32().unwrap(), 42);
-        assert_eq!(numeric.to_string().unwrap(), "42.75");
-        let text = PanelEncodedValue::Text("17".into());
-        assert_eq!(text.to_usize().unwrap(), 17);
-        assert!(PanelEncodedValue::Text("nope".into()).to_f32().is_err());
-    }
+    fn controller_widget_values_become_commands_without_mutating_resources() {
+        let resources = Resources::default();
+        let original_blur = resources.controllers.blur_passes.value;
+        let mut commands = Vec::new();
+        set(&mut commands, "front2back:blur-level", 3.0);
 
-    #[test]
-    fn controller_values_are_routed_by_tag() {
-        let mut resources = Resources::default();
-        assert!(route_controller_value(&mut resources, "front2back:blur-level", PanelEncodedValue::Number(3.0)).is_ok());
-        assert!(route_controller_value(&mut resources, "front2back:missing", PanelEncodedValue::Number(3.0)).is_err());
-    }
-
-    #[test]
-    fn every_settable_controller_accepts_the_shared_panel_route() {
-        let mut resources = Resources::default();
-        let set_tags: Vec<_> = resources
-            .controller_events
-            .iter()
-            .filter_map(|(tag, kind)| matches!(kind, (KeyEventKind::Set, _)).then_some(*tag))
-            .collect();
-
-        assert_eq!(set_tags.len(), 24, "controller inventory changed; audit the shared panel");
-        for tag in set_tags {
-            let value = if tag == "front2back:filter-presets-selected" {
-                PanelEncodedValue::Text(FilterPresetOptions::Custom.to_string())
-            } else {
-                PanelEncodedValue::Number(0.5)
-            };
-            route_controller_value(&mut resources, tag, value).unwrap_or_else(|error| panic!("shared panel cannot route {tag}: {error}"));
-        }
-    }
-
-    #[test]
-    fn routed_rgb_values_are_applied() {
-        use core::simulation_context::make_fake_simulation_context;
-        use core::ui_controller::UiController;
-
-        let mut resources = Resources::default();
-        route_controller_value(&mut resources, "front2back:rgb-red-g", PanelEncodedValue::Number(0.75)).unwrap();
-        let changed = resources.controllers.rgb_red_g.update(&resources.main, &make_fake_simulation_context());
-        assert!(changed);
-        assert_eq!(resources.controllers.rgb_red_g.value, 0.75);
-    }
-
-    #[test]
-    fn preset_events_use_shared_controller_route() {
-        let mut resources = Resources::default();
-        for preset in FilterPresetOptions::ALL {
-            select_preset(&mut resources, preset).unwrap();
-            assert_eq!(resources.controllers.preset_kind.value, preset);
-        }
+        assert_eq!(resources.controllers.blur_passes.value, original_blur);
+        assert_eq!(
+            commands,
+            vec![SimulationCommand::controller_set("front2back:blur-level", ControllerValue::Number(3.0))]
+        );
     }
 
     #[test]
@@ -2200,7 +2071,12 @@ mod tests {
         let mut resources = Resources::default();
         resources.video.viewport_size.width = 1_024;
         resources.video.viewport_size.height = 640;
+        resources.video.image_size = Size2D { width: 256, height: 240 };
+        resources.video.background_size = Size2D { width: 256, height: 240 };
+        resources.video.max_texture_size = 16_384;
+        resources.video.steps.push(AnimationStep { delay: 60 });
         let mut input = Input::default();
+        let mut commands = SimulationCommandBus::default();
         let sink = shared_panel_events();
         let screen_rect = Rect::from_min_size(Pos2::ZERO, Vec2::new(1_024.0, 640.0));
         let raw_input = |time, events| egui::RawInput {
@@ -2212,8 +2088,7 @@ mod tests {
 
         for time in [0.0, 0.02] {
             panel
-                .run(raw_input(time, Vec::new()), &mut resources, &mut input, &sink)
-                .unwrap()
+                .run(raw_input(time, Vec::new()), &resources, &mut commands, &sink)
                 .drop_without_applying_deltas();
         }
         let pointer = Pos2::new(125.0, 153.0);
@@ -2231,16 +2106,14 @@ mod tests {
                         },
                     ],
                 ),
-                &mut resources,
-                &mut input,
+                &resources,
+                &mut commands,
                 &sink,
             )
-            .unwrap()
             .drop_without_applying_deltas();
         for time in [2.0, 3.0, 4.0] {
             panel
-                .run(raw_input(time, Vec::new()), &mut resources, &mut input, &sink)
-                .unwrap()
+                .run(raw_input(time, Vec::new()), &resources, &mut commands, &sink)
                 .drop_without_applying_deltas();
         }
         panel
@@ -2254,13 +2127,16 @@ mod tests {
                         modifiers: egui::Modifiers::NONE,
                     }],
                 ),
-                &mut resources,
-                &mut input,
+                &resources,
+                &mut commands,
                 &sink,
             )
-            .unwrap()
             .drop_without_applying_deltas();
 
+        assert_eq!(commands.pending_len(), 1);
+        SimulationCoreTicker::new(&make_fake_simulation_context(), &mut resources, &mut input, &mut commands)
+            .tick(16.0)
+            .unwrap();
         assert_eq!(resources.controllers.preset_kind.value, FilterPresetOptions::DemoFlight1);
     }
 
@@ -2271,11 +2147,11 @@ mod tests {
         keys.pulse("capture-framebuffer", &mut events);
         keys.pulse("capture-framebuffer", &mut events);
         assert_eq!(events.len(), 1);
-        assert!(matches!(&events[0], InputEventValue::Keyboard { pressed: Pressed::Yes, key } if key == "capture-framebuffer"));
+        assert!(matches!(&events[0], SimulationCommand::Keyboard { pressed: Pressed::Yes, key } if key == "capture-framebuffer"));
         events.clear();
         keys.begin_frame(&mut events);
         assert_eq!(events.len(), 1);
-        assert!(matches!(&events[0], InputEventValue::Keyboard { pressed: Pressed::No, key } if key == "capture-framebuffer"));
+        assert!(matches!(&events[0], SimulationCommand::Keyboard { pressed: Pressed::No, key } if key == "capture-framebuffer"));
     }
 
     #[test]
@@ -2320,7 +2196,7 @@ mod tests {
             )
             .drop_without_applying_deltas();
 
-        assert!(matches!(&events[0], InputEventValue::Keyboard { pressed: Pressed::Yes, key } if key == "button-action"));
+        assert!(matches!(&events[0], SimulationCommand::Keyboard { pressed: Pressed::Yes, key } if key == "button-action"));
 
         events.clear();
         context
@@ -2343,7 +2219,7 @@ mod tests {
                 },
             )
             .drop_without_applying_deltas();
-        assert!(matches!(&events[0], InputEventValue::Keyboard { pressed: Pressed::No, key } if key == "button-action"));
+        assert!(matches!(&events[0], SimulationCommand::Keyboard { pressed: Pressed::No, key } if key == "button-action"));
     }
 
     #[test]
@@ -2402,12 +2278,12 @@ mod tests {
         keys.end_frame(&mut events);
 
         assert_eq!(events.len(), 1);
-        assert!(matches!(&events[0], InputEventValue::Keyboard { pressed: Pressed::Yes, key } if key == "button-action"));
+        assert!(matches!(&events[0], SimulationCommand::Keyboard { pressed: Pressed::Yes, key } if key == "button-action"));
 
         events.clear();
         keys.begin_frame(&mut events);
         assert_eq!(events.len(), 1);
-        assert!(matches!(&events[0], InputEventValue::Keyboard { pressed: Pressed::No, key } if key == "button-action"));
+        assert!(matches!(&events[0], SimulationCommand::Keyboard { pressed: Pressed::No, key } if key == "button-action"));
     }
 
     #[test]
@@ -2454,10 +2330,10 @@ mod tests {
             )
             .drop_without_applying_deltas();
 
-        assert!(matches!(&events[..], [InputEventValue::Keyboard { pressed: Pressed::Yes, key }] if key == "button-action"));
+        assert!(matches!(&events[..], [SimulationCommand::Keyboard { pressed: Pressed::Yes, key }] if key == "button-action"));
         events.clear();
         keys.begin_frame(&mut events);
-        assert!(matches!(&events[..], [InputEventValue::Keyboard { pressed: Pressed::No, key }] if key == "button-action"));
+        assert!(matches!(&events[..], [SimulationCommand::Keyboard { pressed: Pressed::No, key }] if key == "button-action"));
     }
 
     #[test]
@@ -2507,7 +2383,7 @@ mod tests {
             .drop_without_applying_deltas();
         keys.end_frame(&mut events);
         assert_eq!(events.len(), 1);
-        assert!(matches!(&events[0], InputEventValue::Keyboard { pressed: Pressed::Yes, key } if key == "button-action"));
+        assert!(matches!(&events[0], SimulationCommand::Keyboard { pressed: Pressed::Yes, key } if key == "button-action"));
 
         events.clear();
         keys.begin_frame(&mut events);
@@ -2533,7 +2409,7 @@ mod tests {
         keys.end_frame(&mut events);
 
         assert_eq!(events.len(), 1);
-        assert!(matches!(&events[0], InputEventValue::Keyboard { pressed: Pressed::No, key } if key == "button-action"));
+        assert!(matches!(&events[0], SimulationCommand::Keyboard { pressed: Pressed::No, key } if key == "button-action"));
     }
 
     #[test]
@@ -2552,7 +2428,7 @@ mod tests {
         keys.set_held("w", true, &mut events);
         events.clear();
         keys.release_all(&mut events);
-        assert!(matches!(&events[0], InputEventValue::Keyboard { pressed: Pressed::No, key } if key == "w"));
+        assert!(matches!(&events[0], SimulationCommand::Keyboard { pressed: Pressed::No, key } if key == "w"));
         assert!(keys.down.is_empty());
     }
 
@@ -2579,14 +2455,14 @@ mod tests {
         let mut resources = Resources::default();
         resources.video.viewport_size.width = 1_024;
         resources.video.viewport_size.height = 640;
-        let mut input = Input::default();
+        let mut commands = SimulationCommandBus::default();
         let events = shared_panel_events();
         let raw_input = egui::RawInput {
             screen_rect: Some(Rect::from_min_size(Pos2::ZERO, Vec2::new(1_024.0, 640.0))),
             ..Default::default()
         };
 
-        let output = panel.run(raw_input, &mut resources, &mut input, &events).unwrap();
+        let output = panel.run(raw_input, &resources, &mut commands, &events);
 
         let rect = panel.panel_rect().expect("panel rect");
         let has_shapes = !output.shapes.is_empty();
@@ -2604,22 +2480,20 @@ mod tests {
         let mut resources = Resources::default();
         resources.video.viewport_size.width = 1_024;
         resources.video.viewport_size.height = 640;
-        let mut input = Input::default();
+        let mut commands = SimulationCommandBus::default();
         let events = shared_panel_events();
         events.borrow_mut().push_message("one renderer");
 
-        let output = panel
-            .run_with_controls(
-                egui::RawInput {
-                    screen_rect: Some(Rect::from_min_size(Pos2::ZERO, Vec2::new(1_024.0, 640.0))),
-                    ..Default::default()
-                },
-                &mut resources,
-                &mut input,
-                &events,
-                false,
-            )
-            .unwrap();
+        let output = panel.run_with_controls(
+            egui::RawInput {
+                screen_rect: Some(Rect::from_min_size(Pos2::ZERO, Vec2::new(1_024.0, 640.0))),
+                ..Default::default()
+            },
+            &resources,
+            &mut commands,
+            &events,
+            false,
+        );
 
         assert!(panel.panel_rect().is_none());
         assert!(panel.has_active_toast());
@@ -2632,19 +2506,17 @@ mod tests {
         let mut panel = SimPanel::new();
         let mut resources = Resources::default();
         resources.quit = true;
-        let mut input = Input::default();
+        let mut commands = SimulationCommandBus::default();
         let events = shared_panel_events();
-        let output = panel
-            .run(
-                egui::RawInput {
-                    screen_rect: Some(Rect::from_min_size(Pos2::ZERO, Vec2::new(1_024.0, 640.0))),
-                    ..Default::default()
-                },
-                &mut resources,
-                &mut input,
-                &events,
-            )
-            .unwrap();
+        let output = panel.run(
+            egui::RawInput {
+                screen_rect: Some(Rect::from_min_size(Pos2::ZERO, Vec2::new(1_024.0, 640.0))),
+                ..Default::default()
+            },
+            &resources,
+            &mut commands,
+            &events,
+        );
 
         assert!(panel.panel_rect().is_none());
         assert!(!output.shapes.is_empty());

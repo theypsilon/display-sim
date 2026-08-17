@@ -51,3 +51,4 @@ members = [
 egui = { version = "=0.36.1", default-features = false, features = ["default_fonts"] }
 egui_glow = { version = "=0.36.1", default-features = false }
 glow = "=0.17.0"
+serde = { version = "1.0", features = ["derive"] }
