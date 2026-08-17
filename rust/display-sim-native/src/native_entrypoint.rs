@@ -526,6 +526,11 @@ impl NativeSimulationState {
             self.materials.gl.disable(glow::BLEND);
             self.materials.gl.enable(glow::DEPTH_TEST);
 
+            if self.res.quit {
+                println!("User closed the simulation.");
+                *control_flow = ControlFlow::Exit;
+            }
+
             self.windowed_ctx.swap_buffers().map_err(|error| format!("Swap buffers failed: {error}"))?;
         }
         Ok(())

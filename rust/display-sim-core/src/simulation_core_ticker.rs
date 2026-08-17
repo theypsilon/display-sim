@@ -1261,6 +1261,22 @@ mod tests {
     }
 
     #[test]
+    fn quit_simulation_ui_command_sets_the_shared_terminal_state() {
+        let ctx = make_fake_simulation_context();
+        let mut resources = runnable_resources();
+        let mut input = Input::new(0.0);
+        let mut commands = SimulationCommandBus::default();
+        commands.emit(SimulationCommand::Keyboard {
+            pressed: Pressed::Yes,
+            key: "quit-simulation".into(),
+        });
+
+        SimulationCoreTicker::new(&ctx, &mut resources, &mut input, &mut commands).tick(16.0).unwrap();
+
+        assert!(resources.quit);
+    }
+
+    #[test]
     fn first_tick_camera_commands_survive_scaling_initialization() {
         let ctx = make_fake_simulation_context();
         let mut resources = runnable_resources();

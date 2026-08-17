@@ -166,7 +166,7 @@ async function show (template: SimTemplate, view_model: SimViewModel, model: Sim
         case 'back2front:toggle_info_panel': return view_model.toggleInfoPanel();
         case 'back2front:fps': return view_model.changeFps(msg);
         case 'back2front:exit_pointer_lock': return view_model.exitPointerLock();
-        case 'back2front:exiting_session': return Logger.log('Simulation session ended.');
+        case 'back2front:exiting_session': return view_model.exitingSession();
         case 'back2front:change_camera_movement_mode': return view_model.changeCameraMovementMode(msg);
         case 'back2front:change_camera_zoom': return view_model.changeCameraZoom(msg);
         case 'back2front:change_pixel_width': return view_model.changePixelWidth(msg);
